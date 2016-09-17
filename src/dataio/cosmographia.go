@@ -1,8 +1,10 @@
 package dataio
 
 import (
+	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 )
@@ -130,4 +132,26 @@ func (i *CgInterpolatedState) FromText(record []string) {
 // ToText converts to text for written output.
 func (i *CgInterpolatedState) ToText() string {
 	return fmt.Sprintf("%f %f %f %f %f %f %f", i.JS, i.Position[0], i.Position[1], i.Position[2], i.Velocity[0], i.Velocity[1], i.Velocity[2])
+}
+
+// ParseInterpolatedStates takes a string and converts that into a CgInterpolatedState.
+func ParseInterpolatedStates(s string) []*CgInterpolatedState {
+	var states = []*CgInterpolatedState{}
+	r := csv.NewReader(strings.NewReader(s))
+	r.Comma = ' '
+	r.Comment = '#'
+	for {
+		record, err := r.Read()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			panic(err)
+		}
+		state := CgInterpolatedState{}
+		state.FromText(record)
+		states = append(states, &state)
+	}
+
+	return states
 }

@@ -180,5 +180,28 @@ func TestInterpolatedStatesExport(t *testing.T) {
 			t.Fatal("Failed at index 1.")
 		}
 	}
+}
+
+func TestInterpolatedStatesImport(t *testing.T) {
+	var input = `# Creation date: Mon Jul 16 22:11:17 2012
+# Records are <jd> <x> <y> <z> <vel x> <vel y> <vel z>
+#   Time is a TDB Julian date
+#   Position in km
+#   Velocity in km/sec
+2441778.60122 -143540520.299 -42601828.5841 -2696.02946285 7.0417278 -42.899928 -2.2465784
+2441778.60784 -143535384.971 -42625931.5103 -4127.97459159 10.212578 -41.142538 -2.5831545
+2441778.61819 -143525789.667 -42661802.0935 -6373.8022798 10.970861 -39.40869 -2.4374278
+2441778.6384 -143506517.227 -42729563.7597 -10471.0116946 11.049639 -38.416033 -2.2815861
+2441778.67787 -143468899.838 -42859516.2956 -18050.5301835 11.011671 -37.900402 -2.1826496
+2441778.75497 -143395637.715 -43110872.6976 -32362.3845969 10.993684 -37.624144 -2.1260049`
+	states := ParseInterpolatedStates(input)
+	for i, state := range states {
+		if i == 0 {
+			continue
+		}
+		if states[i-1].JS > state.JS || states[i-1].Position[0] > state.Position[0] || states[i-1].Velocity[1] > state.Velocity[1] {
+			t.Fatalf("State %d is not as expected: \n%+v\n%+v", i, states[i-1], state)
+		}
+	}
 
 }
