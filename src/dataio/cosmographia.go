@@ -3,6 +3,7 @@ package dataio
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -87,4 +88,46 @@ type CgTrajectoryPlot struct {
 	Lead        string    `json:"lead"`
 	Fade        int       `json:"fade"`
 	SampleCount int       `json:"sampleCount"`
+}
+
+// CgInterpolatedState definiton.
+type CgInterpolatedState struct {
+	JS       float64
+	Position []float64
+	Velocity []float64
+}
+
+// FromText initializes from text.
+// The `record` parameter must be an array of seven items.
+func (i *CgInterpolatedState) FromText(record []string) {
+	if val, err := strconv.ParseFloat(record[0], 64); err != nil {
+		panic(err)
+	} else {
+		i.JS = val
+	}
+
+	if posX, err := strconv.ParseFloat(record[1], 64); err != nil {
+		panic(err)
+	} else if posY, err := strconv.ParseFloat(record[2], 64); err != nil {
+		panic(err)
+	} else if posZ, err := strconv.ParseFloat(record[3], 64); err != nil {
+		panic(err)
+	} else {
+		i.Position = []float64{posX, posY, posZ}
+	}
+
+	if velX, err := strconv.ParseFloat(record[4], 64); err != nil {
+		panic(err)
+	} else if velY, err := strconv.ParseFloat(record[5], 64); err != nil {
+		panic(err)
+	} else if velZ, err := strconv.ParseFloat(record[6], 64); err != nil {
+		panic(err)
+	} else {
+		i.Velocity = []float64{velX, velY, velZ}
+	}
+}
+
+// ToText converts to text for written output.
+func (i *CgInterpolatedState) ToText() string {
+	return fmt.Sprintf("%f %f %f %f %f %f %f", i.JS, i.Position[0], i.Position[1], i.Position[2], i.Velocity[0], i.Velocity[1], i.Velocity[2])
 }

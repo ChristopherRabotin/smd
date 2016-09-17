@@ -169,3 +169,16 @@ func TestFullImport(t *testing.T) {
 		t.Fatal("One or more structs are empty.")
 	}
 }
+
+func TestInterpolatedStatesExport(t *testing.T) {
+	records := []CgInterpolatedState{CgInterpolatedState{2441778.60122, []float64{-143540520.299, -42601828.5841, -2696.02946285}, []float64{7.0417278, -42.899928, -2.2465784}},
+		CgInterpolatedState{2441778.60784, []float64{-143535384.971, -42625931.5103, -4127.97459159}, []float64{10.212578, -41.142538, -2.5831545}}}
+	for i, record := range records {
+		if i == 0 && record.ToText() != "2441778.601220 -143540520.299000 -42601828.584100 -2696.029463 7.041728 -42.899928 -2.246578" {
+			t.Fatal("Failed at index 0.")
+		} else if i == 1 && record.ToText() != "2441778.607840 -143535384.971000 -42625931.510300 -4127.974592 10.212578 -41.142538 -2.583155" {
+			t.Fatal("Failed at index 1.")
+		}
+	}
+
+}
