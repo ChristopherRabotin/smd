@@ -1,6 +1,7 @@
 package dynamics
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/gonum/matrix/mat64"
@@ -54,7 +55,7 @@ func (s *MRP) OuterProduct(m float64) *mat64.Dense {
 
 // B returns the B matrix for MRP computations.
 func (s *MRP) B() *mat64.Dense {
-	B := mat64.NewDense(3, 5, nil)
+	B := mat64.NewDense(3, 3, nil)
 	e1 := mat64.NewDense(3, 3, []float64{1 - s.squared(), 0, 0,
 		0, 1 - s.squared(), 0,
 		0, 0, 1 - s.squared()})
@@ -81,26 +82,29 @@ func NewAttitude(sigma [3]float64, omega [3]float64, tensor []float64) *Attitude
 }
 
 // State returns the state of this attitude for the EOM as defined below.
-func (a *Attitude) State() [6]float64 {
-	return [6]float64{a.Attitude.s1, a.Attitude.s2, a.Attitude.s3, a.Velocity.At(0, 0), a.Velocity.At(1, 0), a.Velocity.At(2, 0)}
+func (a *Attitude) State() []float64 {
+	return []float64{a.Attitude.s1, a.Attitude.s2, a.Attitude.s3, a.Velocity.At(0, 0), a.Velocity.At(1, 0), a.Velocity.At(2, 0)}
 }
 
 // EulerEOM returns the EOM for this given Attitude object.
 func (a *Attitude) EulerEOM() func(t float64, state, f []float64) {
 	// Let's define the multiplication factors due to the inertial tensor.
-	mf1 := (a.InertiaTensor.At(2, 2) - a.InertiaTensor.At(3, 3)) / a.InertiaTensor.At(1, 1)
-	mf2 := (a.InertiaTensor.At(3, 3) - a.InertiaTensor.At(2, 2)) / a.InertiaTensor.At(2, 2)
-	mf3 := (a.InertiaTensor.At(1, 1) - a.InertiaTensor.At(3, 3)) / a.InertiaTensor.At(3, 3)
+	mf1 := (a.InertiaTensor.At(1, 1) - a.InertiaTensor.At(2, 2)) / a.InertiaTensor.At(0, 0)
+	mf2 := (a.InertiaTensor.At(2, 2) - a.InertiaTensor.At(0, 0)) / a.InertiaTensor.At(1, 1)
+	mf3 := (a.InertiaTensor.At(0, 0) - a.InertiaTensor.At(1, 1)) / a.InertiaTensor.At(2, 2)
+	fmt.Printf("mf1=%v\tmf2=%v\tmf3=%v\n", mf1, mf2, mf3)
 	return func(t float64, state, f []float64) {
 		// Let's create the Omega vector using BLAS.
+		fmt.Printf("state = %+v\n", state)
 		sigma := MRP{state[0], state[1], state[2]}
-		omega := mat64.NewVector(3, []float64{state[4], state[5], state[6]})
+		omega := mat64.NewVector(3, []float64{state[3], state[4], state[5]})
 		omega.MulVec(sigma.B(), omega)
 		f[0] = 0.25 * omega.At(0, 0)
 		f[1] = 0.25 * omega.At(1, 0)
 		f[2] = 0.25 * omega.At(2, 0)
-		f[4] = mf1 * omega.At(2, 0) * omega.At(3, 0)
-		f[5] = mf2 * omega.At(1, 0) * omega.At(3, 0)
-		f[6] = mf3 * omega.At(2, 0) * omega.At(1, 0)
+		f[3] = mf1 * omega.At(1, 0) * omega.At(2, 0)
+		f[4] = mf2 * omega.At(0, 0) * omega.At(2, 0)
+		f[5] = mf3 * omega.At(1, 0) * omega.At(0, 0)
+		fmt.Printf("f = %+v\n", f)
 	}
 }
