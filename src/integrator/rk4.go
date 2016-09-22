@@ -2,6 +2,7 @@ package integrator
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 )
 
@@ -16,7 +17,7 @@ type Integrable interface {
 
 // Config defines the configuration for the integration.
 type Config struct {
-	X0               big.Float  // The initial x0.
+	X0               *big.Float // The initial x0.
 	StepSize         float64    // The step size.
 	Integator        Integrable // What is to be integrated.
 	stepSizeBigFloat *big.Float // The step size as a big float.
@@ -41,7 +42,7 @@ func SolveRK4(c *Config) (uint64, *big.Float, error) {
 		return iterNum, nil, err
 	}
 
-	xi := big.NewFloat(0.0).Copy(&c.X0)
+	xi := big.NewFloat(0.0).Copy(c.X0)
 	half := big.NewFloat(.5)
 	oneSixth := big.NewFloat(1 / 6)
 	oneThird := big.NewFloat(1 / 3)
@@ -60,6 +61,8 @@ func SolveRK4(c *Config) (uint64, *big.Float, error) {
 			k1[i].Mul(&k1n, c.stepSizeBigFloat)
 			k2[i].Mul(&k1[i], half)
 			k2[i].Add(&k2[i], c.stepSizeBigFloat)
+			k1af, _ := k1[i].Float64()
+			fmt.Printf("k1 = %4.4f\n", k1af)
 		}
 		for i, k2n := range c.Integator.Func(xi.Add(xi, halfStep), k2) {
 			k2[i].Mul(&k2n, c.stepSizeBigFloat)
@@ -76,12 +79,13 @@ func SolveRK4(c *Config) (uint64, *big.Float, error) {
 		}
 		// Let's now compute the new state.
 		for i := range newState {
-			newState[i] = *big.NewFloat(0.0).Add(&state[i], big.NewFloat(0.0).Mul(oneSixth, &k1[i])).Add(big.NewFloat(0.0).Mul(oneThird, &k2[i]), big.NewFloat(0.0).Mul(oneThird, &k3[i])).Add(big.NewFloat(0.0), big.NewFloat(0.0).Mul(oneSixth, &k3[i]))
+			newState[i] = *big.NewFloat(0.0).Add(&state[i], big.NewFloat(1.0).Mul(oneSixth, &k1[i])).Add(big.NewFloat(1.0).Mul(oneThird, &k2[i]), big.NewFloat(1.0).Mul(oneThird, &k3[i])).Add(big.NewFloat(0.0), big.NewFloat(1.0).Mul(oneSixth, &k3[i]))
 		}
+		c.Integator.SetState(iterNum, newState)
 
 		xi.Add(xi, c.stepSizeBigFloat)
 		iterNum++ // Don't forget to increment the number of iterations.
 	}
 
-	return iterNum, nil, errors.New("this should not happen")
+	return iterNum, xi, nil
 }
