@@ -1,6 +1,7 @@
 package integrator
 
 import (
+	"dynamics"
 	"fmt"
 	"math"
 	"testing"
@@ -46,5 +47,27 @@ func TestRK4In1D(t *testing.T) {
 	}
 	if diff := math.Abs(inte.GetState()[0] - 647.5720536920); diff >= 1e-10 {
 		t.Fatalf("expected final state is different by %4.10f", diff)
+	}
+}
+
+// AttitudeTest tests that the energy is conserved for a given body.
+type AttitudeTest struct {
+	*dynamics.Attitude
+}
+
+func (a *AttitudeTest) Stop(i uint64) bool {
+	return float64(i)*1e-6 >= 500
+}
+
+func NewAttitudeTest() (a *AttitudeTest) {
+	a = &AttitudeTest{dynamics.NewAttitude([3]float64{0.3, -0.4, 0.5}, [3]float64{0.1, 0.4, -0.2},
+		[]float64{10, 0, 0, 0, 5, 0, 0, 0, 2})}
+	return
+}
+
+func TestRK4Attitude(t *testing.T) {
+	inte := NewAttitudeTest()
+	if _, _, err := NewRK4(0, 1e-6, inte).Solve(); err != nil {
+		t.Fatalf("err: %+v\n", err)
 	}
 }
