@@ -1,7 +1,6 @@
 package dynamics
 
 import (
-	"fmt"
 	"math"
 	"testing"
 )
@@ -55,6 +54,29 @@ func TestMRPTilde(t *testing.T) {
 	}
 }
 
+func TestOuterPoductMRP(t *testing.T) {
+	oT := shortMRP.OuterProduct(1)
+	oEx := [][]float64{{0.005512074819442, -0.007669785162441, -0.004257706712495},
+		{-0.007669785162441, 0.010672134607190, 0.005924392690449},
+		{-0.004257706712495, 0.005924392690449, 0.003288791796816}}
+	for i, row := range oEx {
+		for j, val := range row {
+			if diff := math.Abs(oT.At(i, j) - val); diff > 1e-12 {
+				t.Fatalf("OuterProduct(%d, %d) = %2.6f diff = %2.6f\n", i, j, oT.At(i, j), diff)
+			}
+		}
+	}
+	// Test multiplication factor.
+	oT = shortMRP.OuterProduct(2)
+	for i, row := range oEx {
+		for j, val := range row {
+			if diff := math.Abs(oT.At(i, j) - 2*val); diff > 1e-12 {
+				t.Fatalf("OuterProduct(%d, %d) = %2.6f diff = %2.6f\n", i, j, oT.At(i, j), diff)
+			}
+		}
+	}
+}
+
 func TestMRPB(t *testing.T) {
 	sB := shortMRP.B()
 	sExpected := [][]float64{{0.991551148415436, -0.130035547530997, 0.198096634696028},
@@ -62,7 +84,9 @@ func TestMRPB(t *testing.T) {
 		{-0.215127461546006, -0.136637911928220, 0.987104582370184}}
 	for i, row := range sExpected {
 		for j, val := range row {
-			fmt.Printf("B(%d, %d) = %2.6f diff = %2.6f\n", i, j, sB.At(j, i), math.Abs(sB.At(j, i)-val))
+			if diff := math.Abs(sB.At(i, j) - val); diff > 1e-12 {
+				t.Fatalf("B(%d, %d) = %2.6f diff = %2.6f\n", i, j, sB.At(i, j), math.Abs(sB.At(i, j)-val))
+			}
 		}
 	}
 }

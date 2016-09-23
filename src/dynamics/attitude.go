@@ -75,9 +75,9 @@ func (s *MRP) Tilde(m float64) *mat64.Dense {
 // The m parameter allows to multiply directly the outer product with a scalar.
 func (s *MRP) OuterProduct(m float64) *mat64.Dense {
 	return mat64.NewDense(3, 3, []float64{
-		s.s1 * s.s1, s.s1 * s.s2, s.s1 * s.s3,
-		s.s2 * s.s1, s.s2 * s.s2, s.s2 * s.s3,
-		s.s3 * s.s1, s.s3 * s.s2, s.s3 * s.s3,
+		m * s.s1 * s.s1, m * s.s1 * s.s2, m * s.s1 * s.s3,
+		m * s.s2 * s.s1, m * s.s2 * s.s2, m * s.s2 * s.s3,
+		m * s.s3 * s.s1, m * s.s3 * s.s2, m * s.s3 * s.s3,
 	})
 }
 
@@ -87,11 +87,8 @@ func (s *MRP) B() *mat64.Dense {
 	e1 := mat64.NewDense(3, 3, []float64{1 - s.squared(), 0, 0,
 		0, 1 - s.squared(), 0,
 		0, 0, 1 - s.squared()})
-	e2 := s.Tilde(2)
-	B.Add(e1, e2)
-	fmt.Printf("B = %+v\n", B)
+	B.Add(e1, s.Tilde(2))
 	B.Add(B, s.OuterProduct(2))
-	fmt.Printf("B = %+v\n", B)
 	return B
 }
 
