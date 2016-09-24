@@ -123,7 +123,7 @@ func NewAttitude(sigma, omega [3]float64, tensor []float64) *Attitude {
 func (a *Attitude) Momentum() float64 {
 	mom := mat64.Dense{}
 	mom.Mul(a.InertiaTensor, a.Velocity)
-	return mat64.Norm(&mom, 1)
+	return mat64.Norm(&mom, 2)
 }
 
 // GetState returns the state of this attitude for the EOM as defined below.
@@ -144,12 +144,13 @@ func (a *Attitude) SetState(i uint64, s []float64) {
 // Func is the integrator function.
 func (a *Attitude) Func(t float64, s []float64) []float64 {
 	sigma := MRP{s[0], s[1], s[2]}
+	sigmaDot := mat64.NewVector(3, nil)
 	omega := mat64.NewVector(3, []float64{s[3], s[4], s[5]})
-	omega.MulVec(sigma.B(), omega)
+	sigmaDot.MulVec(sigma.B(), omega)
 	f := make([]float64, 6)
-	f[0] = oneQuarter * omega.At(0, 0)
-	f[1] = oneQuarter * omega.At(1, 0)
-	f[2] = oneQuarter * omega.At(2, 0)
+	f[0] = oneQuarter * sigmaDot.At(0, 0)
+	f[1] = oneQuarter * sigmaDot.At(1, 0)
+	f[2] = oneQuarter * sigmaDot.At(2, 0)
 	f[3] = a.mf1 * omega.At(1, 0) * omega.At(2, 0)
 	f[4] = a.mf2 * omega.At(0, 0) * omega.At(2, 0)
 	f[5] = a.mf3 * omega.At(1, 0) * omega.At(0, 0)

@@ -6,6 +6,7 @@ import (
 )
 
 var (
+	ε        = 1e-12
 	shortMRP = MRP{-0.074243348654559, 0.103306024060508, 0.057347988603058}
 	longMRP  = MRP{3.81263, -5.30509, -2.945}
 )
@@ -28,7 +29,7 @@ func TestMRPTilde(t *testing.T) {
 	sT := sV.Tilde(1)
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
-			if math.Abs(sT.At(j, i)+sT.At(i, j)) > 1e-12 {
+			if math.Abs(sT.At(j, i)+sT.At(i, j)) > ε {
 				t.Fatalf("%2.6f =-? %2.6f\n", sT.At(j, i), sT.At(i, j))
 			}
 		}
@@ -38,7 +39,7 @@ func TestMRPTilde(t *testing.T) {
 		{-0.410571, -0.295067, 0}}
 	for i, row := range sTExp {
 		for j, val := range row {
-			if diff := math.Abs(sT.At(i, j) - val); diff > 1e-12 {
+			if diff := math.Abs(sT.At(i, j) - val); diff > ε {
 				t.Fatalf("~(%d, %d) = %2.6f diff = %2.6f\n", i, j, sT.At(i, j), diff)
 			}
 		}
@@ -47,7 +48,7 @@ func TestMRPTilde(t *testing.T) {
 	sT = sV.Tilde(2)
 	for i, row := range sTExp {
 		for j, val := range row {
-			if diff := math.Abs(sT.At(i, j) - val*2); diff > 1e-12 {
+			if diff := math.Abs(sT.At(i, j) - val*2); diff > ε {
 				t.Fatalf("2*~(%d, %d) = %2.6f diff = %2.6f\n", i, j, sT.At(i, j), diff)
 			}
 		}
@@ -61,7 +62,7 @@ func TestOuterPoductMRP(t *testing.T) {
 		{-0.004257706712495, 0.005924392690449, 0.003288791796816}}
 	for i, row := range oEx {
 		for j, val := range row {
-			if diff := math.Abs(oT.At(i, j) - val); diff > 1e-12 {
+			if diff := math.Abs(oT.At(i, j) - val); diff > ε {
 				t.Fatalf("OuterProduct(%d, %d) = %2.6f diff = %2.6f\n", i, j, oT.At(i, j), diff)
 			}
 		}
@@ -70,7 +71,7 @@ func TestOuterPoductMRP(t *testing.T) {
 	oT = shortMRP.OuterProduct(2)
 	for i, row := range oEx {
 		for j, val := range row {
-			if diff := math.Abs(oT.At(i, j) - 2*val); diff > 1e-12 {
+			if diff := math.Abs(oT.At(i, j) - 2*val); diff > ε {
 				t.Fatalf("OuterProduct(%d, %d) = %2.6f diff = %2.6f\n", i, j, oT.At(i, j), diff)
 			}
 		}
@@ -84,9 +85,18 @@ func TestMRPB(t *testing.T) {
 		{-0.215127461546006, -0.136637911928220, 0.987104582370184}}
 	for i, row := range sExpected {
 		for j, val := range row {
-			if diff := math.Abs(sB.At(i, j) - val); diff > 1e-12 {
+			if diff := math.Abs(sB.At(i, j) - val); diff > ε {
 				t.Fatalf("B(%d, %d) = %2.6f diff = %2.6f\n", i, j, sB.At(i, j), math.Abs(sB.At(i, j)-val))
 			}
 		}
+	}
+}
+
+func TestMomentum(t *testing.T) {
+	att := NewAttitude([3]float64{0.3, -0.4, 0.5}, [3]float64{0.1, 0.4, -0.2},
+		[]float64{10, 0, 0, 0, 5, 0, 0, 0, 2})
+	mom := att.Momentum()
+	if diff := math.Abs(mom - 2.271563338320109); diff > ε {
+		t.Fatalf("angular momentum = %2.6f; diff = %2.6f\n", mom, diff)
 	}
 }

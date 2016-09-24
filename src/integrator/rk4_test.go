@@ -46,7 +46,7 @@ func TestRK4In1D(t *testing.T) {
 		t.Fatalf("err: %+v\n", err)
 	}
 	if diff := math.Abs(inte.GetState()[0] - 647.5720536920); diff >= 1e-10 {
-		t.Fatalf("expected final state is different by %4.10f", diff)
+		t.Fatalf("expected final state %4.10f is different by %4.10f", inte.GetState()[0], diff)
 	}
 }
 
@@ -56,20 +56,22 @@ type AttitudeTest struct {
 }
 
 func (a *AttitudeTest) Stop(i uint64) bool {
-	return float64(i)*1e-4 >= 5
+	return float64(i)*1e-6 >= 1e-1
 }
 
 func NewAttitudeTest() (a *AttitudeTest) {
 	a = &AttitudeTest{dynamics.NewAttitude([3]float64{0.3, -0.4, 0.5}, [3]float64{0.1, 0.4, -0.2},
-		[]float64{10, 0, 0, 0, 5, 0, 0, 0, 2})}
+		[]float64{10.0, 0, 0, 0, 5.0, 0, 0, 0, 2.0})}
 	return
 }
 
 func TestRK4Attitude(t *testing.T) {
 	inte := NewAttitudeTest()
 	initMom := inte.Momentum()
-	if _, _, err := NewRK4(0, 1e-4, inte).Solve(); err != nil {
+	if _, _, err := NewRK4(0, 1e-6, inte).Solve(); err != nil {
 		t.Fatalf("err: %+v\n", err)
 	}
-	fmt.Printf("Angular moment change throughout propagation: %4.12f\n", math.Abs(initMom-inte.Momentum()))
+	if diff := math.Abs(initMom - inte.Momentum()); diff > 1e-8 {
+		t.Fatalf("angular momentum changed by %4.12f", diff)
+	}
 }
