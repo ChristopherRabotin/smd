@@ -104,10 +104,11 @@ type Attitude struct {
 	InertiaTensor *mat64.Dense
 	initAngMom    float64 // Initial angular moment (integrator failsafe)
 	mf1, mf2, mf3 float64 // Inertial tensor ratios
+	tolerance     float64 // Tolerance of integration (error cannot breach this).
 }
 
 // NewAttitude returns an Attitude pointer.
-func NewAttitude(sigma [3]float64, omega [3]float64, tensor []float64) *Attitude {
+func NewAttitude(sigma, omega [3]float64, tensor []float64) *Attitude {
 	a := Attitude{}
 	a.Attitude = &MRP{sigma[0], sigma[1], sigma[2]}
 	a.Velocity = mat64.NewVector(3, []float64{omega[0], omega[1], omega[2]})
@@ -115,7 +116,6 @@ func NewAttitude(sigma [3]float64, omega [3]float64, tensor []float64) *Attitude
 	a.mf1 = (a.InertiaTensor.At(1, 1) - a.InertiaTensor.At(2, 2)) / a.InertiaTensor.At(0, 0)
 	a.mf2 = (a.InertiaTensor.At(2, 2) - a.InertiaTensor.At(0, 0)) / a.InertiaTensor.At(1, 1)
 	a.mf3 = (a.InertiaTensor.At(0, 0) - a.InertiaTensor.At(1, 1)) / a.InertiaTensor.At(2, 2)
-	a.initAngMom = a.Momentum()
 	return &a
 }
 
@@ -131,7 +131,7 @@ func (a *Attitude) GetState() []float64 {
 	return []float64{a.Attitude.s1, a.Attitude.s2, a.Attitude.s3, a.Velocity.At(0, 0), a.Velocity.At(1, 0), a.Velocity.At(2, 0)}
 }
 
-// SetState returns the state of this attitude for the EOM as defined below.
+// SetState sets the state of this attitude for the EOM as defined below.
 func (a *Attitude) SetState(i uint64, s []float64) {
 	a.Attitude.s1 = s[0]
 	a.Attitude.s2 = s[1]
@@ -139,16 +139,10 @@ func (a *Attitude) SetState(i uint64, s []float64) {
 	a.Velocity.SetVec(0, s[3])
 	a.Velocity.SetVec(1, s[4])
 	a.Velocity.SetVec(2, s[5])
-	fmt.Printf("state = %+v", a.GetState())
-	// Integration failsafe
-	if diff := math.Abs(a.Momentum() - a.initAngMom); diff > -1e10 {
-		panic(fmt.Errorf("total momentum of body changed at i=%d: %5.5f", i, diff))
-	}
 }
 
 // Func is the integrator function.
 func (a *Attitude) Func(t float64, s []float64) []float64 {
-	fmt.Printf("state = %+v\n", s)
 	sigma := MRP{s[0], s[1], s[2]}
 	omega := mat64.NewVector(3, []float64{s[3], s[4], s[5]})
 	omega.MulVec(sigma.B(), omega)
@@ -159,6 +153,5 @@ func (a *Attitude) Func(t float64, s []float64) []float64 {
 	f[3] = a.mf1 * omega.At(1, 0) * omega.At(2, 0)
 	f[4] = a.mf2 * omega.At(0, 0) * omega.At(2, 0)
 	f[5] = a.mf3 * omega.At(1, 0) * omega.At(0, 0)
-	fmt.Printf("f = %+v\n", f)
 	return f
 }

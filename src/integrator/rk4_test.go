@@ -52,22 +52,28 @@ func TestRK4In1D(t *testing.T) {
 
 // AttitudeTest tests that the energy is conserved for a given body.
 type AttitudeTest struct {
+	initAngMom float64
+	prevAngMom float64
+	tolerance  float64
 	*dynamics.Attitude
 }
 
 func (a *AttitudeTest) Stop(i uint64) bool {
-	return float64(i)*1e-6 >= 500
+	return float64(i)*1e-12 >= 1e-2
 }
 
 func NewAttitudeTest() (a *AttitudeTest) {
-	a = &AttitudeTest{dynamics.NewAttitude([3]float64{0.3, -0.4, 0.5}, [3]float64{0.1, 0.4, -0.2},
-		[]float64{10, 0, 0, 0, 5, 0, 0, 0, 2})}
+	att := dynamics.NewAttitude([3]float64{0.3, -0.4, 0.5}, [3]float64{0.1, 0.4, -0.2},
+		[]float64{10, 0, 0, 0, 5, 0, 0, 0, 2})
+	initMom := att.Momentum()
+	a = &AttitudeTest{initMom, initMom, 1e-5, att}
 	return
 }
 
 func TestRK4Attitude(t *testing.T) {
 	inte := NewAttitudeTest()
-	if _, _, err := NewRK4(0, 1e-6, inte).Solve(); err != nil {
+	if _, _, err := NewRK4(0, 1e-12, inte).Solve(); err != nil {
 		t.Fatalf("err: %+v\n", err)
 	}
+	fmt.Printf("Angular moment change throughout propagation: %4.12f", math.Abs(inte.initAngMom-inte.prevAngMom))
 }
