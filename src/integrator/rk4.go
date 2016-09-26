@@ -32,7 +32,7 @@ func NewRK4(x0 float64, stepSize float64, inte Integrable) (r *RK4) {
 // Returns the number of iterations performed and the last X_i, or an error.
 func (r *RK4) Solve() (uint64, float64, error) {
 	const (
-		half     = 0.5
+		half     = 1 / 2.0
 		oneSixth = 1 / 6.0
 		oneThird = 1 / 3.0
 	)
