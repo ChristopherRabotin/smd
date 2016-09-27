@@ -1,6 +1,7 @@
 package dynamics
 
 import (
+	"fmt"
 	"math"
 	"testing"
 )
@@ -11,8 +12,12 @@ const (
 	eps = 1e-8
 )
 
-func floatEqual(a, b float64) bool {
-	return math.Abs(a-b) < eps
+func floatEqual(a, b float64) (bool, error) {
+	diff := math.Abs(a - b)
+	if diff < eps {
+		return true, nil
+	}
+	return false, fmt.Errorf("difference of %3.6f", diff)
 }
 
 func TestOrbitDefinition(t *testing.T) {
@@ -26,23 +31,23 @@ func TestOrbitDefinition(t *testing.T) {
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth.μ)
 
 	a1, e1, i1, ω1, Ω1, ν1 := o.GetOE()
-	if !floatEqual(a0, a1) {
-		t.Fatal("semi major axis invalid")
+	if ok, err := floatEqual(a0, a1); !ok {
+		t.Fatalf("semi major axis invalid: %s", err)
 	}
-	if !floatEqual(e0, e1) {
-		t.Fatal("eccentricity invalid")
+	if ok, err := floatEqual(e0, e1); !ok {
+		t.Fatalf("eccentricity invalid: %s", err)
 	}
-	if !floatEqual(i0, i1) {
-		t.Fatal("inclination invalid")
+	if ok, err := floatEqual(i0, i1); !ok {
+		t.Fatalf("inclination invalid: %s", err)
 	}
-	if !floatEqual(ω0, ω1) {
-		t.Fatal("ω invalid")
+	if ok, err := floatEqual(ω0, ω1); !ok {
+		t.Fatalf("argument of perigee invalid: %s", err)
 	}
-	if !floatEqual(Ω0, Ω1) {
-		t.Fatal("Ω invalid")
+	if ok, err := floatEqual(Ω0, Ω1); !ok {
+		t.Fatalf("RAAN invalid: %s", err)
 	}
-	if !floatEqual(ν0, ν1) {
-		t.Fatal("ν invalid")
+	if ok, err := floatEqual(ν0, ν1); !ok {
+		t.Fatalf("true anomaly invalid: %s", err)
 	}
 }
 
