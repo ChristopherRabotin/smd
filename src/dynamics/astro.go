@@ -27,13 +27,13 @@ func NewOE(a, e, i, ω, Ω, ν, μ float64) *Orbit {
 	return &Orbit{a, e, i, ω, Ω, ν, μ}
 }
 
-// NewOEFromRV returns orbital elements from the R and V vectors.
+// NewOEFromRV returns orbital elements from the R and V vectors. Needed for prop
 func NewOEFromRV(R, V [3]float64) *Orbit {
 	return nil
 }
 
 // GetRV returns the R and V vectors in the ECFI frame.
-func (o *Orbit) GetRV() (R, V [3]float64) {
+func (o *Orbit) GetRV() (R, V []float64) {
 	p := o.a * (1.0 - math.Pow(o.e, 2)) // semi-parameter
 	// Compute R and V in the perifocal frame (PQW).
 	R[0] = p * math.Cos(o.ν) / (1 + o.e*math.Cos(o.ν))
@@ -42,7 +42,9 @@ func (o *Orbit) GetRV() (R, V [3]float64) {
 	V[0] = -math.Sqrt(o.μ/p) * math.Sin(o.ν)
 	V[1] = math.Sqrt(o.μ/p) * (o.e + math.Cos(o.ν))
 	V[2] = 0
-	// TODO: compute rotation.
+	// Compute ECI rotation.
+	R = PQW2ECI(o.i, o.ω, o.Ω, R)
+	V = PQW2ECI(o.i, o.ω, o.Ω, V)
 	return
 }
 
