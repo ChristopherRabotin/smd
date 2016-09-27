@@ -20,6 +20,10 @@ type Orbit struct {
 
 // NewOrbitFromOE creates an orbit from the orbital elements.
 func NewOrbitFromOE(a, e, i, ω, Ω, ν, μ float64) *Orbit {
+	// Check for edge cases which are not supported.
+	if ν < 1e-10 {
+		panic("ν ~= 0 is not supported")
+	}
 	p := a * (1.0 - math.Pow(e, 2)) // semi-parameter
 	R, V := make([]float64, 3), make([]float64, 3)
 	// Compute R and V in the perifocal frame (PQW).
@@ -65,7 +69,6 @@ func (o *Orbit) GetOE() (a, e, i, ω, Ω, ν float64) {
 	if eVec[2] < 0 { // Quadrant check
 		ω = 2*math.Pi - ω
 	}
-
 	ν = math.Acos(dot(eVec, o.R) / (e * norm(o.R)))
 	if dot(o.R, o.V) < 0 {
 		ν = 2*math.Pi - ν

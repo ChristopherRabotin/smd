@@ -26,7 +26,7 @@ func TestOrbitDefinition(t *testing.T) {
 	i0 := deg2rad(38)
 	ω0 := deg2rad(10)
 	Ω0 := deg2rad(5)
-	ν0 := 0.0
+	ν0 := 0.1
 
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth.μ)
 
