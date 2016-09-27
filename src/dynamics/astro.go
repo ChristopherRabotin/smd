@@ -5,7 +5,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/soniakeys/meeus/elliptic"
+	"github.com/gonum/matrix/mat64"
 )
 
 /* Handles the astrodynamics. */
@@ -13,38 +13,36 @@ import (
 
 // Orbit defines an orbit via its orbital elements.
 type Orbit struct {
-	a float64 // Semimajor axis, a, in km
-	e float64 // Eccentricity, e
-	i float64 // Inclination, i, in radians
-	ω float64 // Argument of perihelion, ω, in radians
-	Ω float64 // Longitude of ascending node, Ω, in radians
-	ν float64 // True anomaly, in radians
-	μ float64 // Gravitational constant of the center of orbit.
+	R []float64 // Radius vector
+	V []float64 // Velocity vector
+	μ float64   // Gravitational constant of the center of orbit.
 }
 
-// NewOE returns an Orbit definition.
-func NewOE(a, e, i, ω, Ω, ν, μ float64) *Orbit {
-	return &Orbit{a, e, i, ω, Ω, ν, μ}
-}
-
-// NewOEFromRV returns orbital elements from the R and V vectors. Needed for prop
-func NewOEFromRV(R, V [3]float64) *Orbit {
-	return nil
-}
-
-// GetRV returns the R and V vectors in the ECFI frame.
-func (o *Orbit) GetRV() (R, V []float64) {
-	p := o.a * (1.0 - math.Pow(o.e, 2)) // semi-parameter
+// NewOrbitFromOE creates an orbit from the orbital elements.
+func NewOrbitFromOE(a, e, i, ω, Ω, ν, μ float64) *Orbit {
+	p := a * (1.0 - math.Pow(e, 2)) // semi-parameter
+	R, V := []float64{}, []float64{}
 	// Compute R and V in the perifocal frame (PQW).
-	R[0] = p * math.Cos(o.ν) / (1 + o.e*math.Cos(o.ν))
-	R[1] = p * math.Sin(o.ν) / (1 + o.e*math.Cos(o.ν))
+	R[0] = p * math.Cos(ν) / (1 + e*math.Cos(ν))
+	R[1] = p * math.Sin(ν) / (1 + e*math.Cos(ν))
 	R[2] = 0
-	V[0] = -math.Sqrt(o.μ/p) * math.Sin(o.ν)
-	V[1] = math.Sqrt(o.μ/p) * (o.e + math.Cos(o.ν))
+	V[0] = -math.Sqrt(μ/p) * math.Sin(ν)
+	V[1] = math.Sqrt(μ/p) * (e + math.Cos(ν))
 	V[2] = 0
 	// Compute ECI rotation.
-	R = PQW2ECI(o.i, o.ω, o.Ω, R)
-	V = PQW2ECI(o.i, o.ω, o.Ω, V)
+	R = PQW2ECI(i, ω, Ω, R)
+	V = PQW2ECI(i, ω, Ω, V)
+	return &Orbit{R, V, μ}
+}
+
+// NewOrbit returns orbital elements from the R and V vectors. Needed for prop
+func NewOrbit(R, V []float64, μ float64) *Orbit {
+	return &Orbit{R, V, μ}
+}
+
+// GetOE returns the orbital elements of this orbit.
+func (o *Orbit) GetOE() (a, e, i, ω, Ω, ν float64) {
+	// TODO
 	return
 }
 
@@ -53,7 +51,7 @@ func (o *Orbit) GetRV() (R, V []float64) {
 type Astrocodile struct {
 	Center    *CelestialObject
 	Vehicle   *Spacecraft
-	Orbit     *elliptic.Elements
+	Orbit     *Orbit
 	StartDT   *time.Time
 	EndDT     *time.Time
 	CurrentDT *time.Time
@@ -61,10 +59,9 @@ type Astrocodile struct {
 	stepSize  float64 // This duplicates information a bit but is needed for the duration.
 }
 
-// NewAstroFromRV returns a new Astrocodile instance from the position and velocity vectors.
-func NewAstroFromRV(c *CelestialObject, s *Spacecraft, R, V []float64, start, end *time.Time) *Astrocodile {
-	return nil
-	//return &Astrocodile{c, s, oe, start, end, start, make(bool, 1), 1e-6}
+// NewAstro returns a new Astrocodile instance from the position and velocity vectors.
+func NewAstro(c *CelestialObject, s *Spacecraft, R, V []float64, start, end *time.Time) *Astrocodile {
+	return &Astrocodile{c, s, NewOrbit(R, V, c.μ), start, end, start, make(chan (bool), 1), 1e-6}
 }
 
 // Propagate starts the propagation.
@@ -76,19 +73,39 @@ func (a *Astrocodile) Propagate() {
 func (a *Astrocodile) Stop(i uint64) bool {
 	// TODO: Add the waiting on the channel and block it.
 	// Possibly need an attribute and a listening goroutine.
+	// a.CurrentDT.Add(a.stepSize * time.Second)
 	return true
 }
 
 // GetState returns the state for the integrator.
-func (a *Astrocodile) GetState() []float64 {
-	return nil
+func (a *Astrocodile) GetState() (s []float64) {
+	s[0] = a.Orbit.R[0]
+	s[1] = a.Orbit.R[1]
+	s[2] = a.Orbit.R[2]
+	s[3] = a.Orbit.V[0]
+	s[4] = a.Orbit.V[1]
+	s[5] = a.Orbit.V[2]
+	return
 }
 
 // SetState sets the updated state.
 func (a *Astrocodile) SetState(i uint64, s []float64) {
+	a.Orbit.R[0] = s[0]
+	a.Orbit.R[1] = s[1]
+	a.Orbit.R[2] = s[2]
+	a.Orbit.V[0] = s[3]
+	a.Orbit.V[1] = s[4]
+	a.Orbit.V[2] = s[5]
 }
 
 // Func is the integration function.
-func (a *Astrocodile) Func(t float64, s []float64) []float64 {
-	return nil
+func (a *Astrocodile) Func(t float64, s []float64) (f []float64) {
+	r := mat64.Norm(mat64.NewVector(3, []float64{s[0], s[1], s[2]}), 2)
+	f[0] = s[3]
+	f[1] = s[4]
+	f[2] = s[5]
+	f[3] = a.Orbit.μ * s[0] / math.Pow(r, 3)
+	f[4] = a.Orbit.μ * s[1] / math.Pow(r, 3)
+	f[5] = a.Orbit.μ * s[2] / math.Pow(r, 3)
+	return
 }
