@@ -45,11 +45,16 @@ func (s *MRP) Equals(o *MRP) bool {
 }
 
 func (s *MRP) squared() float64 {
-	return s.s1*s.s1 + s.s2*s.s2 + s.s3*s.s3
+	afl := s.floatArray()
+	return dot(afl, afl)
 }
 
 func (s *MRP) norm() float64 {
-	return math.Sqrt(s.squared())
+	return norm(s.floatArray())
+}
+
+func (s *MRP) floatArray() []float64 {
+	return []float64{s.s1, s.s2, s.s3}
 }
 
 // Short refreshes this MRP representation to use its short notation.

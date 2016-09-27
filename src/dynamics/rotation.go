@@ -11,10 +11,7 @@ func PQW2ECI(i, ω, Ω float64, vI []float64) (v []float64) {
 	mulM := mat64.NewDense(3, 3, nil)
 	mulM.Mul(R1(-i), R3(-ω))
 	mulM.Mul(R3(-Ω), mulM)
-	mulM.Mul(mulM, mat64.NewVector(3, vI))
-	v[0] = mulM.At(0, 0)
-	v[1] = mulM.At(1, 0)
-	v[2] = mulM.At(2, 0)
+	v = MxV33(mulM, vI)
 	return
 }
 
