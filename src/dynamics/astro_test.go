@@ -9,7 +9,7 @@ import (
 /* Testing here should propagate a given a orbit which is created via OEs and check that only nu changes.*/
 
 const (
-	eps = 1e-8
+	eps = 1e-10
 )
 
 func floatEqual(a, b float64) (bool, error) {
@@ -17,7 +17,7 @@ func floatEqual(a, b float64) (bool, error) {
 	if diff < eps {
 		return true, nil
 	}
-	return false, fmt.Errorf("difference of %3.6f", diff)
+	return false, fmt.Errorf("difference of %3.10f", diff)
 }
 
 func TestOrbitDefinition(t *testing.T) {
@@ -40,11 +40,11 @@ func TestOrbitDefinition(t *testing.T) {
 	if ok, err := floatEqual(i0, i1); !ok {
 		t.Fatalf("inclination invalid: %s", err)
 	}
-	if ok, err := floatEqual(ω0, ω1); !ok {
-		t.Fatalf("argument of perigee invalid: %s", err)
-	}
 	if ok, err := floatEqual(Ω0, Ω1); !ok {
 		t.Fatalf("RAAN invalid: %s", err)
+	}
+	if ok, err := floatEqual(ω0, ω1); !ok {
+		t.Fatalf("argument of perigee invalid: %s", err)
 	}
 	if ok, err := floatEqual(ν0, ν1); !ok {
 		t.Fatalf("true anomaly invalid: %s", err)

@@ -46,22 +46,21 @@ func (o *Orbit) GetOE() (a, e, i, ω, Ω, ν float64) {
 		o.R[2]*o.V[0] - o.R[0]*o.V[2],
 		o.R[0]*o.V[1] - o.R[1]*o.V[0]} // Cross product R x V.
 
-	N := []float64{-o.V[1], o.V[0], 0}
+	N := []float64{-h[1], h[0], 0}
 
 	eVec := make([]float64, 3)
 	for j := 0; j < 3; j++ {
-		eVec[j] = math.Pow(norm(o.V), 2) - o.R[j]*o.μ/norm(o.R) - dot(o.R, o.V)/o.μ*o.V[j]
+		eVec[j] = ((math.Pow(norm(o.V), 2)-o.μ/norm(o.R))*o.R[j] - dot(o.R, o.V)*o.V[j]) / o.μ
 	}
 	e = norm(eVec) // Eccentricity
 	// We suppose the orbit is NOT parabolic.
-	a = -o.μ / (2 * (0.5*dot(o.V, o.V) - o.μ/norm(o.V)))
+	a = -o.μ / (2 * (0.5*dot(o.V, o.V) - o.μ/norm(o.R)))
 	i = math.Acos(h[2] / norm(h))
 	Ω = math.Acos(N[0] / norm(N))
 
 	if N[1] < 0 { // Quadrant check.
 		Ω = 2*math.Pi - Ω
 	}
-
 	ω = math.Acos(dot(N, eVec) / (norm(N) * e))
 	if eVec[2] < 0 { // Quadrant check
 		ω = 2*math.Pi - ω

@@ -21,6 +21,10 @@ func deg2rad(a float64) float64 {
 	return a / 180.0 * 2 * math.Pi
 }
 
+func rad2deg(a float64) float64 {
+	return a / (2 * math.Pi) * 180.0
+}
+
 // MxV33 multiplies a matrix with a vector. Note that there is no dimension check!
 func MxV33(m *mat64.Dense, v []float64) (o []float64) {
 	o = make([]float64, 3)
