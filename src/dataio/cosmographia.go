@@ -159,7 +159,11 @@ func ParseInterpolatedStates(s string) []*CgInterpolatedState {
 
 // StreamInterpolatedStates streams the output of the channel to the provided file.
 func StreamInterpolatedStates(filename string, histChan <-chan (*CgInterpolatedState)) {
+	//t := time.Now()
+	//filename = fmt.Sprintf("%s-%d-%02d-%02dT%02d.%02d.%02d.xyzv", filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+	filename = fmt.Sprintf("%s.xyzv", filename)
 	f, err := os.Create(filename)
+	fmt.Printf("Saving file to %s.\n", f.Name())
 	if err != nil {
 		panic(err)
 	}
@@ -168,7 +172,7 @@ func StreamInterpolatedStates(filename string, histChan <-chan (*CgInterpolatedS
 	for {
 		state, more := <-histChan
 		if more {
-			_, err := f.WriteString(state.ToText())
+			_, err := f.WriteString(state.ToText() + "\n")
 			if err != nil {
 				panic(err)
 			}

@@ -2,8 +2,8 @@ package dynamics
 
 import (
 	"dataio"
-	"fmt"
 	"integrator"
+	"log"
 	"math"
 	"time"
 
@@ -102,8 +102,6 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 	// If no filepath is provided, then no output will be written.
 	var histChan chan (*dataio.CgInterpolatedState)
 	if filepath != "" {
-		t := time.Now()
-		filepath = fmt.Sprintf("output/%s-%d-%02d-%02dT%02d:%02d:%02d-00:00", filepath, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 		histChan = make(chan (*dataio.CgInterpolatedState), 10000) // a 10k entry buffer
 		go dataio.StreamInterpolatedStates(filepath, histChan)
 	} else {
@@ -113,6 +111,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan}
 	// Write the first data point.
 	if histChan != nil {
+		log.Printf("R=%+v V=%+v", a.Orbit.R, a.Orbit.V)
 		histChan <- &dataio.CgInterpolatedState{JS: julian.TimeToJD(*start), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	}
 	return a
@@ -127,10 +126,16 @@ func (a *Astrocodile) Propagate() {
 func (a *Astrocodile) Stop(i uint64) bool {
 	select {
 	case <-a.StopChan:
+		if a.histChan != nil {
+			close(a.histChan)
+		}
 		return true // Stop because there is a request to stop.
 	default:
 		*a.CurrentDT = a.CurrentDT.Add(time.Duration(uint64(float64(i)*stepSize)) * time.Nanosecond)
 		if a.CurrentDT.Sub(*a.EndDT).Nanoseconds() > 0 {
+			if a.histChan != nil {
+				close(a.histChan)
+			}
 			return true // Stop, we've reached the end of the simulation.
 		}
 	}
@@ -151,7 +156,9 @@ func (a *Astrocodile) GetState() (s []float64) {
 
 // SetState sets the updated state.
 func (a *Astrocodile) SetState(i uint64, s []float64) {
-	a.histChan <- &dataio.CgInterpolatedState{JS: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
+	if a.histChan != nil {
+		a.histChan <- &dataio.CgInterpolatedState{JS: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
+	}
 	a.Orbit.R[0] = s[0]
 	a.Orbit.R[1] = s[1]
 	a.Orbit.R[2] = s[2]
