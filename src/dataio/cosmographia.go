@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -154,4 +155,25 @@ func ParseInterpolatedStates(s string) []*CgInterpolatedState {
 	}
 
 	return states
+}
+
+// StreamInterpolatedStates streams the output of the channel to the provided file.
+func StreamInterpolatedStates(filename string, histChan <-chan (*CgInterpolatedState)) {
+	f, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	// Read from channel
+	for {
+		state, more := <-histChan
+		if more {
+			_, err := f.WriteString(state.ToText())
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			return // Channel is closed.
+		}
+	}
 }

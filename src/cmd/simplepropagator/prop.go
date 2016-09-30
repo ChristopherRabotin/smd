@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -28,14 +27,9 @@ func main() {
 	// Define propagation parameters.
 	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
 	end := start.Add(time.Duration(1) * time.Second)
-	astro := dynamics.NewAstro(&dynamics.Spacecraft{Name: "test", Mass: 1500}, o, &start, &end)
+	astro := dynamics.NewAstro(&dynamics.Spacecraft{Name: "test", Mass: 1500}, o, &start, &end, "../data/prop-")
 	// Start propagation.
 	logger.Log("starting propagation")
 	astro.Propagate()
 	logger.Log("propagation ended")
-	logger.Log("writing to file")
-	t := time.Now()
-	file := fmt.Sprintf("output/prop-%d-%02d-%02dT%02d:%02d:%02d-00:00", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
-	ioutil.WriteFile(file, []byte(astro.Export()), 0644)
-	logger.Log("export done")
 }

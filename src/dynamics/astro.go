@@ -2,6 +2,7 @@ package dynamics
 
 import (
 	"dataio"
+	"fmt"
 	"integrator"
 	"math"
 	"time"
@@ -93,15 +94,27 @@ type Astrocodile struct {
 	EndDT     *time.Time
 	CurrentDT *time.Time
 	StopChan  chan (bool)
-	stateHist []*dataio.CgInterpolatedState
+	histChan  chan<- (*dataio.CgInterpolatedState)
 }
 
 // NewAstro returns a new Astrocodile instance from the position and velocity vectors.
-func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time) *Astrocodile {
-	stateCount := uint64(end.Sub(*start).Nanoseconds() / stepSize)
-	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), make([]*dataio.CgInterpolatedState, stateCount)}
+func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *Astrocodile {
+	// If no filepath is provided, then no output will be written.
+	var histChan chan (*dataio.CgInterpolatedState)
+	if filepath != "" {
+		t := time.Now()
+		filepath = fmt.Sprintf("output/%s-%d-%02d-%02dT%02d:%02d:%02d-00:00", filepath, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+		histChan = make(chan (*dataio.CgInterpolatedState), 10000) // a 10k entry buffer
+		go dataio.StreamInterpolatedStates(filepath, histChan)
+	} else {
+		histChan = nil
+	}
+
+	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan}
 	// Write the first data point.
-	a.stateHist[0] = &dataio.CgInterpolatedState{JS: julian.TimeToJD(*start), Position: a.Orbit.R, Velocity: a.Orbit.V}
+	if histChan != nil {
+		histChan <- &dataio.CgInterpolatedState{JS: julian.TimeToJD(*start), Position: a.Orbit.R, Velocity: a.Orbit.V}
+	}
 	return a
 }
 
@@ -138,7 +151,7 @@ func (a *Astrocodile) GetState() (s []float64) {
 
 // SetState sets the updated state.
 func (a *Astrocodile) SetState(i uint64, s []float64) {
-	a.stateHist[i] = &dataio.CgInterpolatedState{JS: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
+	a.histChan <- &dataio.CgInterpolatedState{JS: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	a.Orbit.R[0] = s[0]
 	a.Orbit.R[1] = s[1]
 	a.Orbit.R[2] = s[2]
@@ -158,13 +171,4 @@ func (a *Astrocodile) Func(t float64, s []float64) (f []float64) {
 	f[4] = s[1] * vFactor
 	f[5] = s[2] * vFactor
 	return
-}
-
-// Export returns the propagated trajectory for Cosmographia.
-func (a *Astrocodile) Export() string {
-	rtn := ""
-	for _, record := range a.stateHist {
-		rtn += record.ToText() + "\n"
-	}
-	return rtn
 }
