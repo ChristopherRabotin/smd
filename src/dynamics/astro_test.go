@@ -63,7 +63,7 @@ func TestAstrocro(t *testing.T) {
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, &Earth)
 	// Define propagation parameters.
 	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
-	end := start.Add(time.Duration(1) * time.Second)
+	end := start.Add(time.Duration(1) * time.Minute)
 	astro := NewAstro(&Spacecraft{"test", 1500}, o, &start, &end, "")
 	// Start propagation.
 	go astro.Propagate()

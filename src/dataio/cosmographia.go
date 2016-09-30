@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // CgCatalog definiton.
@@ -95,7 +96,7 @@ type CgTrajectoryPlot struct {
 
 // CgInterpolatedState definiton.
 type CgInterpolatedState struct {
-	JS       float64
+	JD       float64
 	Position []float64
 	Velocity []float64
 }
@@ -106,7 +107,7 @@ func (i *CgInterpolatedState) FromText(record []string) {
 	if val, err := strconv.ParseFloat(record[0], 64); err != nil {
 		panic(err)
 	} else {
-		i.JS = val
+		i.JD = val
 	}
 
 	if posX, err := strconv.ParseFloat(record[1], 64); err != nil {
@@ -132,7 +133,7 @@ func (i *CgInterpolatedState) FromText(record []string) {
 
 // ToText converts to text for written output.
 func (i *CgInterpolatedState) ToText() string {
-	return fmt.Sprintf("%f %f %f %f %f %f %f", i.JS, i.Position[0], i.Position[1], i.Position[2], i.Velocity[0], i.Velocity[1], i.Velocity[2])
+	return fmt.Sprintf("%f %f %f %f %f %f %f", i.JD, i.Position[0], i.Position[1], i.Position[2], i.Velocity[0], i.Velocity[1], i.Velocity[2])
 }
 
 // ParseInterpolatedStates takes a string and converts that into a CgInterpolatedState.
@@ -158,10 +159,13 @@ func ParseInterpolatedStates(s string) []*CgInterpolatedState {
 }
 
 // StreamInterpolatedStates streams the output of the channel to the provided file.
-func StreamInterpolatedStates(filename string, histChan <-chan (*CgInterpolatedState)) {
-	//t := time.Now()
-	//filename = fmt.Sprintf("%s-%d-%02d-%02dT%02d.%02d.%02d.xyzv", filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
-	filename = fmt.Sprintf("%s.xyzv", filename)
+func StreamInterpolatedStates(filename string, histChan <-chan (*CgInterpolatedState), stamped bool) {
+	if stamped {
+		t := time.Now()
+		filename = fmt.Sprintf("%s-%d-%02d-%02dT%02d.%02d.%02d.xyzv", filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+	} else {
+		filename = fmt.Sprintf("%s.xyzv", filename)
+	}
 	f, err := os.Create(filename)
 	fmt.Printf("Saving file to %s.\n", f.Name())
 	if err != nil {
@@ -169,9 +173,15 @@ func StreamInterpolatedStates(filename string, histChan <-chan (*CgInterpolatedS
 	}
 	defer f.Close()
 	// Read from channel
+	previousJD := 0.0
 	for {
 		state, more := <-histChan
 		if more {
+			// Only write one data point per julian date.
+			if state.JD-previousJD == 0 {
+				continue
+			}
+			previousJD = state.JD
 			_, err := f.WriteString(state.ToText() + "\n")
 			if err != nil {
 				panic(err)

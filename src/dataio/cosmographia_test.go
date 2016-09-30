@@ -199,7 +199,7 @@ func TestInterpolatedStatesImport(t *testing.T) {
 		if i == 0 {
 			continue
 		}
-		if states[i-1].JS > state.JS || states[i-1].Position[0] > state.Position[0] || states[i-1].Velocity[1] > state.Velocity[1] {
+		if states[i-1].JD > state.JD || states[i-1].Position[0] > state.Position[0] || states[i-1].Velocity[1] > state.Velocity[1] {
 			t.Fatalf("State %d is not as expected: \n%+v\n%+v", i, states[i-1], state)
 		}
 	}

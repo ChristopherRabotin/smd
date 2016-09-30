@@ -13,8 +13,8 @@ func main() {
 	// Eutelsat 117W (2016-038A)
 	rP := 395.0
 	rA := 62591.0
-	a0 := rP + rA
-	e0 := (rA - rP) / 2
+	a0 := (rP + rA) / 2
+	e0 := (rA - rP) / (rA + rP)
 	i0 := dynamics.Deg2rad(24.68)
 	ω0 := dynamics.Deg2rad(10)
 	Ω0 := dynamics.Deg2rad(5)

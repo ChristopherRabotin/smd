@@ -3,7 +3,6 @@ package dynamics
 import (
 	"dataio"
 	"integrator"
-	"log"
 	"math"
 	"time"
 
@@ -30,6 +29,9 @@ func NewOrbitFromOE(a, e, i, ω, Ω, ν float64, c *CelestialObject) *Orbit {
 	// Check for edge cases which are not supported.
 	if ν < 1e-10 {
 		panic("ν ~= 0 is not supported")
+	}
+	if e < 0 || e > 1 {
+		panic("only circular and elliptical orbits supported")
 	}
 	μ := c.μ
 	p := a * (1.0 - math.Pow(e, 2)) // semi-parameter
@@ -102,8 +104,8 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 	// If no filepath is provided, then no output will be written.
 	var histChan chan (*dataio.CgInterpolatedState)
 	if filepath != "" {
-		histChan = make(chan (*dataio.CgInterpolatedState), 10000) // a 10k entry buffer
-		go dataio.StreamInterpolatedStates(filepath, histChan)
+		histChan = make(chan (*dataio.CgInterpolatedState), 1000) // a 1k entry buffer
+		go dataio.StreamInterpolatedStates(filepath, histChan, false)
 	} else {
 		histChan = nil
 	}
@@ -111,8 +113,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan}
 	// Write the first data point.
 	if histChan != nil {
-		log.Printf("R=%+v V=%+v", a.Orbit.R, a.Orbit.V)
-		histChan <- &dataio.CgInterpolatedState{JS: julian.TimeToJD(*start), Position: a.Orbit.R, Velocity: a.Orbit.V}
+		histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(*start), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	}
 	return a
 }
@@ -157,7 +158,7 @@ func (a *Astrocodile) GetState() (s []float64) {
 // SetState sets the updated state.
 func (a *Astrocodile) SetState(i uint64, s []float64) {
 	if a.histChan != nil {
-		a.histChan <- &dataio.CgInterpolatedState{JS: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
+		a.histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	}
 	a.Orbit.R[0] = s[0]
 	a.Orbit.R[1] = s[1]
