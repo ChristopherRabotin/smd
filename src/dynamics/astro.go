@@ -121,6 +121,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 // Propagate starts the propagation.
 func (a *Astrocodile) Propagate() {
 	integrator.NewRK4(0, stepSize, a).Solve()
+	// Add a ticker status report based on the duration of the simulation.
 }
 
 // Stop implements the stop call of the integrator.

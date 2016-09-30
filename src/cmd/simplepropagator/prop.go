@@ -23,7 +23,7 @@ func main() {
 	o := dynamics.NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, &dynamics.Earth)
 	// Define propagation parameters.
 	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
-	end := start.Add(time.Duration(1) * time.Second)
+	end := start.Add(time.Duration(24) * time.Hour)
 	astro := dynamics.NewAstro(&dynamics.Spacecraft{Name: "test", Mass: 1500}, o, &start, &end, "../outputdata/prop")
 	// Start propagation.
 	log.Printf("starting propagation")
