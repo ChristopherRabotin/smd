@@ -70,6 +70,9 @@ func TestAstrocro(t *testing.T) {
 	// Check stopping the propagation via the channel.
 	<-time.After(time.Second * 1)
 	astro.StopChan <- true
+	if astro.EndDT.Sub(*astro.CurrentDT).Nanoseconds() <= 0 {
+		t.Log("WARNING: propagation NOT stopped via channel")
+	}
 	// Must find a way to test the stop channel. via a long propagation and a select probably.
 	// Check the orbital elements.
 	a1, e1, i1, ω1, Ω1, ν1 := o.GetOE()
@@ -91,6 +94,6 @@ func TestAstrocro(t *testing.T) {
 	if ok, _ := floatEqual(ν0, ν1); ok {
 		t.Fatalf("true anomaly *unchanged*: ν0=%3.6f ν1=%3.6f", ν0, ν1)
 	} else {
-		t.Logf("ν increased by %5.8f° (step=%0.10f)\n", rad2deg(ν1-ν0), astro.stepSize)
+		t.Logf("ν increased by %5.8f° (step=%0.10f)\n", rad2deg(ν1-ν0), stepSize)
 	}
 }

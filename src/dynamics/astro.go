@@ -1,11 +1,16 @@
 package dynamics
 
 import (
+	"dataio"
 	"integrator"
 	"math"
 	"time"
 
 	"github.com/gonum/matrix/mat64"
+)
+
+const (
+	stepSize = 1e-6
 )
 
 /* Handles the astrodynamics. */
@@ -87,17 +92,18 @@ type Astrocodile struct {
 	EndDT     *time.Time
 	CurrentDT *time.Time
 	StopChan  chan (bool)
-	stepSize  float64 // This duplicates information a bit but is needed for the duration.
+	stateHist []*dataio.CgInterpolatedState
 }
 
 // NewAstro returns a new Astrocodile instance from the position and velocity vectors.
 func NewAstro(c *CelestialObject, s *Spacecraft, o *Orbit, start, end *time.Time) *Astrocodile {
-	return &Astrocodile{c, s, o, start, end, start, make(chan (bool), 1), 1e-4}
+	stateCount := uint(end.Sub(*start).Seconds()/stepSize) + 1
+	return &Astrocodile{c, s, o, start, end, start, make(chan (bool), 1), make([]*dataio.CgInterpolatedState, stateCount)}
 }
 
 // Propagate starts the propagation.
 func (a *Astrocodile) Propagate() {
-	integrator.NewRK4(0, a.stepSize, a).Solve()
+	integrator.NewRK4(0, stepSize, a).Solve()
 }
 
 // Stop implements the stop call of the integrator.
@@ -106,7 +112,7 @@ func (a *Astrocodile) Stop(i uint64) bool {
 	case <-a.StopChan:
 		return true // Stop because there is a request to stop.
 	default:
-		a.CurrentDT.Add(time.Duration(uint64(float64(i)*a.stepSize)) * time.Second)
+		*a.CurrentDT = a.CurrentDT.Add(time.Duration(uint64(float64(i)*stepSize)) * time.Second)
 		if a.CurrentDT.Sub(*a.EndDT).Nanoseconds() > 0 {
 			return true // Stop, we've reached the end of the simulation.
 		}
