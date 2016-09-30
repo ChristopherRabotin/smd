@@ -16,12 +16,13 @@ func dot(a, b []float64) float64 {
 	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
 }
 
-// deg2rad converts degress to radians.
-func deg2rad(a float64) float64 {
+// Deg2rad converts degrees to radians.
+func Deg2rad(a float64) float64 {
 	return a / 180.0 * 2 * math.Pi
 }
 
-func rad2deg(a float64) float64 {
+// Rad2deg converts radians to degrees.
+func Rad2deg(a float64) float64 {
 	return a / (2 * math.Pi) * 180.0
 }
 

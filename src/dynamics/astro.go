@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/gonum/matrix/mat64"
+	"github.com/soniakeys/meeus/julian"
 )
 
 const (
-	stepSize = 1e-6
+	stepSize = 1.0 // in ns
 )
 
 /* Handles the astrodynamics. */
@@ -24,11 +25,12 @@ type Orbit struct {
 }
 
 // NewOrbitFromOE creates an orbit from the orbital elements.
-func NewOrbitFromOE(a, e, i, ω, Ω, ν, μ float64) *Orbit {
+func NewOrbitFromOE(a, e, i, ω, Ω, ν float64, c *CelestialObject) *Orbit {
 	// Check for edge cases which are not supported.
 	if ν < 1e-10 {
 		panic("ν ~= 0 is not supported")
 	}
+	μ := c.μ
 	p := a * (1.0 - math.Pow(e, 2)) // semi-parameter
 	R, V := make([]float64, 3), make([]float64, 3)
 	// Compute R and V in the perifocal frame (PQW).
@@ -45,8 +47,8 @@ func NewOrbitFromOE(a, e, i, ω, Ω, ν, μ float64) *Orbit {
 }
 
 // NewOrbit returns orbital elements from the R and V vectors. Needed for prop
-func NewOrbit(R, V []float64, μ float64) *Orbit {
-	return &Orbit{R, V, μ}
+func NewOrbit(R, V []float64, c *CelestialObject) *Orbit {
+	return &Orbit{R, V, c.μ}
 }
 
 // GetOE returns the orbital elements of this orbit.
@@ -85,7 +87,6 @@ func (o *Orbit) GetOE() (a, e, i, ω, Ω, ν float64) {
 // Astrocodile is an orbit propagator.
 // It's a play on words from STK's Atrogrator.
 type Astrocodile struct {
-	Center    *CelestialObject
 	Vehicle   *Spacecraft
 	Orbit     *Orbit
 	StartDT   *time.Time
@@ -96,9 +97,12 @@ type Astrocodile struct {
 }
 
 // NewAstro returns a new Astrocodile instance from the position and velocity vectors.
-func NewAstro(c *CelestialObject, s *Spacecraft, o *Orbit, start, end *time.Time) *Astrocodile {
-	stateCount := uint(end.Sub(*start).Seconds()/stepSize) + 1
-	return &Astrocodile{c, s, o, start, end, start, make(chan (bool), 1), make([]*dataio.CgInterpolatedState, stateCount)}
+func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time) *Astrocodile {
+	stateCount := uint64(end.Sub(*start).Nanoseconds() / stepSize)
+	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), make([]*dataio.CgInterpolatedState, stateCount)}
+	// Write the first data point.
+	a.stateHist[0] = &dataio.CgInterpolatedState{JS: julian.TimeToJD(*start), Position: a.Orbit.R, Velocity: a.Orbit.V}
+	return a
 }
 
 // Propagate starts the propagation.
@@ -112,7 +116,7 @@ func (a *Astrocodile) Stop(i uint64) bool {
 	case <-a.StopChan:
 		return true // Stop because there is a request to stop.
 	default:
-		*a.CurrentDT = a.CurrentDT.Add(time.Duration(uint64(float64(i)*stepSize)) * time.Second)
+		*a.CurrentDT = a.CurrentDT.Add(time.Duration(uint64(float64(i)*stepSize)) * time.Nanosecond)
 		if a.CurrentDT.Sub(*a.EndDT).Nanoseconds() > 0 {
 			return true // Stop, we've reached the end of the simulation.
 		}
@@ -134,6 +138,7 @@ func (a *Astrocodile) GetState() (s []float64) {
 
 // SetState sets the updated state.
 func (a *Astrocodile) SetState(i uint64, s []float64) {
+	a.stateHist[i] = &dataio.CgInterpolatedState{JS: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	a.Orbit.R[0] = s[0]
 	a.Orbit.R[1] = s[1]
 	a.Orbit.R[2] = s[2]
@@ -153,4 +158,13 @@ func (a *Astrocodile) Func(t float64, s []float64) (f []float64) {
 	f[4] = s[1] * vFactor
 	f[5] = s[2] * vFactor
 	return
+}
+
+// Export returns the propagated trajectory for Cosmographia.
+func (a *Astrocodile) Export() string {
+	rtn := ""
+	for _, record := range a.stateHist {
+		rtn += record.ToText() + "\n"
+	}
+	return rtn
 }

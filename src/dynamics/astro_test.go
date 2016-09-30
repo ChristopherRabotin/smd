@@ -24,12 +24,12 @@ func floatEqual(a, b float64) (bool, error) {
 func TestOrbitDefinition(t *testing.T) {
 	a0 := Earth.Radius + 400
 	e0 := 0.1
-	i0 := deg2rad(38)
-	ω0 := deg2rad(10)
-	Ω0 := deg2rad(5)
+	i0 := Deg2rad(38)
+	ω0 := Deg2rad(10)
+	Ω0 := Deg2rad(5)
 	ν0 := 0.1
 
-	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth.μ)
+	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, &Earth)
 
 	a1, e1, i1, ω1, Ω1, ν1 := o.GetOE()
 	if ok, err := floatEqual(a0, a1); !ok {
@@ -56,15 +56,15 @@ func TestAstrocro(t *testing.T) {
 	// Define a new orbit.
 	a0 := Earth.Radius + 400
 	e0 := 0.1
-	i0 := deg2rad(38)
-	ω0 := deg2rad(10)
-	Ω0 := deg2rad(5)
-	ν0 := deg2rad(1)
-	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth.μ)
+	i0 := Deg2rad(38)
+	ω0 := Deg2rad(10)
+	Ω0 := Deg2rad(5)
+	ν0 := Deg2rad(1)
+	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, &Earth)
 	// Define propagation parameters.
 	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
-	end := start.Add(time.Duration(1) * time.Millisecond)
-	astro := NewAstro(&Earth, &Spacecraft{"test", 1500}, o, &start, &end)
+	end := start.Add(time.Duration(1) * time.Second)
+	astro := NewAstro(&Spacecraft{"test", 1500}, o, &start, &end)
 	// Start propagation.
 	go astro.Propagate()
 	// Check stopping the propagation via the channel.
@@ -94,6 +94,6 @@ func TestAstrocro(t *testing.T) {
 	if ok, _ := floatEqual(ν0, ν1); ok {
 		t.Fatalf("true anomaly *unchanged*: ν0=%3.6f ν1=%3.6f", ν0, ν1)
 	} else {
-		t.Logf("ν increased by %5.8f° (step=%0.10f)\n", rad2deg(ν1-ν0), stepSize)
+		t.Logf("ν increased by %5.8f° (step of %0.3f ns)\n", Rad2deg(ν1-ν0), stepSize)
 	}
 }
