@@ -27,4 +27,4 @@ func (c *CelestialObject) String() string {
 var v87Earth, _ = planetposition.LoadPlanetPath(3, "../dataio/")
 
 // Earth is home.
-var Earth = CelestialObject{"Earth", 5.9742 * 1e24, 6378.1363, globe.Earth76, v87Earth}
+var Earth = CelestialObject{"Earth", 3.986004415 * 1e5, 6378.1363, globe.Earth76, v87Earth}

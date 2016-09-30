@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"time"
 )
 
 /* Testing here should propagate a given a orbit which is created via OEs and check that only nu changes.*/
 
 const (
-	eps = 1e-10
+	eps = 1e-8
 )
 
 func floatEqual(a, b float64) (bool, error) {
@@ -51,7 +52,45 @@ func TestOrbitDefinition(t *testing.T) {
 	}
 }
 
-func TestTwoBodyProp(t *testing.T) {
-	// Must define some items still.
-	//o := NewOrbitFromOE(Earth.Radius+400, 0.1, deg2rad(36), deg2rad(10), deg2rad(5), 0, Earth.μ)
+func TestAstrocro(t *testing.T) {
+	// Define a new orbit.
+	a0 := Earth.Radius + 400
+	e0 := 0.1
+	i0 := deg2rad(38)
+	ω0 := deg2rad(10)
+	Ω0 := deg2rad(5)
+	ν0 := deg2rad(1)
+	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth.μ)
+	// Define propagation parameters.
+	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
+	end := start.Add(time.Duration(1) * time.Millisecond)
+	astro := NewAstro(&Earth, &Spacecraft{"test", 1500}, o, &start, &end)
+	// Start propagation.
+	go astro.Propagate()
+	// Check stopping the propagation via the channel.
+	<-time.After(time.Second * 1)
+	astro.StopChan <- true
+	// Must find a way to test the stop channel. via a long propagation and a select probably.
+	// Check the orbital elements.
+	a1, e1, i1, ω1, Ω1, ν1 := o.GetOE()
+	if ok, err := floatEqual(a0, a1); !ok {
+		t.Fatalf("semi major axis changed: %s", err)
+	}
+	if ok, err := floatEqual(e0, e1); !ok {
+		t.Fatalf("eccentricity changed: %s", err)
+	}
+	if ok, err := floatEqual(i0, i1); !ok {
+		t.Fatalf("inclination changed: %s", err)
+	}
+	if ok, err := floatEqual(Ω0, Ω1); !ok {
+		t.Fatalf("RAAN changed: %s", err)
+	}
+	if ok, err := floatEqual(ω0, ω1); !ok {
+		t.Fatalf("argument of perigee changed: %s", err)
+	}
+	if ok, _ := floatEqual(ν0, ν1); ok {
+		t.Fatalf("true anomaly *unchanged*: ν0=%3.6f ν1=%3.6f", ν0, ν1)
+	} else {
+		t.Logf("ν increased by %5.8f° (step=%0.10f)\n", rad2deg(ν1-ν0), astro.stepSize)
+	}
 }
