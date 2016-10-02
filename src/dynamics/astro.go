@@ -2,6 +2,7 @@ package dynamics
 
 import (
 	"dataio"
+	"fmt"
 	"integrator"
 	"math"
 	"time"
@@ -11,7 +12,7 @@ import (
 )
 
 const (
-	stepSize = 1.0 // in ns
+	stepSize = 1.0
 )
 
 /* Handles the astrodynamics. */
@@ -87,6 +88,12 @@ func (o *Orbit) GetOE() (a, e, i, ω, Ω, ν float64) {
 	return
 }
 
+// String implements the stringer interface.
+func (o *Orbit) String() string {
+	a, e, i, ω, Ω, ν := o.GetOE()
+	return fmt.Sprintf("a=%0.5f e=%0.5f i=%0.5f ω=%0.5f Ω=%0.5f ν=%0.5f", a, e, i, ω, Ω, ν)
+}
+
 // Astrocodile is an orbit propagator.
 // It's a play on words from STK's Atrogrator.
 type Astrocodile struct {
@@ -133,7 +140,7 @@ func (a *Astrocodile) Stop(i uint64) bool {
 		}
 		return true // Stop because there is a request to stop.
 	default:
-		*a.CurrentDT = a.CurrentDT.Add(time.Duration(uint64(float64(i)*stepSize)) * time.Nanosecond)
+		*a.CurrentDT = a.CurrentDT.Add(time.Duration(stepSize) * time.Second)
 		if a.CurrentDT.Sub(*a.EndDT).Nanoseconds() > 0 {
 			if a.histChan != nil {
 				close(a.histChan)
@@ -179,5 +186,14 @@ func (a *Astrocodile) Func(t float64, s []float64) (f []float64) {
 	f[3] = s[0] * vFactor
 	f[4] = s[1] * vFactor
 	f[5] = s[2] * vFactor
+	return
+}
+
+// Helper functions go here.
+
+// Radii2ae returns the semi major axis and the eccentricty from the radii.
+func Radii2ae(rA, rP float64) (a, e float64) {
+	a = (rP + rA) / 2
+	e = (rA - rP) / (rA + rP)
 	return
 }

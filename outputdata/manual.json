@@ -10,7 +10,7 @@
          "center":"Earth",
          "trajectory":{
             "type": "InterpolatedStates",
-            "source": "prop.xyzv"
+            "source": "propEutel.xyzv"
           },
          "label": {
             "color": [
@@ -23,8 +23,40 @@
          },
          "trajectoryPlot": {
             "color": [
+               0.6,
                1,
+               1
+            ],
+            "lineWidth": 1,
+            "duration": "4 d",
+            "lead": "0 d",
+            "fade": 0,
+            "sampleCount": 100
+         }
+      },
+      {
+         "class":"spacecraft",
+         "name":"ISS",
+         "startTime":"2016-10-01 09:00:00.000 UTC",
+         "endTime":"2016-10-03 23:59:00.000 UTC",
+         "center":"Earth",
+         "trajectory":{
+            "type": "InterpolatedStates",
+            "source": "propISS.xyzv"
+          },
+         "label": {
+            "color": [
                1,
+               0.6,
+               1
+            ],
+         "fadeSize": 1000000,
+         "showText": true
+         },
+         "trajectoryPlot": {
+            "color": [
+               1,
+               0.6,
                1
             ],
             "lineWidth": 1,
