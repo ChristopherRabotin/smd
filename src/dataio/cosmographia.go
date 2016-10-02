@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/soniakeys/meeus/julian"
 )
 
 // CgCatalog definiton.
@@ -172,22 +174,32 @@ func StreamInterpolatedStates(filename string, histChan <-chan (*CgInterpolatedS
 		panic(err)
 	}
 	defer f.Close()
+	// Header
+	f.WriteString(fmt.Sprintf(`# Creation date (UTC): %s
+# Records are <jd> <x> <y> <z> <vel x> <vel y> <vel z>
+#   Time is a TDB Julian date
+#   Position in km
+#   Velocity in km/sec`, time.Now()))
 	// Read from channel
 	previousJD := 0.0
 	for {
 		state, more := <-histChan
 		if more {
-			// Only write one data point per julian date.
-			if state.JD-previousJD == 0 {
+			// Only write one data point per julian second.
+			if state.JD-previousJD < 1e-6 {
 				continue
+			} else if previousJD == 0 {
+				// First iteration, let's add the initial time in simulation.
+				f.WriteString(fmt.Sprintf("\n# Simulation time start (UTC): %s", julian.JDToTime(state.JD).UTC()))
 			}
 			previousJD = state.JD
-			_, err := f.WriteString(state.ToText() + "\n")
+			_, err := f.WriteString("\n" + state.ToText())
 			if err != nil {
 				panic(err)
 			}
 		} else {
-			return // Channel is closed.
+			f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", julian.JDToTime(previousJD).UTC()))
+			return
 		}
 	}
 }

@@ -11,8 +11,8 @@ import (
 func main() {
 	log.Println("Simple orbit propagator and visualizer.")
 	// Eutelsat 117W (2016-038A)
-	rP := 395.0
-	rA := 62591.0
+	rP := 395.0 + dynamics.Earth.Radius
+	rA := 62591.0 + dynamics.Earth.Radius
 	a0 := (rP + rA) / 2
 	e0 := (rA - rP) / (rA + rP)
 	i0 := dynamics.Deg2rad(24.68)
@@ -22,8 +22,8 @@ func main() {
 	log.Println(fmt.Sprintf("[Orbit] Body %s a=%0.5f e=%0.5f i=%0.5f ω=%0.5f Ω=%0.5f ν=%0.5f", dynamics.Earth.Name, a0, e0, i0, ω0, Ω0, ν0))
 	o := dynamics.NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, &dynamics.Earth)
 	// Define propagation parameters.
-	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
-	end := start.Add(time.Duration(24) * time.Hour)
+	start := time.Now() // Propagate starting now for ease.
+	end := start.Add(time.Duration(1) * time.Hour)
 	astro := dynamics.NewAstro(&dynamics.Spacecraft{Name: "test", Mass: 1500}, o, &start, &end, "../outputdata/prop")
 	// Start propagation.
 	log.Printf("starting propagation")
