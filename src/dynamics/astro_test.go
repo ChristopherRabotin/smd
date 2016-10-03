@@ -63,15 +63,15 @@ func TestAstrocro(t *testing.T) {
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, &Earth)
 	// Define propagation parameters.
 	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
-	end := start.Add(time.Duration(1) * time.Minute)
+	end := start.Add(time.Duration(1) * time.Hour)
 	astro := NewAstro(&Spacecraft{"test", 1500}, o, &start, &end, "")
 	// Start propagation.
 	go astro.Propagate()
 	// Check stopping the propagation via the channel.
-	<-time.After(time.Second * 1)
+	<-time.After(time.Millisecond * 10)
 	astro.StopChan <- true
 	if astro.EndDT.Sub(*astro.CurrentDT).Nanoseconds() <= 0 {
-		t.Log("WARNING: propagation NOT stopped via channel")
+		t.Fatal("WARNING: propagation NOT stopped via channel")
 	}
 	// Must find a way to test the stop channel. via a long propagation and a select probably.
 	// Check the orbital elements.
