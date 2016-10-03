@@ -68,7 +68,7 @@ func TestAstrocro(t *testing.T) {
 	// Start propagation.
 	go astro.Propagate()
 	// Check stopping the propagation via the channel.
-	<-time.After(time.Millisecond * 10)
+	<-time.After(time.Millisecond * 1)
 	astro.StopChan <- true
 	if astro.EndDT.Sub(*astro.CurrentDT).Nanoseconds() <= 0 {
 		t.Fatal("WARNING: propagation NOT stopped via channel")

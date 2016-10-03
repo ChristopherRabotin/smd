@@ -16,6 +16,13 @@ func dot(a, b []float64) float64 {
 	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
 }
 
+// cross performs the inner product.
+func cross(a, b []float64) []float64 {
+	return []float64{a[1]*b[2] - a[2]*b[1],
+		a[2]*b[0] - a[0]*b[2],
+		a[0]*b[1] - a[1]*b[0]} // Cross product R x V.
+}
+
 // Deg2rad converts degrees to radians.
 func Deg2rad(a float64) float64 {
 	return a / 180.0 * 2 * math.Pi
