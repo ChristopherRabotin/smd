@@ -64,7 +64,7 @@ func TestAstrocro(t *testing.T) {
 	// Define propagation parameters.
 	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
 	end := start.Add(time.Duration(1) * time.Hour)
-	astro := NewAstro(&Spacecraft{"test", 1500}, o, &start, &end, "")
+	astro := NewAstro(NewEmptySC("test", 1500), o, &start, &end, "")
 	// Start propagation.
 	go astro.Propagate()
 	// Check stopping the propagation via the channel.

@@ -78,3 +78,15 @@ func (o *Orbit) String() string {
 	a, e, i, ω, Ω, ν := o.GetOE()
 	return fmt.Sprintf("a=%0.5f e=%0.5f i=%0.5f ω=%0.5f Ω=%0.5f ν=%0.5f", a, e, i, ω, Ω, ν)
 }
+
+// Helper functions go here.
+
+// Radii2ae returns the semi major axis and the eccentricty from the radii.
+func Radii2ae(rA, rP float64) (a, e float64) {
+	if rA < rP {
+		panic("periapsis cannot be greater than apoapsis")
+	}
+	a = (rP + rA) / 2
+	e = (rA - rP) / (rA + rP)
+	return
+}

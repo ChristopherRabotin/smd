@@ -56,6 +56,7 @@ func (a *Astrocodile) Propagate() {
 // Stop implements the stop call of the integrator.
 func (a *Astrocodile) Stop(i uint64) bool {
 	select {
+	// TODO: Change this to a call to Spacecraft given the orbit information.
 	case <-a.StopChan:
 		if a.histChan != nil {
 			close(a.histChan)
@@ -102,20 +103,12 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 func (a *Astrocodile) Func(t float64, s []float64) (f []float64) {
 	vFactor := -a.Orbit.μ / math.Pow(mat64.Norm(mat64.NewVector(3, []float64{s[0], s[1], s[2]}), 2), 3)
 	f = make([]float64, 6)
+	thrust := a.Vehicle.Acceleration(a.CurrentDT, a.Orbit) / 3
 	f[0] = s[3]
 	f[1] = s[4]
 	f[2] = s[5]
-	f[3] = s[0] * vFactor
-	f[4] = s[1] * vFactor
-	f[5] = s[2] * vFactor
-	return
-}
-
-// Helper functions go here.
-
-// Radii2ae returns the semi major axis and the eccentricty from the radii.
-func Radii2ae(rA, rP float64) (a, e float64) {
-	a = (rP + rA) / 2
-	e = (rA - rP) / (rA + rP)
+	f[3] = s[0]*vFactor + thrust
+	f[4] = s[1]*vFactor + thrust
+	f[5] = s[2]*vFactor + thrust
 	return
 }
