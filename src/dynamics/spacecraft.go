@@ -1,6 +1,9 @@
 package dynamics
 
-import "time"
+import (
+	"log"
+	"time"
+)
 
 // Spacecraft defines a new spacecraft.
 type Spacecraft struct {
@@ -23,27 +26,28 @@ func (sc *Spacecraft) Mass(dt *time.Time) (m float64) {
 	return
 }
 
-// Acceleration returns the acceleration to be applied at a given orbital position.
+// Thrust returns the thrust to be applied at a given orbital position.
 // Keeps track of the thrust applied by all thrusters, the mass changes, and necessary optmizations.
-func (sc *Spacecraft) Acceleration(dt *time.Time, o *Orbit) float64 {
+func (sc *Spacecraft) Thrust(dt *time.Time, o *Orbit) float64 {
 	// Here goes the optimizations based on the available power and whether the goal has been reached.
 	thrust := 0.0
 	for _, wp := range sc.WayPoints {
 		if !wp.cleared {
 			if wp.Reached(o) {
 				wp.cleared = true
+				log.Println("waypoint reached")
 				continue // Move on to next waypoint.
 			}
 			for _, thruster := range sc.Thrusters {
 				// TODO: Find a way to optimize the thrust?
-				tThrust, tMass := thruster.Thrust(thruster.Min())
+				tThrust, tMass := thruster.Thrust(thruster.Max())
 				thrust += tThrust
 				sc.FuelMass -= tMass
 			}
-			break // No need to check subsequent waypoints.
+			break
 		}
 	}
-	return thrust / sc.Mass(dt)
+	return thrust
 }
 
 // NewEmptySC returns a spacecraft with no cargo and no thrusters.
