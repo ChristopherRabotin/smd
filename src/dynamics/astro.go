@@ -76,12 +76,14 @@ func (a *Astrocodile) Stop(i uint64) bool {
 // GetState returns the state for the integrator.
 func (a *Astrocodile) GetState() (s []float64) {
 	s = make([]float64, 6)
-	s[0] = a.Orbit.R[0]
-	s[1] = a.Orbit.R[1]
-	s[2] = a.Orbit.R[2]
-	s[3] = a.Orbit.V[0]
-	s[4] = a.Orbit.V[1]
-	s[5] = a.Orbit.V[2]
+	rVec := Cartesian2Spherical(a.Orbit.R)
+	vVec := Cartesian2Spherical(a.Orbit.V)
+	s[0] = rVec[0]
+	s[1] = rVec[1]
+	s[2] = rVec[2]
+	s[3] = vVec[0]
+	s[4] = vVec[1]
+	s[5] = vVec[2]
 	return
 }
 
@@ -90,43 +92,30 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	if a.histChan != nil {
 		a.histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	}
-	a.Orbit.R[0] = s[0]
-	a.Orbit.R[1] = s[1]
-	a.Orbit.R[2] = s[2]
-	a.Orbit.V[0] = s[3]
-	a.Orbit.V[1] = s[4]
-	a.Orbit.V[2] = s[5]
+	a.Orbit.R = Spherical2Cartesian([]float64{s[0], s[1], s[2]})
+	a.Orbit.V = Spherical2Cartesian([]float64{s[3], s[4], s[5]})
 }
 
 // Func is the integration function.
-func (a *Astrocodile) Func(t float64, s []float64) (f []float64) {
-	f = make([]float64, 6) // init return vector
-	rNorm := norm([]float64{s[0], s[1], s[2]})
+func (a *Astrocodile) Func(t float64, x []float64) (xDot []float64) {
+	xDot = make([]float64, 6) // init return vector
+	// helpers
+	r := x[0]
+	//θ := x[1] // Unused?!
+	φ := x[2]
+	vr := x[3]
+	vθ := x[4]
+	vφ := x[5]
+
+	xDot[0] = vr
+	xDot[1] = vθ / (r * math.Cos(φ))
+	xDot[2] = vφ / r
+	xDot[3] = (math.Pow(vθ, 2)+math.Pow(vφ, 2))/r - a.Orbit.μ/math.Pow(r, 2)
+	xDot[4] = vθ * (vφ*math.Tan(φ) - vr) / r
+	xDot[5] = -(vr*vφ + math.Pow(vθ, 2)*math.Tan(φ)) / r
+
 	/*if rNorm <= Earth.Radius {
 		log.Printf("[COLLISION WARNING] t=%s |R| = %5.5f", a.CurrentDT, rNorm)
 	}*/
-	vFactor := -a.Orbit.μ / math.Pow(rNorm, 3)
-	// deltaV is the instantenous acceleration, hence a velocity.
-	deltaV := []float64{s[0] * vFactor, s[1] * vFactor, s[2] * vFactor}
-	thrust := a.Vehicle.Acceleration(a.CurrentDT, a.Orbit)
-	if thrust > 0 {
-		// Let's *add* the thrust to the velocity vector.
-		// Let's convert the new velocity to spherical coordinates and make sure that we thrust
-		// in order to increase the semi-major axis.
-		velocity := []float64{s[3], s[4], s[5]}
-		dVSphThrust := Cartesian2Spherical(velocity)
-		dVSphThrust[0] = norm(deltaV) + thrust
-		// Convert back to Cartesian coordinates.
-		dVThrust := Spherical2Cartesian(dVSphThrust)
-		for i := 0; i < 3; i++ {
-			s[i+3] += dVThrust[i]
-		}
-	}
-	f[0] = s[3]
-	f[1] = s[4]
-	f[2] = s[5]
-	f[3] = deltaV[0]
-	f[4] = deltaV[1]
-	f[5] = deltaV[2]
 	return
 }
