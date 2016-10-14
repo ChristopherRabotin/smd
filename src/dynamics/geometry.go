@@ -23,6 +23,29 @@ func cross(a, b []float64) []float64 {
 		a[0]*b[1] - a[1]*b[0]} // Cross product R x V.
 }
 
+// Spherical2Cartesian returns the provided spherical coordinates vector in Cartesian.
+func Spherical2Cartesian(a []float64) (b []float64) {
+	b = make([]float64, 3)
+	sθ, cθ := math.Sincos(a[1])
+	sφ, cφ := math.Sincos(a[2])
+	b[0] = a[0] * sθ * cφ
+	b[1] = a[0] * sθ * sφ
+	b[2] = a[0] * cθ
+	return
+}
+
+// Cartesian2Spherical returns the provided Cartesian coordinates vector in spherical.
+func Cartesian2Spherical(a []float64) (b []float64) {
+	b = make([]float64, 3)
+	if norm(a) == 0 {
+		return []float64{0, 0, 0}
+	}
+	b[0] = norm(a)
+	b[1] = math.Acos(a[2] / b[0])
+	b[2] = math.Atan2(a[1], a[0])
+	return
+}
+
 // Deg2rad converts degrees to radians.
 func Deg2rad(a float64) float64 {
 	return a / 180.0 * 2 * math.Pi

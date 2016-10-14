@@ -26,9 +26,9 @@ func (sc *Spacecraft) Mass(dt *time.Time) (m float64) {
 	return
 }
 
-// Thrust returns the thrust to be applied at a given orbital position.
+// Acceleration returns the acceleration to be applied at a given orbital position.
 // Keeps track of the thrust applied by all thrusters, the mass changes, and necessary optmizations.
-func (sc *Spacecraft) Thrust(dt *time.Time, o *Orbit) float64 {
+func (sc *Spacecraft) Acceleration(dt *time.Time, o *Orbit) float64 {
 	// Here goes the optimizations based on the available power and whether the goal has been reached.
 	thrust := 0.0
 	for _, wp := range sc.WayPoints {
@@ -47,7 +47,7 @@ func (sc *Spacecraft) Thrust(dt *time.Time, o *Orbit) float64 {
 			break
 		}
 	}
-	return thrust
+	return thrust / sc.Mass(dt)
 }
 
 // NewEmptySC returns a spacecraft with no cargo and no thrusters.

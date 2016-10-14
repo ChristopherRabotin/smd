@@ -3,7 +3,6 @@ package dynamics
 import (
 	"dataio"
 	"integrator"
-	"log"
 	"math"
 	"time"
 
@@ -102,28 +101,26 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 // Func is the integration function.
 func (a *Astrocodile) Func(t float64, s []float64) (f []float64) {
 	f = make([]float64, 6) // init return vector
-	unitX := []float64{1, 0, 0}
-	curR := []float64{s[0], s[1], s[2]}
-	rNorm := norm(curR)
+	rNorm := norm([]float64{s[0], s[1], s[2]})
+	/*if rNorm <= Earth.Radius {
+		log.Printf("[COLLISION WARNING] t=%s |R| = %5.5f", a.CurrentDT, rNorm)
+	}*/
 	vFactor := -a.Orbit.μ / math.Pow(rNorm, 3)
 	// deltaV is the instantenous acceleration, hence a velocity.
 	deltaV := []float64{s[0] * vFactor, s[1] * vFactor, s[2] * vFactor}
-	/*
-			shooting_angle = acosd(dot([X(1) X(2) X(3)], [1 0 0])/ (norm([X(1) X(2) X(3)]) * norm([1 0 0]) ));
-
-		T_vec = [X(7)*cosd(shooting_angle);X(7)*sind(shooting_angle);0]; % We are only looking at the velocity magnitude.
-		dv_T = (1/(X(8) + dry_mass)) * T_vec;
-
-	*/
-	angle := Rad2deg(math.Acos(dot(curR, unitX) / (rNorm * norm(unitX))))
-	thrust := a.Vehicle.Thrust(a.CurrentDT, a.Orbit) / a.Vehicle.Mass(a.CurrentDT)
-	tVec := []float64{thrust * math.Cos(Deg2rad(angle)), thrust * math.Sin(Deg2rad(angle)), 0}
+	thrust := a.Vehicle.Acceleration(a.CurrentDT, a.Orbit)
 	if thrust > 0 {
+		// Let's *add* the thrust to the velocity vector.
 		// Let's convert the new velocity to spherical coordinates and make sure that we thrust
 		// in order to increase the semi-major axis.
-
-		// WARNING:  norm(tVec) == thrust !!!! ==> Actually makes sense...
-		log.Printf("Δv = %3.5f km/s (T = %3.5f N)\n", norm(tVec), thrust)
+		velocity := []float64{s[3], s[4], s[5]}
+		dVSphThrust := Cartesian2Spherical(velocity)
+		dVSphThrust[0] = norm(deltaV) + thrust
+		// Convert back to Cartesian coordinates.
+		dVThrust := Spherical2Cartesian(dVSphThrust)
+		for i := 0; i < 3; i++ {
+			s[i+3] += dVThrust[i]
+		}
 	}
 	f[0] = s[3]
 	f[1] = s[4]
