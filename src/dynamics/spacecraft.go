@@ -88,9 +88,29 @@ type Thruster interface {
 
 /* Available thrusters */
 
-// HPHET12k5 is based on the NASA & Rocketdyne 12.5kW demo
-type HPHET12k5 struct {
+// PPS1350 is the Snecma thruster used on SMART-1.
+type PPS1350 struct{}
+
+// Min implements the Thruster interface.
+func (t *PPS1350) Min() (voltage, power uint) {
+	return 0, 0
 }
+
+// Max implements the Thruster interface.
+func (t *PPS1350) Max() (voltage, power uint) {
+	return 50, 1200
+}
+
+// Thrust implements the Thruster interface.
+func (t *PPS1350) Thrust(voltage, power uint) (thrust, fuelMass float64) {
+	if voltage == 50 && power == 1200 {
+		return 68 * 1e-3, 0
+	}
+	panic("unsupported voltage or power provided")
+}
+
+// HPHET12k5 is based on the NASA & Rocketdyne 12.5kW demo
+type HPHET12k5 struct{}
 
 // Min implements the Thruster interface.
 func (t *HPHET12k5) Min() (voltage, power uint) {

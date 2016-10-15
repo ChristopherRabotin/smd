@@ -2,6 +2,7 @@ package dynamics
 
 import (
 	"dataio"
+	"fmt"
 	"integrator"
 	"math"
 	"time"
@@ -76,14 +77,10 @@ func (a *Astrocodile) Stop(i uint64) bool {
 // GetState returns the state for the integrator.
 func (a *Astrocodile) GetState() (s []float64) {
 	s = make([]float64, 6)
-	rVec := Cartesian2Spherical(a.Orbit.R)
-	vVec := Cartesian2Spherical(a.Orbit.V)
-	s[0] = rVec[0]
-	s[1] = rVec[1]
-	s[2] = rVec[2]
-	s[3] = vVec[0]
-	s[4] = vVec[1]
-	s[5] = vVec[2]
+	for i := 0; i < 3; i++ {
+		s[i] = a.Orbit.R[i]
+		s[i+3] = a.Orbit.V[i]
+	}
 	return
 }
 
@@ -92,30 +89,29 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	if a.histChan != nil {
 		a.histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	}
-	a.Orbit.R = Spherical2Cartesian([]float64{s[0], s[1], s[2]})
-	a.Orbit.V = Spherical2Cartesian([]float64{s[3], s[4], s[5]})
+	a.Orbit.R = []float64{s[0], s[1], s[2]}
+	a.Orbit.V = []float64{s[3], s[4], s[5]}
+	if norm(a.Orbit.R) < 0 {
+		panic("negative distance to body")
+	}
 }
 
 // Func is the integration function.
-func (a *Astrocodile) Func(t float64, x []float64) (xDot []float64) {
-	xDot = make([]float64, 6) // init return vector
-	// helpers
-	r := x[0]
-	//θ := x[1] // Unused?!
-	φ := x[2]
-	vr := x[3]
-	vθ := x[4]
-	vφ := x[5]
-
-	xDot[0] = vr
-	xDot[1] = vθ / (r * math.Cos(φ))
-	xDot[2] = vφ / r
-	xDot[3] = (math.Pow(vθ, 2)+math.Pow(vφ, 2))/r - a.Orbit.μ/math.Pow(r, 2)
-	xDot[4] = vθ * (vφ*math.Tan(φ) - vr) / r
-	xDot[5] = -(vr*vφ + math.Pow(vθ, 2)*math.Tan(φ)) / r
-
-	/*if rNorm <= Earth.Radius {
-		log.Printf("[COLLISION WARNING] t=%s |R| = %5.5f", a.CurrentDT, rNorm)
-	}*/
+func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
+	fDot = make([]float64, 6) // init return vector
+	radius := norm([]float64{f[0], f[1], f[2]})
+	if radius < Earth.Radius {
+		fmt.Printf("[COLLISION] r=%f km\n", radius)
+	}
+	// Let's add the thrust to increase the magnitude of the velocity.
+	velocityPolar := Cartesian2Spherical([]float64{f[3], f[4], f[5]})
+	velocityXYZ := Spherical2Cartesian([]float64{a.Vehicle.Acceleration(a.CurrentDT, a.Orbit), velocityPolar[1], velocityPolar[2]})
+	twoBodyVelocity := -a.Orbit.μ / math.Pow(radius, 3)
+	for i := 0; i < 3; i++ {
+		// The first three components are the velocity.
+		fDot[i] = f[i+3]
+		// The following three are the instantenous acceleration.
+		fDot[i+3] = f[i]*twoBodyVelocity + velocityXYZ[i]
+	}
 	return
 }
