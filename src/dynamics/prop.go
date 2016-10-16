@@ -29,7 +29,7 @@ func (t *PPS1350) Max() (voltage, power uint) {
 // Thrust implements the Thruster interface.
 func (t *PPS1350) Thrust(voltage, power uint) (thrust, fuelMass float64) {
 	if voltage == 50 && power == 1140 {
-		return 68 * 1e-6, 4.4 * 1e-6
+		return 68 * 1e-3, 4.4 * 1e-6
 	}
 	panic("unsupported voltage or power provided")
 }

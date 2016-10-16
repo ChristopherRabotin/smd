@@ -27,6 +27,7 @@ type Astrocodile struct {
 	CurrentDT *time.Time
 	StopChan  chan (bool)
 	histChan  chan<- (*dataio.CgInterpolatedState)
+	initV     float64
 }
 
 // NewAstro returns a new Astrocodile instance from the position and velocity vectors.
@@ -40,7 +41,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 		histChan = nil
 	}
 
-	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan}
+	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan, norm(o.V)}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(*start), Position: a.Orbit.R, Velocity: a.Orbit.V}
@@ -50,12 +51,13 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 
 // Propagate starts the propagation.
 func (a *Astrocodile) Propagate() {
+	log.Printf("Starting propagation. Simulation start time: %s\n", a.StartDT)
 	// Add a ticker status report based on the duration of the simulation.
 	var tickDuration time.Duration
 	if a.EndDT.Sub(*a.StartDT) > time.Duration(24*30)*time.Hour {
 		tickDuration = time.Minute
 	} else {
-		tickDuration = time.Second
+		tickDuration = time.Duration(10) * time.Second
 	}
 	ticker := time.NewTicker(tickDuration)
 	go func() {
@@ -64,6 +66,7 @@ func (a *Astrocodile) Propagate() {
 		}
 	}()
 	integrator.NewRK4(0, stepSize, a).Solve() // Blocking.
+	log.Printf("Propagation ended. Simulation time: %s\n", a.CurrentDT)
 }
 
 // Stop implements the stop call of the integrator.
@@ -102,6 +105,7 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	if a.histChan != nil {
 		a.histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	}
+	//fmt.Printf("[%s] deltaV = %f km/s\n", a.CurrentDT, math.Abs(norm(a.Orbit.V)-norm([]float64{s[3], s[4], s[5]})))
 	a.Orbit.R = []float64{s[0], s[1], s[2]}
 	a.Orbit.V = []float64{s[3], s[4], s[5]}
 	if norm(a.Orbit.R) < 0 {
@@ -117,8 +121,6 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 		fmt.Printf("[COLLISION] r=%f km\n", radius)
 	}
 	// Let's add the thrust to increase the magnitude of the velocity.
-	//velocityPolar := Cartesian2Spherical([]float64{f[3], f[4], f[5]})
-	//velocityXYZ := Spherical2Cartesian([]float64{a.Vehicle.Acceleration(a.CurrentDT, a.Orbit), velocityPolar[1], velocityPolar[2]})
 	Δv := a.Vehicle.Acceleration(a.CurrentDT, a.Orbit)
 	twoBodyVelocity := -a.Orbit.μ / math.Pow(radius, 3)
 	for i := 0; i < 3; i++ {
