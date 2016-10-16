@@ -21,7 +21,7 @@ func floatEqual(a, b float64) (bool, error) {
 	return false, fmt.Errorf("difference of %3.10f", diff)
 }
 
-func TestAstrocro(t *testing.T) {
+func TestAstrocroChanStop(t *testing.T) {
 	// Define a new orbit.
 	a0 := Earth.Radius + 400
 	e0 := 1e-2
@@ -63,6 +63,46 @@ func TestAstrocro(t *testing.T) {
 	if ok, _ := floatEqual(ν0, ν1); ok {
 		t.Fatalf("true anomaly *unchanged*: ν0=%3.6f ν1=%3.6f", ν0, ν1)
 	} else {
-		t.Logf("ν increased by %5.8f° (step of %0.3f ns)\n", Rad2deg(ν1-ν0), stepSize)
+		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(ν1-ν0), stepSize)
+	}
+}
+
+func TestAstrocroPropTime(t *testing.T) {
+	// Define an approximate GEO orbit.
+	a0 := Earth.Radius + 35786
+	e0 := 1e-4
+	i0 := 1e-4
+	ω0 := Deg2rad(10)
+	Ω0 := Deg2rad(5)
+	ν0 := Deg2rad(0.1)
+	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, &Earth)
+	// Define propagation parameters.
+	start := time.Now()
+	end := start.Add(time.Duration(23) * time.Hour).Add(time.Duration(56) * time.Minute).Add(time.Duration(4) * time.Second).Add(time.Duration(916) * time.Millisecond)
+	astro := NewAstro(NewEmptySC("test", 1500), o, &start, &end, "")
+	// Start propagation.
+	astro.Propagate()
+	// Must find a way to test the stop channel. via a long propagation and a select probably.
+	// Check the orbital elements.
+	a1, e1, i1, ω1, Ω1, ν1 := o.GetOE()
+	if ok, err := floatEqual(a0, a1); !ok {
+		t.Fatalf("semi major axis changed: %s", err)
+	}
+	if ok, err := floatEqual(e0, e1); !ok {
+		t.Fatalf("eccentricity changed: %s", err)
+	}
+	if ok, err := floatEqual(i0, i1); !ok {
+		t.Fatalf("inclination changed: %s", err)
+	}
+	if ok, err := floatEqual(Ω0, Ω1); !ok {
+		t.Fatalf("RAAN changed: %s", err)
+	}
+	if ok, err := floatEqual(ω0, ω1); !ok {
+		t.Fatalf("argument of perigee changed: %s", err)
+	}
+	if diff := math.Abs(ν1 - ν0); diff > 1e-5 {
+		t.Fatalf("ν changed too much after one sideral day propagating a GEO vehicle: ν0=%3.6f ν1=%3.6f", ν0, ν1)
+	} else {
+		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(diff), stepSize)
 	}
 }
