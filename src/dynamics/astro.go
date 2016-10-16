@@ -4,6 +4,7 @@ import (
 	"dataio"
 	"fmt"
 	"integrator"
+	"log"
 	"math"
 	"time"
 
@@ -49,8 +50,20 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 
 // Propagate starts the propagation.
 func (a *Astrocodile) Propagate() {
-	integrator.NewRK4(0, stepSize, a).Solve()
 	// Add a ticker status report based on the duration of the simulation.
+	var tickDuration time.Duration
+	if a.EndDT.Sub(*a.StartDT) > time.Duration(24*30)*time.Hour {
+		tickDuration = time.Minute
+	} else {
+		tickDuration = time.Second
+	}
+	ticker := time.NewTicker(tickDuration)
+	go func() {
+		for _ = range ticker.C {
+			log.Printf("Simulation time: %s", a.CurrentDT)
+		}
+	}()
+	integrator.NewRK4(0, stepSize, a).Solve() // Blocking.
 }
 
 // Stop implements the stop call of the integrator.
@@ -104,14 +117,15 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 		fmt.Printf("[COLLISION] r=%f km\n", radius)
 	}
 	// Let's add the thrust to increase the magnitude of the velocity.
-	velocityPolar := Cartesian2Spherical([]float64{f[3], f[4], f[5]})
-	velocityXYZ := Spherical2Cartesian([]float64{a.Vehicle.Acceleration(a.CurrentDT, a.Orbit), velocityPolar[1], velocityPolar[2]})
+	//velocityPolar := Cartesian2Spherical([]float64{f[3], f[4], f[5]})
+	//velocityXYZ := Spherical2Cartesian([]float64{a.Vehicle.Acceleration(a.CurrentDT, a.Orbit), velocityPolar[1], velocityPolar[2]})
+	Δv := a.Vehicle.Acceleration(a.CurrentDT, a.Orbit)
 	twoBodyVelocity := -a.Orbit.μ / math.Pow(radius, 3)
 	for i := 0; i < 3; i++ {
 		// The first three components are the velocity.
 		fDot[i] = f[i+3]
 		// The following three are the instantenous acceleration.
-		fDot[i+3] = f[i]*twoBodyVelocity + velocityXYZ[i]
+		fDot[i+3] = f[i]*twoBodyVelocity + Δv[i]
 	}
 	return
 }

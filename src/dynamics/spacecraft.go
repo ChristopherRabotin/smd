@@ -10,6 +10,7 @@ type Spacecraft struct {
 	Name      string      // Name of spacecraft
 	DryMass   float64     // DryMass of spacecraft (in kg)
 	FuelMass  float64     // FuelMass of spacecraft (in kg) (will panic if runs out of fuel)
+	EPS       EPS         // EPS definition, needed for the thrusters.
 	Thrusters []Thruster  // All available thrusters
 	Cargo     []*Cargo    // All onboard cargo
 	WayPoints []*Waypoint // All waypoints of the tug
@@ -28,10 +29,13 @@ func (sc *Spacecraft) Mass(dt *time.Time) (m float64) {
 
 // Acceleration returns the acceleration to be applied at a given orbital position.
 // Keeps track of the thrust applied by all thrusters, the mass changes, and necessary optmizations.
-func (sc *Spacecraft) Acceleration(dt *time.Time, o *Orbit) float64 {
+func (sc *Spacecraft) Acceleration(dt *time.Time, o *Orbit) []float64 {
 	// Here goes the optimizations based on the available power and whether the goal has been reached.
 	thrust := 0.0
 	for _, wp := range sc.WayPoints {
+		if sc.EPS == nil {
+			panic("cannot attempt to reach any waypoint without an EPS")
+		}
 		if !wp.cleared {
 			if wp.Reached(o) {
 				wp.cleared = true
@@ -40,19 +44,27 @@ func (sc *Spacecraft) Acceleration(dt *time.Time, o *Orbit) float64 {
 			}
 			for _, thruster := range sc.Thrusters {
 				// TODO: Find a way to optimize the thrust?
-				tThrust, tMass := thruster.Thrust(thruster.Max())
-				thrust += tThrust
-				sc.FuelMass -= tMass
+				voltage, power := thruster.Max()
+				if err := sc.EPS.Drain(voltage, power, *dt); err == nil {
+					// Okay to thrust.
+					tThrust, tMass := thruster.Thrust(voltage, power)
+					thrust += tThrust
+					sc.FuelMass -= tMass
+				}
 			}
 			break
 		}
 	}
-	return thrust / sc.Mass(dt)
+	if thrust == 0 {
+		return []float64{0, 0, 0}
+	}
+	velocityPolar := Cartesian2Spherical(o.V)
+	return Spherical2Cartesian([]float64{thrust / sc.Mass(dt), velocityPolar[1], velocityPolar[2]})
 }
 
 // NewEmptySC returns a spacecraft with no cargo and no thrusters.
 func NewEmptySC(name string, mass uint) *Spacecraft {
-	return &Spacecraft{name, float64(mass), 0, []Thruster{}, []*Cargo{}, []*Waypoint{}}
+	return &Spacecraft{name, float64(mass), 0, nil, []Thruster{}, []*Cargo{}, []*Waypoint{}}
 }
 
 // Waypoint is a waypoint along the way.
@@ -74,58 +86,4 @@ type Cargo struct {
 	Arrival     time.Time // Time of arrival onto the tug
 	Destination *Waypoint // Destination of cargo
 	*Spacecraft
-}
-
-// Thruster defines a thruster interface.
-type Thruster interface {
-	// Returns the minimum power and voltage requirements for this thruster.
-	Min() (voltage, power uint)
-	// Returns the max power and voltage requirements for this thruster.
-	Max() (voltage, power uint)
-	// Returns the thrust in Newtons and the fuelMass in kg.
-	Thrust(voltage, power uint) (thrust, fuelMass float64)
-}
-
-/* Available thrusters */
-
-// PPS1350 is the Snecma thruster used on SMART-1.
-type PPS1350 struct{}
-
-// Min implements the Thruster interface.
-func (t *PPS1350) Min() (voltage, power uint) {
-	return 0, 0
-}
-
-// Max implements the Thruster interface.
-func (t *PPS1350) Max() (voltage, power uint) {
-	return 50, 1200
-}
-
-// Thrust implements the Thruster interface.
-func (t *PPS1350) Thrust(voltage, power uint) (thrust, fuelMass float64) {
-	if voltage == 50 && power == 1200 {
-		return 68 * 1e-3, 0
-	}
-	panic("unsupported voltage or power provided")
-}
-
-// HPHET12k5 is based on the NASA & Rocketdyne 12.5kW demo
-type HPHET12k5 struct{}
-
-// Min implements the Thruster interface.
-func (t *HPHET12k5) Min() (voltage, power uint) {
-	return 400, 12500
-}
-
-// Max implements the Thruster interface.
-func (t *HPHET12k5) Max() (voltage, power uint) {
-	return 400, 12500
-}
-
-// Thrust implements the Thruster interface.
-func (t *HPHET12k5) Thrust(voltage, power uint) (thrust, fuelMass float64) {
-	if voltage == 400 && power == 12500 {
-		return 0.680, 0
-	}
-	panic("unsupported voltage or power provided")
 }
