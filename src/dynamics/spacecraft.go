@@ -29,19 +29,11 @@ func (sc *Spacecraft) Mass(dt *time.Time) (m float64) {
 	return
 }
 
-// Acceleration returns the acceleration to be applied at a given orbital position.
+// Acceleration returns the acceleration (in km.s^-2) to be applied at a given orbital position.
 // Keeps track of the thrust applied by all thrusters, the mass changes, and necessary optmizations.
 func (sc *Spacecraft) Acceleration(dt *time.Time, o *Orbit) []float64 {
 	// Here goes the optimizations based on the available power and whether the goal has been reached.
 	thrust := 0.0
-	mulFactor := 0.0
-	/*if lastAccelerationCall == nil {
-		lastAccelerationCall = dt.Add(time.Duration(-1) * time.Second)
-	}*/
-	if dt.Sub(lastAccelerationCall).Seconds() > 1 {
-		mulFactor = 1
-		lastAccelerationCall = *dt
-	}
 	for _, wp := range sc.WayPoints {
 		if sc.EPS == nil {
 			panic("cannot attempt to reach any waypoint without an EPS")
@@ -58,17 +50,18 @@ func (sc *Spacecraft) Acceleration(dt *time.Time, o *Orbit) []float64 {
 				if err := sc.EPS.Drain(voltage, power, *dt); err == nil {
 					// Okay to thrust.
 					tThrust, tMass := thruster.Thrust(voltage, power)
-					thrust += tThrust * mulFactor
-					sc.FuelMass -= tMass * mulFactor
+					thrust += tThrust
+					sc.FuelMass -= tMass // TODO: Add fuel mass to state
 				}
 			}
 			break
 		}
 	}
-	//log.Printf("thrust = %f N", thrust)
 	if thrust == 0 {
 		return []float64{0, 0, 0}
 	}
+	// Convert thrust from m/s^-2 to km/s^-2
+	thrust /= 1e3
 	velocityPolar := Cartesian2Spherical(o.V)
 	return Spherical2Cartesian([]float64{thrust / sc.Mass(dt), velocityPolar[1], velocityPolar[2]})
 }

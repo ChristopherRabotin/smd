@@ -1,0 +1,38 @@
+{
+   "version":"1.0",
+   "name":"Simple propagation",
+   "items":[
+      {
+         "class":"spacecraft",
+         "name":"IT1",
+         "startTime":"2016-10-01 09:00:00.000 UTC",
+         "endTime":"2017-10-01 23:59:00.000 UTC",
+         "center":"Earth",
+         "trajectory":{
+            "type": "InterpolatedStates",
+            "source": "propCont.xyzv"
+          },
+         "label": {
+            "color": [
+               0.6,
+               1,
+               1
+            ],
+         "fadeSize": 1000000,
+         "showText": true
+         },
+         "trajectoryPlot": {
+            "color": [
+               0.6,
+               1,
+               1
+            ],
+            "lineWidth": 1,
+            "duration": "2 d",
+            "lead": "0 d",
+            "fade": 0,
+            "sampleCount": 100
+         }
+      }
+   ]
+}
