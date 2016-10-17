@@ -49,24 +49,27 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 	return a
 }
 
+// Status returns the status of the propagation and vehicle.
+// TODO: Support center of orbit change.
+func (a *Astrocodile) Status() string {
+	return fmt.Sprintf("%s\tΔv=%f km/s\tfuel=%f kg", a.CurrentDT.UTC(), norm(a.Orbit.V)-a.initV, a.Vehicle.FuelMass)
+}
+
 // Propagate starts the propagation.
 func (a *Astrocodile) Propagate() {
-	log.Printf("Starting propagation. Simulation start time: %s\n", a.StartDT)
 	// Add a ticker status report based on the duration of the simulation.
-	var tickDuration time.Duration
-	if a.EndDT.Sub(*a.StartDT) > time.Duration(24*30)*time.Hour {
-		tickDuration = time.Minute
-	} else {
-		tickDuration = time.Duration(10) * time.Second
-	}
+	tickDuration := time.Duration(a.EndDT.Sub(*a.StartDT).Hours()*0.01) * time.Second
+	log.Printf("Starting propagation. Expect status report every %s.\n", tickDuration)
+	log.Println(a.Status())
 	ticker := time.NewTicker(tickDuration)
 	go func() {
 		for _ = range ticker.C {
-			log.Printf("Simulation time: %s", a.CurrentDT)
+			log.Println(a.Status())
 		}
 	}()
 	integrator.NewRK4(0, stepSize, a).Solve() // Blocking.
-	log.Printf("Propagation ended. Simulation time: %s\n", a.CurrentDT)
+	log.Println(a.Status())
+	log.Println("Propagation ended.")
 }
 
 // Stop implements the stop call of the integrator.
@@ -92,11 +95,12 @@ func (a *Astrocodile) Stop(i uint64) bool {
 
 // GetState returns the state for the integrator.
 func (a *Astrocodile) GetState() (s []float64) {
-	s = make([]float64, 6)
+	s = make([]float64, 7)
 	for i := 0; i < 3; i++ {
 		s[i] = a.Orbit.R[i]
 		s[i+3] = a.Orbit.V[i]
 	}
+	s[6] = a.Vehicle.FuelMass
 	return
 }
 
@@ -105,23 +109,23 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	if a.histChan != nil {
 		a.histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	}
-	//fmt.Printf("[%s] deltaV = %f km/s\n", a.CurrentDT, math.Abs(norm(a.Orbit.V)-norm([]float64{s[3], s[4], s[5]})))
 	a.Orbit.R = []float64{s[0], s[1], s[2]}
 	a.Orbit.V = []float64{s[3], s[4], s[5]}
 	if norm(a.Orbit.R) < 0 {
 		panic("negative distance to body")
 	}
+	a.Vehicle.FuelMass = s[6]
 }
 
 // Func is the integration function.
 func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
-	fDot = make([]float64, 6) // init return vector
+	fDot = make([]float64, 7) // init return vector
 	radius := norm([]float64{f[0], f[1], f[2]})
 	if radius < Earth.Radius {
-		fmt.Printf("[COLLISION] r=%f km\n", radius)
+		panic(fmt.Errorf("[COLLISION] r=%f km\n", radius))
 	}
 	// Let's add the thrust to increase the magnitude of the velocity.
-	Δv := a.Vehicle.Acceleration(a.CurrentDT, a.Orbit)
+	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
 	twoBodyVelocity := -a.Orbit.μ / math.Pow(radius, 3)
 	for i := 0; i < 3; i++ {
 		// The first three components are the velocity.
@@ -129,5 +133,6 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 		// The following three are the instantenous acceleration.
 		fDot[i+3] = f[i]*twoBodyVelocity + Δv[i]
 	}
+	fDot[6] = -usedFuel
 	return
 }

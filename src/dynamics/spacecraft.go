@@ -29,11 +29,13 @@ func (sc *Spacecraft) Mass(dt *time.Time) (m float64) {
 	return
 }
 
-// Acceleration returns the acceleration (in km.s^-2) to be applied at a given orbital position.
-// Keeps track of the thrust applied by all thrusters, the mass changes, and necessary optmizations.
-func (sc *Spacecraft) Acceleration(dt *time.Time, o *Orbit) []float64 {
+// Accelerate returns the applied velocity (in km/s) at a given orbital position and date time, and the fuel used.
+// Keeps track of the thrust applied by all thrusters, with necessary optmizations based on next waypoint, *but*
+// does not update the fuel available (as it needs to be integrated).
+func (sc *Spacecraft) Accelerate(dt *time.Time, o *Orbit) ([]float64, float64) {
 	// Here goes the optimizations based on the available power and whether the goal has been reached.
 	thrust := 0.0
+	usedFuel := 0.0
 	for _, wp := range sc.WayPoints {
 		if sc.EPS == nil {
 			panic("cannot attempt to reach any waypoint without an EPS")
@@ -51,19 +53,19 @@ func (sc *Spacecraft) Acceleration(dt *time.Time, o *Orbit) []float64 {
 					// Okay to thrust.
 					tThrust, tMass := thruster.Thrust(voltage, power)
 					thrust += tThrust
-					sc.FuelMass -= tMass // TODO: Add fuel mass to state
+					usedFuel += tMass
 				}
 			}
 			break
 		}
 	}
 	if thrust == 0 {
-		return []float64{0, 0, 0}
+		return []float64{0, 0, 0}, 0
 	}
 	// Convert thrust from m/s^-2 to km/s^-2
 	thrust /= 1e3
 	velocityPolar := Cartesian2Spherical(o.V)
-	return Spherical2Cartesian([]float64{thrust / sc.Mass(dt), velocityPolar[1], velocityPolar[2]})
+	return Spherical2Cartesian([]float64{thrust / sc.Mass(dt), velocityPolar[1], velocityPolar[2]}), usedFuel
 }
 
 // NewEmptySC returns a spacecraft with no cargo and no thrusters.
