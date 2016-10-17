@@ -12,8 +12,6 @@ func norm(v []float64) float64 {
 }
 
 func main() {
-	log.Println("Continous propagation")
-
 	/* Building waypoints */
 	outSpiral := dynamics.NewWaypoint(func(position *dynamics.Orbit) bool {
 		return norm(position.R) >= dynamics.Earth.SOI
@@ -25,7 +23,7 @@ func main() {
 	waypoints := []*dynamics.Waypoint{outSpiral}
 	dryMass := 1000.0
 	fuelMass := 500.0
-	sc := &dynamics.Spacecraft{Name: "Continuous Prop test", DryMass: dryMass, FuelMass: fuelMass, EPS: eps, Thrusters: thrusters, Cargo: []*dynamics.Cargo{}, WayPoints: waypoints}
+	sc := &dynamics.Spacecraft{Name: "IT1", DryMass: dryMass, FuelMass: fuelMass, EPS: eps, Thrusters: thrusters, Cargo: []*dynamics.Cargo{}, WayPoints: waypoints}
 
 	/* Building propagation */
 	start := time.Now() // Propagate starting now for ease.

@@ -4,16 +4,19 @@ import (
 	"dataio"
 	"fmt"
 	"integrator"
-	"log"
 	"math"
+	"os"
 	"time"
 
+	kitlog "github.com/go-kit/kit/log"
 	"github.com/soniakeys/meeus/julian"
 )
 
 const (
 	stepSize = 1.0
 )
+
+var logger kitlog.Logger
 
 /* Handles the astrodynamical propagations. */
 
@@ -46,30 +49,37 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 	if histChan != nil {
 		histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(*start), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	}
+
+	logger = kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stdout))
+	logger = kitlog.NewContext(logger).With("spacecraft", s.Name)
+	if end.Before(*start) {
+		logger.Log("warning", "no end date")
+	}
+
 	return a
 }
 
-// Status returns the status of the propagation and vehicle.
+// LogStatus returns the status of the propagation and vehicle.
 // TODO: Support center of orbit change.
-func (a *Astrocodile) Status() string {
-	return fmt.Sprintf("%s\tΔv=%f km/s\tfuel=%f kg", a.CurrentDT.UTC(), norm(a.Orbit.V)-a.initV, a.Vehicle.FuelMass)
+func (a *Astrocodile) LogStatus() {
+	logger.Log("time", a.CurrentDT, "Δv", norm(a.Orbit.V)-a.initV, "fuel", a.Vehicle.FuelMass)
 }
 
 // Propagate starts the propagation.
 func (a *Astrocodile) Propagate() {
 	// Add a ticker status report based on the duration of the simulation.
 	tickDuration := time.Duration(a.EndDT.Sub(*a.StartDT).Hours()*0.01) * time.Second
-	log.Printf("Starting propagation. Expect status report every %s.\n", tickDuration)
-	log.Println(a.Status())
+	logger.Log("status", "starting", "reportPeriod", tickDuration, "departure", a.Orbit)
+	a.LogStatus()
 	ticker := time.NewTicker(tickDuration)
 	go func() {
 		for _ = range ticker.C {
-			log.Println(a.Status())
+			a.LogStatus()
 		}
 	}()
 	integrator.NewRK4(0, stepSize, a).Solve() // Blocking.
-	log.Println(a.Status())
-	log.Println("Propagation ended.")
+	a.LogStatus()
+	logger.Log("status", "ended", "arrival", a.Orbit)
 }
 
 // Stop implements the stop call of the integrator.

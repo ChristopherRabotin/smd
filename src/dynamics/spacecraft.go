@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-var lastAccelerationCall time.Time
-
 // Spacecraft defines a new spacecraft.
 type Spacecraft struct {
 	Name      string      // Name of spacecraft
