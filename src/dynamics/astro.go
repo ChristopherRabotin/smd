@@ -68,15 +68,16 @@ func (a *Astrocodile) LogStatus() {
 // Propagate starts the propagation.
 func (a *Astrocodile) Propagate() {
 	// Add a ticker status report based on the duration of the simulation.
-	tickDuration := time.Duration(a.EndDT.Sub(*a.StartDT).Hours()*0.01) * time.Second
-	logger.Log("status", "starting", "reportPeriod", tickDuration, "departure", a.Orbit)
-	a.LogStatus()
-	ticker := time.NewTicker(tickDuration)
-	go func() {
-		for _ = range ticker.C {
-			a.LogStatus()
-		}
-	}()
+	if tickDuration := time.Duration(a.EndDT.Sub(*a.StartDT).Hours()*0.01) * time.Second; tickDuration > 0 {
+		logger.Log("status", "starting", "reportPeriod", tickDuration, "departure", a.Orbit)
+		a.LogStatus()
+		ticker := time.NewTicker(tickDuration)
+		go func() {
+			for _ = range ticker.C {
+				a.LogStatus()
+			}
+		}()
+	}
 	integrator.NewRK4(0, stepSize, a).Solve() // Blocking.
 	a.LogStatus()
 	logger.Log("status", "ended", "arrival", a.Orbit)
@@ -135,7 +136,7 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 		panic(fmt.Errorf("[COLLISION] r=%f km\n", radius))
 	}
 	// Let's add the thrust to increase the magnitude of the velocity.
-	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
+	Δv, usedFuel := a.Vehicle.Accelerate(*a.CurrentDT, a.Orbit)
 	twoBodyVelocity := -a.Orbit.μ / math.Pow(radius, 3)
 	for i := 0; i < 3; i++ {
 		// The first three components are the velocity.

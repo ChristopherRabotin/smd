@@ -13,14 +13,14 @@ func norm(v []float64) float64 {
 
 func main() {
 	/* Building waypoints */
-	outSpiral := dynamics.NewWaypoint(func(position *dynamics.Orbit) bool {
+	/*outSpiral := dynamics.NewWaypoint(func(position *dynamics.Orbit) bool {
 		return norm(position.R) >= dynamics.Earth.SOI
-	})
+	})*/
 	/* Building spacecraft */
 	eps := dynamics.NewUnlimitedEPS()
 	thrusters := []dynamics.Thruster{&dynamics.HPHET12k5{}, &dynamics.HPHET12k5{}}
 	//thrusters := []dynamics.Thruster{&dynamics.PPS1350{}, &dynamics.PPS1350{}}
-	waypoints := []*dynamics.Waypoint{outSpiral}
+	waypoints := []dynamics.Waypoint{dynamics.NewOutwardSpiral(dynamics.Earth, nil)}
 	dryMass := 1000.0
 	fuelMass := 500.0
 	sc := &dynamics.Spacecraft{Name: "IT1", DryMass: dryMass, FuelMass: fuelMass, EPS: eps, Thrusters: thrusters, Cargo: []*dynamics.Cargo{}, WayPoints: waypoints}
