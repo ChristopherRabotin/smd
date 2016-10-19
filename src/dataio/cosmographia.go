@@ -18,7 +18,7 @@ type CgCatalog struct {
 	Version string     `json:"version"`
 	Name    string     `json:"name"`
 	Items   []*CgItems `json:"items"`
-	Require []*string  `json:"require"`
+	Require []string   `json:"require,omitempty"`
 }
 
 func (c *CgCatalog) String() string {
@@ -32,17 +32,17 @@ type CgItems struct {
 	StartTime      string            `json:"startTime"`
 	EndTime        string            `json:"endTime"`
 	Center         string            `json:"center"`
-	Trajectory     *CgTrajectory     `json:"trajectory"`
-	Bodyframe      *CgBodyFrame      `json:"bodyFrame"`
-	Geometry       *CgGeometry       `json:"geometry"`
-	Label          *CgLabel          `json:"label"`
-	TrajectoryPlot *CgTrajectoryPlot `json:"trajectoryPlot"`
+	Trajectory     *CgTrajectory     `json:"trajectory,omitempty"`
+	Bodyframe      *CgBodyFrame      `json:"bodyFrame,omitempty"`
+	Geometry       *CgGeometry       `json:"geometry,omitempty"`
+	Label          *CgLabel          `json:"label,omitempty"`
+	TrajectoryPlot *CgTrajectoryPlot `json:"trajectoryPlot,omitempty"`
 }
 
 // CgTrajectory definition.
 type CgTrajectory struct {
-	Type   string `json:"type"`
-	Source string `json:"source"`
+	Type   string `json:"type,omitempty"`
+	Source string `json:"source,omitempty"`
 }
 
 // Validate validates a CgTrajectory.
@@ -59,8 +59,8 @@ func (t *CgTrajectory) String() string {
 
 // CgBodyFrame definiton.
 type CgBodyFrame struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
+	Type string `json:"type,omitempty"`
+	Name string `json:"name,omitempty"`
 }
 
 func (c *CgBodyFrame) String() string {
@@ -69,17 +69,17 @@ func (c *CgBodyFrame) String() string {
 
 // CgGeometry definiton.
 type CgGeometry struct {
-	Type   string    `json:"type"`
-	Mesh   []float64 `json:"meshRotation"`
-	Size   float64   `json:"size"`
-	Source string    `json:"source"`
+	Type   string    `json:"type,omitempty"`
+	Mesh   []float64 `json:"meshRotation,omitempty"`
+	Size   float64   `json:"size,omitempty"`
+	Source string    `json:"source,omitempty"`
 }
 
 // CgLabel definiton.
 type CgLabel struct {
-	Color    []float64 `json:"color"`
-	FadeSize int       `json:"fadeSize"`
-	ShowText bool      `json:"showText"`
+	Color    []float64 `json:"color,omitempty"`
+	FadeSize int       `json:"fadeSize,omitempty"`
+	ShowText bool      `json:"showText,omitempty"`
 }
 
 func (l *CgLabel) String() string {
@@ -88,12 +88,12 @@ func (l *CgLabel) String() string {
 
 // CgTrajectoryPlot definition.
 type CgTrajectoryPlot struct {
-	Color       []float64 `json:"color"`
-	LineWidth   int       `json:"lineWidth"`
-	Duration    string    `json:"duration"`
-	Lead        string    `json:"lead"`
-	Fade        int       `json:"fade"`
-	SampleCount int       `json:"sampleCount"`
+	Color       []float64 `json:"color,omitempty"`
+	LineWidth   int       `json:"lineWidth,omitempty"`
+	Duration    string    `json:"duration,omitempty"`
+	Lead        string    `json:"lead,omitempty"`
+	Fade        int       `json:"fade,omitempty"`
+	SampleCount int       `json:"sampleCount,omitempty"`
 }
 
 // CgInterpolatedState definiton.
@@ -164,9 +164,9 @@ func ParseInterpolatedStates(s string) []*CgInterpolatedState {
 func StreamInterpolatedStates(filename string, histChan <-chan (*CgInterpolatedState), stamped bool) {
 	if stamped {
 		t := time.Now()
-		filename = fmt.Sprintf("%s-%d-%02d-%02dT%02d.%02d.%02d.xyzv", filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+		filename = fmt.Sprintf("../outputdata/prop%s-%d-%02d-%02dT%02d.%02d.%02d.xyzv", filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 	} else {
-		filename = fmt.Sprintf("%s.xyzv", filename)
+		filename = fmt.Sprintf("../outputdata/prop%s.xyzv", filename)
 	}
 	f, err := os.Create(filename)
 	fmt.Printf("Saving file to %s.\n", f.Name())

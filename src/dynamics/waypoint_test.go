@@ -32,6 +32,9 @@ func TestOutwardSpiral(t *testing.T) {
 	if wp.Action() == nil {
 		t.Fatal("Waypoint did not return any action after being reached.")
 	}
+	if len(wp.String()) == 0 {
+		t.Fatal("Waypoint string is empty.")
+	}
 }
 
 func TestLoiter(t *testing.T) {
@@ -67,5 +70,8 @@ func TestLoiter(t *testing.T) {
 	}
 	if wp.Action() == nil {
 		t.Fatal("Loiter waypoint did not return any action after being reached.")
+	}
+	if len(wp.String()) == 0 {
+		t.Fatal("Loiter waypoint string is empty.")
 	}
 }

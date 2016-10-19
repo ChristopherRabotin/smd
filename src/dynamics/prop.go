@@ -50,7 +50,7 @@ func (t *HPHET12k5) Max() (voltage, power uint) {
 // Thrust implements the Thruster interface.
 func (t *HPHET12k5) Thrust(voltage, power uint) (thrust, fuelMass float64) {
 	if voltage == 400 && power == 12500 {
-		return 0.680, 4.4 * 1e-5 // fuel usage made up.
+		return 0.680, 4.8 * 1e-5 // fuel usage made up assuming linear from power.
 	}
 	panic("unsupported voltage or power provided")
 }

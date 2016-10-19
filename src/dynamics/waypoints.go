@@ -1,6 +1,9 @@
 package dynamics
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // WaypointActionEnum defines the possible waypoint actions.
 type WaypointActionEnum uint8
@@ -23,6 +26,7 @@ type Waypoint interface {
 	Cleared() bool // returns whether waypoint has been reached
 	Action() *WaypointAction
 	AllocateThrust(*Orbit, time.Time) ([]float64, bool)
+	String() string
 }
 
 // OutwardSpiral defines an outward spiral waypoint.
@@ -30,6 +34,12 @@ type OutwardSpiral struct {
 	distance float64
 	action   *WaypointAction
 	cleared  bool
+	body     string
+}
+
+// String implements the Waypoint interface.
+func (wp *OutwardSpiral) String() string {
+	return fmt.Sprintf("Outward spiral from %s.", wp.body)
 }
 
 // Cleared implements the Waypoint interface.
@@ -57,7 +67,7 @@ func (wp *OutwardSpiral) Action() *WaypointAction {
 
 // NewOutwardSpiral defines a new outward spiral from a celestial object.
 func NewOutwardSpiral(body CelestialObject, action *WaypointAction) *OutwardSpiral {
-	return &OutwardSpiral{body.SOI, action, false}
+	return &OutwardSpiral{body.SOI, action, false, body.Name}
 }
 
 // Loiter is a type of waypoint which allows the vehicle to stay at a given position for a given duration.
@@ -68,6 +78,11 @@ type Loiter struct {
 	startedLoitering bool
 	action           *WaypointAction
 	cleared          bool
+}
+
+// String implements the Waypoint interface.
+func (wp *Loiter) String() string {
+	return fmt.Sprintf("Coasting for %s.", wp.duration)
 }
 
 // Cleared implements the Waypoint interface.
