@@ -100,20 +100,7 @@ func (wp *Loiter) Action() *WaypointAction {
 	return nil
 }
 
-/*
-for _, wp := range sc.Waypoints {
-if wp.Cleared(){
-continue
+// NewLoiter defines a new loitering waypoint, i.e. "wait until a given time".
+func NewLoiter(duration time.Duration, action *WaypointAction) *Loiter {
+	return &Loiter{duration, time.Unix(0, 0), time.Unix(0, 0), false, action, false}
 }
-deltaVAllocation, reached := wp.AllocateThrust(position, dt)
-if reached {
-// Waypoint probably reached -- that means we can have actions while on route
-// maybe use this later for comms?!
-sc.Apply(wp.Action()) // somehow... -- this should panic if WP is not reached yet.
-}
-// Check deltaVAllocation components sums up to 1. Otherwise, throttle the thrust
-// to save up on fuel.
-// Then calculate the thrust needed and apply based on the factors returned by dVAlloc
-}
-
-*/
