@@ -68,7 +68,13 @@ func (a *Astrocodile) LogStatus() {
 // Propagate starts the propagation.
 func (a *Astrocodile) Propagate() {
 	// Add a ticker status report based on the duration of the simulation.
-	if tickDuration := time.Duration(a.EndDT.Sub(*a.StartDT).Hours()*0.01) * time.Second; tickDuration > 0 {
+	var tickDuration time.Duration
+	if a.EndDT.After(*a.StartDT) {
+		tickDuration = time.Duration(a.EndDT.Sub(*a.StartDT).Hours()*0.01) * time.Second
+	} else {
+		tickDuration = 1 * time.Minute
+	}
+	if tickDuration > 0 {
 		logger.Log("status", "starting", "reportPeriod", tickDuration, "departure", a.Orbit)
 		a.LogStatus()
 		ticker := time.NewTicker(tickDuration)
@@ -94,6 +100,15 @@ func (a *Astrocodile) Stop(i uint64) bool {
 		return true // Stop because there is a request to stop.
 	default:
 		*a.CurrentDT = a.CurrentDT.Add(time.Duration(stepSize) * time.Second)
+		if a.EndDT.Before(*a.StartDT) {
+			// Check if any waypoint still needs to be reached.
+			for _, wp := range a.Vehicle.WayPoints {
+				if !wp.Cleared() {
+					return false
+				}
+			}
+			return true
+		}
 		if a.CurrentDT.Sub(*a.EndDT).Nanoseconds() > 0 {
 			if a.histChan != nil {
 				close(a.histChan)
