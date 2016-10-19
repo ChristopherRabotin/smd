@@ -185,8 +185,8 @@ func StreamInterpolatedStates(filename string, histChan <-chan (*CgInterpolatedS
 	for {
 		state, more := <-histChan
 		if more {
-			// Only write one data point per julian second.
-			if state.JD-previousJD < 1e-6 {
+			// Only write one data point per julian minute.
+			if state.JD-previousJD < 1.0/(24*60) {
 				continue
 			} else if previousJD == 0 {
 				// First iteration, let's add the initial time in simulation.
