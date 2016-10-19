@@ -9,6 +9,7 @@ type CelestialObject struct {
 	Radius float64
 	μ      float64
 	SOI    float64 // With respect to the Sun
+	J2     float64
 }
 
 // String implements the Stringer interface.
@@ -19,4 +20,7 @@ func (c *CelestialObject) String() string {
 /* Definitions */
 
 // Earth is home.
-var Earth = CelestialObject{"Earth", 6378.1363, 3.986004415 * 1e5, 924645.0}
+var Earth = CelestialObject{"Earth", 6378.1363, 3.986004415 * 1e5, 924645.0, 0.0010826269}
+
+// Mars is the vacation place.
+var Mars = CelestialObject{"Mars", 3397.2, 4.305 * 1e4, 576000, 0.001964}

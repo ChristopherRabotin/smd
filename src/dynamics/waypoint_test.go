@@ -6,8 +6,8 @@ import (
 )
 
 func TestOutwardSpiral(t *testing.T) {
-	vBody := CelestialObject{"Virtual", 100, 0, 100}
-	action := &WaypointAction{ADD, nil}
+	vBody := CelestialObject{"Virtual", 100, 0, 100, 0}
+	action := &WaypointAction{ADDCARGO, nil}
 	wp := NewOutwardSpiral(vBody, action)
 	if wp.Cleared() {
 		t.Fatal("Waypoint was cleared at creation.")
@@ -38,7 +38,7 @@ func TestOutwardSpiral(t *testing.T) {
 }
 
 func TestLoiter(t *testing.T) {
-	action := &WaypointAction{ADD, nil}
+	action := &WaypointAction{ADDCARGO, nil}
 	wp := NewLoiter(time.Duration(1)*time.Minute, action)
 	if wp.Cleared() {
 		t.Fatal("Waypoint was cleared at creation.")

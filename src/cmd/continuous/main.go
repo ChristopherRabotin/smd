@@ -2,7 +2,6 @@ package main
 
 import (
 	"dynamics"
-	"log"
 	"math"
 	"time"
 )
@@ -22,8 +21,5 @@ func main() {
 	sc := Spacecraft(name)
 	orbit := InitialOrbit()
 	astro := dynamics.NewAstro(sc, orbit, &start, &end, name)
-	// Start propagation.
-	log.Printf("Depart from: %s\n", orbit.String())
 	astro.Propagate()
-	log.Printf("Arrived at: %s\n", orbit.String())
 }

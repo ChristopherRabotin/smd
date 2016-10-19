@@ -18,6 +18,7 @@ func InitialOrbit() *dynamics.Orbit {
 
 // Waypoints returns the waypoints.
 func Waypoints() []dynamics.Waypoint {
-	return []dynamics.Waypoint{dynamics.NewOutwardSpiral(dynamics.Earth, nil),
+	ref2Sun := &dynamics.WaypointAction{dynamics.REFSUN, nil}
+	return []dynamics.Waypoint{dynamics.NewOutwardSpiral(dynamics.Earth, ref2Sun),
 		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil)}
 }

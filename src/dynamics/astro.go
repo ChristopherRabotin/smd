@@ -51,9 +51,9 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 	}
 
 	logger = kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stdout))
-	logger = kitlog.NewContext(logger).With("spacecraft", s.Name)
+	logger = kitlog.NewContext(logger).With("spacecraft", s.Name).With("time", a.CurrentDT)
 	if end.Before(*start) {
-		logger.Log("warning", "no end date")
+		logger.Log("level", "warning", "subsys", "astro", "message", "no end date")
 	}
 
 	return a
@@ -62,7 +62,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 // LogStatus returns the status of the propagation and vehicle.
 // TODO: Support center of orbit change.
 func (a *Astrocodile) LogStatus() {
-	logger.Log("time", a.CurrentDT, "Δv", norm(a.Orbit.V)-a.initV, "fuel", a.Vehicle.FuelMass)
+	logger.Log("level", "info", "subsys", "prop", "Δv", norm(a.Orbit.V)-a.initV, "fuel", a.Vehicle.FuelMass)
 }
 
 // Propagate starts the propagation.
@@ -75,7 +75,7 @@ func (a *Astrocodile) Propagate() {
 		tickDuration = 1 * time.Minute
 	}
 	if tickDuration > 0 {
-		logger.Log("status", "starting", "reportPeriod", tickDuration, "departure", a.Orbit)
+		logger.Log("level", "notice", "subsys", "astro", "reportPeriod", tickDuration, "orbit", a.Orbit)
 		a.LogStatus()
 		ticker := time.NewTicker(tickDuration)
 		go func() {
@@ -83,10 +83,16 @@ func (a *Astrocodile) Propagate() {
 				a.LogStatus()
 			}
 		}()
+	} else {
+		// Happens only during tests.
+		logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
 	}
 	integrator.NewRK4(0, stepSize, a).Solve() // Blocking.
 	a.LogStatus()
-	logger.Log("status", "ended", "arrival", a.Orbit)
+	logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
+	if a.Vehicle.FuelMass < 0 {
+		logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
+	}
 }
 
 // Stop implements the stop call of the integrator.
@@ -139,6 +145,9 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	a.Orbit.V = []float64{s[3], s[4], s[5]}
 	if norm(a.Orbit.R) < 0 {
 		panic("negative distance to body")
+	}
+	if a.Vehicle.FuelMass > 0 && s[6] <= 0 {
+		logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", s[6])
 	}
 	a.Vehicle.FuelMass = s[6]
 }

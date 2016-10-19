@@ -9,10 +9,16 @@ import (
 type WaypointActionEnum uint8
 
 const (
-	// ADD is a waypoint action associated to a piece of cargo
-	ADD WaypointActionEnum = iota + 1
-	// DROP is the opposite of ADD
-	DROP
+	// ADDCARGO is a waypoint action associated to a piece of cargo
+	ADDCARGO WaypointActionEnum = iota + 1
+	// DROPCARGO is the opposite of ADD
+	DROPCARGO
+	// REFEARTH switches the orbit reference to the Earth
+	REFEARTH
+	// REFMARS switches the orbit reference to Mars
+	REFMARS
+	//REFSUN switches the orbit reference to the Sun
+	REFSUN
 )
 
 // WaypointAction defines what happens when a given waypoint is reached.
