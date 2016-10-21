@@ -2,7 +2,6 @@ package dynamics
 
 import (
 	"dataio"
-	"fmt"
 	"integrator"
 	"math"
 	"os"
@@ -156,9 +155,6 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	fDot = make([]float64, 7) // init return vector
 	radius := norm([]float64{f[0], f[1], f[2]})
-	if radius < Earth.Radius {
-		panic(fmt.Errorf("[COLLISION] r=%f km\n", radius))
-	}
 	// Let's add the thrust to increase the magnitude of the velocity.
 	Δv, usedFuel := a.Vehicle.Accelerate(*a.CurrentDT, a.Orbit)
 	twoBodyVelocity := -a.Orbit.μ / math.Pow(radius, 3)
