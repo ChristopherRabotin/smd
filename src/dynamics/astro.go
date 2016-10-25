@@ -157,7 +157,7 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	radius := norm([]float64{f[0], f[1], f[2]})
 	// Let's add the thrust to increase the magnitude of the velocity.
 	Δv, usedFuel := a.Vehicle.Accelerate(*a.CurrentDT, a.Orbit)
-	twoBodyVelocity := -a.Orbit.μ / math.Pow(radius, 3)
+	twoBodyVelocity := -a.Orbit.Origin.μ / math.Pow(radius, 3)
 	for i := 0; i < 3; i++ {
 		// The first three components are the velocity.
 		fDot[i] = f[i+3]
