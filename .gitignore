@@ -1,3 +1,4 @@
-outputdata/.
-bin/.
-pkg/.
+outputdata/
+bin/
+pkg/
+
