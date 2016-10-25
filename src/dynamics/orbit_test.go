@@ -86,4 +86,8 @@ func TestOrbitRefChange(t *testing.T) {
 	if !vectorsEqual(earthV1[:], earthV2[:]) {
 		t.Fatal("earthV1 != earthV2")
 	}
+	// Test panic
+	assertPanic(t, func() {
+		o.ToXCentric(Earth, dt)
+	})
 }
