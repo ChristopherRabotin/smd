@@ -1,7 +1,6 @@
 package dynamics
 
 import (
-	"log"
 	"math"
 	"time"
 )
@@ -46,7 +45,50 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		// We've found a waypoint which isn't reached.
 		Δv, reached := wp.AllocateThrust(o, dt)
 		if reached {
-			log.Println("waypoint reached!!")
+			logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String())
+			// Handle waypoint action
+			if action := wp.Action(); action != nil {
+				switch action.Type {
+				case ADDCARGO:
+					action.Cargo.Arrival = dt // Set the arrival date.
+					sc.Cargo = append(sc.Cargo, action.Cargo)
+					logger.Log("level", "info", "subsys", "adcs", "cargo", "added", "mass", sc.Mass(dt))
+					break
+				case DROPCARGO:
+					initLen := len(sc.Cargo)
+					for i, c := range sc.Cargo {
+						if c == action.Cargo {
+							if len(sc.Cargo) == 1 {
+								sc.Cargo = []*Cargo{}
+								break
+							}
+							// Replace the found cargo with the last of the list.
+							sc.Cargo[i] = sc.Cargo[len(sc.Cargo)-1]
+							// Truncate the list
+							sc.Cargo = sc.Cargo[:len(sc.Cargo)-1]
+							break
+						}
+					}
+					if initLen == len(sc.Cargo) {
+						logger.Log("level", "critical", "subsys", "adcs", "cargo", "not found")
+					} else {
+						logger.Log("level", "info", "subsys", "adcs", "cargo", "dropped", "mass", sc.Mass(dt))
+					}
+					break
+				case REFEARTH:
+					o.ToXCentric(Earth, dt)
+					break
+				case REFMARS:
+					o.ToXCentric(Mars, dt)
+					break
+				case REFSUN:
+					o.ToXCentric(Sun, dt)
+					break
+				default:
+					panic("unknown action")
+				}
+			}
+			continue
 		}
 		if Δv[0] == 0 && Δv[1] == 0 && Δv[2] == 0 {
 			// Nothing to do, we're probably just loitering.
@@ -65,9 +107,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 				tThrust, tFuelMass := thruster.Thrust(voltage, power)
 				thrust += tThrust
 				fuel += tFuelMass
-			} else {
-				log.Printf("%s\n", err)
-			}
+			} // Error handling of EPS happens in EPS subsystem.
 		}
 		thrust /= 1e3 // Convert thrust from m/s^-2 to km/s^-2
 		Δv[0] *= thrust / sc.Mass(dt)

@@ -6,13 +6,13 @@ import (
 )
 
 func TestOutwardSpiral(t *testing.T) {
-	vBody := CelestialObject{"Virtual", 100, 0, 100}
-	action := &WaypointAction{ADD, nil}
+	vBody := CelestialObject{"Virtual", 100, -1, 0, 100, 0}
+	action := &WaypointAction{ADDCARGO, nil}
 	wp := NewOutwardSpiral(vBody, action)
 	if wp.Cleared() {
 		t.Fatal("Waypoint was cleared at creation.")
 	}
-	dV, reached := wp.AllocateThrust(&Orbit{[]float64{90, 0, 0}, []float64{0, 0, 0}, 0}, time.Now())
+	dV, reached := wp.AllocateThrust(&Orbit{[]float64{90, 0, 0}, []float64{0, 0, 0}, Sun}, time.Now())
 	if reached {
 		t.Fatal("Waypoint was reached too early.")
 	}
@@ -22,7 +22,7 @@ func TestOutwardSpiral(t *testing.T) {
 	if wp.Action() != nil {
 		t.Fatal("Waypoint returned an action before being reached.")
 	}
-	dV, reached = wp.AllocateThrust(&Orbit{[]float64{100, 0, 0}, []float64{0, 0, 0}, 0}, time.Now())
+	dV, reached = wp.AllocateThrust(&Orbit{[]float64{100, 0, 0}, []float64{0, 0, 0}, Sun}, time.Now())
 	if !reached {
 		t.Fatal("Waypoint was not reached as it should have been.")
 	}
@@ -38,13 +38,13 @@ func TestOutwardSpiral(t *testing.T) {
 }
 
 func TestLoiter(t *testing.T) {
-	action := &WaypointAction{ADD, nil}
+	action := &WaypointAction{ADDCARGO, nil}
 	wp := NewLoiter(time.Duration(1)*time.Minute, action)
 	if wp.Cleared() {
 		t.Fatal("Waypoint was cleared at creation.")
 	}
 	initTime := time.Unix(0, 0)
-	dV, reached := wp.AllocateThrust(&Orbit{[]float64{0, 0, 0}, []float64{0, 0, 0}, 0}, initTime)
+	dV, reached := wp.AllocateThrust(&Orbit{[]float64{0, 0, 0}, []float64{0, 0, 0}, Sun}, initTime)
 	if reached {
 		t.Fatal("Loiter waypoint was reached too early.")
 	}
@@ -54,14 +54,14 @@ func TestLoiter(t *testing.T) {
 	if wp.Action() != nil {
 		t.Fatal("Loiter waypoint returned an action before being reached.")
 	}
-	dV, reached = wp.AllocateThrust(&Orbit{[]float64{100, 0, 0}, []float64{0, 0, 0}, 0}, initTime.Add(time.Duration(1)*time.Second))
+	dV, reached = wp.AllocateThrust(&Orbit{[]float64{100, 0, 0}, []float64{0, 0, 0}, Sun}, initTime.Add(time.Duration(1)*time.Second))
 	if reached {
 		t.Fatal("Loiter waypoint was reached too early.")
 	}
 	if norm(dV) != 0 {
 		t.Fatal("Loiter waypoint required a velocity change.")
 	}
-	dV, reached = wp.AllocateThrust(&Orbit{[]float64{100, 0, 0}, []float64{0, 0, 0}, 0}, initTime.Add(time.Duration(1)*time.Minute))
+	dV, reached = wp.AllocateThrust(&Orbit{[]float64{100, 0, 0}, []float64{0, 0, 0}, Sun}, initTime.Add(time.Duration(1)*time.Minute))
 	if !reached {
 		t.Fatal("Loiter waypoint was not reached as it should have been.")
 	}

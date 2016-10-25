@@ -169,11 +169,11 @@ func StreamInterpolatedStates(filename string, histChan <-chan (*CgInterpolatedS
 		filename = fmt.Sprintf("../outputdata/prop%s.xyzv", filename)
 	}
 	f, err := os.Create(filename)
-	fmt.Printf("Saving file to %s.\n", f.Name())
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
+	fmt.Printf("Saving file to %s.\n", f.Name())
 	// Header
 	f.WriteString(fmt.Sprintf(`# Creation date (UTC): %s
 # Records are <jd> <x> <y> <z> <vel x> <vel y> <vel z>
