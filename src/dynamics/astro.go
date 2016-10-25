@@ -22,18 +22,18 @@ var logger kitlog.Logger
 // Astrocodile is an orbit propagator.
 // It's a play on words from STK's Atrogrator.
 type Astrocodile struct {
-	Vehicle   *Spacecraft
-	Orbit     *Orbit
-	StartDT   *time.Time
-	EndDT     *time.Time
-	CurrentDT *time.Time
+	Vehicle   *Spacecraft // As pointer because SC may be altered during propagation.
+	Orbit     *Orbit      // As pointer because the orbit changes during propagation.
+	StartDT   time.Time
+	EndDT     time.Time
+	CurrentDT time.Time
 	StopChan  chan (bool)
 	histChan  chan<- (*dataio.CgInterpolatedState)
 	initV     float64
 }
 
 // NewAstro returns a new Astrocodile instance from the position and velocity vectors.
-func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *Astrocodile {
+func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) *Astrocodile {
 	// If no filepath is provided, then no output will be written.
 	var histChan chan (*dataio.CgInterpolatedState)
 	if filepath != "" {
@@ -46,12 +46,12 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end *time.Time, filepath string) *
 	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan, norm(o.V)}
 	// Write the first data point.
 	if histChan != nil {
-		histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(*start), Position: a.Orbit.R, Velocity: a.Orbit.V}
+		histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(start), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	}
 
 	logger = kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stdout))
 	logger = kitlog.NewContext(logger).With("spacecraft", s.Name).With("time", a.CurrentDT)
-	if end.Before(*start) {
+	if end.Before(start) {
 		logger.Log("level", "warning", "subsys", "astro", "message", "no end date")
 	}
 
@@ -68,8 +68,8 @@ func (a *Astrocodile) LogStatus() {
 func (a *Astrocodile) Propagate() {
 	// Add a ticker status report based on the duration of the simulation.
 	var tickDuration time.Duration
-	if a.EndDT.After(*a.StartDT) {
-		tickDuration = time.Duration(a.EndDT.Sub(*a.StartDT).Hours()*0.01) * time.Second
+	if a.EndDT.After(a.StartDT) {
+		tickDuration = time.Duration(a.EndDT.Sub(a.StartDT).Hours()*0.01) * time.Second
 	} else {
 		tickDuration = 1 * time.Minute
 	}
@@ -104,8 +104,8 @@ func (a *Astrocodile) Stop(i uint64) bool {
 		}
 		return true // Stop because there is a request to stop.
 	default:
-		*a.CurrentDT = a.CurrentDT.Add(time.Duration(stepSize) * time.Second)
-		if a.EndDT.Before(*a.StartDT) {
+		a.CurrentDT = a.CurrentDT.Add(time.Duration(stepSize) * time.Second)
+		if a.EndDT.Before(a.StartDT) {
 			// Check if any waypoint still needs to be reached.
 			for _, wp := range a.Vehicle.WayPoints {
 				if !wp.Cleared() {
@@ -114,7 +114,7 @@ func (a *Astrocodile) Stop(i uint64) bool {
 			}
 			return true
 		}
-		if a.CurrentDT.Sub(*a.EndDT).Nanoseconds() > 0 {
+		if a.CurrentDT.Sub(a.EndDT).Nanoseconds() > 0 {
 			if a.histChan != nil {
 				close(a.histChan)
 			}
@@ -138,7 +138,7 @@ func (a *Astrocodile) GetState() (s []float64) {
 // SetState sets the updated state.
 func (a *Astrocodile) SetState(i uint64, s []float64) {
 	if a.histChan != nil {
-		a.histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(*a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
+		a.histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
 	}
 	a.Orbit.R = []float64{s[0], s[1], s[2]}
 	a.Orbit.V = []float64{s[3], s[4], s[5]}
@@ -156,7 +156,7 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	fDot = make([]float64, 7) // init return vector
 	radius := norm([]float64{f[0], f[1], f[2]})
 	// Let's add the thrust to increase the magnitude of the velocity.
-	Δv, usedFuel := a.Vehicle.Accelerate(*a.CurrentDT, a.Orbit)
+	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
 	twoBodyVelocity := -a.Orbit.Origin.μ / math.Pow(radius, 3)
 	for i := 0; i < 3; i++ {
 		// The first three components are the velocity.

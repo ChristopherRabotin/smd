@@ -33,13 +33,13 @@ func TestAstrocroChanStop(t *testing.T) {
 	// Define propagation parameters.
 	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
 	end := start.Add(time.Duration(1) * time.Hour)
-	astro := NewAstro(NewEmptySC("test", 1500), o, &start, &end, "")
+	astro := NewAstro(NewEmptySC("test", 1500), o, start, end, "")
 	// Start propagation.
 	go astro.Propagate()
 	// Check stopping the propagation via the channel.
 	<-time.After(time.Millisecond * 1)
 	astro.StopChan <- true
-	if astro.EndDT.Sub(*astro.CurrentDT).Nanoseconds() <= 0 {
+	if astro.EndDT.Sub(astro.CurrentDT).Nanoseconds() <= 0 {
 		t.Fatal("WARNING: propagation NOT stopped via channel")
 	}
 	// Must find a way to test the stop channel. via a long propagation and a select probably.
@@ -80,7 +80,7 @@ func TestAstrocroPropTime(t *testing.T) {
 	// Define propagation parameters.
 	start := time.Now()
 	end := start.Add(time.Duration(23) * time.Hour).Add(time.Duration(56) * time.Minute).Add(time.Duration(4) * time.Second).Add(time.Duration(916) * time.Millisecond)
-	astro := NewAstro(NewEmptySC("test", 1500), o, &start, &end, "")
+	astro := NewAstro(NewEmptySC("test", 1500), o, start, end, "")
 	// Start propagation.
 	astro.Propagate()
 	// Must find a way to test the stop channel. via a long propagation and a select probably.

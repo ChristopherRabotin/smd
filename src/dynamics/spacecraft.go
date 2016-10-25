@@ -76,9 +76,16 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 					}
 					break
 				case REFEARTH:
+					o.ToXCentric(Earth, dt)
+					break
 				case REFMARS:
+					o.ToXCentric(Mars, dt)
+					break
 				case REFSUN:
-					logger.Log("level", "critical", "subsys", "astro", "ref", "not implemented")
+					o.ToXCentric(Sun, dt)
+					break
+				default:
+					panic("unknown action")
 				}
 			}
 			continue
