@@ -191,7 +191,7 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 	var f *os.File
 	fileNo = 0
 	cgItems := []*CgItems{}
-	var curCgItem CgItems
+	var curCgItem *CgItems
 	for {
 		state, more := <-stateChan
 		if more {
@@ -199,50 +199,55 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 			if prevStatePtr == nil {
 				firstStatePtr = &state
 				f = createInterpolatedFile(fmt.Sprintf("%s-%d", filename, fileNo), stamped, state.dt)
-				fileNo++
 				traj := CgTrajectory{Type: "InterpolatedStates", Source: fmt.Sprintf("prop-%s-%d.xyzv", filename, fileNo)}
 				// TODO: Switch color based on SC state (e.g. no fuel, not thrusting, etc.)
 				label := CgLabel{Color: []float64{0.6, 1, 1}, FadeSize: 1000000, ShowText: true}
 				plot := CgTrajectoryPlot{Color: []float64{0.6, 1, 1}, LineWidth: 1, Duration: "", Lead: "0 d", Fade: 0, SampleCount: 10}
-				curCgItem = CgItems{Class: "spacecraft", Name: fmt.Sprintf("%s-%d", state.sc.Name, fileNo), StartTime: fmt.Sprintf("%s", state.dt.UTC()), EndTime: "", Center: state.orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
+				curCgItem = &CgItems{Class: "spacecraft", Name: fmt.Sprintf("%s-%d", state.sc.Name, fileNo), StartTime: fmt.Sprintf("%s", state.dt.UTC()), EndTime: "", Center: state.orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
+				fileNo++
 			} else {
 				if !prevStatePtr.orbit.Origin.Equals(state.orbit.Origin) {
 					// Before switching files, let's write the end of simulation time.
-					f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", prevStatePtr.dt.UTC()))
+					f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", state.dt.UTC()))
 					// Update plot time propagation.
-					curCgItem.EndTime = fmt.Sprintf("%s", prevStatePtr.dt.UTC())
-					fmt.Printf("duration %s\n", prevStatePtr.dt.Sub(firstStatePtr.dt))
-					curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(prevStatePtr.dt.Sub(firstStatePtr.dt).Hours()/24+1))
+					curCgItem.EndTime = fmt.Sprintf("%s", state.dt.UTC())
+					curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(state.dt.Sub(firstStatePtr.dt).Hours()/24+1))
 					// Add this CG item to the list of items.
-					cgItems = append(cgItems, &curCgItem)
+					cgItems = append(cgItems, curCgItem) // TODO: SWITCH TO POINTER AND CHECK
 					// Switch files.
 					f.Close()
+					// XXX: Copy/paste from above :'(
 					f = createInterpolatedFile(fmt.Sprintf("%s-%d", filename, fileNo), stamped, state.dt)
+					traj := CgTrajectory{Type: "InterpolatedStates", Source: fmt.Sprintf("prop-%s-%d.xyzv", filename, fileNo)}
+					label := CgLabel{Color: []float64{0.6, 1, 1}, FadeSize: 1000000, ShowText: true}
+					plot := CgTrajectoryPlot{Color: []float64{0.6, 1, 1}, LineWidth: 1, Duration: "", Lead: "0 d", Fade: 0, SampleCount: 10}
+					curCgItem = &CgItems{Class: "spacecraft", Name: fmt.Sprintf("%s-%d", state.sc.Name, fileNo), StartTime: fmt.Sprintf("%s", state.dt.UTC()), EndTime: "", Center: state.orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
 					fileNo++
 					// Force writing this data point now instead of creating N new files.
 					prevStatePtr = &state
 					asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.R, Velocity: state.orbit.V}
-					_, err := f.WriteString("\n" + asTxt.ToText())
-					if err != nil {
+					if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
 						panic(err)
 					}
 					continue
 				}
 			}
-			// Only write one datapoint per minute.
+			// Only write one datapoint per simulation minute.
 			if prevStatePtr != nil && state.dt.Sub(prevStatePtr.dt) <= time.Duration(1)*time.Minute {
 				continue
 			}
 			prevStatePtr = &state
 			asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.R, Velocity: state.orbit.V}
-			_, err := f.WriteString("\n" + asTxt.ToText())
-			if err != nil {
+			if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
 				panic(err)
 			}
 		} else {
 			// The channel is closed, hence the simulation is over.
 			f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", prevStatePtr.dt.UTC()))
-			cgItems = append(cgItems, &curCgItem)
+			f.Close()
+			curCgItem.EndTime = fmt.Sprintf("%s", prevStatePtr.dt.UTC())
+			curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(prevStatePtr.dt.Sub(firstStatePtr.dt).Hours()/24+1))
+			cgItems = append(cgItems, curCgItem)
 			break
 		}
 	}
