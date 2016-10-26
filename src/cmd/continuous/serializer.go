@@ -1,15 +1,7 @@
 package main
 
-import (
-	"dataio"
-	"encoding/json"
-	"fmt"
-	"os"
-	"time"
-)
-
 // Serializes the data to a file.
-
+/*
 // CGOut generates the JSON file of the export.
 func CGOut(name, center string, startDT, endDT time.Time) {
 	if endDT.Before(startDT) {
@@ -34,3 +26,5 @@ func CGOut(name, center string, startDT, endDT time.Time) {
 		f.Write(marsh)
 	}
 }
+
+*/

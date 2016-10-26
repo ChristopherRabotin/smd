@@ -1,14 +1,12 @@
 package dynamics
 
 import (
-	"dataio"
 	"integrator"
 	"math"
 	"os"
 	"time"
 
 	kitlog "github.com/go-kit/kit/log"
-	"github.com/soniakeys/meeus/julian"
 )
 
 const (
@@ -28,17 +26,17 @@ type Astrocodile struct {
 	EndDT     time.Time
 	CurrentDT time.Time
 	StopChan  chan (bool)
-	histChan  chan<- (*dataio.CgInterpolatedState)
+	histChan  chan<- (AstroState)
 	initV     float64
 }
 
 // NewAstro returns a new Astrocodile instance from the position and velocity vectors.
 func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) *Astrocodile {
 	// If no filepath is provided, then no output will be written.
-	var histChan chan (*dataio.CgInterpolatedState)
+	var histChan chan (AstroState)
 	if filepath != "" {
-		histChan = make(chan (*dataio.CgInterpolatedState), 1000) // a 1k entry buffer
-		go dataio.StreamInterpolatedStates(filepath, histChan, false)
+		histChan = make(chan (AstroState), 1000) // a 1k entry buffer
+		go StreamStates(filepath, histChan, false)
 	} else {
 		histChan = nil
 	}
@@ -46,7 +44,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) *A
 	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan, norm(o.V)}
 	// Write the first data point.
 	if histChan != nil {
-		histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(start), Position: a.Orbit.R, Velocity: a.Orbit.V}
+		histChan <- AstroState{a.CurrentDT, *s, *o}
 	}
 
 	logger = kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stdout))
@@ -138,7 +136,7 @@ func (a *Astrocodile) GetState() (s []float64) {
 // SetState sets the updated state.
 func (a *Astrocodile) SetState(i uint64, s []float64) {
 	if a.histChan != nil {
-		a.histChan <- &dataio.CgInterpolatedState{JD: julian.TimeToJD(a.CurrentDT), Position: a.Orbit.R, Velocity: a.Orbit.V}
+		a.histChan <- AstroState{a.CurrentDT, *a.Vehicle, *a.Orbit}
 	}
 	a.Orbit.R = []float64{s[0], s[1], s[2]}
 	a.Orbit.V = []float64{s[3], s[4], s[5]}
@@ -166,4 +164,11 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	}
 	fDot[6] = -usedFuel
 	return
+}
+
+// AstroState stores propagated state.
+type AstroState struct {
+	dt    time.Time
+	sc    Spacecraft
+	orbit Orbit
 }

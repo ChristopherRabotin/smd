@@ -1,7 +1,8 @@
-package dataio
+package dynamics
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -160,46 +161,92 @@ func ParseInterpolatedStates(s string) []*CgInterpolatedState {
 	return states
 }
 
-// StreamInterpolatedStates streams the output of the channel to the provided file.
-func StreamInterpolatedStates(filename string, histChan <-chan (*CgInterpolatedState), stamped bool) {
+// createInterpolatedFile returns a file which requires a defer close statement!
+func createInterpolatedFile(filename string, stamped bool, stateDT time.Time) *os.File {
 	if stamped {
 		t := time.Now()
-		filename = fmt.Sprintf("../outputdata/prop%s-%d-%02d-%02dT%02d.%02d.%02d.xyzv", filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+		filename = fmt.Sprintf("%s/prop-%s-%d-%02d-%02dT%02d.%02d.%02d.xyzv", os.Getenv("DATAOUT"), filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 	} else {
-		filename = fmt.Sprintf("../outputdata/prop%s.xyzv", filename)
+		filename = fmt.Sprintf("%s/prop-%s.xyzv", os.Getenv("DATAOUT"), filename)
 	}
 	f, err := os.Create(filename)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
-	fmt.Printf("Saving file to %s.\n", f.Name())
 	// Header
 	f.WriteString(fmt.Sprintf(`# Creation date (UTC): %s
 # Records are <jd> <x> <y> <z> <vel x> <vel y> <vel z>
 #   Time is a TDB Julian date
 #   Position in km
-#   Velocity in km/sec`, time.Now()))
+#   Velocity in km/sec
+#   Simulation time start (UTC): %s`, time.Now(), stateDT.UTC()))
+	return f
+}
+
+// StreamStates streams the output of the channel to the provided file.
+func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) {
 	// Read from channel
-	previousJD := 0.0
+	var prevStatePtr, firstStatePtr *AstroState
+	var fileNo uint8
+	var f *os.File
+	fileNo = 0
+	cgItems := []*CgItems{}
+	var curCgItem CgItems
 	for {
-		state, more := <-histChan
+		state, more := <-stateChan
 		if more {
-			// Only write one data point per julian minute.
-			if state.JD-previousJD < 1.0/(24*60) {
-				continue
-			} else if previousJD == 0 {
-				// First iteration, let's add the initial time in simulation.
-				f.WriteString(fmt.Sprintf("\n# Simulation time start (UTC): %s", julian.JDToTime(state.JD).UTC()))
+			// Determine whether a new Cosmographia interpolated state file is needed.
+			if prevStatePtr == nil {
+				firstStatePtr = &state
+				f = createInterpolatedFile(fmt.Sprintf("%s-%d", filename, fileNo), stamped, state.dt)
+				fileNo++
+				traj := CgTrajectory{Type: "InterpolatedStates", Source: "prop-" + filename + ".xyzv"}
+				// TODO: Switch color based on SC state (e.g. no fuel, not thrusting, etc.)
+				label := CgLabel{Color: []float64{0.6, 1, 1}, FadeSize: 1000000, ShowText: true}
+				plot := CgTrajectoryPlot{Color: []float64{0.6, 1, 1}, LineWidth: 1, Duration: "200 d", Lead: "0 d", Fade: 0, SampleCount: 10}
+				curCgItem = CgItems{Class: "spacecraft", Name: state.sc.Name, StartTime: fmt.Sprintf("%s", state.dt.UTC()), EndTime: "", Center: state.orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
+			} else {
+				if prevStatePtr.orbit.Origin != state.orbit.Origin {
+					// Before switching files, let's write the end of simulation time.
+					f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", state.dt.UTC()))
+					// Update plot time propagation.
+					curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(prevStatePtr.dt.Sub(firstStatePtr.dt).Hours()/24+1))
+					// Add this CG item to the list of item.
+					cgItems = append(cgItems, &curCgItem)
+					// Switch files.
+					f = createInterpolatedFile(fmt.Sprintf("%s-%d", filename, fileNo), stamped, state.dt)
+					fileNo++
+
+					// Check recency of previous written state
+					if prevStatePtr.dt.Sub(state.dt) <= time.Duration(1)*time.Minute {
+						continue
+					}
+				}
 			}
-			previousJD = state.JD
-			_, err := f.WriteString("\n" + state.ToText())
+			prevStatePtr = &state
+			asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.R, Velocity: state.orbit.V}
+			_, err := f.WriteString("\n" + asTxt.ToText())
 			if err != nil {
 				panic(err)
 			}
 		} else {
-			f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", julian.JDToTime(previousJD).UTC()))
-			return
+			f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", prevStatePtr.dt.UTC()))
+			cgItems = append(cgItems, &curCgItem)
+			break
 		}
+	}
+	// Let's write the catalog.
+	c := CgCatalog{Version: "1.0", Name: prevStatePtr.sc.Name, Items: cgItems, Require: nil}
+	// Create JSON file.
+	f, err := os.Create("../outputdata/catalog-" + filename + ".json")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	fmt.Printf("Saving file to %s.\n", f.Name())
+	if marsh, err := json.Marshal(c); err != nil {
+		panic(err)
+	} else {
+		f.Write(marsh)
 	}
 }

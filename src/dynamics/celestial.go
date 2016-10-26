@@ -49,7 +49,7 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 		panic(fmt.Errorf("unknown object: %s", c.Name))
 	}
 	// Load planet.
-	if planet, err := planetposition.LoadPlanetPath(vsopPosition, "../data/vsop87"); err != nil {
+	if planet, err := planetposition.LoadPlanet(vsopPosition); err != nil {
 		panic(err)
 	} else {
 		long, lat, r := planet.Position2000(julian.TimeToJD(dt))

@@ -13,7 +13,7 @@ func InitialEarthOrbit() *dynamics.Orbit {
 	ω := dynamics.Deg2rad(10) // Made up
 	Ω := dynamics.Deg2rad(5)  // Made up
 	ν := dynamics.Deg2rad(1)  // I don't care about that guy.
-	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, &dynamics.Earth)
+	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, dynamics.Earth)
 }
 
 // FromEarthWaypoints returns the waypoints.
@@ -31,7 +31,7 @@ func InitialMarsOrbit() *dynamics.Orbit {
 	ω := dynamics.Deg2rad(10) // Made up
 	Ω := dynamics.Deg2rad(5)  // Made up
 	ν := dynamics.Deg2rad(1)  // I don't care about that guy.
-	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, &dynamics.Earth)
+	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, dynamics.Mars)
 }
 
 // FromMarsWaypoints returns the waypoints.
