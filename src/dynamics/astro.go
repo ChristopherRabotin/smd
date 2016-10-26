@@ -4,6 +4,7 @@ import (
 	"integrator"
 	"math"
 	"os"
+	"sync"
 	"time"
 
 	kitlog "github.com/go-kit/kit/log"
@@ -14,6 +15,7 @@ const (
 )
 
 var logger kitlog.Logger
+var wg sync.WaitGroup
 
 /* Handles the astrodynamical propagations. */
 
@@ -31,12 +33,16 @@ type Astrocodile struct {
 }
 
 // NewAstro returns a new Astrocodile instance from the position and velocity vectors.
-func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) *Astrocodile {
+func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) (*Astrocodile, *sync.WaitGroup) {
 	// If no filepath is provided, then no output will be written.
 	var histChan chan (AstroState)
 	if filepath != "" {
 		histChan = make(chan (AstroState), 1000) // a 1k entry buffer
-		go StreamStates(filepath, histChan, false)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			StreamStates(filepath, histChan, false)
+		}()
 	} else {
 		histChan = nil
 	}
@@ -53,7 +59,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) *A
 		logger.Log("level", "warning", "subsys", "astro", "message", "no end date")
 	}
 
-	return a
+	return a, &wg
 }
 
 // LogStatus returns the status of the propagation and vehicle.
@@ -109,6 +115,9 @@ func (a *Astrocodile) Stop(i uint64) bool {
 				if !wp.Cleared() {
 					return false
 				}
+			}
+			if a.histChan != nil {
+				close(a.histChan)
 			}
 			return true
 		}

@@ -30,6 +30,11 @@ func (c *CelestialObject) String() string {
 	return fmt.Sprintf("[Object %s]", c.Name)
 }
 
+// Equals returns whether the provided celestial object is the same.
+func (c *CelestialObject) Equals(b CelestialObject) bool {
+	return c.Name == b.Name && c.Radius == b.Radius && c.a == b.a && c.μ == b.μ && c.SOI == b.SOI && c.J2 == b.J2
+}
+
 // HelioOrbit returns the heliocentric position and velocity of this planet at a given time.
 func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 	var vsopPosition int

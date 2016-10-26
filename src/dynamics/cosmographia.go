@@ -200,28 +200,38 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 				firstStatePtr = &state
 				f = createInterpolatedFile(fmt.Sprintf("%s-%d", filename, fileNo), stamped, state.dt)
 				fileNo++
-				traj := CgTrajectory{Type: "InterpolatedStates", Source: "prop-" + filename + ".xyzv"}
+				traj := CgTrajectory{Type: "InterpolatedStates", Source: fmt.Sprintf("prop-%s-%d.xyzv", filename, fileNo)}
 				// TODO: Switch color based on SC state (e.g. no fuel, not thrusting, etc.)
 				label := CgLabel{Color: []float64{0.6, 1, 1}, FadeSize: 1000000, ShowText: true}
-				plot := CgTrajectoryPlot{Color: []float64{0.6, 1, 1}, LineWidth: 1, Duration: "200 d", Lead: "0 d", Fade: 0, SampleCount: 10}
-				curCgItem = CgItems{Class: "spacecraft", Name: state.sc.Name, StartTime: fmt.Sprintf("%s", state.dt.UTC()), EndTime: "", Center: state.orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
+				plot := CgTrajectoryPlot{Color: []float64{0.6, 1, 1}, LineWidth: 1, Duration: "", Lead: "0 d", Fade: 0, SampleCount: 10}
+				curCgItem = CgItems{Class: "spacecraft", Name: fmt.Sprintf("%s-%d", state.sc.Name, fileNo), StartTime: fmt.Sprintf("%s", state.dt.UTC()), EndTime: "", Center: state.orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
 			} else {
-				if prevStatePtr.orbit.Origin != state.orbit.Origin {
+				if !prevStatePtr.orbit.Origin.Equals(state.orbit.Origin) {
 					// Before switching files, let's write the end of simulation time.
-					f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", state.dt.UTC()))
+					f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", prevStatePtr.dt.UTC()))
 					// Update plot time propagation.
+					curCgItem.EndTime = fmt.Sprintf("%s", prevStatePtr.dt.UTC())
+					fmt.Printf("duration %s\n", prevStatePtr.dt.Sub(firstStatePtr.dt))
 					curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(prevStatePtr.dt.Sub(firstStatePtr.dt).Hours()/24+1))
-					// Add this CG item to the list of item.
+					// Add this CG item to the list of items.
 					cgItems = append(cgItems, &curCgItem)
 					// Switch files.
+					f.Close()
 					f = createInterpolatedFile(fmt.Sprintf("%s-%d", filename, fileNo), stamped, state.dt)
 					fileNo++
-
-					// Check recency of previous written state
-					if prevStatePtr.dt.Sub(state.dt) <= time.Duration(1)*time.Minute {
-						continue
+					// Force writing this data point now instead of creating N new files.
+					prevStatePtr = &state
+					asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.R, Velocity: state.orbit.V}
+					_, err := f.WriteString("\n" + asTxt.ToText())
+					if err != nil {
+						panic(err)
 					}
+					continue
 				}
+			}
+			// Only write one datapoint per minute.
+			if prevStatePtr != nil && state.dt.Sub(prevStatePtr.dt) <= time.Duration(1)*time.Minute {
+				continue
 			}
 			prevStatePtr = &state
 			asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.R, Velocity: state.orbit.V}
@@ -230,6 +240,7 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 				panic(err)
 			}
 		} else {
+			// The channel is closed, hence the simulation is over.
 			f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", prevStatePtr.dt.UTC()))
 			cgItems = append(cgItems, &curCgItem)
 			break
@@ -238,7 +249,7 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 	// Let's write the catalog.
 	c := CgCatalog{Version: "1.0", Name: prevStatePtr.sc.Name, Items: cgItems, Require: nil}
 	// Create JSON file.
-	f, err := os.Create("../outputdata/catalog-" + filename + ".json")
+	f, err := os.Create(os.Getenv("DATAOUT") + "/catalog-" + filename + ".json")
 	if err != nil {
 		panic(err)
 	}

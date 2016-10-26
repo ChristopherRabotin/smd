@@ -45,7 +45,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		// We've found a waypoint which isn't reached.
 		Δv, reached := wp.AllocateThrust(o, dt)
 		if reached {
-			logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String())
+			logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String(), "status", "completed")
 			// Handle waypoint action
 			if action := wp.Action(); action != nil {
 				switch action.Type {
