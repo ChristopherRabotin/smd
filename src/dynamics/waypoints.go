@@ -31,7 +31,7 @@ type WaypointAction struct {
 type Waypoint interface {
 	Cleared() bool // returns whether waypoint has been reached
 	Action() *WaypointAction
-	AllocateThrust(*Orbit, time.Time) ([]float64, bool)
+	AllocateThrust(Orbit, time.Time) ([]float64, bool)
 	String() string
 }
 
@@ -54,7 +54,7 @@ func (wp *OutwardSpiral) Cleared() bool {
 }
 
 // AllocateThrust implements the Waypoint interface.
-func (wp *OutwardSpiral) AllocateThrust(o *Orbit, dt time.Time) ([]float64, bool) {
+func (wp *OutwardSpiral) AllocateThrust(o Orbit, dt time.Time) ([]float64, bool) {
 	if norm(o.R) >= wp.distance {
 		wp.cleared = true
 		return []float64{0, 0, 0}, true
@@ -97,7 +97,7 @@ func (wp *Loiter) Cleared() bool {
 }
 
 // AllocateThrust implements the Waypoint interface.
-func (wp *Loiter) AllocateThrust(o *Orbit, dt time.Time) (dv []float64, reached bool) {
+func (wp *Loiter) AllocateThrust(o Orbit, dt time.Time) (dv []float64, reached bool) {
 	dv = []float64{0, 0, 0}
 	if !wp.startedLoitering {
 		// First time this is called, starting timer.

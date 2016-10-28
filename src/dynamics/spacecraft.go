@@ -14,6 +14,7 @@ type Spacecraft struct {
 	Thrusters []Thruster // All available thrusters
 	Cargo     []*Cargo   // All onboard cargo
 	WayPoints []Waypoint // All waypoints of the tug
+	FuncQ     []func()
 }
 
 // Mass returns the given vehicle mass based on the provided UTC date time.
@@ -43,7 +44,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			continue
 		}
 		// We've found a waypoint which isn't reached.
-		Δv, reached := wp.AllocateThrust(o, dt)
+		Δv, reached := wp.AllocateThrust(*o, dt)
 		if reached {
 			logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String(), "status", "completed")
 			// Handle waypoint action
@@ -76,13 +77,13 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 					}
 					break
 				case REFEARTH:
-					o.ToXCentric(Earth, dt)
+					sc.FuncQ = append(sc.FuncQ, func() { o.ToXCentric(Earth, dt) })
 					break
 				case REFMARS:
-					o.ToXCentric(Mars, dt)
+					sc.FuncQ = append(sc.FuncQ, func() { o.ToXCentric(Mars, dt) })
 					break
 				case REFSUN:
-					o.ToXCentric(Sun, dt)
+					sc.FuncQ = append(sc.FuncQ, func() { o.ToXCentric(Sun, dt) })
 					break
 				default:
 					panic("unknown action")
@@ -121,7 +122,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 
 // NewEmptySC returns a spacecraft with no cargo and no thrusters.
 func NewEmptySC(name string, mass uint) *Spacecraft {
-	return &Spacecraft{name, float64(mass), 0, nil, []Thruster{}, []*Cargo{}, []Waypoint{}}
+	return &Spacecraft{name, float64(mass), 0, nil, []Thruster{}, []*Cargo{}, []Waypoint{}, []func(){}}
 }
 
 // Cargo defines a piece of cargo with arrival date and destination orbit

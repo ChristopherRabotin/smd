@@ -149,6 +149,23 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	}
 	a.Orbit.R = []float64{s[0], s[1], s[2]}
 	a.Orbit.V = []float64{s[3], s[4], s[5]}
+	// Let's execute any function which is in the queue of this time step.
+	for _, f := range a.Vehicle.FuncQ {
+		if f == nil {
+			continue
+		}
+		f()
+	}
+	a.Vehicle.FuncQ = make([]func(), 5) // Clear the queue.
+	//if a.Orbit.Origin == Sun && norm(a.Orbit.R) < 1e7 {
+	// Must manually fix, not sure this will work because of the integrator which calls
+	// the Func function with its own values, each need to be fixed prior to the propagation.
+	//	a.Orbit.ToXCentric(Sun, a.CurrentDT)
+	//	}
+	// I think I need to update Func in order to change the R and V on the fly.
+	// However, I can't just use the ToXCentric because the orbit frame is already switched.
+	// That means I need to update the orbit ref only after all the calls to the function.
+	// Note completely sure how to handle that.
 	if norm(a.Orbit.R) < 0 {
 		panic("negative distance to body")
 	}

@@ -11,7 +11,6 @@ type Orbit struct {
 	R      []float64       // Radius vector
 	V      []float64       // Velocity vector
 	Origin CelestialObject // Orbit orgin
-	//μ float64   // Gravitational constant of the center of orbit.
 }
 
 // GetOE returns the orbital elements of this orbit.
@@ -58,6 +57,7 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 	if o.Origin == b {
 		panic(fmt.Errorf("already in orbit around %s", b.Name))
 	}
+	fmt.Printf("Switching to orbit around %s\n", b.Name)
 	if b.SOI == -1 {
 		// Switch to heliocentric
 		relPos, relVel := o.Origin.HelioOrbit(dt)
