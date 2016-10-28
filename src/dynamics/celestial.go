@@ -53,13 +53,14 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 	default:
 		panic(fmt.Errorf("unknown object: %s", c.Name))
 	}
-	// Load planet.
-	if planet, err := planetposition.LoadPlanet(vsopPosition); err != nil {
-		panic(err)
+	// Load planet, note that planetposition starts counting at ZERO!
+	if planet, err := planetposition.LoadPlanet(vsopPosition - 1); err != nil {
+		panic(fmt.Errorf("could not load planet number %d: %s", vsopPosition, err))
 	} else {
 		long, lat, r := planet.Position2000(julian.TimeToJD(dt))
+		//long, lat, r := planet.Position(julian.TimeToJD(dt))
 		r *= AU
-		return Spherical2Cartesian([]float64{r, long, lat}), []float64{math.Sqrt(2*c.μ/r - c.μ/c.a), long, lat}
+		return Spherical2Cartesian([]float64{r, long, lat}), []float64{math.Sqrt(2*Sun.μ/r - Sun.μ/c.a), long, lat}
 	}
 
 }
@@ -67,7 +68,7 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 /* Definitions */
 
 // Sun is our closest star.
-var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e20, -1, -1}
+var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, -1, -1}
 
 // Earth is home.
 var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 924645.0, 0.0010826269}

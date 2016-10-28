@@ -50,7 +50,7 @@ func TestOrbitDefinition(t *testing.T) {
 
 func TestOrbitRefChange(t *testing.T) {
 	a0 := Earth.Radius + 400
-	e0 := 0.1
+	e0 := 0.01
 	i0 := Deg2rad(38)
 	ω0 := Deg2rad(10)
 	Ω0 := Deg2rad(5)
@@ -70,6 +70,10 @@ func TestOrbitRefChange(t *testing.T) {
 	if vectorsEqual(helioV[:], earthV1[:]) {
 		t.Fatal("helioV == earthV1")
 	}
+	t.Logf("|r_{sc-earth}| = %+v km\t|v_{sc-earth}| = %+v km/s (pre)", earthR1, earthV1)
+	eR, eV := Earth.HelioOrbit(dt)
+	t.Logf("|r_{earth}| = %+v km\t|v_{earth}| = %+v km/s", eR, eV)
+	t.Logf("|r_{helio}| = %+v km\t|v_{helio}| = %+v km/s", helioR, helioV)
 	// Revert back to Earth centric
 	o.ToXCentric(Earth, dt)
 	copy(earthR2[:], o.R)
@@ -86,6 +90,10 @@ func TestOrbitRefChange(t *testing.T) {
 	if !vectorsEqual(earthV1[:], earthV2[:]) {
 		t.Fatal("earthV1 != earthV2")
 	}
+	t.Logf("|r_{sc-earth}| = %+v km\t|v_{sc-earth}| = %+v km/s (post)", earthR2, earthV2)
+	eRp, eVp := Earth.HelioOrbit(dt.Add(time.Duration(1) * time.Second))
+	t.Logf("|r_{earth}| = %+v km\t|v_{earth}| = %+v km/s", eR, eV)
+	t.Logf("|r_{earth}'| = %+v km\t|v_{earth}'| = %+v km/s", eRp, eVp)
 	// Test panic
 	assertPanic(t, func() {
 		o.ToXCentric(Earth, dt)
