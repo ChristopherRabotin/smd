@@ -51,22 +51,28 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			if action := wp.Action(); action != nil {
 				switch action.Type {
 				case ADDCARGO:
-					action.Cargo.Arrival = dt // Set the arrival date.
-					sc.Cargo = append(sc.Cargo, action.Cargo)
-					logger.Log("level", "info", "subsys", "adcs", "cargo", "added", "mass", sc.Mass(dt))
+					sc.FuncQ = append(sc.FuncQ, func() {
+						action.Cargo.Arrival = dt // Set the arrival date.
+						sc.Cargo = append(sc.Cargo, action.Cargo)
+						logger.Log("level", "info", "subsys", "adcs", "cargo", "added", "mass", sc.Mass(dt))
+					})
 					break
 				case DROPCARGO:
 					initLen := len(sc.Cargo)
 					for i, c := range sc.Cargo {
 						if c == action.Cargo {
 							if len(sc.Cargo) == 1 {
-								sc.Cargo = []*Cargo{}
+								sc.FuncQ = append(sc.FuncQ, func() {
+									sc.Cargo = []*Cargo{}
+								})
 								break
 							}
-							// Replace the found cargo with the last of the list.
-							sc.Cargo[i] = sc.Cargo[len(sc.Cargo)-1]
-							// Truncate the list
-							sc.Cargo = sc.Cargo[:len(sc.Cargo)-1]
+							sc.FuncQ = append(sc.FuncQ, func() {
+								// Replace the found cargo with the last of the list.
+								sc.Cargo[i] = sc.Cargo[len(sc.Cargo)-1]
+								// Truncate the list
+								sc.Cargo = sc.Cargo[:len(sc.Cargo)-1]
+							})
 							break
 						}
 					}
