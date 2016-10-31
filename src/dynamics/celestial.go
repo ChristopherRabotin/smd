@@ -68,9 +68,16 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 		rEcliptic[0] = r * cB * cL
 		rEcliptic[1] = r * cB * sL
 		rEcliptic[2] = r * sB
-		vEcliptic[0] = v * cB * cL
-		vEcliptic[1] = v * cB * sL
+		vEcliptic[1] = v * cB * cL
+		vEcliptic[0] = v * cB * sL * -1
 		vEcliptic[2] = v * sB
+		/*
+					--> velocity
+					got = [18.37369994215764 -0.0005404756532697506 23.715956543653625]
+					got = [23.715956533393097 18.37369994215764 -0.0008824910035900467]
+			    exp = [-18.735531582133625 23.452304089603338 -0.0012486895377029493]
+			    exp = [-18.735531582133625 23.452304089603338 -0.0012486895377029493]
+		*/
 		return rEcliptic, vEcliptic
 	}
 
