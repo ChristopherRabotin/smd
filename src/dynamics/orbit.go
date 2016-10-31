@@ -60,18 +60,28 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 	fmt.Printf("Switching to orbit around %s\n", b.Name)
 	if b.SOI == -1 {
 		// Switch to heliocentric
+		// Get planet ecliptic coordinates.
 		relPos, relVel := o.Origin.HelioOrbit(dt)
+		// Switch to ecliptic coordinates.
+		o.R = MxV33(R1(Deg2rad(o.Origin.tilt)), o.R)
+		o.V = MxV33(R1(Deg2rad(o.Origin.tilt)), o.V)
+		// Switch frame origin.
 		for i := 0; i < 3; i++ {
 			o.R[i] += relPos[i]
 			o.V[i] += relVel[i]
 		}
 	} else {
 		// Switch to planet centric
+		// Get planet ecliptic coordinates.
 		relPos, relVel := b.HelioOrbit(dt)
+		// Update frame origin.
 		for i := 0; i < 3; i++ {
 			o.R[i] -= relPos[i]
 			o.V[i] -= relVel[i]
 		}
+		// Switch from ecliptic coordinates to equatorial.
+		o.R = MxV33(R1(-Deg2rad(b.tilt)), o.R)
+		o.V = MxV33(R1(-Deg2rad(b.tilt)), o.V)
 	}
 	o.Origin = b // Don't forget to switch origin
 }

@@ -210,10 +210,11 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 					// Before switching files, let's write the end of simulation time.
 					f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", state.dt.UTC()))
 					// Update plot time propagation.
-					curCgItem.EndTime = fmt.Sprintf("%s", state.dt.UTC())
-					curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(state.dt.Sub(firstStatePtr.dt).Hours()/24+1))
+					longerEnd := state.dt.Add(time.Duration(1) * time.Hour)
+					curCgItem.EndTime = fmt.Sprintf("%s", longerEnd.UTC())
+					curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(longerEnd.Sub(firstStatePtr.dt).Hours()/24+1))
 					// Add this CG item to the list of items.
-					cgItems = append(cgItems, curCgItem) // TODO: SWITCH TO POINTER AND CHECK
+					cgItems = append(cgItems, curCgItem)
 					// Switch files.
 					f.Close()
 					// XXX: Copy/paste from above :'(
@@ -225,6 +226,8 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 					fileNo++
 					// Force writing this data point now instead of creating N new files.
 					prevStatePtr = &state
+					// Update the pointer of the first state for this trajectory.
+					firstStatePtr = &state
 					asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.R, Velocity: state.orbit.V}
 					if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
 						panic(err)
@@ -245,8 +248,9 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 			// The channel is closed, hence the simulation is over.
 			f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", prevStatePtr.dt.UTC()))
 			f.Close()
-			curCgItem.EndTime = fmt.Sprintf("%s", prevStatePtr.dt.UTC())
-			curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(prevStatePtr.dt.Sub(firstStatePtr.dt).Hours()/24+1))
+			longerEnd := prevStatePtr.dt.Add(time.Duration(1) * time.Hour)
+			curCgItem.EndTime = fmt.Sprintf("%s", longerEnd.UTC())
+			curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(longerEnd.Sub(firstStatePtr.dt).Hours()/24+1))
 			cgItems = append(cgItems, curCgItem)
 			break
 		}

@@ -6,7 +6,7 @@ import (
 )
 
 func TestOutwardSpiral(t *testing.T) {
-	vBody := CelestialObject{"Virtual", 100, -1, 0, 100, 0}
+	vBody := CelestialObject{"Virtual", 100, -1, 0, 0, 100, 0}
 	action := &WaypointAction{ADDCARGO, nil}
 	wp := NewOutwardSpiral(vBody, action)
 	if wp.Cleared() {

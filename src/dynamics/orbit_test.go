@@ -85,6 +85,7 @@ func TestOrbitRefChange(t *testing.T) {
 		t.Fatal("helioV == earthV2")
 	}
 	if !vectorsEqual(earthR1[:], earthR2[:]) {
+		t.Logf("\nearthR1 = %+v\nearthR2 = %+v", earthR1, earthR2)
 		t.Fatal("earthR1 != earthR2")
 	}
 	if !vectorsEqual(earthV1[:], earthV2[:]) {

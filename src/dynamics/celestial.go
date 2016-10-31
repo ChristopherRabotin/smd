@@ -21,6 +21,7 @@ type CelestialObject struct {
 	Radius float64
 	a      float64
 	μ      float64
+	tilt   float64 // Axial tilt
 	SOI    float64 // With respect to the Sun
 	J2     float64
 }
@@ -35,7 +36,7 @@ func (c *CelestialObject) Equals(b CelestialObject) bool {
 	return c.Name == b.Name && c.Radius == b.Radius && c.a == b.a && c.μ == b.μ && c.SOI == b.SOI && c.J2 == b.J2
 }
 
-// HelioOrbit returns the heliocentric position and velocity of this planet at a given time.
+// HelioOrbit returns the heliocentric position and velocity of this planet at a given time in equatorial coordinates.
 func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 	var vsopPosition int
 	switch c.Name {
@@ -57,10 +58,20 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 	if planet, err := planetposition.LoadPlanet(vsopPosition - 1); err != nil {
 		panic(fmt.Errorf("could not load planet number %d: %s", vsopPosition, err))
 	} else {
-		long, lat, r := planet.Position2000(julian.TimeToJD(dt))
-		//long, lat, r := planet.Position(julian.TimeToJD(dt))
+		l, b, r := planet.Position2000(julian.TimeToJD(dt))
 		r *= AU
-		return Spherical2Cartesian([]float64{r, long, lat}), []float64{math.Sqrt(2*Sun.μ/r - Sun.μ/c.a), long, lat}
+		v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
+		// Get the Cartesian coordinates from L,B,R.
+		rEcliptic, vEcliptic := make([]float64, 3), make([]float64, 3)
+		sB, cB := math.Sincos(b)
+		sL, cL := math.Sincos(l)
+		rEcliptic[0] = r * cB * cL
+		rEcliptic[1] = r * cB * sL
+		rEcliptic[2] = r * sB
+		vEcliptic[0] = v * cB * cL
+		vEcliptic[1] = v * cB * sL
+		vEcliptic[2] = v * sB
+		return rEcliptic, vEcliptic
 	}
 
 }
@@ -68,10 +79,10 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 /* Definitions */
 
 // Sun is our closest star.
-var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, -1, -1}
+var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, 0.0, -1, -1}
 
 // Earth is home.
-var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 924645.0, 0.0010826269}
+var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23.4, 924645.0, 0.0010826269}
 
 // Mars is the vacation place.
-var Mars = CelestialObject{"Mars", 3397.2, 227939186, 4.305 * 1e4, 576000, 0.001964}
+var Mars = CelestialObject{"Mars", 3397.2, 227939186, 4.305 * 1e4, 25.19, 576000, 0.001964}
