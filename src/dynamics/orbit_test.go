@@ -57,7 +57,7 @@ func TestOrbitRefChange(t *testing.T) {
 	ν0 := 0.1
 
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
-	dt := time.Now()
+	dt := time.Now().UTC()
 	var earthR1, earthV1, earthR2, earthV2, helioR, helioV [3]float64
 	copy(earthR1[:], o.R)
 	copy(earthV1[:], o.V)

@@ -46,6 +46,13 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) (*
 	} else {
 		histChan = nil
 	}
+	// Must switch to UTC as all ephemeris data is in UTC.
+	if start.Location() != time.UTC {
+		start = start.UTC()
+	}
+	if end.Location() != time.UTC {
+		end = end.UTC()
+	}
 
 	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan, norm(o.V)}
 	// Write the first data point.

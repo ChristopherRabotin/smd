@@ -1,12 +1,13 @@
 package dynamics
 
 import (
+	"encoding/csv"
 	"fmt"
-	"math"
+	"io"
+	"os"
+	"strconv"
+	"strings"
 	"time"
-
-	"github.com/soniakeys/meeus/julian"
-	"github.com/soniakeys/meeus/planetposition"
 )
 
 const (
@@ -24,6 +25,7 @@ type CelestialObject struct {
 	tilt   float64 // Axial tilt
 	SOI    float64 // With respect to the Sun
 	J2     float64
+	Eph    map[time.Time]Orbit // Time stamped heliocentric ephemeris.
 }
 
 // String implements the Stringer interface.
@@ -37,59 +39,71 @@ func (c *CelestialObject) Equals(b CelestialObject) bool {
 }
 
 // HelioOrbit returns the heliocentric position and velocity of this planet at a given time in equatorial coordinates.
+// Note that the whole file is loaded. In fact, if we don't, then whoever is the first to call this function will
+// set the Epoch at which the ephemeris are available, and that sucks.
 func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
-	var vsopPosition int
-	switch c.Name {
-	case "Sun":
+	if c.Name == "Sun" {
 		return []float64{0, 0, 0}, []float64{0, 0, 0}
-	case "Venus":
-		vsopPosition = 2
-		break
-	case "Earth":
-		vsopPosition = 3
-		break
-	case "Mars":
-		vsopPosition = 4
-		break
-	default:
-		panic(fmt.Errorf("unknown object: %s", c.Name))
 	}
-	// Load planet, note that planetposition starts counting at ZERO!
-	if planet, err := planetposition.LoadPlanet(vsopPosition - 1); err != nil {
-		panic(fmt.Errorf("could not load planet number %d: %s", vsopPosition, err))
+	if c.Eph == nil {
+		// Load and parse the associated file.
+		path := os.Getenv("HORIZON")
+		if path == "" {
+			panic("environment variable HORIZON not set")
+		} else {
+			fn := path + "/" + c.Name + ".csv"
+			csvFile, err := os.Open(fn)
+			if err != nil {
+				panic(fmt.Errorf("could not load file %s", fn))
+			}
+			defer csvFile.Close()
+			c.Eph = make(map[time.Time]Orbit)
+			rdr := csv.NewReader(csvFile)
+			for {
+				record, err := rdr.Read()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					panic(fmt.Errorf("error reading CSV file %s", err))
+				}
+				R := make([]float64, 3)
+				V := make([]float64, 3)
+				ephDT, err := time.ParseInLocation("2006-Jan-02 15:04:05.0000", strings.TrimSpace(record[1][5:]), time.UTC)
+				if err != nil {
+					panic(fmt.Errorf("could not parse UTC date %s", err))
+				}
+				for i := 0; i < 3; i++ {
+					R[i], err = strconv.ParseFloat(strings.TrimSpace(record[i+2]), 64)
+					if err != nil {
+						panic(fmt.Errorf("could not parse float for R[%d] %s", i, err))
+					}
+					R[i] *= AU // Convert from AU to km/s
+					V[i], err = strconv.ParseFloat(strings.TrimSpace(record[i+5]), 64)
+					if err != nil {
+						panic(fmt.Errorf("could not parse float for V[%d] %s", i, err))
+					}
+					V[i] *= AU / (3600 * 24) // Convert from AU/day to km/s
+				}
+				c.Eph[ephDT] = Orbit{R, V, Sun}
+			}
+		}
+	}
+	approxDT := dt.Round(time.Duration(1) * time.Minute)
+	if o, exists := c.Eph[approxDT]; !exists {
+		panic(fmt.Errorf("could not find date %s in %s ephemeris", approxDT, c.Name))
 	} else {
-		l, b, r := planet.Position2000(julian.TimeToJD(dt))
-		r *= AU
-		v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
-		// Get the Cartesian coordinates from L,B,R.
-		rEcliptic, vEcliptic := make([]float64, 3), make([]float64, 3)
-		sB, cB := math.Sincos(b)
-		sL, cL := math.Sincos(l)
-		rEcliptic[0] = r * cB * cL
-		rEcliptic[1] = r * cB * sL
-		rEcliptic[2] = r * sB
-		vEcliptic[1] = v * cB * cL
-		vEcliptic[0] = v * cB * sL * -1
-		vEcliptic[2] = v * sB
-		/*
-					--> velocity
-					got = [18.37369994215764 -0.0005404756532697506 23.715956543653625]
-					got = [23.715956533393097 18.37369994215764 -0.0008824910035900467]
-			    exp = [-18.735531582133625 23.452304089603338 -0.0012486895377029493]
-			    exp = [-18.735531582133625 23.452304089603338 -0.0012486895377029493]
-		*/
-		return rEcliptic, vEcliptic
+		return o.R, o.V
 	}
-
 }
 
 /* Definitions */
 
 // Sun is our closest star.
-var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, 0.0, -1, -1}
+var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, 0.0, -1, -1, nil}
 
 // Earth is home.
-var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23.4, 924645.0, 0.0010826269}
+var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23.4, 924645.0, 0.0010826269, nil}
 
 // Mars is the vacation place.
-var Mars = CelestialObject{"Mars", 3397.2, 227939186, 4.305 * 1e4, 25.19, 576000, 0.001964}
+var Mars = CelestialObject{"Mars", 3397.2, 227939186, 4.305 * 1e4, 25.19, 576000, 0.001964, nil}

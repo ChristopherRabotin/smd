@@ -16,7 +16,7 @@ func main() {
 	CheckEnvVars()
 	name := "IT1E"
 	/* Building propagation */
-	start := time.Now()                                   // Propagate starting now for ease.
+	start := time.Now().UTC()                             // Propagate starting now for ease.
 	end := start.Add(time.Duration(-1) * time.Nanosecond) // Propagate until waypoint reached.
 	sc := SpacecraftFromEarth(name)
 	orbit := InitialEarthOrbit()
@@ -25,7 +25,7 @@ func main() {
 
 	name = "IT1M"
 	/* Building propagation */
-	start = time.Now()                                   // Propagate starting now for ease.
+	start = time.Now().UTC()                             // Propagate starting now for ease.
 	end = start.Add(time.Duration(-1) * time.Nanosecond) // Propagate until waypoint reached.
 	astro, _ = dynamics.NewAstro(SpacecraftFromMars(name), InitialMarsOrbit(), start, end, name)
 	go astro.Propagate()

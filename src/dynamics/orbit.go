@@ -54,7 +54,7 @@ func (o *Orbit) String() string {
 // Panics if the vehicle is not within the SOI of the object.
 // Panics if already in this frame.
 func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
-	if o.Origin == b {
+	if o.Origin.Name == b.Name {
 		panic(fmt.Errorf("already in orbit around %s", b.Name))
 	}
 	fmt.Printf("Switching to orbit around %s\n", b.Name)
@@ -63,8 +63,8 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 		// Get planet ecliptic coordinates.
 		relPos, relVel := o.Origin.HelioOrbit(dt)
 		// Switch to ecliptic coordinates.
-		o.R = MxV33(R1(Deg2rad(o.Origin.tilt)), o.R)
-		o.V = MxV33(R1(Deg2rad(o.Origin.tilt)), o.V)
+		o.R = MxV33(R2(-Deg2rad(o.Origin.tilt)), o.R)
+		o.V = MxV33(R2(-Deg2rad(o.Origin.tilt)), o.V)
 		// Switch frame origin.
 		for i := 0; i < 3; i++ {
 			o.R[i] += relPos[i]
@@ -80,8 +80,8 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 			o.V[i] -= relVel[i]
 		}
 		// Switch from ecliptic coordinates to equatorial.
-		o.R = MxV33(R1(-Deg2rad(b.tilt)), o.R)
-		o.V = MxV33(R1(-Deg2rad(b.tilt)), o.V)
+		o.R = MxV33(R2(Deg2rad(b.tilt)), o.R)
+		o.V = MxV33(R2(Deg2rad(b.tilt)), o.V)
 	}
 	o.Origin = b // Don't forget to switch origin
 }
