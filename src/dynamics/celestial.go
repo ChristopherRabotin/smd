@@ -1,13 +1,12 @@
 package dynamics
 
 import (
-	"encoding/csv"
 	"fmt"
-	"io"
-	"os"
-	"strconv"
-	"strings"
+	"math"
 	"time"
+
+	"github.com/soniakeys/meeus/julian"
+	"github.com/soniakeys/meeus/planetposition"
 )
 
 const (
@@ -25,7 +24,7 @@ type CelestialObject struct {
 	tilt   float64 // Axial tilt
 	SOI    float64 // With respect to the Sun
 	J2     float64
-	Eph    map[time.Time]Orbit // Time stamped heliocentric ephemeris.
+	PP     *planetposition.V87Planet
 }
 
 // String implements the Stringer interface.
@@ -45,59 +44,48 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 	if c.Name == "Sun" {
 		return []float64{0, 0, 0}, []float64{0, 0, 0}
 	}
-	if c.Eph == nil {
-		// Load and parse the associated file.
-		path := os.Getenv("HORIZON")
-		if path == "" {
-			panic("environment variable HORIZON not set")
-		} else {
-			fn := path + "/" + c.Name + ".csv"
-			csvFile, err := os.Open(fn)
-			if err != nil {
-				panic(fmt.Errorf("could not load file %s", fn))
-			}
-			defer csvFile.Close()
-			c.Eph = make(map[time.Time]Orbit)
-			rdr := csv.NewReader(csvFile)
-			for {
-				record, err := rdr.Read()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					panic(fmt.Errorf("error reading CSV file %s", err))
-				}
-				R := make([]float64, 3)
-				V := make([]float64, 3)
-				ephDT, err := time.ParseInLocation("2006-Jan-02 15:04:05.0000", strings.TrimSpace(record[1][5:]), time.UTC)
-				if err != nil {
-					panic(fmt.Errorf("could not parse UTC date %s", err))
-				}
-				for i := 0; i < 3; i++ {
-					R[i], err = strconv.ParseFloat(strings.TrimSpace(record[i+2]), 64)
-					if err != nil {
-						panic(fmt.Errorf("could not parse float for R[%d] %s", i, err))
-					}
-					R[i] *= AU // Convert from AU to km
-					V[i], err = strconv.ParseFloat(strings.TrimSpace(record[i+5]), 64)
-					if err != nil {
-						panic(fmt.Errorf("could not parse float for V[%d] %s", i, err))
-					}
-					V[i] *= AU / (3600 * 24) // Convert from AU/day to km/s
-				}
-				// Convert to equatorial.
-				R = MxV33(R1(Deg2rad(-c.tilt)), R)
-				V = MxV33(R1(Deg2rad(-c.tilt)), V)
-				c.Eph[ephDT] = Orbit{R, V, Sun}
-			}
+	if c.PP == nil {
+		// Load the planet.
+		var vsopPosition int
+		switch c.Name {
+		case "Sun":
+			return []float64{0, 0, 0}, []float64{0, 0, 0}
+		case "Venus":
+			vsopPosition = 2
+			break
+		case "Earth":
+			vsopPosition = 3
+			break
+		case "Mars":
+			vsopPosition = 4
+			break
+		default:
+			panic(fmt.Errorf("unknown object: %s", c.Name))
 		}
+		planet, err := planetposition.LoadPlanet(vsopPosition - 1)
+		if err != nil {
+			panic(fmt.Errorf("could not load planet number %d: %s", vsopPosition, err))
+		}
+		c.PP = planet
 	}
-	approxDT := dt.Round(time.Duration(1) * time.Minute)
-	if o, exists := c.Eph[approxDT]; !exists {
-		panic(fmt.Errorf("could not find date %s in %s ephemeris", approxDT, c.Name))
-	} else {
-		return o.R, o.V
-	}
+	l, b, r := c.PP.Position2000(julian.TimeToJD(dt))
+	r *= AU
+	v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
+	// Get the Cartesian coordinates from L,B,R.
+	R, V := make([]float64, 3), make([]float64, 3)
+	sB, cB := math.Sincos(b)
+	sL, cL := math.Sincos(l)
+	R[0] = r * cB * cL
+	R[1] = r * cB * sL
+	R[2] = r * sB
+	V[1] = v * cB * cL
+	V[0] = v * cB * sL
+	V[2] = v * sB
+
+	R = MxV33(R1(Deg2rad(-c.tilt)), R)
+	V = MxV33(R1(Deg2rad(-c.tilt)), V)
+
+	return R, V
 }
 
 /* Definitions */

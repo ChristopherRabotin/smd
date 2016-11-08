@@ -38,7 +38,7 @@ func main() {
 	defer f.Close()
 	traj := dynamics.CgTrajectory{Type: "InterpolatedStates", Source: fmt.Sprintf("prop-%s-%d.xyzv", filename, fileNo)}
 	// TODO: Switch color based on SC state (e.g. no fuel, not thrusting, etc.)
-	label := dynamics.CgLabel{Color: []float64{0.6, 1, 1}, FadeSize: 1000000, ShowText: true}
+	label := dynamics.CgLabel{Color: []float64{1, 0.6, 1}, FadeSize: 1000000, ShowText: true}
 	plot := dynamics.CgTrajectoryPlot{Color: []float64{0.6, 1, 1}, LineWidth: 1, Duration: "", Lead: "0 d", Fade: 0, SampleCount: 10}
 	curCgItem := &dynamics.CgItems{Class: "spacecraft", Name: filename, StartTime: start.String(), EndTime: "", Center: "Sun", Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
 	// Propagate the Earth.

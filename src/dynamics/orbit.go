@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"math"
 	"time"
-
-	"github.com/soniakeys/meeus/julian"
-	"github.com/soniakeys/meeus/sidereal"
 )
 
 // Orbit defines an orbit via its orbital elements.
@@ -63,26 +60,13 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 	fmt.Printf("Switching to orbit around %s\n", b.Name)
 	if b.SOI == -1 {
 		// Switch to heliocentric
-		// Get planet ecliptic coordinates.
+		// Get planet equatorial coordinates.
 		relPos, relVel := o.Origin.HelioOrbit(dt)
-		// Let's convert to ECI
-		// TODO: Determine this same thing around Mars.
-		γ := sidereal.Apparent0UT(julian.TimeToJD(dt))
-		γ /= 240
-		dcm := R3(Deg2rad(γ))
-		o.R = MxV33(dcm, o.R)
-		fmt.Printf("[0] R = %+v\n", o.R)
-		o.V = MxV33(dcm, o.V)
-		// Switch to ecliptic coordinates.
-		/*o.R = MxV33(R2(Deg2rad(o.Origin.tilt)), o.R)
-		fmt.Printf("[1] R = %+v\n", o.R)
-		o.V = MxV33(R2(Deg2rad(o.Origin.tilt)), o.V)*/
 		// Switch frame origin.
 		for i := 0; i < 3; i++ {
 			o.R[i] += relPos[i]
 			o.V[i] += relVel[i]
 		}
-		fmt.Printf("[2] R = %+v\n", o.R)
 	} else {
 		// Switch to planet centric
 		// Get planet ecliptic coordinates.
@@ -92,9 +76,6 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 			o.R[i] -= relPos[i]
 			o.V[i] -= relVel[i]
 		}
-		// Switch from ecliptic coordinates to equatorial.
-		o.R = MxV33(R2(Deg2rad(b.tilt)), o.R)
-		o.V = MxV33(R2(Deg2rad(b.tilt)), o.V)
 	}
 	o.Origin = b // Don't forget to switch origin
 }
