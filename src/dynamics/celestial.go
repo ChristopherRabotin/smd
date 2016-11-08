@@ -78,13 +78,16 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 					if err != nil {
 						panic(fmt.Errorf("could not parse float for R[%d] %s", i, err))
 					}
-					R[i] *= AU // Convert from AU to km/s
+					R[i] *= AU // Convert from AU to km
 					V[i], err = strconv.ParseFloat(strings.TrimSpace(record[i+5]), 64)
 					if err != nil {
 						panic(fmt.Errorf("could not parse float for V[%d] %s", i, err))
 					}
 					V[i] *= AU / (3600 * 24) // Convert from AU/day to km/s
 				}
+				// Convert to equatorial.
+				R = MxV33(R1(Deg2rad(-c.tilt)), R)
+				V = MxV33(R1(Deg2rad(-c.tilt)), V)
 				c.Eph[ephDT] = Orbit{R, V, Sun}
 			}
 		}

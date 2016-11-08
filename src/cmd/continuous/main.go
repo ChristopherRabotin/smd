@@ -14,7 +14,7 @@ func norm(v []float64) float64 {
 
 func main() {
 	CheckEnvVars()
-	name := "IT1E"
+	name := "IE"
 	/* Building propagation */
 	start := time.Now().UTC()                             // Propagate starting now for ease.
 	end := start.Add(time.Duration(-1) * time.Nanosecond) // Propagate until waypoint reached.
@@ -23,7 +23,7 @@ func main() {
 	astro, wg := dynamics.NewAstro(sc, orbit, start, end, name)
 	go astro.Propagate()
 
-	name = "IT1M"
+	name = "IM"
 	/* Building propagation */
 	start = time.Now().UTC()                             // Propagate starting now for ease.
 	end = start.Add(time.Duration(-1) * time.Nanosecond) // Propagate until waypoint reached.
