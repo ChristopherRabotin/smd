@@ -78,10 +78,11 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 	R[0] = r * cB * cL
 	R[1] = r * cB * sL
 	R[2] = r * sB
-	V[1] = v * cB * cL
-	V[0] = v * cB * sL
-	V[2] = v * sB
-
+	// Let's find the direction of the velocity vector.
+	vDir := cross(R, []float64{0, 0, 1})
+	for i := 0; i < 3; i++ {
+		V[i] = v * vDir[i] / norm(vDir)
+	}
 	R = MxV33(R1(Deg2rad(-c.tilt)), R)
 	V = MxV33(R1(Deg2rad(-c.tilt)), V)
 
