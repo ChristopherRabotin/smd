@@ -11,7 +11,6 @@ type Orbit struct {
 	R      []float64       // Radius vector
 	V      []float64       // Velocity vector
 	Origin CelestialObject // Orbit orgin
-	//μ float64   // Gravitational constant of the center of orbit.
 }
 
 // GetOE returns the orbital elements of this orbit.
@@ -55,19 +54,23 @@ func (o *Orbit) String() string {
 // Panics if the vehicle is not within the SOI of the object.
 // Panics if already in this frame.
 func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
-	if o.Origin == b {
+	if o.Origin.Name == b.Name {
 		panic(fmt.Errorf("already in orbit around %s", b.Name))
 	}
 	if b.SOI == -1 {
 		// Switch to heliocentric
+		// Get planet equatorial coordinates.
 		relPos, relVel := o.Origin.HelioOrbit(dt)
+		// Switch frame origin.
 		for i := 0; i < 3; i++ {
 			o.R[i] += relPos[i]
 			o.V[i] += relVel[i]
 		}
 	} else {
 		// Switch to planet centric
+		// Get planet ecliptic coordinates.
 		relPos, relVel := b.HelioOrbit(dt)
+		// Update frame origin.
 		for i := 0; i < 3; i++ {
 			o.R[i] -= relPos[i]
 			o.V[i] -= relVel[i]

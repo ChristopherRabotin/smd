@@ -2,7 +2,10 @@ package dynamics
 
 import (
 	"math"
+	"os"
 	"time"
+
+	kitlog "github.com/go-kit/kit/log"
 )
 
 // Spacecraft defines a new spacecraft.
@@ -14,6 +17,15 @@ type Spacecraft struct {
 	Thrusters []Thruster // All available thrusters
 	Cargo     []*Cargo   // All onboard cargo
 	WayPoints []Waypoint // All waypoints of the tug
+	FuncQ     []func()
+	logger    kitlog.Logger
+}
+
+// SCLogInit initializes the logger.
+func SCLogInit(name string) kitlog.Logger {
+	klog := kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stdout))
+	klog = kitlog.NewContext(klog).With("spacecraft", name)
+	return klog
 }
 
 // Mass returns the given vehicle mass based on the provided UTC date time.
@@ -43,46 +55,61 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			continue
 		}
 		// We've found a waypoint which isn't reached.
-		Δv, reached := wp.AllocateThrust(o, dt)
+		Δv, reached := wp.AllocateThrust(*o, dt)
 		if reached {
-			logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String())
+			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String(), "status", "completed")
 			// Handle waypoint action
 			if action := wp.Action(); action != nil {
 				switch action.Type {
 				case ADDCARGO:
-					action.Cargo.Arrival = dt // Set the arrival date.
-					sc.Cargo = append(sc.Cargo, action.Cargo)
-					logger.Log("level", "info", "subsys", "adcs", "cargo", "added", "mass", sc.Mass(dt))
+					sc.FuncQ = append(sc.FuncQ, func() {
+						action.Cargo.Arrival = dt // Set the arrival date.
+						sc.Cargo = append(sc.Cargo, action.Cargo)
+						sc.logger.Log("level", "info", "subsys", "adcs", "cargo", "added", "mass", sc.Mass(dt))
+					})
 					break
 				case DROPCARGO:
 					initLen := len(sc.Cargo)
 					for i, c := range sc.Cargo {
 						if c == action.Cargo {
 							if len(sc.Cargo) == 1 {
-								sc.Cargo = []*Cargo{}
+								sc.FuncQ = append(sc.FuncQ, func() {
+									sc.Cargo = []*Cargo{}
+								})
 								break
 							}
-							// Replace the found cargo with the last of the list.
-							sc.Cargo[i] = sc.Cargo[len(sc.Cargo)-1]
-							// Truncate the list
-							sc.Cargo = sc.Cargo[:len(sc.Cargo)-1]
+							sc.FuncQ = append(sc.FuncQ, func() {
+								// Replace the found cargo with the last of the list.
+								sc.Cargo[i] = sc.Cargo[len(sc.Cargo)-1]
+								// Truncate the list
+								sc.Cargo = sc.Cargo[:len(sc.Cargo)-1]
+							})
 							break
 						}
 					}
 					if initLen == len(sc.Cargo) {
-						logger.Log("level", "critical", "subsys", "adcs", "cargo", "not found")
+						sc.logger.Log("level", "critical", "subsys", "adcs", "cargo", "not found")
 					} else {
-						logger.Log("level", "info", "subsys", "adcs", "cargo", "dropped", "mass", sc.Mass(dt))
+						sc.logger.Log("level", "info", "subsys", "adcs", "cargo", "dropped", "mass", sc.Mass(dt))
 					}
 					break
 				case REFEARTH:
-					o.ToXCentric(Earth, dt)
+					sc.FuncQ = append(sc.FuncQ, func() {
+						sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", "Earth", "time", dt.String())
+						o.ToXCentric(Earth, dt)
+					})
 					break
 				case REFMARS:
-					o.ToXCentric(Mars, dt)
+					sc.FuncQ = append(sc.FuncQ, func() {
+						sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", "Mars", "time", dt.String())
+						o.ToXCentric(Mars, dt)
+					})
 					break
 				case REFSUN:
-					o.ToXCentric(Sun, dt)
+					sc.FuncQ = append(sc.FuncQ, func() {
+						sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", "Mars", "time", dt.String())
+						o.ToXCentric(Sun, dt)
+					})
 					break
 				default:
 					panic("unknown action")
@@ -121,7 +148,12 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 
 // NewEmptySC returns a spacecraft with no cargo and no thrusters.
 func NewEmptySC(name string, mass uint) *Spacecraft {
-	return &Spacecraft{name, float64(mass), 0, nil, []Thruster{}, []*Cargo{}, []Waypoint{}}
+	return &Spacecraft{name, float64(mass), 0, nil, []Thruster{}, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name)}
+}
+
+// NewSpacecraft returns a spacecraft with initialized function queue and logger.
+func NewSpacecraft(name string, dryMass, fuelMass float64, eps EPS, prop []Thruster, payload []*Cargo, wp []Waypoint) *Spacecraft {
+	return &Spacecraft{name, dryMass, fuelMass, eps, prop, payload, wp, make([]func(), 5), SCLogInit(name)}
 }
 
 // Cargo defines a piece of cargo with arrival date and destination orbit

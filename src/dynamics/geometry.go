@@ -48,12 +48,12 @@ func Cartesian2Spherical(a []float64) (b []float64) {
 
 // Deg2rad converts degrees to radians.
 func Deg2rad(a float64) float64 {
-	return a / 180.0 * 2 * math.Pi
+	return a / 360.0 * 2 * math.Pi
 }
 
 // Rad2deg converts radians to degrees.
 func Rad2deg(a float64) float64 {
-	return a / (2 * math.Pi) * 180.0
+	return a / (2 * math.Pi) * 360.0
 }
 
 // MxV33 multiplies a matrix with a vector. Note that there is no dimension check!

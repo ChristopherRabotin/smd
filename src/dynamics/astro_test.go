@@ -10,7 +10,7 @@ import (
 /* Testing here should propagate a given a orbit which is created via OEs and check that only nu changes.*/
 
 const (
-	eps = 1e-8
+	eps = 1e-3
 )
 
 func floatEqual(a, b float64) (bool, error) {
@@ -33,7 +33,7 @@ func TestAstrocroChanStop(t *testing.T) {
 	// Define propagation parameters.
 	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
 	end := start.Add(time.Duration(1) * time.Hour)
-	astro := NewAstro(NewEmptySC("test", 1500), o, start, end, "")
+	astro, _ := NewAstro(NewEmptySC("test", 1500), o, start, end, "")
 	// Start propagation.
 	go astro.Propagate()
 	// Check stopping the propagation via the channel.
@@ -68,7 +68,6 @@ func TestAstrocroChanStop(t *testing.T) {
 }
 
 func TestAstrocroPropTime(t *testing.T) {
-	t.SkipNow()
 	// Define an approximate GEO orbit.
 	a0 := Earth.Radius + 35786
 	e0 := 1e-4
@@ -80,7 +79,7 @@ func TestAstrocroPropTime(t *testing.T) {
 	// Define propagation parameters.
 	start := time.Now()
 	end := start.Add(time.Duration(23) * time.Hour).Add(time.Duration(56) * time.Minute).Add(time.Duration(4) * time.Second).Add(time.Duration(916) * time.Millisecond)
-	astro := NewAstro(NewEmptySC("test", 1500), o, start, end, "")
+	astro, _ := NewAstro(NewEmptySC("test", 1500), o, start, end, "")
 	// Start propagation.
 	astro.Propagate()
 	// Must find a way to test the stop channel. via a long propagation and a select probably.
@@ -106,5 +105,34 @@ func TestAstrocroPropTime(t *testing.T) {
 		t.Fatalf("ν changed too much after one sideral day propagating a GEO vehicle: ν0=%3.6f ν1=%3.6f", ν0, ν1)
 	} else {
 		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(diff), stepSize)
+	}
+}
+
+func TestAstrocroFrame(t *testing.T) {
+	// Define an approximate GEO orbit.
+	a0 := Earth.Radius + 35786
+	e0 := 1e-4
+	i0 := 1e-4
+	ω0 := Deg2rad(10)
+	Ω0 := Deg2rad(5)
+	ν0 := Deg2rad(0.1)
+	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
+	var R1, V1, R2, V2 [3]float64
+	copy(R1[:], o.R)
+	copy(V1[:], o.V)
+	// Define propagation parameters.
+	start := time.Now()
+	end := start.Add(time.Duration(2) * time.Hour)
+	astro, _ := NewAstro(NewEmptySC("test", 1500), o, start, end, "")
+	// Start propagation.
+	astro.Propagate()
+	// Check that in this orbit there is a change.
+	copy(R2[:], o.R)
+	copy(V2[:], o.V)
+	if vectorsEqual(R1[:], R2[:]) {
+		t.Fatal("R1 == R2")
+	}
+	if vectorsEqual(V1[:], V2[:]) {
+		t.Fatal("V1 == V2")
 	}
 }

@@ -13,7 +13,7 @@ func InitialEarthOrbit() *dynamics.Orbit {
 	ω := dynamics.Deg2rad(10) // Made up
 	Ω := dynamics.Deg2rad(5)  // Made up
 	ν := dynamics.Deg2rad(1)  // I don't care about that guy.
-	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, &dynamics.Earth)
+	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, dynamics.Earth)
 }
 
 // FromEarthWaypoints returns the waypoints.
@@ -21,7 +21,8 @@ func FromEarthWaypoints() []dynamics.Waypoint {
 	ref2Sun := &dynamics.WaypointAction{Type: dynamics.REFSUN, Cargo: nil}
 	return []dynamics.Waypoint{dynamics.NewLoiter(time.Duration(24*2)*time.Hour, nil),
 		dynamics.NewOutwardSpiral(dynamics.Earth, ref2Sun),
-		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil)}
+		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil),
+		dynamics.NewReach(200*10e6, nil)}
 }
 
 // InitialMarsOrbit returns the initial orbit.
@@ -31,7 +32,7 @@ func InitialMarsOrbit() *dynamics.Orbit {
 	ω := dynamics.Deg2rad(10) // Made up
 	Ω := dynamics.Deg2rad(5)  // Made up
 	ν := dynamics.Deg2rad(1)  // I don't care about that guy.
-	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, &dynamics.Earth)
+	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, dynamics.Mars)
 }
 
 // FromMarsWaypoints returns the waypoints.

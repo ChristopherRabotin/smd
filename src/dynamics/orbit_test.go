@@ -50,14 +50,15 @@ func TestOrbitDefinition(t *testing.T) {
 
 func TestOrbitRefChange(t *testing.T) {
 	a0 := Earth.Radius + 400
-	e0 := 0.1
+	e0 := 0.01
 	i0 := Deg2rad(38)
 	ω0 := Deg2rad(10)
 	Ω0 := Deg2rad(5)
 	ν0 := 0.1
 
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
-	dt := time.Now()
+	//dt := time.Now().UTC()
+	dt := time.Date(2016, 03, 01, 0, 0, 0, 0, time.UTC)
 	var earthR1, earthV1, earthR2, earthV2, helioR, helioV [3]float64
 	copy(earthR1[:], o.R)
 	copy(earthV1[:], o.V)

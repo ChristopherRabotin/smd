@@ -1,4 +1,4 @@
-package dataio
+package dynamics
 
 import (
 	"encoding/json"
