@@ -57,7 +57,6 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 	if o.Origin.Name == b.Name {
 		panic(fmt.Errorf("already in orbit around %s", b.Name))
 	}
-	fmt.Printf("Switching to orbit around %s\n", b.Name)
 	if b.SOI == -1 {
 		// Switch to heliocentric
 		// Get planet equatorial coordinates.

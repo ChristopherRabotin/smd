@@ -99,7 +99,7 @@ type Reach struct {
 
 // String implements the Waypoint interface.
 func (wp *Reach) String() string {
-	return fmt.Sprintf("Reach distance of %f.", wp.distance)
+	return fmt.Sprintf("Reach distance of %.1f km.", wp.distance)
 }
 
 // Cleared implements the Waypoint interface.

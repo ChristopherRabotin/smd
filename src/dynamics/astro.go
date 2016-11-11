@@ -3,18 +3,14 @@ package dynamics
 import (
 	"integrator"
 	"math"
-	"os"
 	"sync"
 	"time"
-
-	kitlog "github.com/go-kit/kit/log"
 )
 
 const (
 	stepSize = 1.0
 )
 
-var logger kitlog.Logger
 var wg sync.WaitGroup
 
 /* Handles the astrodynamical propagations. */
@@ -60,10 +56,8 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) (*
 		histChan <- AstroState{a.CurrentDT, *s, *o}
 	}
 
-	logger = kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stdout))
-	logger = kitlog.NewContext(logger).With("spacecraft", s.Name).With("time", a.CurrentDT)
 	if end.Before(start) {
-		logger.Log("level", "warning", "subsys", "astro", "message", "no end date")
+		a.Vehicle.logger.Log("level", "warning", "subsys", "astro", "message", "no end date")
 	}
 
 	return a, &wg
@@ -72,7 +66,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) (*
 // LogStatus returns the status of the propagation and vehicle.
 // TODO: Support center of orbit change.
 func (a *Astrocodile) LogStatus() {
-	logger.Log("level", "info", "subsys", "prop", "Δv", norm(a.Orbit.V)-a.initV, "fuel", a.Vehicle.FuelMass)
+	a.Vehicle.logger.Log("level", "info", "subsys", "prop", "Δv", norm(a.Orbit.V)-a.initV, "fuel", a.Vehicle.FuelMass)
 }
 
 // Propagate starts the propagation.
@@ -85,7 +79,7 @@ func (a *Astrocodile) Propagate() {
 		tickDuration = 1 * time.Minute
 	}
 	if tickDuration > 0 {
-		logger.Log("level", "notice", "subsys", "astro", "reportPeriod", tickDuration, "orbit", a.Orbit)
+		a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "reportPeriod", tickDuration, "orbit", a.Orbit)
 		a.LogStatus()
 		ticker := time.NewTicker(tickDuration)
 		go func() {
@@ -95,13 +89,13 @@ func (a *Astrocodile) Propagate() {
 		}()
 	} else {
 		// Happens only during tests.
-		logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
+		a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
 	}
 	integrator.NewRK4(0, stepSize, a).Solve() // Blocking.
 	a.LogStatus()
-	logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
+	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
 	if a.Vehicle.FuelMass < 0 {
-		logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
+		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
 	}
 }
 
@@ -177,7 +171,7 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 		panic("negative distance to body")
 	}
 	if a.Vehicle.FuelMass > 0 && s[6] <= 0 {
-		logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", s[6])
+		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", s[6])
 	}
 	a.Vehicle.FuelMass = s[6]
 }
