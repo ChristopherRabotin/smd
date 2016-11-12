@@ -1,10 +1,11 @@
 package dynamics
 
 import (
-	"integrator"
 	"math"
 	"sync"
 	"time"
+
+	"github.com/ChristopherRabotin/ode"
 )
 
 const (
@@ -91,7 +92,7 @@ func (a *Astrocodile) Propagate() {
 		// Happens only during tests.
 		a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
 	}
-	integrator.NewRK4(0, stepSize, a).Solve() // Blocking.
+	ode.NewRK4(0, stepSize, a).Solve() // Blocking.
 	a.LogStatus()
 	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
 	if a.Vehicle.FuelMass < 0 {
