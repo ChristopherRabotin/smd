@@ -22,7 +22,7 @@ func FromEarthWaypoints() []dynamics.Waypoint {
 	return []dynamics.Waypoint{dynamics.NewLoiter(time.Duration(24*2)*time.Hour, nil),
 		dynamics.NewOutwardSpiral(dynamics.Earth, ref2Sun),
 		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil),
-		dynamics.NewReach(200*10e6, nil)}
+		dynamics.NewReachDistance(200*10e6, nil)}
 }
 
 // InitialMarsOrbit returns the initial orbit.

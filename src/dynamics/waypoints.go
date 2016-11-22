@@ -2,6 +2,7 @@ package dynamics
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -36,8 +37,8 @@ type Waypoint interface {
 }
 
 // NewOutwardSpiral defines a new outward spiral from a celestial object.
-func NewOutwardSpiral(body CelestialObject, action *WaypointAction) *Reach {
-	return &Reach{body.SOI, action, false}
+func NewOutwardSpiral(body CelestialObject, action *WaypointAction) *ReachDistance {
+	return &ReachDistance{body.SOI, action, false}
 }
 
 // Loiter is a type of waypoint which allows the vehicle to stay at a given position for a given duration.
@@ -90,25 +91,25 @@ func NewLoiter(duration time.Duration, action *WaypointAction) *Loiter {
 	return &Loiter{duration, time.Unix(0, 0), time.Unix(0, 0), false, action, false}
 }
 
-// Reach is a type of waypoint which thrusts until a given distance is reached from the central body.
-type Reach struct {
+// ReachDistance is a type of waypoint which thrusts until a given distance is reached from the central body.
+type ReachDistance struct {
 	distance float64
 	action   *WaypointAction
 	cleared  bool
 }
 
 // String implements the Waypoint interface.
-func (wp *Reach) String() string {
+func (wp *ReachDistance) String() string {
 	return fmt.Sprintf("Reach distance of %.1f km.", wp.distance)
 }
 
 // Cleared implements the Waypoint interface.
-func (wp *Reach) Cleared() bool {
+func (wp *ReachDistance) Cleared() bool {
 	return wp.cleared
 }
 
 // AllocateThrust implements the Waypoint interface.
-func (wp *Reach) AllocateThrust(o Orbit, dt time.Time) ([]float64, bool) {
+func (wp *ReachDistance) AllocateThrust(o Orbit, dt time.Time) ([]float64, bool) {
 	if norm(o.R) >= wp.distance {
 		wp.cleared = true
 		return []float64{0, 0, 0}, true
@@ -118,14 +119,62 @@ func (wp *Reach) AllocateThrust(o Orbit, dt time.Time) ([]float64, bool) {
 }
 
 // Action implements the Waypoint interface.
-func (wp *Reach) Action() *WaypointAction {
+func (wp *ReachDistance) Action() *WaypointAction {
 	if wp.cleared {
 		return wp.action
 	}
 	return nil
 }
 
-// NewReach defines a new spiral until a given distance is reached.
-func NewReach(distance float64, action *WaypointAction) *Reach {
-	return &Reach{distance, action, false}
+// NewReachDistance defines a new spiral until a given distance is reached.
+func NewReachDistance(distance float64, action *WaypointAction) *ReachDistance {
+	return &ReachDistance{distance, action, false}
+}
+
+// ReachVelocity is a type of waypoint which thrusts until a given velocity is reached from the central body.
+type ReachVelocity struct {
+	velocity float64
+	action   *WaypointAction
+	epsilon  float64 // acceptable error in km/s
+	cleared  bool
+}
+
+// String implements the Waypoint interface.
+func (wp *ReachVelocity) String() string {
+	return fmt.Sprintf("Reach velocity of %.1f km/s.", wp.velocity)
+}
+
+// Cleared implements the Waypoint interface.
+func (wp *ReachVelocity) Cleared() bool {
+	return wp.cleared
+}
+
+// AllocateThrust implements the Waypoint interface.
+func (wp *ReachVelocity) AllocateThrust(o Orbit, dt time.Time) ([]float64, bool) {
+	velocity := norm(o.V)
+	if math.Abs(velocity-wp.velocity) < wp.epsilon {
+		wp.cleared = true
+		return []float64{0, 0, 0}, true
+	}
+	velocityPolar := Cartesian2Spherical(o.V)
+	if velocity < wp.velocity {
+		// Increase velocity if the SC isn't going fast enough.
+		return Spherical2Cartesian([]float64{1, velocityPolar[1], velocityPolar[2]}), false
+	}
+	// Decrease velocity if the SC is going too fast.
+	return Spherical2Cartesian([]float64{-1, velocityPolar[1], velocityPolar[2]}), false
+
+}
+
+// Action implements the Waypoint interface.
+func (wp *ReachVelocity) Action() *WaypointAction {
+	if wp.cleared {
+		return wp.action
+	}
+	return nil
+}
+
+// NewReachVelocity defines a new spiral until a given velocity is reached.
+func NewReachVelocity(velocity float64, action *WaypointAction) *ReachVelocity {
+	return &ReachVelocity{velocity, action, 5, false}
 }
