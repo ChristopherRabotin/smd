@@ -27,6 +27,7 @@ type Astrocodile struct {
 	StopChan  chan (bool)
 	histChan  chan<- (AstroState)
 	initV     float64
+	done      bool
 }
 
 // NewAstro returns a new Astrocodile instance from the position and velocity vectors.
@@ -51,7 +52,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) (*
 		end = end.UTC()
 	}
 
-	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan, norm(o.V)}
+	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan, norm(o.V), false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- AstroState{a.CurrentDT, *s, *o}
@@ -65,9 +66,8 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) (*
 }
 
 // LogStatus returns the status of the propagation and vehicle.
-// TODO: Support center of orbit change.
 func (a *Astrocodile) LogStatus() {
-	a.Vehicle.logger.Log("level", "info", "subsys", "prop", "Δv", norm(a.Orbit.V)-a.initV, "fuel", a.Vehicle.FuelMass)
+	a.Vehicle.logger.Log("level", "info", "subsys", "prop", "date", a.CurrentDT, "ξ", a.Orbit.Energy(), "fuel", a.Vehicle.FuelMass, "dd", norm(a.Orbit.R))
 }
 
 // Propagate starts the propagation.
@@ -77,7 +77,7 @@ func (a *Astrocodile) Propagate() {
 	if a.EndDT.After(a.StartDT) {
 		tickDuration = time.Duration(a.EndDT.Sub(a.StartDT).Hours()*0.01) * time.Second
 	} else {
-		tickDuration = 1 * time.Minute
+		tickDuration = 15 * time.Second
 	}
 	if tickDuration > 0 {
 		a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "reportPeriod", tickDuration, "orbit", a.Orbit)
@@ -85,6 +85,9 @@ func (a *Astrocodile) Propagate() {
 		ticker := time.NewTicker(tickDuration)
 		go func() {
 			for _ = range ticker.C {
+				if a.done {
+					break
+				}
 				a.LogStatus()
 			}
 		}()
@@ -93,6 +96,7 @@ func (a *Astrocodile) Propagate() {
 		a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
 	}
 	ode.NewRK4(0, stepSize, a).Solve() // Blocking.
+	a.done = true
 	a.LogStatus()
 	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
 	if a.Vehicle.FuelMass < 0 {
@@ -159,15 +163,7 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 		f()
 	}
 	a.Vehicle.FuncQ = make([]func(), 5) // Clear the queue.
-	//if a.Orbit.Origin == Sun && norm(a.Orbit.R) < 1e7 {
-	// Must manually fix, not sure this will work because of the integrator which calls
-	// the Func function with its own values, each need to be fixed prior to the propagation.
-	//	a.Orbit.ToXCentric(Sun, a.CurrentDT)
-	//	}
-	// I think I need to update Func in order to change the R and V on the fly.
-	// However, I can't just use the ToXCentric because the orbit frame is already switched.
-	// That means I need to update the orbit ref only after all the calls to the function.
-	// Note completely sure how to handle that.
+
 	if norm(a.Orbit.R) < 0 {
 		panic("negative distance to body")
 	}

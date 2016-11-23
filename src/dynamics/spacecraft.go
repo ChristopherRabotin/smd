@@ -28,9 +28,24 @@ func SCLogInit(name string) kitlog.Logger {
 	return klog
 }
 
+// LogInfo logs the information of this spacecraft.
+func (sc *Spacecraft) LogInfo() {
+	var wpInfo string
+	for i, wp := range sc.WayPoints {
+		if i > 0 {
+			wpInfo += " -> "
+		}
+		wpInfo += wp.String()
+	}
+	sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wpInfo)
+}
+
 // Mass returns the given vehicle mass based on the provided UTC date time.
 func (sc *Spacecraft) Mass(dt time.Time) (m float64) {
-	m = sc.DryMass + sc.FuelMass
+	m = sc.DryMass
+	if sc.FuelMass > 0 {
+		m += sc.FuelMass // Only add the fuel mass if it isn't negative!
+	}
 	for _, cargo := range sc.Cargo {
 		if dt.After(cargo.Arrival) {
 			m += cargo.DryMass
@@ -57,7 +72,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		// We've found a waypoint which isn't reached.
 		Δv, reached := wp.AllocateThrust(*o, dt)
 		if reached {
-			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String(), "status", "completed")
+			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String(), "status", "completed", "r (km)", norm(o.R), "v (km/s)", norm(o.V))
 			// Handle waypoint action
 			if action := wp.Action(); action != nil {
 				switch action.Type {
@@ -107,7 +122,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 					break
 				case REFSUN:
 					sc.FuncQ = append(sc.FuncQ, func() {
-						sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", "Mars", "time", dt.String())
+						sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", "Sun", "time", dt.String())
 						o.ToXCentric(Sun, dt)
 					})
 					break

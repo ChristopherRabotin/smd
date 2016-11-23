@@ -13,6 +13,11 @@ type Orbit struct {
 	Origin CelestialObject // Orbit orgin
 }
 
+// Energy returns the energy ξ of this orbit.
+func (o *Orbit) Energy() float64 {
+	return norm(o.V)*norm(o.V)/2 - o.Origin.μ/norm(o.R)
+}
+
 // GetOE returns the orbital elements of this orbit.
 func (o *Orbit) GetOE() (a, e, i, ω, Ω, ν float64) {
 	h := cross(o.R, o.V)
