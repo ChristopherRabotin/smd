@@ -77,7 +77,7 @@ func (a *Astrocodile) Propagate() {
 	if a.EndDT.After(a.StartDT) {
 		tickDuration = time.Duration(a.EndDT.Sub(a.StartDT).Hours()*0.01) * time.Second
 	} else {
-		tickDuration = 15 * time.Second
+		tickDuration = 1 * time.Minute
 	}
 	if tickDuration > 0 {
 		a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "reportPeriod", tickDuration, "orbit", a.Orbit)
@@ -99,6 +99,8 @@ func (a *Astrocodile) Propagate() {
 	a.done = true
 	a.LogStatus()
 	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
+	mHelioR, mHelioV := Mars.HelioOrbit(a.CurrentDT)
+	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "toMarsR", math.Abs(norm(a.Orbit.R)-norm(mHelioR)), "toMarsV", math.Abs(norm(a.Orbit.V)-norm(mHelioV)))
 	if a.Vehicle.FuelMass < 0 {
 		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
 	}

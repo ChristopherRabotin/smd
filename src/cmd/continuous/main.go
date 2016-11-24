@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"runtime"
+	"sync"
 	"time"
 )
 
@@ -14,25 +16,34 @@ func norm(v []float64) float64 {
 
 func main() {
 	CheckEnvVars()
+	runtime.GOMAXPROCS(3) // I'm running other stuff currently.
 	// Propagate from Mars to heliocentric first.
 	// Then use heliocentric velocity as the target velocity.
-
-	name := "IM"
-	/* Building propagation */
-	start := time.Now().UTC()                             // Propagate starting now for ease.
-	end := start.Add(time.Duration(-1) * time.Nanosecond) // Propagate until waypoint reached.
-	astro, _ := dynamics.NewAstro(SpacecraftFromMars(name), InitialMarsOrbit(), start, end, name)
-	astro.Propagate()
-	fmt.Printf("Goal: r (km) = %.3f\tv (km/s) = %.3f\n", norm(astro.Orbit.R), norm(astro.Orbit.V))
-
-	name = "IE"
-	sc := SpacecraftFromEarth(name)
-	sc.WayPoints = append(sc.WayPoints, dynamics.NewReachEnergy(astro.Orbit.Energy(), 0.5, nil))
-	sc.WayPoints = append(sc.WayPoints, dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil))
-	sc.LogInfo()
-	orbit := InitialEarthOrbit()
-	astro, wg := dynamics.NewAstro(sc, orbit, start, end, name)
-	astro.Propagate()
+	/*
+		name := "IM"
+		/* Building propagation * /
+		start := time.Now().UTC()                             // Propagate starting now for ease.
+		end := start.Add(time.Duration(-1) * time.Nanosecond) // Propagate until waypoint reached.
+		astro, _ := dynamics.NewAstro(SpacecraftFromMars(name), InitialMarsOrbit(), start, end, name)
+		astro.Propagate()
+		fmt.Printf("Goal: r (km) = %.3f\tv (km/s) = %.3f\n", norm(astro.Orbit.R), norm(astro.Orbit.V))
+		energyGoal := astro.Orbit.Energy()*/
+	energyGoal := -287.1 // Computed previously.
+	var wg sync.WaitGroup
+	// Let's find the closest approach we can get to Mars by altering the ratio of when to slow down.
+	for ratio := 0.6; ratio > 0.2; ratio -= 0.3 {
+		wg.Add(1)
+		name := fmt.Sprintf("IE%.1f", ratio)
+		sc := SpacecraftFromEarth(name)
+		sc.WayPoints = append(sc.WayPoints, dynamics.NewReachEnergy(energyGoal, ratio, nil))
+		sc.WayPoints = append(sc.WayPoints, dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil))
+		sc.LogInfo()
+		go func() {
+			defer wg.Done()
+			astro, _ := dynamics.NewAstro(sc, InitialEarthOrbit(), start, end, name)
+			astro.Propagate()
+		}()
+	}
 
 	// Wait for the streams to finish writing.
 	wg.Wait()

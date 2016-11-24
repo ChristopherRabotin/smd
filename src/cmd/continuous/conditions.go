@@ -39,6 +39,6 @@ func InitialMarsOrbit() *dynamics.Orbit {
 func FromMarsWaypoints() []dynamics.Waypoint {
 	ref2Sun := &dynamics.WaypointAction{Type: dynamics.REFSUN, Cargo: nil}
 	return []dynamics.Waypoint{dynamics.NewLoiter(time.Duration(24*2)*time.Hour, nil),
-		dynamics.NewOutwardSpiral(dynamics.Mars, ref2Sun),
-		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil)}
+		dynamics.NewOutwardSpiral(dynamics.Mars, ref2Sun)}
+	// We don't loiter at the end because we want specifically the transition point.
 }

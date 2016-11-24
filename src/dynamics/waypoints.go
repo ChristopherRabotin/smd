@@ -181,16 +181,17 @@ func NewReachVelocity(velocity float64, action *WaypointAction) *ReachVelocity {
 
 // ReachEnergy is a type of waypoint allows to allocate a good guess of thrust to reach a given energy.
 type ReachEnergy struct {
-	finalξ  float64 // Stores the final energy the vehicle should have.
-	ratio   float64 // Stores the ratio between the current and final energy at which we switch.
-	action  *WaypointAction
-	cleared bool
-	started bool
+	finalξ     float64 // Stores the final energy the vehicle should have.
+	ratio      float64 // Stores the ratio between the current and final energy at which we switch.
+	prevThrust float64
+	action     *WaypointAction
+	cleared    bool
+	started    bool
 }
 
 // String implements the Waypoint interface.
 func (wp *ReachEnergy) String() string {
-	return fmt.Sprintf("Reach energy of %.1f.", wp.finalξ)
+	return fmt.Sprintf("Reach energy of %.1f (ratio = %1.1f).", wp.finalξ, wp.ratio)
 }
 
 // Cleared implements the Waypoint interface.
@@ -200,17 +201,24 @@ func (wp *ReachEnergy) Cleared() bool {
 
 // AllocateThrust implements the Waypoint interface.
 func (wp *ReachEnergy) AllocateThrust(o Orbit, dt time.Time) ([]float64, bool) {
-	if math.Abs(wp.finalξ-o.Energy()) < math.Abs(0.0001*wp.finalξ) {
+	if math.Abs(wp.finalξ-o.Energy()) < math.Abs(0.00001*wp.finalξ) {
 		wp.cleared = true
 		return []float64{0, 0, 0}, true
 	}
 	velocityPolar := Cartesian2Spherical(o.V)
-	if o.Energy() > wp.finalξ || math.Abs(wp.finalξ/o.Energy()) < wp.ratio {
+	thrustDirection := 1.0
+	if /*o.Energy() > wp.finalξ ||*/ math.Abs(wp.finalξ/o.Energy()) < wp.ratio {
 		// Decelerate
-		return Spherical2Cartesian([]float64{-1, velocityPolar[1], velocityPolar[2]}), false
+		thrustDirection = -1
 	}
-	// Accelerate
-	return Spherical2Cartesian([]float64{1, velocityPolar[1], velocityPolar[2]}), false
+	if wp.prevThrust > thrustDirection {
+		fmt.Println("Started deceleration")
+	} else if wp.prevThrust < thrustDirection {
+		fmt.Println("Started acceleration")
+	}
+
+	wp.prevThrust = thrustDirection
+	return Spherical2Cartesian([]float64{thrustDirection, velocityPolar[1], velocityPolar[2]}), false
 }
 
 // Action implements the Waypoint interface.
@@ -223,5 +231,5 @@ func (wp *ReachEnergy) Action() *WaypointAction {
 
 // NewReachEnergy defines a new spiral until a given velocity is reached.
 func NewReachEnergy(energy, ratio float64, action *WaypointAction) *ReachEnergy {
-	return &ReachEnergy{energy, ratio, action, false, false}
+	return &ReachEnergy{energy, ratio, 0.0, action, false, false}
 }
