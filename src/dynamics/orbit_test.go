@@ -27,7 +27,7 @@ func TestOrbitDefinition(t *testing.T) {
 
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 
-	a1, e1, i1, ω1, Ω1, ν1 := o.GetOE()
+	a1, e1, i1, ω1, Ω1, ν1 := o.OrbitalElements()
 	if ok, err := floatEqual(a0, a1); !ok {
 		t.Fatalf("semi major axis invalid: %s", err)
 	}

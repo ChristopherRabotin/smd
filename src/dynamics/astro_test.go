@@ -44,7 +44,7 @@ func TestAstrocroChanStop(t *testing.T) {
 	}
 	// Must find a way to test the stop channel. via a long propagation and a select probably.
 	// Check the orbital elements.
-	a1, e1, i1, ω1, Ω1, ν1 := o.GetOE()
+	a1, e1, i1, ω1, Ω1, ν1 := o.OrbitalElements()
 	if ok, err := floatEqual(a0, a1); !ok {
 		t.Fatalf("semi major axis changed: %s", err)
 	}
@@ -84,7 +84,7 @@ func TestAstrocroPropTime(t *testing.T) {
 	astro.Propagate()
 	// Must find a way to test the stop channel. via a long propagation and a select probably.
 	// Check the orbital elements.
-	a1, e1, i1, ω1, Ω1, ν1 := o.GetOE()
+	a1, e1, i1, ω1, Ω1, ν1 := o.OrbitalElements()
 	if ok, err := floatEqual(a0, a1); !ok {
 		t.Fatalf("semi major axis changed: %s", err)
 	}

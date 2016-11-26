@@ -181,12 +181,11 @@ func NewReachVelocity(velocity float64, action *WaypointAction) *ReachVelocity {
 
 // ReachEnergy is a type of waypoint allows to allocate a good guess of thrust to reach a given energy.
 type ReachEnergy struct {
-	finalξ     float64 // Stores the final energy the vehicle should have.
-	ratio      float64 // Stores the ratio between the current and final energy at which we switch.
-	prevThrust float64
-	action     *WaypointAction
-	cleared    bool
-	started    bool
+	finalξ  float64 // Stores the final energy the vehicle should have.
+	ratio   float64 // Stores the ratio between the current and final energy at which we switch.
+	action  *WaypointAction
+	cleared bool
+	started bool
 }
 
 // String implements the Waypoint interface.
@@ -207,17 +206,11 @@ func (wp *ReachEnergy) AllocateThrust(o Orbit, dt time.Time) ([]float64, bool) {
 	}
 	velocityPolar := Cartesian2Spherical(o.V)
 	thrustDirection := 1.0
-	if /*o.Energy() > wp.finalξ ||*/ math.Abs(wp.finalξ/o.Energy()) < wp.ratio {
+	if math.Abs(wp.finalξ/o.Energy()) < wp.ratio {
 		// Decelerate
 		thrustDirection = -1
 	}
-	if wp.prevThrust > thrustDirection {
-		fmt.Println("Started deceleration")
-	} else if wp.prevThrust < thrustDirection {
-		fmt.Println("Started acceleration")
-	}
 
-	wp.prevThrust = thrustDirection
 	return Spherical2Cartesian([]float64{thrustDirection, velocityPolar[1], velocityPolar[2]}), false
 }
 
@@ -231,5 +224,5 @@ func (wp *ReachEnergy) Action() *WaypointAction {
 
 // NewReachEnergy defines a new spiral until a given velocity is reached.
 func NewReachEnergy(energy, ratio float64, action *WaypointAction) *ReachEnergy {
-	return &ReachEnergy{energy, ratio, 0.0, action, false, false}
+	return &ReachEnergy{energy, ratio, action, false, false}
 }

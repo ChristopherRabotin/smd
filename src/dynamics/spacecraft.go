@@ -146,9 +146,9 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			voltage, power := thruster.Max()
 			if err := sc.EPS.Drain(voltage, power, dt); err == nil {
 				// Okay to thrust.
-				tThrust, tFuelMass := thruster.Thrust(voltage, power)
+				tThrust, isp := thruster.Thrust(voltage, power)
 				thrust += tThrust
-				fuel += tFuelMass
+				fuel += tThrust / (isp * 9.807)
 			} // Error handling of EPS happens in EPS subsystem.
 		}
 		thrust /= 1e3 // Convert thrust from m/s^-2 to km/s^-2

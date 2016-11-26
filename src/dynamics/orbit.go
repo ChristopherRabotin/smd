@@ -18,40 +18,77 @@ func (o *Orbit) Energy() float64 {
 	return norm(o.V)*norm(o.V)/2 - o.Origin.μ/norm(o.R)
 }
 
-// GetOE returns the orbital elements of this orbit.
-func (o *Orbit) GetOE() (a, e, i, ω, Ω, ν float64) {
-	h := cross(o.R, o.V)
-
-	N := []float64{-h[1], h[0], 0}
-
-	eVec := make([]float64, 3)
+// GetE returns the eccentricty vector and norm.
+func (o *Orbit) GetE() (eVec []float64, e float64) {
+	eVec = make([]float64, 3)
 	for j := 0; j < 3; j++ {
 		eVec[j] = ((math.Pow(norm(o.V), 2)-o.Origin.μ/norm(o.R))*o.R[j] - dot(o.R, o.V)*o.V[j]) / o.Origin.μ
 	}
 	e = norm(eVec) // Eccentricity
-	// We suppose the orbit is NOT parabolic.
-	a = -o.Origin.μ / (2 * (0.5*dot(o.V, o.V) - o.Origin.μ/norm(o.R)))
-	i = math.Acos(h[2] / norm(h))
-	Ω = math.Acos(N[0] / norm(N))
+	return
+}
 
-	if N[1] < 0 { // Quadrant check.
-		Ω = 2*math.Pi - Ω
-	}
-	ω = math.Acos(dot(N, eVec) / (norm(N) * e))
-	if eVec[2] < 0 { // Quadrant check
-		ω = 2*math.Pi - ω
-	}
+// Getν returns the true anomaly.
+func (o *Orbit) Getν() (ν float64) {
+	eVec, e := o.GetE()
 	ν = math.Acos(dot(eVec, o.R) / (e * norm(o.R)))
 	if dot(o.R, o.V) < 0 {
 		ν = 2*math.Pi - ν
 	}
+	return
+}
 
+// GetA returns the semi major axis a.
+func (o *Orbit) GetA() (a float64) {
+	a = -o.Origin.μ / (2 * (0.5*dot(o.V, o.V) - o.Origin.μ/norm(o.R)))
+	return
+}
+
+// GetI returns the inclination i.
+func (o *Orbit) GetI() (i float64) {
+	h := cross(o.R, o.V)
+	i = math.Acos(h[2] / norm(h))
+	return
+}
+
+// GetΩ returns the RAAN Ω.
+func (o *Orbit) GetΩ() (Ω float64) {
+	h := cross(o.R, o.V)
+	N := []float64{-h[1], h[0], 0}
+
+	Ω = math.Acos(N[0] / norm(N))
+	if N[1] < 0 { // Quadrant check.
+		Ω = 2*math.Pi - Ω
+	}
+	return
+}
+
+// Getω returns the argument of periapsis.
+func (o *Orbit) Getω() (ω float64) {
+	h := cross(o.R, o.V)
+	N := []float64{-h[1], h[0], 0}
+	eVec, e := o.GetE()
+	ω = math.Acos(dot(N, eVec) / (norm(N) * e))
+	if eVec[2] < 0 { // Quadrant check
+		ω = 2*math.Pi - ω
+	}
+	return
+}
+
+// OrbitalElements returns the orbital elements of this orbit.
+func (o *Orbit) OrbitalElements() (a, e, i, ω, Ω, ν float64) {
+	_, e = o.GetE()
+	a = o.GetA()
+	i = o.GetI()
+	Ω = o.GetΩ()
+	ω = o.Getω()
+	ν = o.Getν()
 	return
 }
 
 // String implements the stringer interface.
 func (o *Orbit) String() string {
-	a, e, i, ω, Ω, ν := o.GetOE()
+	a, e, i, ω, Ω, ν := o.OrbitalElements()
 	return fmt.Sprintf("a=%0.5f e=%0.5f i=%0.5f ω=%0.5f Ω=%0.5f ν=%0.5f", a, e, i, ω, Ω, ν)
 }
 
