@@ -1,6 +1,7 @@
 package dynamics
 
 import (
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -67,7 +68,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) (*
 
 // LogStatus returns the status of the propagation and vehicle.
 func (a *Astrocodile) LogStatus() {
-	a.Vehicle.logger.Log("level", "info", "subsys", "prop", "date", a.CurrentDT, "ξ", a.Orbit.Energy(), "fuel", a.Vehicle.FuelMass, "dd", norm(a.Orbit.R))
+	a.Vehicle.logger.Log("level", "info", "subsys", "prop", "date", a.CurrentDT, "ξ", a.Orbit.Energy(), "fuel", a.Vehicle.FuelMass)
 }
 
 // Propagate starts the propagation.
@@ -166,8 +167,8 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	}
 	a.Vehicle.FuncQ = make([]func(), 5) // Clear the queue.
 
-	if norm(a.Orbit.R) < 0 {
-		panic("negative distance to body")
+	if norm(a.Orbit.R) < a.Orbit.Origin.Radius {
+		panic(fmt.Errorf("spacecraft collided with %s", a.Orbit.Origin.Name))
 	}
 	if a.Vehicle.FuelMass > 0 && s[6] <= 0 {
 		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", s[6])

@@ -1,5 +1,10 @@
 package dynamics
 
+import (
+	"fmt"
+	"math"
+)
+
 // Thruster defines a thruster interface.
 type Thruster interface {
 	// Returns the minimum power and voltage requirements for this thruster.
@@ -79,4 +84,26 @@ func (t *GenericEP) Thrust(voltage, power uint) (thrust, isp float64) {
 // NewGenericEP returns a generic electric prop thruster.
 func NewGenericEP(thrust, isp float64) *GenericEP {
 	return &GenericEP{thrust, isp}
+}
+
+/* Let's define some control laws. */
+
+// TangentialThrustCL thrusts in the tangenial direction at all times.
+func TangentialThrustCL(o Orbit) []float64 {
+	//return unit(o.V)
+	return o.V
+}
+
+// InversionCL keeps the thrust as tangential but inverts its direction within an angle from the orbit apogee.
+// cf. Izzo et al. (https://arxiv.org/pdf/1602.00849v2.pdf)
+func InversionCL(o Orbit, ν float64) []float64 {
+	f := o.GetΦ()
+	unitV := unit(o.V)
+	if f < ν-math.Pi || f > math.Pi-ν {
+		fmt.Println("yo")
+		unitV[0] *= -1
+		unitV[1] *= -1
+		unitV[2] *= -1
+	}
+	return unitV
 }

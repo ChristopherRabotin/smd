@@ -1,6 +1,7 @@
 package dynamics
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"time"
@@ -70,7 +71,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			continue
 		}
 		// We've found a waypoint which isn't reached.
-		Δv, reached := wp.AllocateThrust(*o, dt)
+		Δv, reached := wp.ThrustDirection(*o, dt)
 		if reached {
 			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String(), "status", "completed", "r (km)", norm(o.R), "v (km/s)", norm(o.V))
 			// Handle waypoint action
@@ -140,7 +141,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		if ΔvNorm := norm(Δv); ΔvNorm == 0 {
 			return []float64{0, 0, 0}, 0
 		} else if math.Abs(ΔvNorm-1) > 1e-12 {
-			panic("ΔvAlloc does not sum up to 1! Normalization not implemented yet.")
+			panic(fmt.Errorf("Δv = %+v! Normalization not implemented yet:", Δv))
 		}
 		for _, thruster := range sc.Thrusters {
 			voltage, power := thruster.Max()

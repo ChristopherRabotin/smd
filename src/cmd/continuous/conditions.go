@@ -2,6 +2,7 @@ package main
 
 import (
 	"dynamics"
+	"math"
 	"time"
 )
 
@@ -29,9 +30,10 @@ func FromEarthWaypoints() []dynamics.Waypoint {
 func InitialMarsOrbit() *dynamics.Orbit {
 	a, e := dynamics.Radii2ae(44500+dynamics.Mars.Radius, 426+dynamics.Mars.Radius)
 	i := dynamics.Deg2rad(10)
-	ω := dynamics.Deg2rad(10) // Made up
-	Ω := dynamics.Deg2rad(5)  // Made up
-	ν := dynamics.Deg2rad(1)  // I don't care about that guy.
+	ω := dynamics.Deg2rad(1) // Made up
+	Ω := dynamics.Deg2rad(1) // Made up
+	//ν := dynamics.Deg2rad(270) // I don't care about that guy.
+	ν := math.Pi / 6
 	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, dynamics.Mars)
 }
 

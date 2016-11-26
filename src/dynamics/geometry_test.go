@@ -52,3 +52,12 @@ func TestSpherical2Cartisean(t *testing.T) {
 		}
 	}
 }
+
+func TestMisc(t *testing.T) {
+	if sign(10) != 1 {
+		t.Fatal("sign of 10 != 1")
+	}
+	if sign(-10) != -1 {
+		t.Fatal("sign of -10 != 1")
+	}
+}

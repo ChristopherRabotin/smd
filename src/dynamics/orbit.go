@@ -75,6 +75,16 @@ func (o *Orbit) Getω() (ω float64) {
 	return
 }
 
+// GetΦ returns the flight path angle with the correct quadrant.
+func (o *Orbit) GetΦ() (Φ float64) {
+	_, e := o.GetE()
+	sinν, cosν := math.Sincos(o.Getν())
+	sinΦ := (e * sinν) / math.Sqrt(1+2*e*cosν+e*e)
+	cosΦ := (1 + e*cosν) / math.Sqrt(1+2*e*cosν+e*e)
+	Φ = math.Atan2(sinΦ, cosΦ)
+	return
+}
+
 // OrbitalElements returns the orbital elements of this orbit.
 func (o *Orbit) OrbitalElements() (a, e, i, ω, Ω, ν float64) {
 	_, e = o.GetE()

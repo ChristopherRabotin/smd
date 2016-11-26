@@ -32,7 +32,7 @@ type WaypointAction struct {
 type Waypoint interface {
 	Cleared() bool // returns whether waypoint has been reached
 	Action() *WaypointAction
-	AllocateThrust(Orbit, time.Time) ([]float64, bool)
+	ThrustDirection(Orbit, time.Time) ([]float64, bool)
 	String() string
 }
 
@@ -61,8 +61,8 @@ func (wp *Loiter) Cleared() bool {
 	return wp.cleared
 }
 
-// AllocateThrust implements the Waypoint interface.
-func (wp *Loiter) AllocateThrust(o Orbit, dt time.Time) (dv []float64, reached bool) {
+// ThrustDirection implements the Waypoint interface.
+func (wp *Loiter) ThrustDirection(o Orbit, dt time.Time) (dv []float64, reached bool) {
 	dv = []float64{0, 0, 0}
 	if !wp.startedLoitering {
 		// First time this is called, starting timer.
@@ -108,14 +108,14 @@ func (wp *ReachDistance) Cleared() bool {
 	return wp.cleared
 }
 
-// AllocateThrust implements the Waypoint interface.
-func (wp *ReachDistance) AllocateThrust(o Orbit, dt time.Time) ([]float64, bool) {
+// ThrustDirection implements the Waypoint interface.
+func (wp *ReachDistance) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool) {
 	if norm(o.R) >= wp.distance {
 		wp.cleared = true
 		return []float64{0, 0, 0}, true
 	}
-	velocityPolar := Cartesian2Spherical(o.V)
-	return Spherical2Cartesian([]float64{1, velocityPolar[1], velocityPolar[2]}), false
+	return TangentialThrustCL(o), false
+	//return InversionCL(o, Deg2rad(3.75)), false
 }
 
 // Action implements the Waypoint interface.
@@ -149,8 +149,8 @@ func (wp *ReachVelocity) Cleared() bool {
 	return wp.cleared
 }
 
-// AllocateThrust implements the Waypoint interface.
-func (wp *ReachVelocity) AllocateThrust(o Orbit, dt time.Time) ([]float64, bool) {
+// ThrustDirection implements the Waypoint interface.
+func (wp *ReachVelocity) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool) {
 	velocity := norm(o.V)
 	if math.Abs(velocity-wp.velocity) < wp.epsilon {
 		wp.cleared = true
@@ -198,8 +198,8 @@ func (wp *ReachEnergy) Cleared() bool {
 	return wp.cleared
 }
 
-// AllocateThrust implements the Waypoint interface.
-func (wp *ReachEnergy) AllocateThrust(o Orbit, dt time.Time) ([]float64, bool) {
+// ThrustDirection implements the Waypoint interface.
+func (wp *ReachEnergy) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool) {
 	if math.Abs(wp.finalξ-o.Energy()) < math.Abs(0.00001*wp.finalξ) {
 		wp.cleared = true
 		return []float64{0, 0, 0}, true
