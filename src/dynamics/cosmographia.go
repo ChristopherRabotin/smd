@@ -248,7 +248,7 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 			// The channel is closed, hence the simulation is over.
 			f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", prevStatePtr.dt.UTC()))
 			f.Close()
-			longerEnd := prevStatePtr.dt.Add(time.Duration(1) * time.Hour)
+			longerEnd := prevStatePtr.dt.Add(time.Duration(24) * time.Hour)
 			curCgItem.EndTime = fmt.Sprintf("%s", longerEnd.UTC())
 			curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(longerEnd.Sub(firstStatePtr.dt).Hours()/24+1))
 			cgItems = append(cgItems, curCgItem)

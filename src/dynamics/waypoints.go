@@ -114,8 +114,7 @@ func (wp *ReachDistance) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool
 		wp.cleared = true
 		return []float64{0, 0, 0}, true
 	}
-	return TangentialThrustCL(o), false
-	//return InversionCL(o, Deg2rad(3.75)), false
+	return InversionCL(o, Deg2rad(45)), false
 }
 
 // Action implements the Waypoint interface.
@@ -225,4 +224,51 @@ func (wp *ReachEnergy) Action() *WaypointAction {
 // NewReachEnergy defines a new spiral until a given velocity is reached.
 func NewReachEnergy(energy, ratio float64, action *WaypointAction) *ReachEnergy {
 	return &ReachEnergy{energy, ratio, action, false, false}
+}
+
+// PlanetBound is a type of waypoint which thrusts until a given distance is reached from the central body.
+type PlanetBound struct {
+	destination CelestialObject
+	action      *WaypointAction
+	cleared     bool
+}
+
+// String implements the Waypoint interface.
+func (wp *PlanetBound) String() string {
+	return fmt.Sprintf("Toward Planet %s.", wp.destination.Name)
+}
+
+// Cleared implements the Waypoint interface.
+func (wp *PlanetBound) Cleared() bool {
+	return wp.cleared
+}
+
+// ThrustDirection implements the Waypoint interface.
+/*
+Ideas:
+1. Thrust all the way until the given planet theoritical SOI if the planet were there,
+then slow down if the relative velocity would cause the vehicle to flee, or accelerate
+otherwise. Constantly check that the vehicle stays within the theoritical SOI, and
+update thrust in consideration.
+2. Align argument of periapsis with that of the destination planet.
+Then, use the InversionCL in order to thrust only when the planet is on its way to us.
+The problem with this is that it may take a while to reach the destination since we
+aren't always thrusting.
+*/
+func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool) {
+
+	return InversionCL(o, Deg2rad(45)), false
+}
+
+// Action implements the Waypoint interface.
+func (wp *PlanetBound) Action() *WaypointAction {
+	if wp.cleared {
+		return wp.action
+	}
+	return nil
+}
+
+// NewPlanetBound defines a new trajectory until and including the orbital insertion.
+func NewPlanetBound(destination CelestialObject, action *WaypointAction) *PlanetBound {
+	return &PlanetBound{destination, action, false}
 }

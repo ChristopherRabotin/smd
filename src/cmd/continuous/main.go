@@ -23,19 +23,20 @@ func main() {
 	/* Building propagation */
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
 	end := start.Add(time.Duration(-1) * time.Nanosecond)  // Propagate until waypoint reached.
-	astro, _ := dynamics.NewAstro(SpacecraftFromMars(name), InitialMarsOrbit(), start.Add(time.Duration(6*30.5*24)*time.Hour), end, name)
+	astro, wg := dynamics.NewAstro(SpacecraftFromMars(name), InitialMarsOrbit(), start.Add(time.Duration(6*30.5*24)*time.Hour), end, name)
 	astro.Propagate()
 
-	marsR, _ := dynamics.Mars.HelioOrbit(start)
-	marsRNorm := norm(marsR)
+	//marsR, _ := dynamics.Mars.HelioOrbit(start)
+	//marsRNorm := norm(marsR)
 	name = "IE"
 	sc := SpacecraftFromEarth(name)
-	sc.WayPoints = append(sc.WayPoints, dynamics.NewReachDistance(marsRNorm, nil))
-	sc.WayPoints = append(sc.WayPoints, dynamics.NewLoiter(time.Duration(24*30.5)*time.Hour, nil))
+	//sc.WayPoints = append(sc.WayPoints, dynamics.NewReachDistance(marsRNorm, nil))
+	//sc.WayPoints = append(sc.WayPoints, dynamics.NewLoiter(time.Duration(24*30.5)*time.Hour, nil))
 	sc.LogInfo()
-	astro, _ = dynamics.NewAstro(sc, InitialEarthOrbit(), start, end, name)
+	astro, wg = dynamics.NewAstro(sc, InitialEarthOrbit(), start, end, name)
 	astro.Propagate()
 
+	wg.Wait() // Must wait or the output file does not have time to be written!
 }
 
 // CheckEnvVars checks that all the environment variables required are set, without checking their value. It will panic if one is missing.

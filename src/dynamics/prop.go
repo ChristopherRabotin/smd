@@ -1,9 +1,6 @@
 package dynamics
 
-import (
-	"fmt"
-	"math"
-)
+import "math"
 
 // Thruster defines a thruster interface.
 type Thruster interface {
@@ -90,20 +87,21 @@ func NewGenericEP(thrust, isp float64) *GenericEP {
 
 // TangentialThrustCL thrusts in the tangenial direction at all times.
 func TangentialThrustCL(o Orbit) []float64 {
-	//return unit(o.V)
-	return o.V
+	return unit(o.V)
 }
 
 // InversionCL keeps the thrust as tangential but inverts its direction within an angle from the orbit apogee.
+// This leads to collisions with main body if the orbit isn't circular enough.
 // cf. Izzo et al. (https://arxiv.org/pdf/1602.00849v2.pdf)
 func InversionCL(o Orbit, ν float64) []float64 {
-	f := o.GetΦ()
-	unitV := unit(o.V)
-	if f < ν-math.Pi || f > math.Pi-ν {
-		fmt.Println("yo")
-		unitV[0] *= -1
-		unitV[1] *= -1
-		unitV[2] *= -1
+	f := o.Getν()
+	unitV := unit(o.V) // Effectively TangentialThrustCL.
+	if _, e := o.GetE(); e > 0.01 || (f > ν-math.Pi && f < math.Pi-ν) {
+		return unitV
 	}
+	unitV[0] *= -1
+	unitV[1] *= -1
+	unitV[2] *= -1
+
 	return unitV
 }
