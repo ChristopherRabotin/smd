@@ -100,8 +100,8 @@ func (a *Astrocodile) Propagate() {
 	a.done = true
 	a.LogStatus()
 	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
-	mHelioR, mHelioV := Mars.HelioOrbit(a.CurrentDT)
-	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "toMarsR", math.Abs(norm(a.Orbit.R)-norm(mHelioR)), "toMarsV", math.Abs(norm(a.Orbit.V)-norm(mHelioV)))
+	mHelio := Mars.HelioOrbit(a.CurrentDT)
+	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "toMarsR", math.Abs(norm(a.Orbit.R)-norm(mHelio.R)), "toMarsV", math.Abs(norm(a.Orbit.V)-norm(mHelio.V)))
 	if a.Vehicle.FuelMass < 0 {
 		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
 	}

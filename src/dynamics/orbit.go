@@ -112,20 +112,20 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 	if b.SOI == -1 {
 		// Switch to heliocentric
 		// Get planet equatorial coordinates.
-		relPos, relVel := o.Origin.HelioOrbit(dt)
+		rel := o.Origin.HelioOrbit(dt)
 		// Switch frame origin.
 		for i := 0; i < 3; i++ {
-			o.R[i] += relPos[i]
-			o.V[i] += relVel[i]
+			o.R[i] += rel.R[i]
+			o.V[i] += rel.V[i]
 		}
 	} else {
 		// Switch to planet centric
 		// Get planet ecliptic coordinates.
-		relPos, relVel := b.HelioOrbit(dt)
+		rel := b.HelioOrbit(dt)
 		// Update frame origin.
 		for i := 0; i < 3; i++ {
-			o.R[i] -= relPos[i]
-			o.V[i] -= relVel[i]
+			o.R[i] -= rel.R[i]
+			o.V[i] -= rel.V[i]
 		}
 	}
 	o.Origin = b // Don't forget to switch origin
