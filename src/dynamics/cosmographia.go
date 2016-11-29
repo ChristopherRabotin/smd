@@ -192,6 +192,7 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 	fileNo = 0
 	cgItems := []*CgItems{}
 	var curCgItem *CgItems
+	color := []float64{0.6, 1, 1}
 	for {
 		state, more := <-stateChan
 		if more {
@@ -201,8 +202,8 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 				f = createInterpolatedFile(fmt.Sprintf("%s-%d", filename, fileNo), stamped, state.dt)
 				traj := CgTrajectory{Type: "InterpolatedStates", Source: fmt.Sprintf("prop-%s-%d.xyzv", filename, fileNo)}
 				// TODO: Switch color based on SC state (e.g. no fuel, not thrusting, etc.)
-				label := CgLabel{Color: []float64{0.6, 1, 1}, FadeSize: 1000000, ShowText: true}
-				plot := CgTrajectoryPlot{Color: []float64{0.6, 1, 1}, LineWidth: 1, Duration: "", Lead: "0 d", Fade: 0, SampleCount: 10}
+				label := CgLabel{Color: color, FadeSize: 1000000, ShowText: true}
+				plot := CgTrajectoryPlot{Color: color, LineWidth: 1, Duration: "", Lead: "0 d", Fade: 0, SampleCount: 10}
 				curCgItem = &CgItems{Class: "spacecraft", Name: fmt.Sprintf("%s-%d", state.sc.Name, fileNo), StartTime: fmt.Sprintf("%s", state.dt.UTC()), EndTime: "", Center: state.orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
 				fileNo++
 			} else {
@@ -220,14 +221,24 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 					// XXX: Copy/paste from above :'(
 					f = createInterpolatedFile(fmt.Sprintf("%s-%d", filename, fileNo), stamped, state.dt)
 					traj := CgTrajectory{Type: "InterpolatedStates", Source: fmt.Sprintf("prop-%s-%d.xyzv", filename, fileNo)}
-					label := CgLabel{Color: []float64{0.6, 1, 1}, FadeSize: 1000000, ShowText: true}
-					plot := CgTrajectoryPlot{Color: []float64{0.6, 1, 1}, LineWidth: 1, Duration: "", Lead: "0 d", Fade: 0, SampleCount: 10}
+					label := CgLabel{Color: color, FadeSize: 1000000, ShowText: true}
+					plot := CgTrajectoryPlot{Color: color, LineWidth: 1, Duration: "", Lead: "0 d", Fade: 0, SampleCount: 10}
 					curCgItem = &CgItems{Class: "spacecraft", Name: fmt.Sprintf("%s-%d", state.sc.Name, fileNo), StartTime: fmt.Sprintf("%s", state.dt.UTC()), EndTime: "", Center: state.orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
 					fileNo++
 					// Force writing this data point now instead of creating N new files.
 					prevStatePtr = &state
 					// Update the pointer of the first state for this trajectory.
 					firstStatePtr = &state
+					// Change the color
+					for i := 0; i < 3; i++ {
+						color[i] += 0.3
+						if color[i] > 1 {
+							color[i]--
+						} else if color[i] < 0 {
+							color[i]++
+						}
+					}
+
 					asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.R, Velocity: state.orbit.V}
 					if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
 						panic(err)

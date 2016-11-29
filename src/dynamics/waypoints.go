@@ -223,10 +223,12 @@ func NewReachEnergy(energy, ratio float64, action *WaypointAction) *ReachEnergy 
 
 // PlanetBound is a type of waypoint which thrusts until a given distance is reached from the central body.
 type PlanetBound struct {
-	destination CelestialObject
-	action      *WaypointAction
-	cleared     bool
-	prevCL      *ControlLaw
+	destination  CelestialObject
+	destSOILower float64
+	destSOIUpper float64
+	action       *WaypointAction
+	cleared      bool
+	prevCL       *ControlLaw
 }
 
 // String implements the Waypoint interface.
@@ -255,16 +257,20 @@ func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool) 
 	if !o.Origin.Equals(Sun) {
 		panic("must be in a heliocentric orbit prior to being PlanetBound")
 	}
+	// If this is the first call, let's compute the theoritical SOI bounds.
+	if wp.destSOILower == wp.destSOIUpper {
+		destOrbit := wp.destination.HelioOrbit(dt)
+		wp.destSOILower = norm(destOrbit.R) - wp.destination.SOI
+		wp.destSOIUpper = norm(destOrbit.R) + wp.destination.SOI
+	}
 	var cl ThrustControl
-	destOrbit := wp.destination.HelioOrbit(dt)
-	destSOILower := norm(destOrbit.R) - wp.destination.SOI
-	destSOIUpper := norm(destOrbit.R) + wp.destination.SOI
-	if r := norm(o.R); r < destSOILower {
+	if r := norm(o.R); r < wp.destSOILower {
 		cl = Tangential{}
-	} else if r > destSOIUpper {
+	} else if r > wp.destSOIUpper {
 		cl = AntiTangential{}
 	} else {
 		// We are in the theoritical SOI. Let's check if we are within the real SOI.
+		destOrbit := wp.destination.HelioOrbit(dt)
 		rDiff := make([]float64, 3)
 		for i := 0; i < 3; i++ {
 			rDiff[i] = o.R[i] - destOrbit.R[i]
@@ -303,5 +309,5 @@ func NewPlanetBound(destination CelestialObject, action *WaypointAction) *Planet
 	if action == nil || (action.Type != REFEARTH && action.Type != REFMARS) {
 		panic("PlanetBound requires a REF* action. ")
 	}
-	return &PlanetBound{destination, action, false, nil}
+	return &PlanetBound{destination, 0.0, 0.0, action, false, nil}
 }
