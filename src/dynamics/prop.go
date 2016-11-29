@@ -38,8 +38,9 @@ type Thruster interface {
 
 // ThrustControl defines a thrust control interface.
 type ThrustControl interface {
-	Type() ControlLaw
 	Control(o Orbit) []float64
+	Type() ControlLaw
+	Reason() string
 }
 
 /* Available thrusters */
@@ -116,7 +117,14 @@ func NewGenericEP(thrust, isp float64) *GenericEP {
 /* Let's define some control laws. */
 
 // Coast defines an thrust control law which does not thrust.
-type Coast struct{}
+type Coast struct {
+	reason string
+}
+
+// Reason implements the ThrustControl interface.
+func (cl Coast) Reason() string {
+	return cl.reason
+}
 
 // Type implements the ThrustControl interface.
 func (cl Coast) Type() ControlLaw {
@@ -129,7 +137,14 @@ func (cl Coast) Control(o Orbit) []float64 {
 }
 
 // Tangential defines a tangential thrust control law
-type Tangential struct{}
+type Tangential struct {
+	reason string
+}
+
+// Reason implements the ThrustControl interface.
+func (cl Tangential) Reason() string {
+	return cl.reason
+}
 
 // Type implements the ThrustControl interface.
 func (cl Tangential) Type() ControlLaw {
@@ -142,7 +157,14 @@ func (cl Tangential) Control(o Orbit) []float64 {
 }
 
 // AntiTangential defines an antitangential thrust control law
-type AntiTangential struct{}
+type AntiTangential struct {
+	reason string
+}
+
+// Reason implements the ThrustControl interface.
+func (cl AntiTangential) Reason() string {
+	return cl.reason
+}
 
 // Type implements the ThrustControl interface.
 func (cl AntiTangential) Type() ControlLaw {
@@ -162,7 +184,13 @@ func (cl AntiTangential) Control(o Orbit) []float64 {
 // This leads to collisions with main body if the orbit isn't circular enough.
 // cf. Izzo et al. (https://arxiv.org/pdf/1602.00849v2.pdf)
 type Inversion struct {
-	ν float64
+	ν      float64
+	reason string
+}
+
+// Reason implements the ThrustControl interface.
+func (cl Inversion) Reason() string {
+	return cl.reason
 }
 
 // Type implements the ThrustControl interface.

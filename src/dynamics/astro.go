@@ -68,7 +68,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) (*
 
 // LogStatus returns the status of the propagation and vehicle.
 func (a *Astrocodile) LogStatus() {
-	a.Vehicle.logger.Log("level", "info", "subsys", "prop", "date", a.CurrentDT, "ξ", a.Orbit.Energy(), "fuel", a.Vehicle.FuelMass)
+	a.Vehicle.logger.Log("level", "info", "subsys", "astro", "date", a.CurrentDT, "r(km)", norm(a.Orbit.R), "v(km/s)", norm(a.Orbit.V), "fuel(kg)", a.Vehicle.FuelMass)
 }
 
 // Propagate starts the propagation.

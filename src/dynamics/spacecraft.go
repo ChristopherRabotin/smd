@@ -20,6 +20,7 @@ type Spacecraft struct {
 	WayPoints []Waypoint // All waypoints of the tug
 	FuncQ     []func()
 	logger    kitlog.Logger
+	prevCL    *ControlLaw // Stores the previous control law to follow what is going on.
 }
 
 // SCLogInit initializes the logger.
@@ -71,9 +72,14 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			continue
 		}
 		// We've found a waypoint which isn't reached.
-		Δv, reached := wp.ThrustDirection(*o, dt)
+		ctrl, reached := wp.ThrustDirection(*o, dt)
+		if clType := ctrl.Type(); sc.prevCL == nil || *sc.prevCL != clType {
+			sc.logger.Log("level", "notice", "subsys", "astro", "date", dt, "thrust", clType.String(), "reason", ctrl.Reason(), "v(km/s)", norm(o.V))
+			sc.prevCL = &clType
+		}
+		Δv := ctrl.Control(*o)
 		if reached {
-			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String(), "status", "completed", "r (km)", norm(o.R), "v (km/s)", norm(o.V))
+			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String(), "status", "completed", "r(km)", norm(o.R), "v (km/s)", norm(o.V))
 			// Handle waypoint action
 			if action := wp.Action(); action != nil {
 				switch action.Type {
@@ -156,19 +162,19 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 // ToXCentric switches the propagation from the current origin to a new one and logs the change.
 func (sc *Spacecraft) ToXCentric(body CelestialObject, dt time.Time, o *Orbit) func() {
 	return func() {
-		sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", body.Name, "time", dt.String())
+		sc.logger.Log("level", "notice", "subsys", "astro", "date", dt, "orbiting", body.Name)
 		o.ToXCentric(body, dt)
 	}
 }
 
 // NewEmptySC returns a spacecraft with no cargo and no thrusters.
 func NewEmptySC(name string, mass uint) *Spacecraft {
-	return &Spacecraft{name, float64(mass), 0, nil, []Thruster{}, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name)}
+	return &Spacecraft{name, float64(mass), 0, nil, []Thruster{}, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name), nil}
 }
 
 // NewSpacecraft returns a spacecraft with initialized function queue and logger.
 func NewSpacecraft(name string, dryMass, fuelMass float64, eps EPS, prop []Thruster, payload []*Cargo, wp []Waypoint) *Spacecraft {
-	return &Spacecraft{name, dryMass, fuelMass, eps, prop, payload, wp, make([]func(), 5), SCLogInit(name)}
+	return &Spacecraft{name, dryMass, fuelMass, eps, prop, payload, wp, make([]func(), 5), SCLogInit(name), nil}
 }
 
 // Cargo defines a piece of cargo with arrival date and destination orbit

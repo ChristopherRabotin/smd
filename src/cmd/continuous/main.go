@@ -19,6 +19,9 @@ func main() {
 
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
 	end := start.Add(time.Duration(-1) * time.Nanosecond)  // Propagate until waypoint reached.
+	// Initial info
+	marsOrbit := dynamics.Mars.HelioOrbit(start)
+	fmt.Printf("epoch=%s MarsR(km)=%e MarsV(km/s)=%e\n", start, norm(marsOrbit.R), norm(marsOrbit.V))
 	name := "IE"
 	sc := SpacecraftFromEarth(name)
 	sc.LogInfo()

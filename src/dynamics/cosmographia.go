@@ -231,7 +231,7 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 					firstStatePtr = &state
 					// Change the color
 					for i := 0; i < 3; i++ {
-						color[i] += 0.3
+						color[i] += 0.1
 						if color[i] > 1 {
 							color[i]--
 						} else if color[i] < 0 {

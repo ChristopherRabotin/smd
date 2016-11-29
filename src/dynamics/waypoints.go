@@ -32,7 +32,7 @@ type WaypointAction struct {
 type Waypoint interface {
 	Cleared() bool // returns whether waypoint has been reached
 	Action() *WaypointAction
-	ThrustDirection(Orbit, time.Time) ([]float64, bool)
+	ThrustDirection(Orbit, time.Time) (ThrustControl, bool)
 	String() string
 }
 
@@ -62,8 +62,8 @@ func (wp *Loiter) Cleared() bool {
 }
 
 // ThrustDirection implements the Waypoint interface.
-func (wp *Loiter) ThrustDirection(o Orbit, dt time.Time) (dv []float64, reached bool) {
-	dv = Coast{}.Control(o)
+func (wp *Loiter) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
+	dv := Coast{}
 	if !wp.startedLoitering {
 		// First time this is called, starting timer.
 		wp.startedLoitering = true
@@ -109,12 +109,12 @@ func (wp *ReachDistance) Cleared() bool {
 }
 
 // ThrustDirection implements the Waypoint interface.
-func (wp *ReachDistance) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool) {
+func (wp *ReachDistance) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
 	if norm(o.R) >= wp.distance {
 		wp.cleared = true
-		return []float64{0, 0, 0}, true
+		return Coast{}, true
 	}
-	return Inversion{Deg2rad(45)}.Control(o), false
+	return Tangential{}, false
 }
 
 // Action implements the Waypoint interface.
@@ -149,18 +149,18 @@ func (wp *ReachVelocity) Cleared() bool {
 }
 
 // ThrustDirection implements the Waypoint interface.
-func (wp *ReachVelocity) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool) {
+func (wp *ReachVelocity) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
 	velocity := norm(o.V)
 	if math.Abs(velocity-wp.velocity) < wp.epsilon {
 		wp.cleared = true
-		return []float64{0, 0, 0}, true
+		return Coast{}, true
 	}
 	if velocity < wp.velocity {
 		// Increase velocity if the SC isn't going fast enough.
-		return Tangential{}.Control(o), false
+		return Tangential{}, false
 	}
 	// Decrease velocity if the SC is going too fast.
-	return AntiTangential{}.Control(o), false
+	return AntiTangential{}, false
 
 }
 
@@ -197,15 +197,15 @@ func (wp *ReachEnergy) Cleared() bool {
 }
 
 // ThrustDirection implements the Waypoint interface.
-func (wp *ReachEnergy) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool) {
+func (wp *ReachEnergy) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
 	if math.Abs(wp.finalξ-o.Energy()) < math.Abs(0.00001*wp.finalξ) {
 		wp.cleared = true
-		return Coast{}.Control(o), true
+		return Coast{}, true
 	}
 	if math.Abs(wp.finalξ/o.Energy()) < wp.ratio {
-		return AntiTangential{}.Control(o), false
+		return AntiTangential{}, false
 	}
-	return Tangential{}.Control(o), false
+	return Tangential{}, false
 }
 
 // Action implements the Waypoint interface.
@@ -226,9 +226,10 @@ type PlanetBound struct {
 	destination  CelestialObject
 	destSOILower float64
 	destSOIUpper float64
+	cacheTime    time.Time
+	cacheDest    Orbit
 	action       *WaypointAction
 	cleared      bool
-	prevCL       *ControlLaw
 }
 
 // String implements the Waypoint interface.
@@ -244,56 +245,59 @@ func (wp *PlanetBound) Cleared() bool {
 // ThrustDirection implements the Waypoint interface.
 /*
 Ideas:
-1. Thrust all the way until the given planet theoritical SOI if the planet were there,
+1. Thrust all the way until the given planet theoretical SOI if the planet were there,
 then slow down if the relative velocity would cause the vehicle to flee, or accelerate
-otherwise. Constantly check that the vehicle stays within the theoritical SOI, and
+otherwise. Constantly check that the vehicle stays within the theoretical SOI, and
 update thrust in consideration.
 2. Align argument of periapsis with that of the destination planet.
 Then, use the InversionCL in order to thrust only when the planet is on its way to us.
 The problem with this is that it may take a while to reach the destination since we
 aren't always thrusting.
 */
-func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool) {
+func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
 	if !o.Origin.Equals(Sun) {
 		panic("must be in a heliocentric orbit prior to being PlanetBound")
 	}
-	// If this is the first call, let's compute the theoritical SOI bounds.
+	// If this is the first call, let's compute the theoretical SOI bounds.
 	if wp.destSOILower == wp.destSOIUpper {
-		destOrbit := wp.destination.HelioOrbit(dt)
-		wp.destSOILower = norm(destOrbit.R) - wp.destination.SOI
-		wp.destSOIUpper = norm(destOrbit.R) + wp.destination.SOI
+		wp.cacheTime = dt
+		wp.cacheDest = wp.destination.HelioOrbit(dt)
+		wp.destSOILower = norm(wp.cacheDest.R) - wp.destination.SOI
+		wp.destSOIUpper = norm(wp.cacheDest.R) + wp.destination.SOI
 	}
 	var cl ThrustControl
 	if r := norm(o.R); r < wp.destSOILower {
-		cl = Tangential{}
-	} else if r > wp.destSOIUpper {
-		cl = AntiTangential{}
+		cl = Tangential{"not in theoretical SOI"}
+	} else if r > wp.destSOILower+wp.destSOIUpper {
+		// Slow down if we have past the orbit.
+		cl = AntiTangential{"past planet distance"}
 	} else {
-		// We are in the theoritical SOI. Let's check if we are within the real SOI.
-		destOrbit := wp.destination.HelioOrbit(dt)
+		// We are in the theoretical SOI. Let's check if we are within the real SOI.
+		if wp.cacheTime.After(dt.Add(time.Duration(24) * time.Hour)) {
+			// We cache the destination helio orbit for a full day.
+			fmt.Printf("date=%s cache=%s computing helio\n", dt, wp.cacheTime)
+			wp.cacheTime = dt
+			wp.cacheDest = wp.destination.HelioOrbit(dt)
+		}
 		rDiff := make([]float64, 3)
 		for i := 0; i < 3; i++ {
-			rDiff[i] = o.R[i] - destOrbit.R[i]
+			rDiff[i] = o.R[i] - wp.cacheDest.R[i]
 		}
 		if norm(rDiff) < wp.destination.SOI {
 			// We are in the SOI, let's do an orbital injection.
 			// Note that we return here because we're at destination.
 			wp.cleared = true
-			return Coast{}.Control(o), true
-		} else if relVel := norm(o.V) - norm(destOrbit.V); relVel < 0 {
+			return Coast{}, true
+		} else if relVel := norm(o.V) - norm(wp.cacheDest.V); relVel < 0 {
 			// If the relative velocity is negative, the planet will catch up with the spacecraft,
 			// so let's just wait.
-			cl = Coast{}
+			cl = Coast{"waiting for planet"}
 		} else {
 			// If the relative velocity is positive, let's slow down.
-			cl = AntiTangential{}
+			cl = AntiTangential{"going faster than planet"}
 		}
 	}
-	if clType := cl.Type(); wp.prevCL == nil || *wp.prevCL != clType {
-		fmt.Printf("applying %s\n", cl.Type().String())
-		wp.prevCL = &clType
-	}
-	return cl.Control(o), false
+	return cl, false
 }
 
 // Action implements the Waypoint interface.
@@ -309,5 +313,5 @@ func NewPlanetBound(destination CelestialObject, action *WaypointAction) *Planet
 	if action == nil || (action.Type != REFEARTH && action.Type != REFMARS) {
 		panic("PlanetBound requires a REF* action. ")
 	}
-	return &PlanetBound{destination, 0.0, 0.0, action, false, nil}
+	return &PlanetBound{destination, 0.0, 0.0, time.Unix(0, 0), Orbit{}, action, false}
 }
