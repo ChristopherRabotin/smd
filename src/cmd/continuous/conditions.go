@@ -21,8 +21,13 @@ func InitialEarthOrbit() *dynamics.Orbit {
 // FromEarthWaypoints returns the waypoints.
 func FromEarthWaypoints() []dynamics.Waypoint {
 	ref2Sun := &dynamics.WaypointAction{Type: dynamics.REFSUN, Cargo: nil}
+	//ref2Mars := &dynamics.WaypointAction{Type: dynamics.REFMARS, Cargo: nil}
+	marsOrbit := dynamics.Mars.HelioOrbit(time.Now())
 	return []dynamics.Waypoint{dynamics.NewLoiter(time.Duration(24*2)*time.Hour, nil),
 		dynamics.NewOutwardSpiral(dynamics.Earth, ref2Sun),
+		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil),
+		dynamics.NewReachDistance(norm(marsOrbit.R), nil),
+		//dynamics.NewPlanetBound(dynamics.Mars, ref2Mars),
 		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil)}
 }
 

@@ -2,6 +2,30 @@ package dynamics
 
 import "math"
 
+// ControlLaw defines an enum of control laws.
+type ControlLaw uint8
+
+const (
+	tangential ControlLaw = iota + 1
+	antiTangential
+	inversion
+	coast
+)
+
+func (cl ControlLaw) String() string {
+	switch cl {
+	case tangential:
+		return "tangential"
+	case antiTangential:
+		return "antiTangential"
+	case inversion:
+		return "inversion"
+	case coast:
+		return "coast"
+	}
+	panic("unknown control law")
+}
+
 // Thruster defines a thruster interface.
 type Thruster interface {
 	// Returns the minimum power and voltage requirements for this thruster.
@@ -10,6 +34,12 @@ type Thruster interface {
 	Max() (voltage, power uint)
 	// Returns the thrust in Newtons and isp consumed in seconds.
 	Thrust(voltage, power uint) (thrust, isp float64)
+}
+
+// ThrustControl defines a thrust control interface.
+type ThrustControl interface {
+	Type() ControlLaw
+	Control(o Orbit) []float64
 }
 
 /* Available thrusters */
@@ -85,23 +115,66 @@ func NewGenericEP(thrust, isp float64) *GenericEP {
 
 /* Let's define some control laws. */
 
-// TangentialThrustCL thrusts in the tangenial direction at all times.
-func TangentialThrustCL(o Orbit) []float64 {
+// Coast defines an thrust control law which does not thrust.
+type Coast struct{}
+
+// Type implements the ThrustControl interface.
+func (cl Coast) Type() ControlLaw {
+	return coast
+}
+
+// Control implements the ThrustControl interface.
+func (cl Coast) Control(o Orbit) []float64 {
+	return []float64{0, 0, 0}
+}
+
+// Tangential defines a tangential thrust control law
+type Tangential struct{}
+
+// Type implements the ThrustControl interface.
+func (cl Tangential) Type() ControlLaw {
+	return tangential
+}
+
+// Control implements the ThrustControl interface.
+func (cl Tangential) Control(o Orbit) []float64 {
 	return unit(o.V)
 }
 
-// InversionCL keeps the thrust as tangential but inverts its direction within an angle from the orbit apogee.
-// This leads to collisions with main body if the orbit isn't circular enough.
-// cf. Izzo et al. (https://arxiv.org/pdf/1602.00849v2.pdf)
-func InversionCL(o Orbit, ν float64) []float64 {
-	f := o.Getν()
-	unitV := unit(o.V) // Effectively TangentialThrustCL.
-	if _, e := o.GetE(); e > 0.01 || (f > ν-math.Pi && f < math.Pi-ν) {
-		return unitV
-	}
+// AntiTangential defines an antitangential thrust control law
+type AntiTangential struct{}
+
+// Type implements the ThrustControl interface.
+func (cl AntiTangential) Type() ControlLaw {
+	return antiTangential
+}
+
+// Control implements the ThrustControl interface.
+func (cl AntiTangential) Control(o Orbit) []float64 {
+	unitV := unit(o.V)
 	unitV[0] *= -1
 	unitV[1] *= -1
 	unitV[2] *= -1
-
 	return unitV
+}
+
+// Inversion keeps the thrust as tangential but inverts its direction within an angle from the orbit apogee.
+// This leads to collisions with main body if the orbit isn't circular enough.
+// cf. Izzo et al. (https://arxiv.org/pdf/1602.00849v2.pdf)
+type Inversion struct {
+	ν float64
+}
+
+// Type implements the ThrustControl interface.
+func (cl Inversion) Type() ControlLaw {
+	return inversion
+}
+
+// Control implements the ThrustControl interface.
+func (cl Inversion) Control(o Orbit) []float64 {
+	f := o.Getν()
+	if _, e := o.GetE(); e > 0.01 || (f > cl.ν-math.Pi && f < math.Pi-cl.ν) {
+		return Tangential{}.Control(o)
+	}
+	return AntiTangential{}.Control(o)
 }

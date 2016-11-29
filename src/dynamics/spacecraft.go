@@ -110,22 +110,13 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 					}
 					break
 				case REFEARTH:
-					sc.FuncQ = append(sc.FuncQ, func() {
-						sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", "Earth", "time", dt.String())
-						o.ToXCentric(Earth, dt)
-					})
+					sc.FuncQ = append(sc.FuncQ, sc.ToXCentric(Earth, dt, o))
 					break
 				case REFMARS:
-					sc.FuncQ = append(sc.FuncQ, func() {
-						sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", "Mars", "time", dt.String())
-						o.ToXCentric(Mars, dt)
-					})
+					sc.FuncQ = append(sc.FuncQ, sc.ToXCentric(Mars, dt, o))
 					break
 				case REFSUN:
-					sc.FuncQ = append(sc.FuncQ, func() {
-						sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", "Sun", "time", dt.String())
-						o.ToXCentric(Sun, dt)
-					})
+					sc.FuncQ = append(sc.FuncQ, sc.ToXCentric(Sun, dt, o))
 					break
 				default:
 					panic("unknown action")
@@ -160,6 +151,14 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		return Δv, fuel
 	}
 	return
+}
+
+// ToXCentric switches the propagation from the current origin to a new one and logs the change.
+func (sc *Spacecraft) ToXCentric(body CelestialObject, dt time.Time, o *Orbit) func() {
+	return func() {
+		sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", body.Name, "time", dt.String())
+		o.ToXCentric(body, dt)
+	}
 }
 
 // NewEmptySC returns a spacecraft with no cargo and no thrusters.

@@ -167,9 +167,14 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	}
 	a.Vehicle.FuncQ = make([]func(), 5) // Clear the queue.
 
-	if norm(a.Orbit.R) < a.Orbit.Origin.Radius {
+	// Orbit sanity checks
+	if rNorm := norm(a.Orbit.R); rNorm < a.Orbit.Origin.Radius {
 		panic(fmt.Errorf("spacecraft collided with %s", a.Orbit.Origin.Name))
+	} else if rNorm > a.Orbit.Origin.SOI {
+		a.Vehicle.ToXCentric(Sun, a.CurrentDT, a.Orbit)
 	}
+
+	// Propulsion sanity check
 	if a.Vehicle.FuelMass > 0 && s[6] <= 0 {
 		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", s[6])
 	}

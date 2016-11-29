@@ -63,7 +63,7 @@ func (wp *Loiter) Cleared() bool {
 
 // ThrustDirection implements the Waypoint interface.
 func (wp *Loiter) ThrustDirection(o Orbit, dt time.Time) (dv []float64, reached bool) {
-	dv = []float64{0, 0, 0}
+	dv = Coast{}.Control(o)
 	if !wp.startedLoitering {
 		// First time this is called, starting timer.
 		wp.startedLoitering = true
@@ -114,7 +114,7 @@ func (wp *ReachDistance) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool
 		wp.cleared = true
 		return []float64{0, 0, 0}, true
 	}
-	return InversionCL(o, Deg2rad(45)), false
+	return Inversion{Deg2rad(45)}.Control(o), false
 }
 
 // Action implements the Waypoint interface.
@@ -155,13 +155,12 @@ func (wp *ReachVelocity) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool
 		wp.cleared = true
 		return []float64{0, 0, 0}, true
 	}
-	velocityPolar := Cartesian2Spherical(o.V)
 	if velocity < wp.velocity {
 		// Increase velocity if the SC isn't going fast enough.
-		return Spherical2Cartesian([]float64{1, velocityPolar[1], velocityPolar[2]}), false
+		return Tangential{}.Control(o), false
 	}
 	// Decrease velocity if the SC is going too fast.
-	return Spherical2Cartesian([]float64{-1, velocityPolar[1], velocityPolar[2]}), false
+	return AntiTangential{}.Control(o), false
 
 }
 
@@ -201,16 +200,12 @@ func (wp *ReachEnergy) Cleared() bool {
 func (wp *ReachEnergy) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool) {
 	if math.Abs(wp.finalξ-o.Energy()) < math.Abs(0.00001*wp.finalξ) {
 		wp.cleared = true
-		return []float64{0, 0, 0}, true
+		return Coast{}.Control(o), true
 	}
-	velocityPolar := Cartesian2Spherical(o.V)
-	thrustDirection := 1.0
 	if math.Abs(wp.finalξ/o.Energy()) < wp.ratio {
-		// Decelerate
-		thrustDirection = -1
+		return AntiTangential{}.Control(o), false
 	}
-
-	return Spherical2Cartesian([]float64{thrustDirection, velocityPolar[1], velocityPolar[2]}), false
+	return Tangential{}.Control(o), false
 }
 
 // Action implements the Waypoint interface.
@@ -231,6 +226,7 @@ type PlanetBound struct {
 	destination CelestialObject
 	action      *WaypointAction
 	cleared     bool
+	prevCL      *ControlLaw
 }
 
 // String implements the Waypoint interface.
@@ -256,8 +252,42 @@ The problem with this is that it may take a while to reach the destination since
 aren't always thrusting.
 */
 func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) ([]float64, bool) {
-
-	return InversionCL(o, Deg2rad(45)), false
+	if !o.Origin.Equals(Sun) {
+		panic("must be in a heliocentric orbit prior to being PlanetBound")
+	}
+	var cl ThrustControl
+	destOrbit := wp.destination.HelioOrbit(dt)
+	destSOILower := norm(destOrbit.R) - wp.destination.SOI
+	destSOIUpper := norm(destOrbit.R) + wp.destination.SOI
+	if r := norm(o.R); r < destSOILower {
+		cl = Tangential{}
+	} else if r > destSOIUpper {
+		cl = AntiTangential{}
+	} else {
+		// We are in the theoritical SOI. Let's check if we are within the real SOI.
+		rDiff := make([]float64, 3)
+		for i := 0; i < 3; i++ {
+			rDiff[i] = o.R[i] - destOrbit.R[i]
+		}
+		if norm(rDiff) < wp.destination.SOI {
+			// We are in the SOI, let's do an orbital injection.
+			// Note that we return here because we're at destination.
+			wp.cleared = true
+			return Coast{}.Control(o), true
+		} else if relVel := norm(o.V) - norm(destOrbit.V); relVel < 0 {
+			// If the relative velocity is negative, the planet will catch up with the spacecraft,
+			// so let's just wait.
+			cl = Coast{}
+		} else {
+			// If the relative velocity is positive, let's slow down.
+			cl = AntiTangential{}
+		}
+	}
+	if clType := cl.Type(); wp.prevCL == nil || *wp.prevCL != clType {
+		fmt.Printf("applying %s\n", cl.Type().String())
+		wp.prevCL = &clType
+	}
+	return cl.Control(o), false
 }
 
 // Action implements the Waypoint interface.
@@ -270,5 +300,8 @@ func (wp *PlanetBound) Action() *WaypointAction {
 
 // NewPlanetBound defines a new trajectory until and including the orbital insertion.
 func NewPlanetBound(destination CelestialObject, action *WaypointAction) *PlanetBound {
-	return &PlanetBound{destination, action, false}
+	if action == nil || (action.Type != REFEARTH && action.Type != REFMARS) {
+		panic("PlanetBound requires a REF* action. ")
+	}
+	return &PlanetBound{destination, action, false, nil}
 }
