@@ -266,19 +266,34 @@ func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 		wp.destSOIUpper = norm(wp.cacheDest.R) + wp.destination.SOI
 	}
 	var cl ThrustControl
-	if r := norm(o.R); r < wp.destSOILower {
-		cl = Tangential{"not in theoretical SOI"}
-	} else if r > wp.destSOILower+wp.destSOIUpper {
-		// Slow down if we have past the orbit.
-		cl = AntiTangential{"past planet distance"}
+	if math.Abs(o.GetI()-wp.cacheDest.GetI()) > (0.2 / (2 * math.Pi)) {
+		// Inclination difference of more than 1 degree, let's change this ASAP since
+		// the faster we go, the more energy is needed.
+		cl = NewOptimalThrust(optiΔi, "inclination change required")
+	} else if r := o.GetApoapsis(); r < wp.destSOIUpper {
+		// Next if the apoapsis isn't going to hit Mars, increase it until it does.
+		//cl = Tangential{"not in theoretical SOI"}
+		cl = NewOptimalThrust(optiΔa, "apoapsis not in theoretical SOI")
 	} else {
-		// We are in the theoretical SOI. Let's check if we are within the real SOI.
+		// Actually, the best is probably to simply target a given orbit and then
+		// use the sum thrust function of the paper and thrust that until reached.
+		// Then I can simply use the destination orbit from Mars, but that mean
+		// I need to plan precisely the target orbit, which I'm not sure to have yet.
+		// However, the good thing is that I can then use that to find an optimal escape
+		// orbit. I could then use IMD's information.
+
+		// Inclination and apoapsis are good. The best would be to find whether the vehicle will
+		// hit its apoapsis about when the destination will be there, and if not, change the
+		// argument of perigee. and if so, need to circularize the orbit slightly before encounter
+		// in order to have a slow relative velocity. This will make the capture easier.
+
+		// We cache the destination helio orbit for a full day to make the simulation faster.
 		if wp.cacheTime.After(dt.Add(time.Duration(24) * time.Hour)) {
-			// We cache the destination helio orbit for a full day.
-			fmt.Printf("date=%s cache=%s computing helio\n", dt, wp.cacheTime)
 			wp.cacheTime = dt
 			wp.cacheDest = wp.destination.HelioOrbit(dt)
 		}
+
+		// We are targeting the theoretical SOI. Let's check if we are within the real SOI.
 		rDiff := make([]float64, 3)
 		for i := 0; i < 3; i++ {
 			rDiff[i] = o.R[i] - wp.cacheDest.R[i]
@@ -288,13 +303,10 @@ func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 			// Note that we return here because we're at destination.
 			wp.cleared = true
 			return Coast{}, true
-		} else if relVel := norm(o.V) - norm(wp.cacheDest.V); relVel < 0 {
-			// If the relative velocity is negative, the planet will catch up with the spacecraft,
-			// so let's just wait.
-			cl = Coast{"waiting for planet"}
 		} else {
 			// If the relative velocity is positive, let's slow down.
-			cl = AntiTangential{"going faster than planet"}
+			//cl = AntiTangential{"going faster than planet"}
+			cl = Coast{"waiting for planet"}
 		}
 	}
 	return cl, false

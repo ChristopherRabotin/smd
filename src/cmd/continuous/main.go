@@ -18,7 +18,8 @@ func main() {
 	runtime.GOMAXPROCS(3) // I'm running other stuff currently.
 
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
-	end := start.Add(time.Duration(-1) * time.Nanosecond)  // Propagate until waypoint reached.
+	//end := start.Add(time.Duration(-1) * time.Nanosecond)  // Propagate until waypoint reached.
+	end := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC) // Let's not have this last too long if it doesn't converge.
 	// Initial info
 	marsOrbit := dynamics.Mars.HelioOrbit(start)
 	fmt.Printf("epoch=%s MarsR(km)=%e MarsV(km/s)=%e\n", start, norm(marsOrbit.R), norm(marsOrbit.V))

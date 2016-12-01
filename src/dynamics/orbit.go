@@ -44,6 +44,23 @@ func (o *Orbit) GetA() (a float64) {
 	return
 }
 
+// GetApoapsis returns the apoapsis.
+func (o *Orbit) GetApoapsis() (r float64) {
+	_, e := o.GetE()
+	r = o.GetA() * (1 + e)
+	return
+}
+
+// GetSinCosE returns the eccentric anomaly trig functions (sin and cos)
+func (o *Orbit) GetSinCosE() (sinE, cosE float64) {
+	sinν, cosν := math.Sincos(o.Getν())
+	_, e := o.GetE()
+	denom := 1 + e*cosν
+	sinE = math.Sqrt(1-e*e) * sinν / denom
+	cosE = (e + cosν) / denom
+	return
+}
+
 // GetI returns the inclination i.
 func (o *Orbit) GetI() (i float64) {
 	h := cross(o.R, o.V)

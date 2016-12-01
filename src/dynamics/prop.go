@@ -1,6 +1,9 @@
 package dynamics
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 // ControlLaw defines an enum of control laws.
 type ControlLaw uint8
@@ -10,6 +13,11 @@ const (
 	antiTangential
 	inversion
 	coast
+	optiΔa
+	optiΔi
+	optiΔe
+	optiΔΩ
+	optiΔω
 )
 
 func (cl ControlLaw) String() string {
@@ -22,8 +30,41 @@ func (cl ControlLaw) String() string {
 		return "inversion"
 	case coast:
 		return "coast"
+	case optiΔa:
+		return "optimal Δa"
+	case optiΔe:
+		return "optimal Δe"
+	case optiΔi:
+		return "optimal Δi"
+	case optiΔΩ:
+		return "optimal ΔΩ"
+	case optiΔω:
+		return "optimal Δω"
 	}
-	panic("unknown control law")
+	panic("cannot stringify unknown control law")
+}
+
+// ThrustControl defines a thrust control interface.
+type ThrustControl interface {
+	Control(o Orbit) []float64
+	Type() ControlLaw
+	Reason() string
+}
+
+// GenericCL partially defines a ThrustControl.
+type GenericCL struct {
+	reason string
+	cl     ControlLaw
+}
+
+// Reason implements the ThrustControl interface.
+func (cl GenericCL) Reason() string {
+	return cl.reason
+}
+
+// Type implements the ThrustControl interface.
+func (cl GenericCL) Type() ControlLaw {
+	return cl.cl
 }
 
 // Thruster defines a thruster interface.
@@ -34,13 +75,6 @@ type Thruster interface {
 	Max() (voltage, power uint)
 	// Returns the thrust in Newtons and isp consumed in seconds.
 	Thrust(voltage, power uint) (thrust, isp float64)
-}
-
-// ThrustControl defines a thrust control interface.
-type ThrustControl interface {
-	Control(o Orbit) []float64
-	Type() ControlLaw
-	Reason() string
 }
 
 /* Available thrusters */
@@ -205,4 +239,85 @@ func (cl Inversion) Control(o Orbit) []float64 {
 		return Tangential{}.Control(o)
 	}
 	return AntiTangential{}.Control(o)
+}
+
+/* Following optimal thrust change are from IEPC 2011's paper:
+Low-Thrust Maneuvers for the Efficient Correction of Orbital Elements
+A. Ruggiero, S. Marcuccio and M. Andrenucci */
+
+func unitΔvFromAngles(α, β float64) []float64 {
+	sinα, cosα := math.Sincos(α)
+	sinβ, cosβ := math.Sincos(β)
+	return []float64{cosβ * sinα, cosα * cosβ, sinβ}
+}
+
+// OptimalThrust is an optimal thrust.
+type OptimalThrust struct {
+	ctrl func(o Orbit) []float64
+	GenericCL
+}
+
+// Control implements the ThrustControl interface.
+func (cl OptimalThrust) Control(o Orbit) []float64 {
+	return cl.ctrl(o)
+}
+
+// NewOptimalThrust returns a new optimal Δe.
+func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
+	var ctrl func(o Orbit) []float64
+	switch cl {
+	case optiΔa:
+		ctrl = func(o Orbit) []float64 {
+			_, e := o.GetE()
+			sinν, cosν := math.Sincos(o.Getν())
+			return unitΔvFromAngles(math.Atan(e*sinν/(1+e*cosν)), 0.0)
+		}
+		break
+	case optiΔe:
+		ctrl = func(o Orbit) []float64 {
+			_, cosE := o.GetSinCosE()
+			sinν, cosν := math.Sincos(o.Getν())
+			return unitΔvFromAngles(math.Atan(sinν/(cosE+cosν)), 0.0)
+		}
+		break
+	case optiΔi:
+		ctrl = func(o Orbit) []float64 {
+			return unitΔvFromAngles(0.0, sign(math.Cos(o.Getω()+o.Getν()))*math.Pi/2)
+		}
+		break
+	case optiΔΩ:
+		ctrl = func(o Orbit) []float64 {
+			return unitΔvFromAngles(0.0, sign(math.Sin(o.Getω()+o.Getν()))*math.Pi/2)
+		}
+		break
+	case optiΔω:
+		ctrl = func(o Orbit) []float64 {
+			_, e := o.GetE()
+			ν := o.Getν()
+			cotν := 1 / math.Tan(ν)
+			coti := 1 / math.Tan(o.GetI())
+			sinν, cosν := math.Sincos(o.Getν())
+			sinων := math.Sin(o.Getω() + ν)
+			α := math.Atan((1 + e*cosν) * cotν / (2 + e*cosν))
+			sinαν := math.Sin(α - ν)
+			β := math.Atan((e * coti * sinων) / (sinαν*(1+e*cosν) - math.Cos(α)*sinν))
+			return unitΔvFromAngles(α, β)
+		}
+		break
+	default:
+		panic(fmt.Errorf("optmized %s not yet implemented", cl))
+	}
+	return OptimalThrust{ctrl, GenericCL{reason, cl}}
+}
+
+// OptimalΔi defines the optimial thrust to change the inclination.
+type OptimalΔi struct {
+	GenericCL
+}
+
+// Control implements the ThrustControl interface.
+func (cl OptimalΔi) Control(o Orbit) []float64 {
+	_, cosE := o.GetSinCosE()
+	sinν, cosν := math.Sincos(o.Getν())
+	return unitΔvFromAngles(math.Atan(sinν/(cosE+cosν)), 0.0)
 }
