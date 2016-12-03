@@ -18,6 +18,7 @@ const (
 	optiΔe
 	optiΔΩ
 	optiΔω
+	multiOpti
 )
 
 func (cl ControlLaw) String() string {
@@ -40,6 +41,8 @@ func (cl ControlLaw) String() string {
 		return "optimal ΔΩ"
 	case optiΔω:
 		return "optimal Δω"
+	case multiOpti:
+		return "multiple optimized"
 	}
 	panic("cannot stringify unknown control law")
 }
@@ -310,14 +313,72 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 	return OptimalThrust{ctrl, GenericCL{reason, cl}}
 }
 
-// OptimalΔi defines the optimial thrust to change the inclination.
-type OptimalΔi struct {
+// OptimalΔOrbit combines all the control laws from Ruggiero et al.
+type OptimalΔOrbit struct {
+	Initd          bool
+	ainit, atarget float64
+	iinit, itarget float64
+	einit, etarget float64
+	Ωinit, Ωtarget float64
+	ωinit, ωtarget float64
+	controls       []ThrustControl
 	GenericCL
 }
 
+// NewOptimalΔOrbit generates a new OptimalΔOrbit based on the provided target orbit.
+func NewOptimalΔOrbit(target Orbit, laws ...ThrustControl) *OptimalΔOrbit {
+	cl := OptimalΔOrbit{}
+	cl.atarget, cl.etarget, cl.itarget, cl.ωtarget, cl.Ωtarget, _ = target.OrbitalElements()
+	cl.controls = laws
+	cl.GenericCL = GenericCL{"ΔOrbit", multiOpti}
+	return &cl
+}
+
 // Control implements the ThrustControl interface.
-func (cl OptimalΔi) Control(o Orbit) []float64 {
-	_, cosE := o.GetSinCosE()
-	sinν, cosν := math.Sincos(o.Getν())
-	return unitΔvFromAngles(math.Atan(sinν/(cosE+cosν)), 0.0)
+func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
+	thrust := []float64{0, 0, 0}
+	if !cl.Initd {
+		cl.ainit, cl.einit, cl.iinit, cl.ωinit, cl.Ωinit, _ = o.OrbitalElements()
+		cl.Initd = true
+		return thrust
+	}
+
+	factor := func(oscul, init, target float64) float64 {
+		if math.Abs(init-target) < 1e-8 {
+			return 0
+		}
+		return (target - oscul) / (target - init)
+	}
+
+	for _, ctrl := range cl.controls {
+		var oscul, init, target float64
+		switch ctrl.Type() {
+		case optiΔa:
+			oscul = o.GetA()
+			init = cl.ainit
+			target = cl.atarget
+		case optiΔe:
+			_, oscul = o.GetE()
+			init = cl.einit
+			target = cl.etarget
+		case optiΔi:
+			oscul = o.GetI()
+			init = cl.iinit
+			target = cl.itarget
+		case optiΔΩ:
+			oscul = o.GetΩ()
+			init = cl.Ωinit
+			target = cl.Ωtarget
+		case optiΔω:
+			oscul = o.Getω()
+			init = cl.ωinit
+			target = cl.ωtarget
+		}
+		fact := factor(oscul, init, target)
+		tmpThrust := ctrl.Control(o)
+		for i := 0; i < 3; i++ {
+			thrust[i] += fact * tmpThrust[i]
+		}
+	}
+	return unit(thrust)
 }

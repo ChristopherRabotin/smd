@@ -303,11 +303,11 @@ func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 			// Note that we return here because we're at destination.
 			wp.cleared = true
 			return Coast{}, true
-		} else {
-			// If the relative velocity is positive, let's slow down.
-			//cl = AntiTangential{"going faster than planet"}
-			cl = Coast{"waiting for planet"}
-		}
+		} //else {
+		// If the relative velocity is positive, let's slow down.
+		//cl = AntiTangential{"going faster than planet"}
+		cl = Coast{"waiting for planet"}
+		//}
 	}
 	return cl, false
 }
@@ -326,4 +326,47 @@ func NewPlanetBound(destination CelestialObject, action *WaypointAction) *Planet
 		panic("PlanetBound requires a REF* action. ")
 	}
 	return &PlanetBound{destination, 0.0, 0.0, time.Unix(0, 0), Orbit{}, action, false}
+}
+
+// OrbitTarget allows to target an orbit.
+type OrbitTarget struct {
+	target  Orbit
+	ctrl    ThrustControl
+	action  *WaypointAction
+	cleared bool
+}
+
+// String implements the Waypoint interface.
+func (wp *OrbitTarget) String() string {
+	return fmt.Sprintf("targeting orbit")
+}
+
+// Cleared implements the Waypoint interface.
+func (wp *OrbitTarget) Cleared() bool {
+	return wp.cleared
+}
+
+// Action implements the Waypoint interface.
+func (wp *OrbitTarget) Action() *WaypointAction {
+	if wp.cleared {
+		return wp.action
+	}
+	return nil
+}
+
+// ThrustDirection implements (inefficently) the optimal orbit target.
+func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
+	a := wp.target.GetA()
+	i := wp.target.GetI()
+	_, e := wp.target.GetE()
+	_, oE := o.GetE()
+	if math.Abs(a-o.GetA()) < 1e-6 && math.Abs(i-o.GetI()) < 1e-6 && math.Abs(e-oE) < 1e-6 {
+		wp.cleared = true
+	}
+	return wp.ctrl, wp.cleared
+}
+
+// NewOrbitTarget defines a new orbit target.
+func NewOrbitTarget(target Orbit /*laws ...ControlLaw, */, action *WaypointAction) *OrbitTarget {
+	return &OrbitTarget{target, NewOptimalΔOrbit(target, NewOptimalThrust(optiΔa, "optiΔa"), NewOptimalThrust(optiΔe, "optiΔe"), NewOptimalThrust(optiΔi, "optiΔi")), action, false}
 }

@@ -1,7 +1,6 @@
 package dynamics
 
 import (
-	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -169,7 +168,8 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 
 	// Orbit sanity checks
 	if rNorm := norm(a.Orbit.R); rNorm < a.Orbit.Origin.Radius {
-		panic(fmt.Errorf("spacecraft collided with %s", a.Orbit.Origin.Name))
+		//panic(fmt.Errorf("spacecraft collided with %s on %s", a.Orbit.Origin.Name, a.CurrentDT))
+		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "collided", a.Orbit.Origin.Name)
 	} else if rNorm > a.Orbit.Origin.SOI {
 		a.Vehicle.ToXCentric(Sun, a.CurrentDT, a.Orbit)
 	}
