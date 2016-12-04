@@ -190,7 +190,7 @@ func (cl Tangential) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl Tangential) Control(o Orbit) []float64 {
-	return unit(o.V)
+	return unit(o.GetV())
 }
 
 // AntiTangential defines an antitangential thrust control law
@@ -210,7 +210,7 @@ func (cl AntiTangential) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl AntiTangential) Control(o Orbit) []float64 {
-	unitV := unit(o.V)
+	unitV := unit(o.GetV())
 	unitV[0] *= -1
 	unitV[1] *= -1
 	unitV[2] *= -1
@@ -285,25 +285,23 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 		break
 	case optiΔi:
 		ctrl = func(o Orbit) []float64 {
-			return unitΔvFromAngles(0.0, sign(math.Cos(o.Getω()+o.Getν()))*math.Pi/2)
+			return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
 		}
 		break
 	case optiΔΩ:
 		ctrl = func(o Orbit) []float64 {
-			return unitΔvFromAngles(0.0, sign(math.Sin(o.Getω()+o.Getν()))*math.Pi/2)
+			return unitΔvFromAngles(0.0, sign(math.Sin(o.ω+o.ν))*math.Pi/2)
 		}
 		break
 	case optiΔω:
 		ctrl = func(o Orbit) []float64 {
-			_, e := o.GetE()
-			ν := o.Getν()
-			cotν := 1 / math.Tan(ν)
-			coti := 1 / math.Tan(o.GetI())
-			sinν, cosν := math.Sincos(o.Getν())
-			sinων := math.Sin(o.Getω() + ν)
-			α := math.Atan((1 + e*cosν) * cotν / (2 + e*cosν))
-			sinαν := math.Sin(α - ν)
-			β := math.Atan((e * coti * sinων) / (sinαν*(1+e*cosν) - math.Cos(α)*sinν))
+			cotν := 1 / math.Tan(o.ν)
+			coti := 1 / math.Tan(o.i)
+			sinν, cosν := math.Sincos(o.ν)
+			sinων := math.Sin(o.ω + o.ν)
+			α := math.Atan((1 + o.e*cosν) * cotν / (2 + o.e*cosν))
+			sinαν := math.Sin(α - o.ν)
+			β := math.Atan((o.e * coti * sinων) / (sinαν*(1+o.e*cosν) - math.Cos(α)*sinν))
 			return unitΔvFromAngles(α, β)
 		}
 		break
@@ -328,7 +326,11 @@ type OptimalΔOrbit struct {
 // NewOptimalΔOrbit generates a new OptimalΔOrbit based on the provided target orbit.
 func NewOptimalΔOrbit(target Orbit, laws ...ThrustControl) *OptimalΔOrbit {
 	cl := OptimalΔOrbit{}
-	cl.atarget, cl.etarget, cl.itarget, cl.ωtarget, cl.Ωtarget, _ = target.OrbitalElements()
+	cl.atarget = target.a
+	cl.etarget = target.e
+	cl.itarget = target.i
+	cl.ωtarget = target.ω
+	cl.Ωtarget = target.Ω
 	cl.controls = laws
 	cl.GenericCL = GenericCL{"ΔOrbit", multiOpti}
 	return &cl
@@ -338,7 +340,11 @@ func NewOptimalΔOrbit(target Orbit, laws ...ThrustControl) *OptimalΔOrbit {
 func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	thrust := []float64{0, 0, 0}
 	if !cl.Initd {
-		cl.ainit, cl.einit, cl.iinit, cl.ωinit, cl.Ωinit, _ = o.OrbitalElements()
+		cl.ainit = o.a
+		cl.einit = o.e
+		cl.iinit = o.i
+		cl.ωinit = o.ω
+		cl.Ωinit = o.Ω
 		cl.Initd = true
 		return thrust
 	}
@@ -358,19 +364,19 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			init = cl.ainit
 			target = cl.atarget
 		case optiΔe:
-			_, oscul = o.GetE()
+			oscul = o.e
 			init = cl.einit
 			target = cl.etarget
 		case optiΔi:
-			oscul = o.GetI()
+			oscul = o.i
 			init = cl.iinit
 			target = cl.itarget
 		case optiΔΩ:
-			oscul = o.GetΩ()
+			oscul = o.Ω
 			init = cl.Ωinit
 			target = cl.Ωtarget
 		case optiΔω:
-			oscul = o.Getω()
+			oscul = o.ω
 			init = cl.ωinit
 			target = cl.ωtarget
 		}

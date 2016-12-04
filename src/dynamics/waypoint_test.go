@@ -12,7 +12,7 @@ func TestOutwardSpiral(t *testing.T) {
 	if wp.Cleared() {
 		t.Fatal("Waypoint was cleared at creation.")
 	}
-	o := Orbit{[]float64{90, 0, 0}, []float64{0, 0, 0}, Sun}
+	o := *NewOrbitFromRV([]float64{90, 0, 0}, []float64{0, 0, 0}, Sun)
 	ctrl, reached := wp.ThrustDirection(o, time.Now())
 	dV := ctrl.Control(o)
 	if reached {
@@ -24,7 +24,7 @@ func TestOutwardSpiral(t *testing.T) {
 	if wp.Action() != nil {
 		t.Fatal("Waypoint returned an action before being reached.")
 	}
-	o = Orbit{[]float64{100, 0, 0}, []float64{0, 0, 0}, Sun}
+	o = *NewOrbitFromRV([]float64{100, 0, 0}, []float64{0, 0, 0}, Sun)
 	ctrl, reached = wp.ThrustDirection(o, time.Now())
 	dV = ctrl.Control(o)
 	if !reached {
@@ -48,7 +48,7 @@ func TestLoiter(t *testing.T) {
 		t.Fatal("Waypoint was cleared at creation.")
 	}
 	initTime := time.Unix(0, 0)
-	o := Orbit{[]float64{100, 0, 0}, []float64{0, 0, 0}, Sun}
+	o := *NewOrbitFromRV([]float64{100, 0, 0}, []float64{0, 0, 0}, Sun)
 	ctrl, reached := wp.ThrustDirection(o, initTime)
 	dV := ctrl.Control(o)
 	if reached {
@@ -60,7 +60,7 @@ func TestLoiter(t *testing.T) {
 	if wp.Action() != nil {
 		t.Fatal("Loiter waypoint returned an action before being reached.")
 	}
-	o = Orbit{[]float64{100, 0, 0}, []float64{0, 0, 0}, Sun}
+	o = *NewOrbitFromRV([]float64{100, 0, 0}, []float64{0, 0, 0}, Sun)
 	ctrl, reached = wp.ThrustDirection(o, initTime.Add(time.Duration(1)*time.Second))
 	dV = ctrl.Control(o)
 	if reached {
@@ -69,7 +69,7 @@ func TestLoiter(t *testing.T) {
 	if norm(dV) != 0 {
 		t.Fatal("Loiter waypoint required a velocity change.")
 	}
-	o = Orbit{[]float64{100, 0, 0}, []float64{0, 0, 0}, Sun}
+	o = *NewOrbitFromRV([]float64{100, 0, 0}, []float64{0, 0, 0}, Sun)
 	ctrl, reached = wp.ThrustDirection(o, initTime.Add(time.Duration(1)*time.Minute))
 	dV = ctrl.Control(o)
 	if !reached {

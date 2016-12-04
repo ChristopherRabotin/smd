@@ -1,6 +1,7 @@
 package dynamics
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -8,115 +9,128 @@ import (
 
 // Orbit defines an orbit via its orbital elements.
 type Orbit struct {
-	R      []float64       // Radius vector
-	V      []float64       // Velocity vector
-	Origin CelestialObject // Orbit orgin
+	a, e, i, Ω, ω, ν float64
+	Origin           CelestialObject // Orbit orgin
 }
 
 // Energy returns the energy ξ of this orbit.
 func (o *Orbit) Energy() float64 {
-	return norm(o.V)*norm(o.V)/2 - o.Origin.μ/norm(o.R)
+	return -o.Origin.μ / (2 * o.a)
+}
+
+// GetTildeω returns the true longitude of perigee.
+func (o *Orbit) GetTildeω() float64 {
+	return o.ω + o.Ω
+}
+
+// Getλtrue returns the true longitude.
+func (o *Orbit) Getλtrue() float64 {
+	r := o.GetR()
+	λ := math.Acos(r[0] / norm(r))
+	if r[1] < 0 {
+		λ = 2*math.Pi - λ
+	}
+	return λ
+}
+
+// GetH returns the orbital angular momentum.
+func (o *Orbit) GetH() float64 {
+	return norm(cross(o.GetR(), o.GetV()))
 }
 
 // GetE returns the eccentricty vector and norm.
 func (o *Orbit) GetE() (eVec []float64, e float64) {
-	eVec = make([]float64, 3)
-	for j := 0; j < 3; j++ {
-		eVec[j] = ((math.Pow(norm(o.V), 2)-o.Origin.μ/norm(o.R))*o.R[j] - dot(o.R, o.V)*o.V[j]) / o.Origin.μ
-	}
-	e = norm(eVec) // Eccentricity
-	return
+	return []float64{0, 0, 0}, o.e
 }
 
 // Getν returns the true anomaly.
 func (o *Orbit) Getν() (ν float64) {
-	eVec, e := o.GetE()
-	ν = math.Acos(dot(eVec, o.R) / (e * norm(o.R)))
-	if dot(o.R, o.V) < 0 {
-		ν = 2*math.Pi - ν
-	}
-	return
+	return o.ν
 }
 
 // GetA returns the semi major axis a.
 func (o *Orbit) GetA() (a float64) {
-	a = -o.Origin.μ / (2 * (0.5*dot(o.V, o.V) - o.Origin.μ/norm(o.R)))
+	return o.a
+}
+
+// GetSemiParameter returns the apoapsis.
+func (o *Orbit) GetSemiParameter() (r float64) {
+	r = o.a * (1 - o.e*o.e)
 	return
 }
 
 // GetApoapsis returns the apoapsis.
 func (o *Orbit) GetApoapsis() (r float64) {
-	_, e := o.GetE()
-	r = o.GetA() * (1 + e)
+	r = o.a * (1 + o.e)
 	return
 }
 
-// GetSinCosE returns the eccentric anomaly trig functions (sin and cos)
+// GetPeriapsis returns the apoapsis.
+func (o *Orbit) GetPeriapsis() (r float64) {
+	r = o.a * (1 - o.e)
+	return
+}
+
+// GetSinCosE returns the eccentric anomaly trig functions (sin and cos).
 func (o *Orbit) GetSinCosE() (sinE, cosE float64) {
-	sinν, cosν := math.Sincos(o.Getν())
-	_, e := o.GetE()
-	denom := 1 + e*cosν
-	sinE = math.Sqrt(1-e*e) * sinν / denom
-	cosE = (e + cosν) / denom
+	sinν, cosν := math.Sincos(o.ν)
+	denom := 1 + o.e*cosν
+	sinE = math.Sqrt(1-o.e*o.e) * sinν / denom
+	cosE = (o.e + cosν) / denom
 	return
 }
 
-// GetI returns the inclination i.
-func (o *Orbit) GetI() (i float64) {
-	h := cross(o.R, o.V)
-	i = math.Acos(h[2] / norm(h))
+// GetR returns the radius vector.
+func (o *Orbit) GetR() (R []float64) {
+	R = make([]float64, 3, 3)
+	p := o.GetSemiParameter()
+	sinν, cosν := math.Sincos(o.ν)
+	R[0] = p * cosν / (1 + o.e*cosν)
+	R[1] = p * sinν / (1 + o.e*cosν)
+	R[2] = 0
+	R = PQW2ECI(o.i, o.ω, o.Ω, R)
 	return
 }
 
-// GetΩ returns the RAAN Ω.
-func (o *Orbit) GetΩ() (Ω float64) {
-	h := cross(o.R, o.V)
-	N := []float64{-h[1], h[0], 0}
-
-	Ω = math.Acos(N[0] / norm(N))
-	if N[1] < 0 { // Quadrant check.
-		Ω = 2*math.Pi - Ω
-	}
-	return
-}
-
-// Getω returns the argument of periapsis.
-func (o *Orbit) Getω() (ω float64) {
-	h := cross(o.R, o.V)
-	N := []float64{-h[1], h[0], 0}
-	eVec, e := o.GetE()
-	ω = math.Acos(dot(N, eVec) / (norm(N) * e))
-	if eVec[2] < 0 { // Quadrant check
-		ω = 2*math.Pi - ω
-	}
-	return
-}
-
-// GetΦ returns the flight path angle with the correct quadrant.
-func (o *Orbit) GetΦ() (Φ float64) {
-	_, e := o.GetE()
-	sinν, cosν := math.Sincos(o.Getν())
-	sinΦ := (e * sinν) / math.Sqrt(1+2*e*cosν+e*e)
-	cosΦ := (1 + e*cosν) / math.Sqrt(1+2*e*cosν+e*e)
-	Φ = math.Atan2(sinΦ, cosΦ)
-	return
-}
-
-// OrbitalElements returns the orbital elements of this orbit.
-func (o *Orbit) OrbitalElements() (a, e, i, ω, Ω, ν float64) {
-	_, e = o.GetE()
-	a = o.GetA()
-	i = o.GetI()
-	Ω = o.GetΩ()
-	ω = o.Getω()
-	ν = o.Getν()
+// GetV returns the velocity vector.
+func (o *Orbit) GetV() (V []float64) {
+	V = make([]float64, 3, 3)
+	p := o.GetSemiParameter()
+	sinν, cosν := math.Sincos(o.ν)
+	V[0] = -math.Sqrt(o.Origin.μ/p) * sinν
+	V[1] = math.Sqrt(o.Origin.μ/p) * (o.e + cosν)
+	V[2] = 0
+	V = PQW2ECI(o.i, o.ω, o.Ω, V)
 	return
 }
 
 // String implements the stringer interface.
 func (o *Orbit) String() string {
-	a, e, i, ω, Ω, ν := o.OrbitalElements()
-	return fmt.Sprintf("a=%0.5f e=%0.5f i=%0.5f ω=%0.5f Ω=%0.5f ν=%0.5f", a, e, i, ω, Ω, ν)
+	return fmt.Sprintf("a=%0.5f e=%0.5f i=%0.5f ω=%0.5f Ω=%0.5f ν=%0.5f", o.a, o.e, o.i, o.ω, o.Ω, o.ν)
+}
+
+// Equals returns whether two orbits are identical.
+// WARNING: Does not check the true anomaly.
+func (o *Orbit) Equals(o1 Orbit) (bool, error) {
+	if !o.Origin.Equals(o1.Origin) {
+		return false, errors.New("different origin")
+	}
+	if ok, err := floatEqual(o.a, o1.a); !ok {
+		return false, fmt.Errorf("semi major axis invalid: %s", err)
+	}
+	if ok, err := floatEqual(o.e, o.e); !ok {
+		return false, fmt.Errorf("eccentricity invalid: %s", err)
+	}
+	if ok, err := floatEqual(o.i, o.i); !ok {
+		return false, fmt.Errorf("inclination invalid: %s", err)
+	}
+	if ok, err := floatEqual(o.Ω, o.Ω); !ok {
+		return false, fmt.Errorf("RAAN invalid: %s", err)
+	}
+	if ok, err := floatEqual(o.ω, o.ω); !ok {
+		return false, fmt.Errorf("argument of perigee invalid: %s", err)
+	}
+	return true, nil
 }
 
 // ToXCentric converts this orbit the provided celestial object centric equivalent.
@@ -126,56 +140,77 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 	if o.Origin.Name == b.Name {
 		panic(fmt.Errorf("already in orbit around %s", b.Name))
 	}
+	oR := o.GetR()
+	oV := o.GetV()
 	if b.SOI == -1 {
 		// Switch to heliocentric
 		// Get planet equatorial coordinates.
 		rel := o.Origin.HelioOrbit(dt)
+		relR := rel.GetR()
+		relV := rel.GetV()
 		// Switch frame origin.
 		for i := 0; i < 3; i++ {
-			o.R[i] += rel.R[i]
-			o.V[i] += rel.V[i]
+			oR[i] += relR[i]
+			oV[i] += relV[i]
 		}
 	} else {
 		// Switch to planet centric
 		// Get planet ecliptic coordinates.
 		rel := b.HelioOrbit(dt)
+		relR := rel.GetR()
+		relV := rel.GetV()
 		// Update frame origin.
 		for i := 0; i < 3; i++ {
-			o.R[i] -= rel.R[i]
-			o.V[i] -= rel.V[i]
+			oR[i] -= relR[i]
+			oV[i] -= relV[i]
 		}
 	}
+	newOrbit := NewOrbitFromRV(oR, oV, b)
+	o.a = newOrbit.a
+	o.e = newOrbit.e
+	o.i = newOrbit.i
+	o.Ω = newOrbit.Ω
+	o.ν = newOrbit.ν
+	o.ω = newOrbit.ω
 	o.Origin = b // Don't forget to switch origin
 }
 
 // NewOrbitFromOE creates an orbit from the orbital elements.
 func NewOrbitFromOE(a, e, i, ω, Ω, ν float64, c CelestialObject) *Orbit {
-	// Check for edge cases which are not supported.
-	if ν < 1e-10 {
-		panic("ν ~= 0 is not supported")
-	}
-	if e < 0 || e > 1 {
-		panic("only circular and elliptical orbits supported")
-	}
-	μ := c.μ
-	p := a * (1.0 - math.Pow(e, 2)) // semi-parameter
-	R, V := make([]float64, 3), make([]float64, 3)
-	// Compute R and V in the perifocal frame (PQW).
-	R[0] = p * math.Cos(ν) / (1 + e*math.Cos(ν))
-	R[1] = p * math.Sin(ν) / (1 + e*math.Cos(ν))
-	R[2] = 0
-	V[0] = -math.Sqrt(μ/p) * math.Sin(ν)
-	V[1] = math.Sqrt(μ/p) * (e + math.Cos(ν))
-	V[2] = 0
-	// Compute ECI rotation.
-	R = PQW2ECI(i, ω, Ω, R)
-	V = PQW2ECI(i, ω, Ω, V)
-	return &Orbit{R, V, c}
+	return &Orbit{a, e, i, ω, Ω, ν, c}
 }
 
-// NewOrbit returns orbital elements from the R and V vectors. Needed for prop
-func NewOrbit(R, V []float64, c CelestialObject) *Orbit {
-	return &Orbit{R, V, c}
+// NewOrbitFromRV returns orbital elements from the R and V vectors. Needed for prop
+func NewOrbitFromRV(R, V []float64, c CelestialObject) *Orbit {
+	// From Vallado's RV2COE, page 113
+	hVec := cross(R, V)
+	n := cross([]float64{0, 0, 1}, hVec)
+	v := norm(V)
+	r := norm(R)
+	ξ := (v*v)/2 - c.μ/r
+	a := -c.μ / (2 * ξ)
+	eVec := make([]float64, 3, 3)
+	for i := 0; i < 3; i++ {
+		eVec[i] = ((v*v-c.μ/r)*R[i] - dot(R, V)*V[i]) / c.μ
+	}
+	e := norm(eVec)
+	if e >= 1 {
+		fmt.Println("[warning] parabolic and hyperpolic orbits not fully supported")
+	}
+	i := math.Acos(hVec[2] / norm(hVec))
+	ω := math.Acos(dot(n, eVec) / (norm(n) * e))
+	if eVec[2] < 0 {
+		ω = 2*math.Pi - ω
+	}
+	Ω := math.Acos(n[0] / norm(n))
+	if n[1] < 0 {
+		Ω = 2*math.Pi - Ω
+	}
+	ν := math.Acos(dot(eVec, R) / (e * r))
+	if dot(R, V) < 0 {
+		ν = 2*math.Pi - ν
+	}
+	return &Orbit{a, e, i, ω, Ω, ν, c}
 }
 
 // Helper functions go here.

@@ -9,8 +9,8 @@ import (
 // PQW2ECI converts a given vector from PQW frame to ECI frame.
 func PQW2ECI(i, ω, Ω float64, vI []float64) (v []float64) {
 	mulM := mat64.NewDense(3, 3, nil)
-	mulM.Mul(R1(-i), R3(-ω))
-	mulM.Mul(R3(-Ω), mulM)
+	mulM.Mul(R3(-ω), R1(-i))
+	mulM.Mul(mulM, R3(-Ω))
 	v = MxV33(mulM, vI)
 	return
 }

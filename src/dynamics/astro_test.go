@@ -1,25 +1,12 @@
 package dynamics
 
 import (
-	"fmt"
 	"math"
 	"testing"
 	"time"
 )
 
 /* Testing here should propagate a given a orbit which is created via OEs and check that only nu changes.*/
-
-const (
-	eps = 1e-3
-)
-
-func floatEqual(a, b float64) (bool, error) {
-	diff := math.Abs(a - b)
-	if diff < eps {
-		return true, nil
-	}
-	return false, fmt.Errorf("difference of %3.10f", diff)
-}
 
 func TestAstrocroChanStop(t *testing.T) {
 	// Define a new orbit.
@@ -44,26 +31,25 @@ func TestAstrocroChanStop(t *testing.T) {
 	}
 	// Must find a way to test the stop channel. via a long propagation and a select probably.
 	// Check the orbital elements.
-	a1, e1, i1, ω1, Ω1, ν1 := o.OrbitalElements()
-	if ok, err := floatEqual(a0, a1); !ok {
+	if ok, err := floatEqual(a0, o.a); !ok {
 		t.Fatalf("semi major axis changed: %s", err)
 	}
-	if diff := math.Abs(e1 - e0); diff > 1e-5 {
+	if diff := math.Abs(o.e - e0); diff > 1e-5 {
 		t.Fatalf("eccentricity changed by %f", diff)
 	}
-	if ok, err := floatEqual(i0, i1); !ok {
+	if ok, err := floatEqual(i0, o.i); !ok {
 		t.Fatalf("inclination changed: %s", err)
 	}
-	if ok, err := floatEqual(Ω0, Ω1); !ok {
+	if ok, err := floatEqual(Ω0, o.Ω); !ok {
 		t.Fatalf("RAAN changed: %s", err)
 	}
-	if ok, err := floatEqual(ω0, ω1); !ok {
+	if ok, err := floatEqual(ω0, o.ω); !ok {
 		t.Fatalf("argument of perigee changed: %s", err)
 	}
-	if ok, _ := floatEqual(ν0, ν1); ok {
-		t.Fatalf("true anomaly *unchanged*: ν0=%3.6f ν1=%3.6f", ν0, ν1)
+	if ok, _ := floatEqual(ν0, o.ν); ok {
+		t.Fatalf("true anomaly *unchanged*: ν0=%3.6f ν1=%3.6f", ν0, o.ν)
 	} else {
-		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(ν1-ν0), stepSize)
+		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(o.ν-ν0), stepSize)
 	}
 }
 
@@ -84,25 +70,24 @@ func TestAstrocroPropTime(t *testing.T) {
 	astro.Propagate()
 	// Must find a way to test the stop channel. via a long propagation and a select probably.
 	// Check the orbital elements.
-	a1, e1, i1, ω1, Ω1, ν1 := o.OrbitalElements()
-	if ok, err := floatEqual(a0, a1); !ok {
+	if ok, err := floatEqual(a0, o.a); !ok {
 		t.Fatalf("semi major axis changed: %s", err)
 	}
 	// Eccentricity gets a special treatment because 33% of the time its fails to get the eps precision.
-	if diff := math.Abs(e1 - e0); diff > 1e-5 {
+	if diff := math.Abs(o.e - e0); diff > 1e-5 {
 		t.Fatalf("eccentricity changed by %f", diff)
 	}
-	if ok, err := floatEqual(i0, i1); !ok {
+	if ok, err := floatEqual(i0, o.i); !ok {
 		t.Fatalf("inclination changed: %s", err)
 	}
-	if ok, err := floatEqual(Ω0, Ω1); !ok {
+	if ok, err := floatEqual(Ω0, o.Ω); !ok {
 		t.Fatalf("RAAN changed: %s", err)
 	}
-	if ok, err := floatEqual(ω0, ω1); !ok {
+	if ok, err := floatEqual(ω0, o.ω); !ok {
 		t.Fatalf("argument of perigee changed: %s", err)
 	}
-	if diff := math.Abs(ν1 - ν0); diff > 1e-5 {
-		t.Fatalf("ν changed too much after one sideral day propagating a GEO vehicle: ν0=%3.6f ν1=%3.6f", ν0, ν1)
+	if diff := math.Abs(o.ν - ν0); diff > 1e-5 {
+		t.Fatalf("ν changed too much after one sideral day propagating a GEO vehicle: ν0=%3.6f ν1=%3.6f", ν0, o.ν)
 	} else {
 		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(diff), stepSize)
 	}
@@ -118,8 +103,8 @@ func TestAstrocroFrame(t *testing.T) {
 	ν0 := Deg2rad(0.1)
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 	var R1, V1, R2, V2 [3]float64
-	copy(R1[:], o.R)
-	copy(V1[:], o.V)
+	copy(R1[:], o.GetR())
+	copy(V1[:], o.GetV())
 	// Define propagation parameters.
 	start := time.Now()
 	end := start.Add(time.Duration(2) * time.Hour)
@@ -127,8 +112,8 @@ func TestAstrocroFrame(t *testing.T) {
 	// Start propagation.
 	astro.Propagate()
 	// Check that in this orbit there is a change.
-	copy(R2[:], o.R)
-	copy(V2[:], o.V)
+	copy(R2[:], o.GetR())
+	copy(V2[:], o.GetV())
 	if vectorsEqual(R1[:], R2[:]) {
 		t.Fatal("R1 == R2")
 	}

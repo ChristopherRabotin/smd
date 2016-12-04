@@ -110,7 +110,7 @@ func (wp *ReachDistance) Cleared() bool {
 
 // ThrustDirection implements the Waypoint interface.
 func (wp *ReachDistance) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if norm(o.R) >= wp.distance {
+	if norm(o.GetR()) >= wp.distance {
 		wp.cleared = true
 		return Coast{}, true
 	}
@@ -150,7 +150,7 @@ func (wp *ReachVelocity) Cleared() bool {
 
 // ThrustDirection implements the Waypoint interface.
 func (wp *ReachVelocity) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	velocity := norm(o.V)
+	velocity := norm(o.GetV())
 	if math.Abs(velocity-wp.velocity) < wp.epsilon {
 		wp.cleared = true
 		return Coast{}, true
@@ -262,11 +262,11 @@ func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 	if wp.destSOILower == wp.destSOIUpper {
 		wp.cacheTime = dt
 		wp.cacheDest = wp.destination.HelioOrbit(dt)
-		wp.destSOILower = norm(wp.cacheDest.R) - wp.destination.SOI
-		wp.destSOIUpper = norm(wp.cacheDest.R) + wp.destination.SOI
+		wp.destSOILower = norm(wp.cacheDest.GetR()) - wp.destination.SOI
+		wp.destSOIUpper = norm(wp.cacheDest.GetR()) + wp.destination.SOI
 	}
 	var cl ThrustControl
-	if math.Abs(o.GetI()-wp.cacheDest.GetI()) > (0.2 / (2 * math.Pi)) {
+	if math.Abs(o.i-wp.cacheDest.i) > (0.2 / (2 * math.Pi)) {
 		// Inclination difference of more than 1 degree, let's change this ASAP since
 		// the faster we go, the more energy is needed.
 		cl = NewOptimalThrust(optiΔi, "inclination change required")
@@ -295,8 +295,10 @@ func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 
 		// We are targeting the theoretical SOI. Let's check if we are within the real SOI.
 		rDiff := make([]float64, 3)
+		R := o.GetR()
+		destR := wp.cacheDest.GetR()
 		for i := 0; i < 3; i++ {
-			rDiff[i] = o.R[i] - wp.cacheDest.R[i]
+			rDiff[i] = R[i] - destR[i]
 		}
 		if norm(rDiff) < wp.destination.SOI {
 			// We are in the SOI, let's do an orbital injection.
@@ -356,11 +358,7 @@ func (wp *OrbitTarget) Action() *WaypointAction {
 
 // ThrustDirection implements (inefficently) the optimal orbit target.
 func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	a := wp.target.GetA()
-	i := wp.target.GetI()
-	_, e := wp.target.GetE()
-	_, oE := o.GetE()
-	if math.Abs(a-o.GetA()) < 1e-6 && math.Abs(i-o.GetI()) < 1e-6 && math.Abs(e-oE) < 1e-6 {
+	if math.Abs(wp.target.a-o.a) < 1e-6 && math.Abs(wp.target.i-o.i) < 1e-6 && math.Abs(wp.target.e-o.e) < 1e-6 {
 		wp.cleared = true
 	}
 	return wp.ctrl, wp.cleared

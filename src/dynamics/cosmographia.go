@@ -239,7 +239,7 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 						}
 					}
 
-					asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.R, Velocity: state.orbit.V}
+					asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.GetR(), Velocity: state.orbit.GetV()}
 					if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
 						panic(err)
 					}
@@ -251,7 +251,7 @@ func StreamStates(filename string, stateChan <-chan (AstroState), stamped bool) 
 				continue
 			}
 			prevStatePtr = &state
-			asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.R, Velocity: state.orbit.V}
+			asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.GetR(), Velocity: state.orbit.GetV()}
 			if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
 				panic(err)
 			}

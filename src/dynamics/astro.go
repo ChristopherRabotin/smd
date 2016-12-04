@@ -26,7 +26,6 @@ type Astrocodile struct {
 	CurrentDT time.Time
 	StopChan  chan (bool)
 	histChan  chan<- (AstroState)
-	initV     float64
 	done      bool
 }
 
@@ -52,7 +51,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) (*
 		end = end.UTC()
 	}
 
-	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan, norm(o.V), false}
+	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- AstroState{a.CurrentDT, *s, *o}
@@ -67,7 +66,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) (*
 
 // LogStatus returns the status of the propagation and vehicle.
 func (a *Astrocodile) LogStatus() {
-	a.Vehicle.logger.Log("level", "info", "subsys", "astro", "date", a.CurrentDT, "r(km)", norm(a.Orbit.R), "v(km/s)", norm(a.Orbit.V), "fuel(kg)", a.Vehicle.FuelMass)
+	a.Vehicle.logger.Log("level", "info", "subsys", "astro", "date", a.CurrentDT, "r(km)", norm(a.Orbit.GetR()), "v(km/s)", norm(a.Orbit.GetV()), "fuel(kg)", a.Vehicle.FuelMass)
 }
 
 // Propagate starts the propagation.
@@ -99,8 +98,6 @@ func (a *Astrocodile) Propagate() {
 	a.done = true
 	a.LogStatus()
 	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
-	mHelio := Mars.HelioOrbit(a.CurrentDT)
-	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "toMarsR", math.Abs(norm(a.Orbit.R)-norm(mHelio.R)), "toMarsV", math.Abs(norm(a.Orbit.V)-norm(mHelio.V)))
 	if a.Vehicle.FuelMass < 0 {
 		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
 	}
@@ -139,13 +136,15 @@ func (a *Astrocodile) Stop(i uint64) bool {
 	return false
 }
 
-// GetState returns the state for the integrator.
+// GetState returns the state for the integrator for the Gaussian VOP.
 func (a *Astrocodile) GetState() (s []float64) {
 	s = make([]float64, 7)
-	for i := 0; i < 3; i++ {
-		s[i] = a.Orbit.R[i]
-		s[i+3] = a.Orbit.V[i]
-	}
+	s[0] = a.Orbit.a
+	s[1] = a.Orbit.e
+	s[2] = a.Orbit.i
+	s[3] = a.Orbit.Ω
+	s[4] = a.Orbit.ω
+	s[5] = a.Orbit.ν
 	s[6] = a.Vehicle.FuelMass
 	return
 }
@@ -155,8 +154,12 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	if a.histChan != nil {
 		a.histChan <- AstroState{a.CurrentDT, *a.Vehicle, *a.Orbit}
 	}
-	a.Orbit.R = []float64{s[0], s[1], s[2]}
-	a.Orbit.V = []float64{s[3], s[4], s[5]}
+	a.Orbit.a = s[0]
+	a.Orbit.e = s[1]
+	a.Orbit.i = s[2]
+	a.Orbit.Ω = s[3]
+	a.Orbit.ω = s[4]
+	a.Orbit.ν = s[5]
 	// Let's execute any function which is in the queue of this time step.
 	for _, f := range a.Vehicle.FuncQ {
 		if f == nil {
@@ -167,7 +170,7 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	a.Vehicle.FuncQ = make([]func(), 5) // Clear the queue.
 
 	// Orbit sanity checks
-	if rNorm := norm(a.Orbit.R); rNorm < a.Orbit.Origin.Radius {
+	if rNorm := norm(a.Orbit.GetR()); rNorm < a.Orbit.Origin.Radius {
 		//panic(fmt.Errorf("spacecraft collided with %s on %s", a.Orbit.Origin.Name, a.CurrentDT))
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "collided", a.Orbit.Origin.Name)
 	} else if rNorm > a.Orbit.Origin.SOI {
@@ -181,19 +184,31 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	a.Vehicle.FuelMass = s[6]
 }
 
-// Func is the integration function.
+// Func is the integration function using Gaussian VOP as per Ruggiero et al. 2011.
 func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
+	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2], f[3], f[4], f[5], a.Orbit.Origin)
+	p := tmpOrbit.GetSemiParameter()
+	h := tmpOrbit.GetH()
+	r := norm(tmpOrbit.GetR())
+	ζ := tmpOrbit.ω + tmpOrbit.ν
+	sinν, cosν := math.Sincos(tmpOrbit.ν)
+	sinζ, cosζ := math.Sincos(ζ)
 	fDot = make([]float64, 7) // init return vector
-	radius := norm([]float64{f[0], f[1], f[2]})
 	// Let's add the thrust to increase the magnitude of the velocity.
 	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
-	twoBodyVelocity := -a.Orbit.Origin.μ / math.Pow(radius, 3)
-	for i := 0; i < 3; i++ {
-		// The first three components are the velocity.
-		fDot[i] = f[i+3]
-		// The following three are the instantenous acceleration.
-		fDot[i+3] = f[i]*twoBodyVelocity + Δv[i]
-	}
+	// da/dt
+	fDot[0] = (2 * tmpOrbit.a * tmpOrbit.a * (tmpOrbit.e*Δv[0]*sinν + (p*Δv[1])/r)) / h
+	// de/dt
+	fDot[1] = (p*Δv[0]*sinν + Δv[1]*((p+r)*cosν+r*tmpOrbit.e)) / h
+	// di/dt
+	fDot[2] = Δv[2] * r * cosζ / h
+	// dΩ/dt
+	fDot[3] = Δv[2] * r * sinζ / (h * math.Sin(tmpOrbit.i))
+	// dω/dt
+	fDot[4] = (-p*Δv[0]*cosν+(p+r)*Δv[1]*sinν)/(h*tmpOrbit.e) - fDot[3]*math.Cos(tmpOrbit.i)
+	// dν/dt -- as per Vallado, page 636 (with errata of 4th edition.)
+	fDot[5] = h/(r*r) + ((p*cosν*Δv[0])-(p+r)*sinν*Δv[1])/(tmpOrbit.e*h)
+	// d(fuel)/dt
 	fDot[6] = -usedFuel
 	return
 }
