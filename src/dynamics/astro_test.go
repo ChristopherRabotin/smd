@@ -16,6 +16,7 @@ func TestAstrocroChanStop(t *testing.T) {
 	ω0 := Deg2rad(10)
 	Ω0 := Deg2rad(5)
 	ν0 := Deg2rad(1)
+	oInit := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 	// Define propagation parameters.
 	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
@@ -29,22 +30,8 @@ func TestAstrocroChanStop(t *testing.T) {
 	if astro.EndDT.Sub(astro.CurrentDT).Nanoseconds() <= 0 {
 		t.Fatal("WARNING: propagation NOT stopped via channel")
 	}
-	// Must find a way to test the stop channel. via a long propagation and a select probably.
-	// Check the orbital elements.
-	if ok, err := floatEqual(a0, o.a); !ok {
-		t.Fatalf("semi major axis changed: %s", err)
-	}
-	if diff := math.Abs(o.e - e0); diff > 1e-5 {
-		t.Fatalf("eccentricity changed by %f", diff)
-	}
-	if ok, err := floatEqual(i0, o.i); !ok {
-		t.Fatalf("inclination changed: %s", err)
-	}
-	if ok, err := floatEqual(Ω0, o.Ω); !ok {
-		t.Fatalf("RAAN changed: %s", err)
-	}
-	if ok, err := floatEqual(ω0, o.ω); !ok {
-		t.Fatalf("argument of perigee changed: %s", err)
+	if ok, err := oInit.Equals(*o); !ok {
+		t.Fatalf("1ms propagation changes the orbit: %s", err)
 	}
 	if ok, _ := floatEqual(ν0, o.ν); ok {
 		t.Fatalf("true anomaly *unchanged*: ν0=%3.6f ν1=%3.6f", ν0, o.ν)
@@ -61,6 +48,7 @@ func TestAstrocroPropTime(t *testing.T) {
 	ω0 := Deg2rad(10)
 	Ω0 := Deg2rad(5)
 	ν0 := Deg2rad(0.1)
+	oInit := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 	// Define propagation parameters.
 	start := time.Now()
@@ -70,27 +58,19 @@ func TestAstrocroPropTime(t *testing.T) {
 	astro.Propagate()
 	// Must find a way to test the stop channel. via a long propagation and a select probably.
 	// Check the orbital elements.
-	if ok, err := floatEqual(a0, o.a); !ok {
-		t.Fatalf("semi major axis changed: %s", err)
+	if ok, err := oInit.Equals(*o); !ok {
+		t.Fatalf("1ms propagation changes the orbit: %s", err)
 	}
-	// Eccentricity gets a special treatment because 33% of the time its fails to get the eps precision.
-	if diff := math.Abs(o.e - e0); diff > 1e-5 {
-		t.Fatalf("eccentricity changed by %f", diff)
+	if ok, err := anglesEqual(o.ν, ν0); !ok {
+		t.Fatalf("ν changed too much after one sideral day propagating a GEO vehicle: %s", err)
+	} else {
+		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(math.Abs(o.ν-math.Mod(o.ν, 2*math.Pi))), stepSize)
 	}
-	if ok, err := floatEqual(i0, o.i); !ok {
-		t.Fatalf("inclination changed: %s", err)
-	}
-	if ok, err := floatEqual(Ω0, o.Ω); !ok {
-		t.Fatalf("RAAN changed: %s", err)
-	}
-	if ok, err := floatEqual(ω0, o.ω); !ok {
-		t.Fatalf("argument of perigee changed: %s", err)
-	}
-	if diff := math.Abs(o.ν - ν0); diff > 1e-5 {
+	/*if diff := math.Abs(o.ν - ν0); diff > 1e-5 {
 		t.Fatalf("ν changed too much after one sideral day propagating a GEO vehicle: ν0=%3.6f ν1=%3.6f", ν0, o.ν)
 	} else {
 		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(diff), stepSize)
-	}
+	}*/
 }
 
 func TestAstrocroFrame(t *testing.T) {

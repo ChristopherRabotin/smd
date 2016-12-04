@@ -106,7 +106,7 @@ func (o *Orbit) GetV() (V []float64) {
 
 // String implements the stringer interface.
 func (o *Orbit) String() string {
-	return fmt.Sprintf("a=%0.5f e=%0.5f i=%0.5f ω=%0.5f Ω=%0.5f ν=%0.5f", o.a, o.e, o.i, o.ω, o.Ω, o.ν)
+	return fmt.Sprintf("a=%.3f e=%.3f i=%.3f ω=%.3f Ω=%.3f ν=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.ω), Rad2deg(o.Ω), Rad2deg(o.ν))
 }
 
 // Equals returns whether two orbits are identical.
