@@ -64,7 +64,7 @@ func TestAstrocroPropTime(t *testing.T) {
 	if ok, err := anglesEqual(o.ν, ν0); !ok {
 		t.Fatalf("ν changed too much after one sideral day propagating a GEO vehicle: %s", err)
 	} else {
-		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(math.Abs(o.ν-math.Mod(o.ν, 2*math.Pi))), stepSize)
+		t.Logf("one sideral day GEO ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(math.Abs(o.ν-math.Mod(o.ν, 2*math.Pi))), stepSize)
 	}
 	/*if diff := math.Abs(o.ν - ν0); diff > 1e-5 {
 		t.Fatalf("ν changed too much after one sideral day propagating a GEO vehicle: ν0=%3.6f ν1=%3.6f", ν0, o.ν)

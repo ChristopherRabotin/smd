@@ -84,11 +84,30 @@ func (o *Orbit) GetSinCosE() (sinE, cosE float64) {
 func (o *Orbit) GetR() (R []float64) {
 	R = make([]float64, 3, 3)
 	p := o.GetSemiParameter()
-	sinν, cosν := math.Sincos(o.ν)
+	// Support special orbits.
+	ν := o.ν
+	ω := o.ω
+	Ω := o.Ω
+	if o.e < 1e-6 {
+		ω = 0
+		if o.i < 1e-6 {
+			// Circular equatorial
+			Ω = 0
+			ν = o.Getλtrue()
+		} else {
+			// Circular inclined
+			panic("circular inclined orbits not supported")
+		}
+	} else if o.i < 1e-6 {
+		Ω = 0
+		ω = o.GetTildeω()
+	}
+
+	sinν, cosν := math.Sincos(ν)
 	R[0] = p * cosν / (1 + o.e*cosν)
 	R[1] = p * sinν / (1 + o.e*cosν)
 	R[2] = 0
-	R = PQW2ECI(o.i, o.ω, o.Ω, R)
+	R = PQW2ECI(o.i, ω, Ω, R)
 	return
 }
 

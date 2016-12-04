@@ -156,10 +156,10 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	}
 	a.Orbit.a = s[0]
 	a.Orbit.e = s[1]
-	a.Orbit.i = s[2]
-	a.Orbit.Ω = s[3]
-	a.Orbit.ω = s[4]
-	a.Orbit.ν = s[5]
+	a.Orbit.i = math.Mod(s[2], 2*math.Pi)
+	a.Orbit.Ω = math.Mod(s[3], 2*math.Pi)
+	a.Orbit.ω = math.Mod(s[4], 2*math.Pi)
+	a.Orbit.ν = math.Mod(s[5], 2*math.Pi)
 	// Let's execute any function which is in the queue of this time step.
 	for _, f := range a.Vehicle.FuncQ {
 		if f == nil {

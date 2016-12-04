@@ -5,42 +5,6 @@ import (
 	"time"
 )
 
-func TestOutwardSpiral(t *testing.T) {
-	vBody := CelestialObject{"Virtual", 100, -1, 0, 0, 100, 0, nil}
-	action := &WaypointAction{ADDCARGO, nil}
-	wp := NewOutwardSpiral(vBody, action)
-	if wp.Cleared() {
-		t.Fatal("Waypoint was cleared at creation.")
-	}
-	o := *NewOrbitFromRV([]float64{90, 0, 0}, []float64{0, 0, 0}, Sun)
-	ctrl, reached := wp.ThrustDirection(o, time.Now())
-	dV := ctrl.Control(o)
-	if reached {
-		t.Fatal("Waypoint was reached too early.")
-	}
-	if norm(dV) == 0 {
-		t.Fatal("Waypoint did not lead to any velocity change.")
-	}
-	if wp.Action() != nil {
-		t.Fatal("Waypoint returned an action before being reached.")
-	}
-	o = *NewOrbitFromRV([]float64{100, 0, 0}, []float64{0, 0, 0}, Sun)
-	ctrl, reached = wp.ThrustDirection(o, time.Now())
-	dV = ctrl.Control(o)
-	if !reached {
-		t.Fatal("Waypoint was not reached as it should have been.")
-	}
-	if norm(dV) != 0 {
-		t.Fatal("Reached waypoint still returns a velocity change.")
-	}
-	if wp.Action() == nil {
-		t.Fatal("Waypoint did not return any action after being reached.")
-	}
-	if len(wp.String()) == 0 {
-		t.Fatal("Waypoint string is empty.")
-	}
-}
-
 func TestLoiter(t *testing.T) {
 	action := &WaypointAction{ADDCARGO, nil}
 	wp := NewLoiter(time.Duration(1)*time.Minute, action)
