@@ -1,6 +1,9 @@
 package dynamics
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestOrbitDefinition(t *testing.T) {
 	a0 := 36127.337764
@@ -37,7 +40,6 @@ func TestOrbitDefinition(t *testing.T) {
 	}
 }
 
-/*
 func TestOrbitRefChange(t *testing.T) {
 	a0 := 36127.343
 	e0 := 0.832853
@@ -89,4 +91,3 @@ func TestOrbitRefChange(t *testing.T) {
 		o.ToXCentric(Earth, dt)
 	})
 }
-*/

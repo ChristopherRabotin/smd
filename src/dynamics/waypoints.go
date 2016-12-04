@@ -366,5 +366,5 @@ func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 
 // NewOrbitTarget defines a new orbit target.
 func NewOrbitTarget(target Orbit /*laws ...ControlLaw, */, action *WaypointAction) *OrbitTarget {
-	return &OrbitTarget{target, NewOptimalΔOrbit(target /* NewOptimalThrust(optiΔa, "optiΔa"), NewOptimalThrust(optiΔe, "optiΔe"),*/, NewOptimalThrust(optiΔi, "optiΔi")), action, false}
+	return &OrbitTarget{target, NewOptimalΔOrbit(target, NewOptimalThrust(optiΔa, "optiΔa")) /*, NewOptimalThrust(optiΔe, "optiΔe"), NewOptimalThrust(optiΔi, "optiΔi"))*/, action, false}
 }

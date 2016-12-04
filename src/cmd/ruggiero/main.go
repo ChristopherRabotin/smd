@@ -11,10 +11,9 @@ func main() {
 	ω := dynamics.Deg2rad(10) // Made up
 	Ω := dynamics.Deg2rad(5)  // Made up
 	ν := dynamics.Deg2rad(1)  // I don't care about that guy.
-	iI := dynamics.Deg2rad(51.6)
-	iT := dynamics.Deg2rad(46)
-	initOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, iI, ω, Ω, ν, dynamics.Earth)
-	targetOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, iT, ω, Ω, ν, dynamics.Earth)
+	i := dynamics.Deg2rad(0.01)
+	initOrbit := dynamics.NewOrbitFromOE(1000+dynamics.Earth.Radius, 0.01, i, ω, Ω, ν, dynamics.Earth)
+	targetOrbit := dynamics.NewOrbitFromOE(35786+dynamics.Earth.Radius, 0.01, i, ω, Ω, ν, dynamics.Earth)
 
 	/* Building spacecraft */
 	eps := dynamics.NewUnlimitedEPS()
