@@ -9,11 +9,13 @@ func main() {
 	/* Simulate the research by Ruggiero et al. */
 
 	ω := dynamics.Deg2rad(10) // Made up
-	Ω := dynamics.Deg2rad(5)  // Made up
-	ν := dynamics.Deg2rad(1)  // I don't care about that guy.
-	i := dynamics.Deg2rad(0.01)
-	initOrbit := dynamics.NewOrbitFromOE(1000+dynamics.Earth.Radius, 0.01, i, ω, Ω, ν, dynamics.Earth)
-	targetOrbit := dynamics.NewOrbitFromOE(35786+dynamics.Earth.Radius, 0.01, i, ω, Ω, ν, dynamics.Earth)
+	Ωi := dynamics.Deg2rad(5)
+	Ωt := dynamics.Deg2rad(5)
+	ν := dynamics.Deg2rad(1) // I don't care about that guy.
+	i := dynamics.Deg2rad(46)
+	i1 := dynamics.Deg2rad(51.6)
+	initOrbit := dynamics.NewOrbitFromOE(900+dynamics.Earth.Radius, 1e-4, i, Ωi, ω, ν, dynamics.Earth)
+	targetOrbit := dynamics.NewOrbitFromOE(900+dynamics.Earth.Radius, 1e-4, i1, Ωt, ω, ν, dynamics.Earth)
 
 	/* Building spacecraft */
 	eps := dynamics.NewUnlimitedEPS()
@@ -21,9 +23,9 @@ func main() {
 	thrusters := []dynamics.Thruster{new(dynamics.PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
-	waypoints := []dynamics.Waypoint{dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil),
+	waypoints := []dynamics.Waypoint{dynamics.NewLoiter(time.Duration(1)*time.Hour, nil),
 		dynamics.NewOrbitTarget(*targetOrbit, nil),
-		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil)}
+		dynamics.NewLoiter(time.Duration(1)*time.Hour, nil)}
 	sc := dynamics.NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, []*dynamics.Cargo{}, waypoints)
 
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.

@@ -285,7 +285,7 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 		break
 	case optiΔi:
 		ctrl = func(o Orbit) []float64 {
-			return unitΔvFromAngles(0.0, -1*sign(math.Cos(o.ω+o.ν))*math.Pi/2)
+			return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
 		}
 		break
 	case optiΔΩ:
@@ -324,14 +324,20 @@ type OptimalΔOrbit struct {
 }
 
 // NewOptimalΔOrbit generates a new OptimalΔOrbit based on the provided target orbit.
-func NewOptimalΔOrbit(target Orbit, laws ...ThrustControl) *OptimalΔOrbit {
+func NewOptimalΔOrbit(target Orbit, laws ...ControlLaw) *OptimalΔOrbit {
 	cl := OptimalΔOrbit{}
 	cl.atarget = target.a
 	cl.etarget = target.e
 	cl.itarget = target.i
 	cl.ωtarget = target.ω
 	cl.Ωtarget = target.Ω
-	cl.controls = laws
+	if len(laws) == 0 {
+		laws = []ControlLaw{optiΔa, optiΔe, optiΔi, optiΔΩ, optiΔω}
+	}
+	cl.controls = make([]ThrustControl, len(laws))
+	for i, law := range laws {
+		cl.controls[i] = NewOptimalThrust(law, "multi-opti")
+	}
 	cl.GenericCL = GenericCL{"ΔOrbit", multiOpti}
 	return &cl
 }
@@ -343,8 +349,8 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		cl.ainit = o.a
 		cl.einit = o.e
 		cl.iinit = o.i
-		cl.ωinit = o.ω
 		cl.Ωinit = o.Ω
+		cl.ωinit = o.ω
 		cl.Initd = true
 		return thrust
 	}
@@ -356,11 +362,13 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		return (target - oscul) / (target - init)
 	}
 
-	for _, ctrl := range cl.controls {
+	completed := []int{}
+
+	for idx, ctrl := range cl.controls {
 		var oscul, init, target float64
 		switch ctrl.Type() {
 		case optiΔa:
-			oscul = o.GetA()
+			oscul = o.a
 			init = cl.ainit
 			target = cl.atarget
 		case optiΔe:
@@ -381,10 +389,28 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			target = cl.ωtarget
 		}
 		fact := factor(oscul, init, target)
-		tmpThrust := ctrl.Control(o)
-		for i := 0; i < 3; i++ {
-			thrust[i] += fact * tmpThrust[i]
+		if fact == 0 {
+			completed = append(completed, idx)
+		} else {
+			tmpThrust := ctrl.Control(o)
+			for i := 0; i < 3; i++ {
+				thrust[i] += fact * tmpThrust[i]
+			}
 		}
 	}
+	// Let's remove the completed maneuvers.
+	newControls := []ThrustControl{}
+	for idx, ctrl := range cl.controls {
+		found := false
+		for _, jdx := range completed {
+			if jdx == idx {
+				found = true
+			}
+		}
+		if !found {
+			newControls = append(newControls, ctrl)
+		}
+	}
+	cl.controls = newControls
 	return unit(thrust)
 }

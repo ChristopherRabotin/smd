@@ -358,13 +358,13 @@ func (wp *OrbitTarget) Action() *WaypointAction {
 
 // ThrustDirection implements (inefficently) the optimal orbit target.
 func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if math.Abs(wp.target.a-o.a) < 1e-6 && math.Abs(wp.target.i-o.i) < 1e-6 && math.Abs(wp.target.e-o.e) < 1e-6 {
+	if ok, _ := wp.target.Equals(o); ok {
 		wp.cleared = true
 	}
 	return wp.ctrl, wp.cleared
 }
 
 // NewOrbitTarget defines a new orbit target.
-func NewOrbitTarget(target Orbit /*laws ...ControlLaw, */, action *WaypointAction) *OrbitTarget {
-	return &OrbitTarget{target, NewOptimalΔOrbit(target, NewOptimalThrust(optiΔa, "optiΔa")) /*, NewOptimalThrust(optiΔe, "optiΔe"), NewOptimalThrust(optiΔi, "optiΔi"))*/, action, false}
+func NewOrbitTarget(target Orbit, action *WaypointAction) *OrbitTarget {
+	return &OrbitTarget{target, NewOptimalΔOrbit(target), action, false}
 }

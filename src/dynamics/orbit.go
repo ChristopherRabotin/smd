@@ -137,16 +137,16 @@ func (o *Orbit) Equals(o1 Orbit) (bool, error) {
 	if ok, err := floatEqual(o.a, o1.a); !ok {
 		return false, fmt.Errorf("semi major axis invalid: %s", err)
 	}
-	if ok, err := floatEqual(o.e, o.e); !ok {
+	if ok, err := floatEqual(o.e, o1.e); !ok {
 		return false, fmt.Errorf("eccentricity invalid: %s", err)
 	}
-	if ok, err := floatEqual(o.i, o.i); !ok {
+	if ok, err := floatEqual(o.i, o1.i); !ok {
 		return false, fmt.Errorf("inclination invalid: %s", err)
 	}
-	if ok, err := floatEqual(o.Ω, o.Ω); !ok {
+	if ok, err := floatEqual(o.Ω, o1.Ω); !ok {
 		return false, fmt.Errorf("RAAN invalid: %s", err)
 	}
-	if ok, err := floatEqual(o.ω, o.ω); !ok {
+	if ok, err := floatEqual(o.ω, o1.ω); !ok {
 		return false, fmt.Errorf("argument of perigee invalid: %s", err)
 	}
 	return true, nil
@@ -195,8 +195,8 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 }
 
 // NewOrbitFromOE creates an orbit from the orbital elements.
-func NewOrbitFromOE(a, e, i, ω, Ω, ν float64, c CelestialObject) *Orbit {
-	return &Orbit{a, e, i, ω, Ω, ν, c}
+func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
+	return &Orbit{a, e, i, Ω, ω, ν, c}
 }
 
 // NewOrbitFromRV returns orbital elements from the R and V vectors. Needed for prop

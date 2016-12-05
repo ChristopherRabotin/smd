@@ -100,7 +100,7 @@ func (a *Astrocodile) Propagate() {
 	duration := a.CurrentDT.Sub(a.StartDT)
 	durStr := duration.String()
 	if duration.Hours() > 24 {
-		durStr += fmt.Sprintf(" (~%.1f)", duration.Hours()/24)
+		durStr += fmt.Sprintf(" (~%.1fd)", duration.Hours()/24)
 	}
 	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "duration", durStr)
 	a.LogStatus()
