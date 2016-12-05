@@ -285,7 +285,7 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 		break
 	case optiΔi:
 		ctrl = func(o Orbit) []float64 {
-			return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
+			return unitΔvFromAngles(0.0, -sign(math.Cos(o.ω+o.ν))*math.Pi/2)
 		}
 		break
 	case optiΔΩ:
@@ -356,7 +356,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	}
 
 	factor := func(oscul, init, target float64) float64 {
-		if math.Abs(init-target) < 1e-8 {
+		if ok, _ := floatEqual(oscul, target); ok {
 			return 0
 		}
 		return (target - oscul) / (target - init)
@@ -409,6 +409,8 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		}
 		if !found {
 			newControls = append(newControls, ctrl)
+		} else {
+			fmt.Printf("completed %s\n", ctrl.Type())
 		}
 	}
 	cl.controls = newControls

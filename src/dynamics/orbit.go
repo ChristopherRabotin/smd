@@ -33,6 +33,18 @@ func (o *Orbit) Getλtrue() float64 {
 	return λ
 }
 
+// Getι returns the argument of latitude.
+func (o *Orbit) Getι() float64 {
+	R := o.GetR()
+	hVec := cross(R, o.GetV())
+	n := cross([]float64{0, 0, 1}, hVec)
+	ι := math.Acos(dot(n, R) / (norm(n) * norm(R)))
+	if R[2] < 0 {
+		ι = 2*math.Pi - ι
+	}
+	return ι
+}
+
 // GetH returns the orbital angular momentum.
 func (o *Orbit) GetH() float64 {
 	return norm(cross(o.GetR(), o.GetV()))
@@ -96,7 +108,7 @@ func (o *Orbit) GetR() (R []float64) {
 			ν = o.Getλtrue()
 		} else {
 			// Circular inclined
-			panic("circular inclined orbits not supported")
+			ν = o.Getι()
 		}
 	} else if o.i < 1e-6 {
 		Ω = 0

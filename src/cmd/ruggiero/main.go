@@ -9,13 +9,16 @@ func main() {
 	/* Simulate the research by Ruggiero et al. */
 
 	ω := dynamics.Deg2rad(10) // Made up
-	Ωi := dynamics.Deg2rad(5)
-	Ωt := dynamics.Deg2rad(5)
+	Ω := dynamics.Deg2rad(5)
 	ν := dynamics.Deg2rad(1) // I don't care about that guy.
-	i := dynamics.Deg2rad(46)
-	i1 := dynamics.Deg2rad(51.6)
-	initOrbit := dynamics.NewOrbitFromOE(900+dynamics.Earth.Radius, 1e-4, i, Ωi, ω, ν, dynamics.Earth)
-	targetOrbit := dynamics.NewOrbitFromOE(900+dynamics.Earth.Radius, 1e-4, i1, Ωt, ω, ν, dynamics.Earth)
+	i := dynamics.Deg2rad(7)
+	i1 := dynamics.Deg2rad(0)
+	e := dynamics.Deg2rad(0.7283)
+	e1 := 0.0
+	a := 24386.0
+	a1 := 42164.0
+	initOrbit := dynamics.NewOrbitFromOE(a, e, i, Ω, ω, ν, dynamics.Earth)
+	targetOrbit := dynamics.NewOrbitFromOE(a1, e1, i1, Ω, ω, ν, dynamics.Earth)
 
 	/* Building spacecraft */
 	eps := dynamics.NewUnlimitedEPS()
