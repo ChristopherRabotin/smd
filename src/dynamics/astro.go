@@ -31,15 +31,15 @@ type Astrocodile struct {
 }
 
 // NewAstro returns a new Astrocodile instance from the position and velocity vectors.
-func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, filepath string) (*Astrocodile, *sync.WaitGroup) {
+func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, conf ExportConfig) (*Astrocodile, *sync.WaitGroup) {
 	// If no filepath is provided, then no output will be written.
 	var histChan chan (AstroState)
-	if filepath != "" {
+	if !conf.IsUseless() {
 		histChan = make(chan (AstroState), 1000) // a 1k entry buffer
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			StreamStates(filepath, histChan, false)
+			StreamStates(conf, histChan)
 		}()
 	} else {
 		histChan = nil

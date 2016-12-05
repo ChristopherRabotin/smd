@@ -8,6 +8,8 @@ import (
 func main() {
 	/* Simulate the research by Ruggiero et al. */
 
+	config := dynamics.ExportConfig{Filename: "Rug", Cosmo: true, OE: true, Timestamp: false}
+
 	ω := dynamics.Deg2rad(10) // Made up
 	Ω := dynamics.Deg2rad(5)
 	ν := dynamics.Deg2rad(1) // I don't care about that guy.
@@ -34,7 +36,7 @@ func main() {
 	end := start.Add(time.Duration(-1) * time.Nanosecond)  // Propagate until waypoint reached.
 
 	sc.LogInfo()
-	astro, wg := dynamics.NewAstro(sc, initOrbit, start, end, "Rug")
+	astro, wg := dynamics.NewAstro(sc, initOrbit, start, end, config)
 	astro.Propagate()
 
 	wg.Wait() // Must wait or the output file does not have time to be written!
