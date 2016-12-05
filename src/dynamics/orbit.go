@@ -9,6 +9,12 @@ import (
 	"github.com/gonum/floats"
 )
 
+const (
+	eccentricityε = 1e-2
+	angleε        = 5e-1 / (2 * math.Pi) // Within 0.5 degrees.
+	distanceε     = 1e1
+)
+
 // Orbit defines an orbit via its orbital elements.
 type Orbit struct {
 	a, e, i, Ω, ω, ν float64
@@ -136,19 +142,19 @@ func (o *Orbit) Equals(o1 Orbit) (bool, error) {
 	if !o.Origin.Equals(o1.Origin) {
 		return false, errors.New("different origin")
 	}
-	if floats.EqualWithinAbs(o.a, o1.a, 10) {
+	if !floats.EqualWithinAbs(o.a, o1.a, distanceε) {
 		return false, errors.New("semi major axis invalid")
 	}
-	if floats.EqualWithinAbs(o.e, o1.e, 1e-2) {
+	if !floats.EqualWithinAbs(o.e, o1.e, eccentricityε) {
 		return false, errors.New("eccentricity invalid")
 	}
-	if floats.EqualWithinAbs(o.i, o1.i, 1e-2) {
+	if !floats.EqualWithinAbs(o.i, o1.i, angleε) {
 		return false, errors.New("inclination invalid")
 	}
-	if floats.EqualWithinAbs(o.Ω, o1.Ω, 1e-2) {
+	if !floats.EqualWithinAbs(o.Ω, o1.Ω, angleε) {
 		return false, errors.New("RAAN invalid")
 	}
-	if floats.EqualWithinAbs(o.ω, o1.ω, 1e-2) {
+	if !floats.EqualWithinAbs(o.ω, o1.ω, angleε) {
 		return false, errors.New("argument of perigee invalid")
 	}
 	return true, nil
