@@ -74,12 +74,11 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		// We've found a waypoint which isn't reached.
 		ctrl, reached := wp.ThrustDirection(*o, dt)
 		if clType := ctrl.Type(); sc.prevCL == nil || *sc.prevCL != clType {
-			sc.logger.Log("level", "notice", "subsys", "astro", "date", dt, "thrust", clType.String(), "reason", ctrl.Reason(), "v(km/s)", norm(o.GetV()))
+			sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "thrust", clType, "reason", ctrl.Reason(), "v(km/s)", norm(o.GetV()))
 			sc.prevCL = &clType
 		}
-		Δv := ctrl.Control(*o)
 		if reached {
-			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String(), "status", "completed", "r(km)", norm(o.GetR()), "v (km/s)", norm(o.GetV()))
+			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp, "status", "completed", "r(km)", norm(o.GetR()), "v (km/s)", norm(o.GetV()))
 			// Handle waypoint action
 			if action := wp.Action(); action != nil {
 				switch action.Type {
@@ -130,6 +129,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			}
 			continue
 		}
+		Δv := ctrl.Control(*o)
 		if Δv[0] == 0 && Δv[1] == 0 && Δv[2] == 0 {
 			// Nothing to do, we're probably just loitering.
 			return []float64{0, 0, 0}, 0

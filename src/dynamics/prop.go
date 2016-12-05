@@ -24,25 +24,25 @@ const (
 func (cl ControlLaw) String() string {
 	switch cl {
 	case tangential:
-		return "tangential"
+		return "tan"
 	case antiTangential:
-		return "antiTangential"
+		return "aTan"
 	case inversion:
 		return "inversion"
 	case coast:
 		return "coast"
 	case optiΔa:
-		return "optimal Δa"
+		return "optiΔa"
 	case optiΔe:
-		return "optimal Δe"
+		return "optiΔe"
 	case optiΔi:
-		return "optimal Δi"
+		return "optiΔi"
 	case optiΔΩ:
-		return "optimal ΔΩ"
+		return "optiΔΩ"
 	case optiΔω:
-		return "optimal Δω"
+		return "optiΔω"
 	case multiOpti:
-		return "multiple optimized"
+		return "multiOpti"
 	}
 	panic("cannot stringify unknown control law")
 }
@@ -356,15 +356,16 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	}
 
 	factor := func(oscul, init, target float64) float64 {
+		if ok, _ := floatEqual(init, target); ok {
+			return 0 // Don't want no NaNs now.
+		}
 		if ok, _ := floatEqual(oscul, target); ok {
 			return 0
 		}
 		return (target - oscul) / (target - init)
 	}
 
-	completed := []int{}
-
-	for idx, ctrl := range cl.controls {
+	for _, ctrl := range cl.controls {
 		var oscul, init, target float64
 		switch ctrl.Type() {
 		case optiΔa:
@@ -389,30 +390,12 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			target = cl.ωtarget
 		}
 		fact := factor(oscul, init, target)
-		if fact == 0 {
-			completed = append(completed, idx)
-		} else {
+		if fact != 0 {
 			tmpThrust := ctrl.Control(o)
 			for i := 0; i < 3; i++ {
 				thrust[i] += fact * tmpThrust[i]
 			}
 		}
 	}
-	// Let's remove the completed maneuvers.
-	newControls := []ThrustControl{}
-	for idx, ctrl := range cl.controls {
-		found := false
-		for _, jdx := range completed {
-			if jdx == idx {
-				found = true
-			}
-		}
-		if !found {
-			newControls = append(newControls, ctrl)
-		} else {
-			fmt.Printf("completed %s\n", ctrl.Type())
-		}
-	}
-	cl.controls = newControls
 	return unit(thrust)
 }

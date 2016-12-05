@@ -27,6 +27,10 @@ func TestOrbitDefinition(t *testing.T) {
 		t.Fatalf("true longitude of perigee invalid: %s", err)
 	}
 
+	if ok, err := floatEqual(Deg2rad(145.60549), o0.GetU()); !ok {
+		t.Fatalf("argument of latitude invalid: %s", err)
+	}
+
 	if ok, err := floatEqual(Deg2rad(55.282587), o0.Getλtrue()); !ok {
 		t.Fatalf("true longitude invalid: %s", err)
 	}

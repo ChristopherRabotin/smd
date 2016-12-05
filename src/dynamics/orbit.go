@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/gonum/floats"
 )
 
 // Orbit defines an orbit via its orbital elements.
@@ -25,24 +27,12 @@ func (o *Orbit) GetTildeω() float64 {
 
 // Getλtrue returns the true longitude.
 func (o *Orbit) Getλtrue() float64 {
-	r := o.GetR()
-	λ := math.Acos(r[0] / norm(r))
-	if r[1] < 0 {
-		λ = 2*math.Pi - λ
-	}
-	return λ
+	return o.ω + o.Ω + o.ν
 }
 
-// Getι returns the argument of latitude.
-func (o *Orbit) Getι() float64 {
-	R := o.GetR()
-	hVec := cross(R, o.GetV())
-	n := cross([]float64{0, 0, 1}, hVec)
-	ι := math.Acos(dot(n, R) / (norm(n) * norm(R)))
-	if R[2] < 0 {
-		ι = 2*math.Pi - ι
-	}
-	return ι
+// GetU returns the argument of latitude.
+func (o *Orbit) GetU() float64 {
+	return o.ν + o.ω
 }
 
 // GetH returns the orbital angular momentum.
@@ -108,7 +98,7 @@ func (o *Orbit) GetR() (R []float64) {
 			ν = o.Getλtrue()
 		} else {
 			// Circular inclined
-			ν = o.Getι()
+			ν = o.GetU()
 		}
 	} else if o.i < 1e-6 {
 		Ω = 0
@@ -146,20 +136,20 @@ func (o *Orbit) Equals(o1 Orbit) (bool, error) {
 	if !o.Origin.Equals(o1.Origin) {
 		return false, errors.New("different origin")
 	}
-	if ok, err := floatEqual(o.a, o1.a); !ok {
-		return false, fmt.Errorf("semi major axis invalid: %s", err)
+	if floats.EqualWithinRel(o.a, o1.a, 1e-1) {
+		return false, errors.New("semi major axis invalid")
 	}
-	if ok, err := floatEqual(o.e, o1.e); !ok {
-		return false, fmt.Errorf("eccentricity invalid: %s", err)
+	if floats.EqualWithinRel(o.e, o1.e, 1e-1) {
+		return false, errors.New("eccentricity invalid")
 	}
-	if ok, err := floatEqual(o.i, o1.i); !ok {
-		return false, fmt.Errorf("inclination invalid: %s", err)
+	if floats.EqualWithinRel(o.i, o1.i, 1e-1) {
+		return false, errors.New("inclination invalid")
 	}
-	if ok, err := floatEqual(o.Ω, o1.Ω); !ok {
-		return false, fmt.Errorf("RAAN invalid: %s", err)
+	if floats.EqualWithinRel(o.Ω, o1.Ω, 1e-1) {
+		return false, errors.New("RAAN invalid")
 	}
-	if ok, err := floatEqual(o.ω, o1.ω); !ok {
-		return false, fmt.Errorf("argument of perigee invalid: %s", err)
+	if floats.EqualWithinRel(o.ω, o1.ω, 1e-1) {
+		return false, errors.New("argument of perigee invalid")
 	}
 	return true, nil
 }
