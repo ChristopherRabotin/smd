@@ -136,19 +136,19 @@ func (o *Orbit) Equals(o1 Orbit) (bool, error) {
 	if !o.Origin.Equals(o1.Origin) {
 		return false, errors.New("different origin")
 	}
-	if floats.EqualWithinRel(o.a, o1.a, 1e-1) {
+	if floats.EqualWithinAbs(o.a, o1.a, 10) {
 		return false, errors.New("semi major axis invalid")
 	}
-	if floats.EqualWithinRel(o.e, o1.e, 1e-1) {
+	if floats.EqualWithinAbs(o.e, o1.e, 1e-2) {
 		return false, errors.New("eccentricity invalid")
 	}
-	if floats.EqualWithinRel(o.i, o1.i, 1e-1) {
+	if floats.EqualWithinAbs(o.i, o1.i, 1e-2) {
 		return false, errors.New("inclination invalid")
 	}
-	if floats.EqualWithinRel(o.Ω, o1.Ω, 1e-1) {
+	if floats.EqualWithinAbs(o.Ω, o1.Ω, 1e-2) {
 		return false, errors.New("RAAN invalid")
 	}
-	if floats.EqualWithinRel(o.ω, o1.ω, 1e-1) {
+	if floats.EqualWithinAbs(o.ω, o1.ω, 1e-2) {
 		return false, errors.New("argument of perigee invalid")
 	}
 	return true, nil

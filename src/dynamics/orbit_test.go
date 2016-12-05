@@ -20,7 +20,7 @@ func TestOrbitDefinition(t *testing.T) {
 		t.Fatal("R vector incorrectly computed")
 	}
 	if !vectorsEqual(V, o0.GetV()) {
-		t.Fatal("R vector incorrectly computed")
+		t.Fatal("V vector incorrectly computed")
 	}
 
 	if ok, err := floatEqual(Deg2rad(281.27), o0.GetTildeω()); !ok {
