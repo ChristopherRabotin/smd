@@ -200,7 +200,8 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	sinζ, cosζ := math.Sincos(ζ)
 	fDot = make([]float64, 7) // init return vector
 	// Let's add the thrust to increase the magnitude of the velocity.
-	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
+	//Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
+	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, tmpOrbit)
 	// da/dt
 	fDot[0] = (2 * tmpOrbit.a * tmpOrbit.a * (tmpOrbit.e*Δv[0]*sinν + (p*Δv[1])/r)) / h
 	// de/dt

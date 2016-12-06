@@ -3,6 +3,8 @@ package dynamics
 import (
 	"fmt"
 	"math"
+
+	"github.com/gonum/floats"
 )
 
 // ControlLaw defines an enum of control laws.
@@ -354,41 +356,46 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		return thrust
 	}
 
-	factor := func(oscul, init, target float64) float64 {
-		if ok, _ := floatEqual(init, target); ok {
+	factor := func(oscul, init, target, tol float64) float64 {
+		if !floats.EqualWithinAbs(init, target, tol) {
 			return 0 // Don't want no NaNs now.
 		}
-		if ok, _ := floatEqual(oscul, target); ok {
+		if !floats.EqualWithinAbs(oscul, target, tol) {
 			return 0
 		}
 		return (target - oscul) / (target - init)
 	}
 
 	for _, ctrl := range cl.controls {
-		var oscul, init, target float64
+		var oscul, init, target, tol float64
 		switch ctrl.Type() {
 		case optiΔa:
 			oscul = o.a
 			init = cl.ainit
 			target = cl.atarget
+			tol = distanceε
 		case optiΔe:
 			oscul = o.e
 			init = cl.einit
 			target = cl.etarget
+			tol = eccentricityε
 		case optiΔi:
 			oscul = o.i
 			init = cl.iinit
 			target = cl.itarget
+			tol = angleε
 		case optiΔΩ:
 			oscul = o.Ω
 			init = cl.Ωinit
 			target = cl.Ωtarget
+			tol = angleε
 		case optiΔω:
 			oscul = o.ω
 			init = cl.ωinit
 			target = cl.ωtarget
+			tol = angleε
 		}
-		fact := factor(oscul, init, target)
+		fact := factor(oscul, init, target, tol)
 		if fact != 0 {
 			tmpThrust := ctrl.Control(o)
 			for i := 0; i < 3; i++ {

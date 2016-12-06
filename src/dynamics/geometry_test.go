@@ -3,6 +3,8 @@ package dynamics
 import (
 	"math"
 	"testing"
+
+	"github.com/gonum/floats"
 )
 
 func TestCross(t *testing.T) {
@@ -26,8 +28,8 @@ func TestCross(t *testing.T) {
 
 func TestAngles(t *testing.T) {
 	for i := 0.0; i < 360; i += 0.5 {
-		if ok, err := floatEqual(i, Rad2deg(Deg2rad(i))); !ok {
-			t.Fatalf("incorrect conversion for %3.2f, %s", i, err)
+		if ok, _ := anglesEqual(i, Rad2deg(Deg2rad(i))); !ok {
+			t.Fatalf("incorrect conversion for %3.2f", i)
 		}
 	}
 }
@@ -48,8 +50,8 @@ func TestSpherical2Cartisean(t *testing.T) {
 					}
 					continue
 				}
-				if ok, err := floatEqual(a[0], b[0]); !ok {
-					t.Fatalf("r incorrect (%f != %f) %s for r=%f", a[0], b[0], err, r)
+				if !floats.EqualWithinAbs(a[0], b[0], 1e-12) {
+					t.Fatalf("r incorrect (%f != %f) for r=%f", a[0], b[0], r)
 				}
 				if ok, err := anglesEqual(a[1], b[1]); !ok {
 					t.Fatalf("θ incorrect (%f != %f) %s", a[1], b[1], err)

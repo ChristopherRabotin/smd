@@ -32,9 +32,9 @@ func vectorsEqual(a, b []float64) bool {
 
 //anglesEqual returns whether two angles in Radians are equal.
 func anglesEqual(a, b float64) (bool, error) {
-	diff := math.Abs(a - b)
-	if diff < eps || math.Abs(diff-2*math.Pi) < eps {
+	diff := math.Mod(math.Abs(a-b), 2*math.Pi)
+	if diff < angleε {
 		return true, nil
 	}
-	return false, fmt.Errorf("difference of %3.10fπ", diff/math.Pi)
+	return false, fmt.Errorf("difference of %3.10f degrees", math.Abs(Rad2deg(diff)))
 }

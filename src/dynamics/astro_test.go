@@ -4,6 +4,8 @@ import (
 	"math"
 	"testing"
 	"time"
+
+	"github.com/gonum/floats"
 )
 
 /* Testing here should propagate a given a orbit which is created via OEs and check that only nu changes.*/
@@ -33,7 +35,7 @@ func TestAstrocroChanStop(t *testing.T) {
 	if ok, err := oInit.Equals(*o); !ok {
 		t.Fatalf("1ms propagation changes the orbit: %s", err)
 	}
-	if ok, _ := floatEqual(ν0, o.ν); ok {
+	if !floats.EqualWithinAbs(ν0, o.ν, angleε) {
 		t.Fatalf("true anomaly *unchanged*: ν0=%3.6f ν1=%3.6f", ν0, o.ν)
 	} else {
 		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(o.ν-ν0), stepSize)

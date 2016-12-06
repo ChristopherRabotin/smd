@@ -185,8 +185,9 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 }
 
 // NewOrbitFromOE creates an orbit from the orbital elements.
+// WARNING: Angles must be in degrees not radian.
 func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
-	return &Orbit{a, e, i, Ω, ω, ν, c}
+	return &Orbit{a, e, Deg2rad(i), Deg2rad(Ω), Deg2rad(ω), Deg2rad(ν), c}
 }
 
 // NewOrbitFromRV returns orbital elements from the R and V vectors. Needed for prop
