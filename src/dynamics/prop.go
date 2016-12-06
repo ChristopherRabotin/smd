@@ -190,8 +190,7 @@ func (cl Tangential) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl Tangential) Control(o Orbit) []float64 {
-	return []float64{1, 0, 0}
-	//return unit(o.GetV())
+	return NewOptimalThrust(optiΔa, cl.reason).Control(o)
 }
 
 // AntiTangential defines an antitangential thrust control law
@@ -211,7 +210,7 @@ func (cl AntiTangential) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl AntiTangential) Control(o Orbit) []float64 {
-	unitV := unit(o.GetV())
+	unitV := NewOptimalThrust(optiΔa, cl.reason).Control(o)
 	unitV[0] *= -1
 	unitV[1] *= -1
 	unitV[2] *= -1
@@ -238,8 +237,8 @@ func (cl Inversion) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl Inversion) Control(o Orbit) []float64 {
-	f := o.Getν()
-	if _, e := o.GetE(); e > 0.01 || (f > cl.ν-math.Pi && f < math.Pi-cl.ν) {
+	f := o.ν
+	if o.e > 0.01 || (f > cl.ν-math.Pi && f < math.Pi-cl.ν) {
 		return Tangential{}.Control(o)
 	}
 	return AntiTangential{}.Control(o)
@@ -272,15 +271,14 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 	switch cl {
 	case optiΔa:
 		ctrl = func(o Orbit) []float64 {
-			_, e := o.GetE()
-			sinν, cosν := math.Sincos(o.Getν())
-			return unitΔvFromAngles(math.Atan(e*sinν/(1+e*cosν)), 0.0)
+			sinν, cosν := math.Sincos(o.ν)
+			return unitΔvFromAngles(math.Atan(o.e*sinν/(1+o.e*cosν)), 0.0)
 		}
 		break
 	case optiΔe:
 		ctrl = func(o Orbit) []float64 {
 			_, cosE := o.GetSinCosE()
-			sinν, cosν := math.Sincos(o.Getν())
+			sinν, cosν := math.Sincos(o.ν)
 			return unitΔvFromAngles(math.Atan(sinν/(cosE+cosν)), 0.0)
 		}
 		break

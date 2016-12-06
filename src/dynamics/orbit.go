@@ -46,37 +46,19 @@ func (o *Orbit) GetH() float64 {
 	return norm(cross(o.GetR(), o.GetV()))
 }
 
-// GetE returns the eccentricty vector and norm.
-func (o *Orbit) GetE() (eVec []float64, e float64) {
-	return []float64{0, 0, 0}, o.e
-}
-
-// Getν returns the true anomaly.
-func (o *Orbit) Getν() (ν float64) {
-	return o.ν
-}
-
-// GetA returns the semi major axis a.
-func (o *Orbit) GetA() (a float64) {
-	return o.a
-}
-
 // GetSemiParameter returns the apoapsis.
-func (o *Orbit) GetSemiParameter() (r float64) {
-	r = o.a * (1 - o.e*o.e)
-	return
+func (o *Orbit) GetSemiParameter() float64 {
+	return o.a * (1 - o.e*o.e)
 }
 
 // GetApoapsis returns the apoapsis.
-func (o *Orbit) GetApoapsis() (r float64) {
-	r = o.a * (1 + o.e)
-	return
+func (o *Orbit) GetApoapsis() float64 {
+	return o.a * (1 + o.e)
 }
 
 // GetPeriapsis returns the apoapsis.
-func (o *Orbit) GetPeriapsis() (r float64) {
-	r = o.a * (1 - o.e)
-	return
+func (o *Orbit) GetPeriapsis() float64 {
+	return o.a * (1 - o.e)
 }
 
 // GetSinCosE returns the eccentric anomaly trig functions (sin and cos).
