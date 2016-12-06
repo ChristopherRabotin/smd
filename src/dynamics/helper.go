@@ -11,13 +11,6 @@ const (
 	eps = 1e-3
 )
 
-func floatEqual(a, b float64) (bool, error) {
-	if !floats.EqualWithinRel(a, b, eps) {
-		return false, fmt.Errorf("difference of %3.10f", math.Abs(a-b))
-	}
-	return true, nil
-}
-
 func vectorsEqual(a, b []float64) bool {
 	if len(a) != len(b) {
 		return false
