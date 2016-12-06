@@ -215,6 +215,11 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	fDot[5] = h/(r*r) + ((p*cosν*Δv[0])-(p+r)*sinν*Δv[1])/(tmpOrbit.e*h)
 	// d(fuel)/dt
 	fDot[6] = -usedFuel
+	for i := 0; i < 6; i++ {
+		if math.IsNaN(fDot[i]) {
+			panic(fmt.Errorf("fDot[%d] is NaN! %s ζ=%f p=%f h=%f r=%f", i, tmpOrbit.String(), ζ, p, h, r))
+		}
+	}
 	return
 }
 
