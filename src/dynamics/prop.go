@@ -190,7 +190,8 @@ func (cl Tangential) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl Tangential) Control(o Orbit) []float64 {
-	return unit(o.GetV())
+	return []float64{1, 0, 0}
+	//return unit(o.GetV())
 }
 
 // AntiTangential defines an antitangential thrust control law

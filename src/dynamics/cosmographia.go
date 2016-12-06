@@ -278,7 +278,7 @@ func StreamStates(conf ExportConfig, stateChan <-chan (AstroState)) {
 					}
 
 					if conf.OE {
-						asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.dt.UTC(), state.orbit.a, state.orbit.e, Rad2deg(state.orbit.i), Rad2deg(state.orbit.Ω), Rad2deg(state.orbit.ω), Rad2deg(state.orbit.ν))
+						asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.dt.UTC().Format("2006-01-02 15:04:05"), state.orbit.a, state.orbit.e, Rad2deg(state.orbit.i), Rad2deg(state.orbit.Ω), Rad2deg(state.orbit.ω), Rad2deg(state.orbit.ν))
 						if _, err := fOE.WriteString("\n" + asTxt); err != nil {
 							panic(err)
 						}
@@ -298,7 +298,7 @@ func StreamStates(conf ExportConfig, stateChan <-chan (AstroState)) {
 				}
 			}
 			if conf.OE {
-				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.dt.UTC(), state.orbit.a, state.orbit.e, Rad2deg(state.orbit.i), Rad2deg(state.orbit.Ω), Rad2deg(state.orbit.ω), Rad2deg(state.orbit.ν))
+				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.dt.UTC().Format("2006-01-02 15:04:05"), state.orbit.a, state.orbit.e, Rad2deg(state.orbit.i), Rad2deg(state.orbit.Ω), Rad2deg(state.orbit.ω), Rad2deg(state.orbit.ν))
 				if _, err := fOE.WriteString("\n" + asTxt); err != nil {
 					panic(err)
 				}

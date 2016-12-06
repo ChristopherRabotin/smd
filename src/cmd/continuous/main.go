@@ -20,16 +20,23 @@ func main() {
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
 	//end := start.Add(time.Duration(-1) * time.Nanosecond)  // Propagate until waypoint reached.
 	end := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC) // Let's not have this last too long if it doesn't converge.
-	// Initial info
-	marsOrbit := dynamics.Mars.HelioOrbit(start)
-	fmt.Printf("epoch=%s MarsR(km)=%e MarsV(km/s)=%e\n", start, norm(marsOrbit.R), norm(marsOrbit.V))
-	name := "IE"
-	sc := SpacecraftFromEarth(name)
-	sc.LogInfo()
-	astro, wg := dynamics.NewAstro(sc, InitialEarthOrbit(), start, end, name)
-	astro.Propagate()
 
-	wg.Wait() // Must wait or the output file does not have time to be written!
+	/* Let's propagate out of Mars at a guessed date of 7 months after launch date from Earth.
+	Note that we only output the CSV because we don't need to visualize this.
+	*/
+
+	scMars := SpacecraftFromMars("IM")
+	scMars.LogInfo()
+	astroM, _ := dynamics.NewAstro(scMars, InitialMarsOrbit(), start, end, dynamics.ExportConfig{Filename: "IM", OE: true, Cosmo: true, Timestamp: false})
+	astroM.Propagate()
+	/*
+		sc := SpacecraftFromEarth("IE", *astroM.Orbit)
+		sc.LogInfo()
+		astro, wg := dynamics.NewAstro(sc, InitialEarthOrbit(), start, end, dynamics.ExportConfig{Filename: "IE", OE: true, Cosmo: true, Timestamp: false})
+		astro.Propagate()
+
+		wg.Wait() // Must wait or the output file does not have time to be written!
+	*/
 }
 
 // CheckEnvVars checks that all the environment variables required are set, without checking their value. It will panic if one is missing.

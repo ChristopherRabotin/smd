@@ -19,19 +19,19 @@ func InitialEarthOrbit() *dynamics.Orbit {
 }
 
 // FromEarthWaypoints returns the waypoints.
-func FromEarthWaypoints() []dynamics.Waypoint {
+func FromEarthWaypoints(destination dynamics.Orbit) []dynamics.Waypoint {
 	ref2Sun := &dynamics.WaypointAction{Type: dynamics.REFSUN, Cargo: nil}
 	ref2Mars := &dynamics.WaypointAction{Type: dynamics.REFMARS, Cargo: nil}
-	//marsOrbit := dynamics.Mars.HelioOrbit(time.Now())
 	return []dynamics.Waypoint{dynamics.NewLoiter(time.Duration(24*2)*time.Hour, nil),
 		dynamics.NewOutwardSpiral(dynamics.Earth, ref2Sun),
 		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil),
-		dynamics.NewPlanetBound(dynamics.Mars, ref2Mars),
+		dynamics.NewOrbitTarget(destination, ref2Mars),
 		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil)}
 }
 
 // InitialMarsOrbit returns the initial orbit.
 func InitialMarsOrbit() *dynamics.Orbit {
+	// Exomars TGO.
 	a, e := dynamics.Radii2ae(44500+dynamics.Mars.Radius, 426+dynamics.Mars.Radius)
 	i := dynamics.Deg2rad(10)
 	ω := dynamics.Deg2rad(1) // Made up
