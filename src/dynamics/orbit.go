@@ -216,7 +216,12 @@ func NewOrbitFromRV(R, V []float64, c CelestialObject) *Orbit {
 	if n[1] < 0 {
 		Ω = 2*math.Pi - Ω
 	}
-	ν := math.Acos(dot(eVec, R) / (e * r))
+	cosν := dot(eVec, R) / (e * r)
+	if cosν > 1 && floats.EqualWithinAbs(cosν, 1, 1e-12) {
+		// Welcome to the edge case which took about two hours of my time.
+		cosν = 1.0 // GTFO NaN!
+	}
+	ν := math.Acos(cosν)
 	if dot(R, V) < 0 {
 		ν = 2*math.Pi - ν
 	}

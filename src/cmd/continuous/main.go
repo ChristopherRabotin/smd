@@ -27,16 +27,14 @@ func main() {
 
 	scMars := SpacecraftFromMars("IM")
 	scMars.LogInfo()
-	astroM, wg := dynamics.NewAstro(scMars, InitialMarsOrbit(), start.Add(time.Duration(7*31*24)*time.Hour), start, dynamics.ExportConfig{Filename: "IM", OE: false, Cosmo: false, Timestamp: false})
+	astroM := dynamics.NewAstro(scMars, InitialMarsOrbit(), start.Add(time.Duration(7*31*24)*time.Hour), start, dynamics.ExportConfig{Filename: "IM", OE: false, Cosmo: false, Timestamp: false})
 	astroM.Propagate()
-	wg.Wait() // Wait for files to finish writing before we continue.
 
 	sc := SpacecraftFromEarth("IE", *astroM.Orbit)
 	sc.LogInfo()
-	astro, wg := dynamics.NewAstro(sc, InitialEarthOrbit(), start, end, dynamics.ExportConfig{Filename: "IE", OE: true, Cosmo: true, Timestamp: false})
+	astro := dynamics.NewAstro(sc, InitialEarthOrbit(), start, end, dynamics.ExportConfig{Filename: "IE", OE: true, Cosmo: true, Timestamp: false})
 	astro.Propagate()
 
-	wg.Wait() // Must wait or the output file does not have time to be written!
 }
 
 // CheckEnvVars checks that all the environment variables required are set, without checking their value. It will panic if one is missing.

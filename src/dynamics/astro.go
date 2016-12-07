@@ -31,7 +31,7 @@ type Astrocodile struct {
 }
 
 // NewAstro returns a new Astrocodile instance from the position and velocity vectors.
-func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, conf ExportConfig) (*Astrocodile, *sync.WaitGroup) {
+func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, conf ExportConfig) *Astrocodile {
 	// If no filepath is provided, then no output will be written.
 	var histChan chan (AstroState)
 	if !conf.IsUseless() {
@@ -62,7 +62,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, conf ExportConfig) 
 		a.Vehicle.logger.Log("level", "warning", "subsys", "astro", "message", "no end date")
 	}
 
-	return a, &wg
+	return a
 }
 
 // LogStatus returns the status of the propagation and vehicle.
@@ -107,6 +107,7 @@ func (a *Astrocodile) Propagate() {
 	if a.Vehicle.FuelMass < 0 {
 		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
 	}
+	wg.Wait() // Don't return until we're done writing all the files.
 }
 
 // Stop implements the stop call of the integrator.

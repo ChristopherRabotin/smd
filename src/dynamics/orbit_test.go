@@ -1,6 +1,7 @@
 package dynamics
 
 import (
+	"math"
 	"testing"
 	"time"
 )
@@ -45,17 +46,19 @@ func TestOrbitDefinition(t *testing.T) {
 }
 
 func TestOrbitRefChange(t *testing.T) {
-	a0 := 36127.343
-	e0 := 0.832853
-	i0 := 87.870
-	ω0 := 53.38
-	Ω0 := 227.898
-	ν0 := 92.335
+	// Test based on edge case
+	a0 := 684420.277672
+	e0 := 0.893203
+	i0 := 0.174533
+	ω0 := 0.474642
+	Ω0 := 0.032732
+	ν0 := 2.830590
 
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 	R := o.GetR()
 	V := o.GetV()
-	dt := time.Date(2016, 03, 01, 0, 0, 0, 0, time.UTC)
+	// The time is the edge case here, quite close to the vernal I guess.
+	dt := time.Date(2016, 03, 24, 20, 41, 48, 0, time.UTC)
 	var earthR1, earthV1, earthR2, earthV2, helioR, helioV [3]float64
 	copy(earthR1[:], R)
 	copy(earthV1[:], V)
@@ -64,6 +67,14 @@ func TestOrbitRefChange(t *testing.T) {
 	V = o.GetV()
 	copy(helioR[:], R)
 	copy(helioV[:], V)
+	for i := 0; i < 3; i++ {
+		if math.IsNaN(R[i]) {
+			t.Fatalf("R[%d]=NaN", i)
+		}
+		if math.IsNaN(V[i]) {
+			t.Fatalf("V[%d]=NaN", i)
+		}
+	}
 	if vectorsEqual(helioR[:], earthR1[:]) {
 		t.Fatal("helioR == earthR1")
 	}
