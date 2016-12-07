@@ -78,7 +78,8 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			sc.prevCL = &clType
 		}
 		// Check if we're in a parabolic orbit and if so, we're activating the action NOW.
-		if o.GetSemiParameter() < 0 {
+		if p := o.GetSemiParameter(); p < 0 {
+			sc.logger.Log("level", "critical", "subsys", "astro", "date", dt, "p", p, "action", wp.Action())
 			reached = true
 		}
 		if reached {
@@ -166,8 +167,9 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 // ToXCentric switches the propagation from the current origin to a new one and logs the change.
 func (sc *Spacecraft) ToXCentric(body CelestialObject, dt time.Time, o *Orbit) func() {
 	return func() {
-		sc.logger.Log("level", "notice", "subsys", "astro", "date", dt, "orbiting", body.Name)
+		sc.logger.Log("level", "notice", "subsys", "astro", "date", dt, "orbiting", body.Name, "orbit", o.String())
 		o.ToXCentric(body, dt)
+		sc.logger.Log("level", "notice", "subsys", "astro", "date", dt, "orbit", o.String())
 	}
 }
 

@@ -200,8 +200,7 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	sinζ, cosζ := math.Sincos(ζ)
 	fDot = make([]float64, 7) // init return vector
 	// Let's add the thrust to increase the magnitude of the velocity.
-	//Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
-	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, tmpOrbit)
+	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
 	// da/dt
 	fDot[0] = (2 * tmpOrbit.a * tmpOrbit.a * (tmpOrbit.e*Δv[0]*sinν + (p*Δv[1])/r)) / h
 	// de/dt
@@ -216,11 +215,6 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	fDot[5] = h/(r*r) + ((p*cosν*Δv[0])-(p+r)*sinν*Δv[1])/(tmpOrbit.e*h)
 	// d(fuel)/dt
 	fDot[6] = -usedFuel
-	for i := 0; i < 6; i++ {
-		if math.IsNaN(fDot[i]) {
-			panic(fmt.Errorf("fDot[%d] is NaN! %s ζ=%f p=%f h=%f r=%f", i, tmpOrbit.String(), ζ, p, h, r))
-		}
-	}
 	return
 }
 

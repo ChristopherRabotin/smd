@@ -40,9 +40,8 @@ func InitialMarsOrbit() *dynamics.Orbit {
 	// Exomars TGO.
 	a, e := dynamics.Radii2ae(44500+dynamics.Mars.Radius, 426+dynamics.Mars.Radius)
 	i := 10.0
-	ω := 1.0 // Made up
-	Ω := 1.0 // Made up
-	//ν := dynamics.Deg2rad(270) // I don't care about that guy.
+	ω := 1.0
+	Ω := 1.0
 	ν := 15.0
 	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, dynamics.Mars)
 }
@@ -50,7 +49,5 @@ func InitialMarsOrbit() *dynamics.Orbit {
 // FromMarsWaypoints returns the waypoints.
 func FromMarsWaypoints() []dynamics.Waypoint {
 	ref2Sun := &dynamics.WaypointAction{Type: dynamics.REFSUN, Cargo: nil}
-	return []dynamics.Waypoint{dynamics.NewLoiter(time.Duration(24*2)*time.Hour, nil),
-		dynamics.NewOutwardSpiral(dynamics.Mars, ref2Sun)}
-	// We don't loiter at the end because we want specifically the transition point.
+	return []dynamics.Waypoint{dynamics.NewOutwardSpiral(dynamics.Mars, ref2Sun)}
 }

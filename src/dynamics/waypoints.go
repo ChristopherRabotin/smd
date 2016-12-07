@@ -119,10 +119,7 @@ func (wp *ReachDistance) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, 
 
 // Action implements the Waypoint interface.
 func (wp *ReachDistance) Action() *WaypointAction {
-	if wp.cleared {
-		return wp.action
-	}
-	return nil
+	return wp.action
 }
 
 // NewReachDistance defines a new spiral until a given distance is reached.
