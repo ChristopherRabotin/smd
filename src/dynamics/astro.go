@@ -73,28 +73,17 @@ func (a *Astrocodile) LogStatus() {
 // Propagate starts the propagation.
 func (a *Astrocodile) Propagate() {
 	// Add a ticker status report based on the duration of the simulation.
-	var tickDuration time.Duration
-	if a.EndDT.After(a.StartDT) {
-		tickDuration = time.Duration(a.EndDT.Sub(a.StartDT).Hours()*0.01) * time.Second
-	} else {
-		tickDuration = 1 * time.Minute
-	}
-	if tickDuration > 0 {
-		a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "reportPeriod", tickDuration, "orbit", a.Orbit)
-		a.LogStatus()
-		ticker := time.NewTicker(tickDuration)
-		go func() {
-			for _ = range ticker.C {
-				if a.done {
-					break
-				}
-				a.LogStatus()
+	a.LogStatus()
+	ticker := time.NewTicker(5 * time.Minute)
+	go func() {
+		for _ = range ticker.C {
+			if a.done {
+				break
 			}
-		}()
-	} else {
-		// Happens only during tests.
-		a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "orbit", a.Orbit)
-	}
+			a.LogStatus()
+		}
+	}()
+
 	ode.NewRK4(0, stepSize, a).Solve() // Blocking.
 	a.done = true
 	duration := a.CurrentDT.Sub(a.StartDT)
@@ -161,6 +150,8 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	if a.histChan != nil {
 		a.histChan <- AstroState{a.CurrentDT, *a.Vehicle, *a.Orbit}
 	}
+	// Note that we modulo here *and* in Func because the last step of the integrator
+	// adds up all the previous values with weights!
 	a.Orbit.a = s[0]
 	a.Orbit.e = s[1]
 	a.Orbit.i = math.Mod(s[2], 2*math.Pi)
@@ -192,6 +183,10 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 
 // Func is the integration function using Gaussian VOP as per Ruggiero et al. 2011.
 func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
+	// Fix the angles in case the sum in integrator lead to an overflow.
+	for i := 2; i < 6; i++ {
+		f[i] = math.Mod(f[i], 2*math.Pi)
+	}
 	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2], f[3], f[4], f[5], a.Orbit.Origin)
 	p := tmpOrbit.GetSemiParameter()
 	h := tmpOrbit.GetH()
@@ -207,15 +202,20 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	// de/dt
 	fDot[1] = (p*Δv[0]*sinν + Δv[1]*((p+r)*cosν+r*tmpOrbit.e)) / h
 	// di/dt
-	fDot[2] = Δv[2] * r * cosζ / h
+	fDot[2] = math.Mod(Δv[2]*r*cosζ/h, 2*math.Pi)
 	// dΩ/dt
-	fDot[3] = Δv[2] * r * sinζ / (h * math.Sin(tmpOrbit.i))
+	fDot[3] = math.Mod(Δv[2]*r*sinζ/(h*math.Sin(tmpOrbit.i)), 2*math.Pi)
 	// dω/dt
-	fDot[4] = (-p*Δv[0]*cosν+(p+r)*Δv[1]*sinν)/(h*tmpOrbit.e) - fDot[3]*math.Cos(tmpOrbit.i)
+	fDot[4] = math.Mod((-p*Δv[0]*cosν+(p+r)*Δv[1]*sinν)/(h*tmpOrbit.e)-fDot[3]*math.Cos(tmpOrbit.i), 2*math.Pi)
 	// dν/dt -- as per Vallado, page 636 (with errata of 4th edition.)
-	fDot[5] = h/(r*r) + ((p*cosν*Δv[0])-(p+r)*sinν*Δv[1])/(tmpOrbit.e*h)
+	fDot[5] = math.Mod(h/(r*r)+((p*cosν*Δv[0])-(p+r)*sinν*Δv[1])/(tmpOrbit.e*h), 2*math.Pi)
 	// d(fuel)/dt
 	fDot[6] = -usedFuel
+	for i := 0; i < 7; i++ {
+		if math.IsNaN(fDot[i]) {
+			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\np=%f\th=%f\tsin=%f\tdv=%+v\ntmp:%s\ncur:%s", i, a.CurrentDT, p, h, sinν, Δv, tmpOrbit, a.Orbit))
+		}
+	}
 	return
 }
 

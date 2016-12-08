@@ -78,7 +78,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			sc.prevCL = &clType
 		}
 		// Check if we're in a parabolic orbit and if so, we're activating the action NOW.
-		if p := o.GetSemiParameter(); p < 0 {
+		if p := o.GetSemiParameter(); p < 0 { // TODO: check if this ever happens anymore.
 			sc.logger.Log("level", "critical", "subsys", "astro", "date", dt, "p", p, "action", wp.Action())
 			reached = true
 		}

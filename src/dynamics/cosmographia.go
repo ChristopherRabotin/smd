@@ -212,6 +212,25 @@ func StreamStates(conf ExportConfig, stateChan <-chan (AstroState)) {
 	fileNo = 0
 	cgItems := []*CgItems{}
 	var curCgItem *CgItems
+	defer func() {
+		if conf.Cosmo {
+			// Let's write the catalog.
+			c := CgCatalog{Version: "1.0", Name: prevStatePtr.sc.Name, Items: cgItems, Require: nil}
+			// Create JSON file.
+			fc, err := os.Create(os.Getenv("DATAOUT") + "/catalog-" + conf.Filename + ".json")
+			if err != nil {
+				panic(err)
+			}
+			defer fc.Close()
+			fmt.Printf("Saving file to %s.\n", fc.Name())
+			if marsh, err := json.Marshal(c); err != nil {
+				panic(err)
+			} else {
+				fc.Write(marsh)
+			}
+		}
+	}()
+
 	color := []float64{0.6, 1, 1}
 	for {
 		state, more := <-stateChan
@@ -320,22 +339,6 @@ func StreamStates(conf ExportConfig, stateChan <-chan (AstroState)) {
 				cgItems = append(cgItems, curCgItem)
 			}
 			break
-		}
-	}
-	if conf.Cosmo {
-		// Let's write the catalog.
-		c := CgCatalog{Version: "1.0", Name: prevStatePtr.sc.Name, Items: cgItems, Require: nil}
-		// Create JSON file.
-		f, err := os.Create(os.Getenv("DATAOUT") + "/catalog-" + conf.Filename + ".json")
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		fmt.Printf("Saving file to %s.\n", f.Name())
-		if marsh, err := json.Marshal(c); err != nil {
-			panic(err)
-		} else {
-			f.Write(marsh)
 		}
 	}
 }

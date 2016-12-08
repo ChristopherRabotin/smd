@@ -15,12 +15,17 @@ const (
 	antiTangential
 	inversion
 	coast
-	optiΔa
-	optiΔi
-	optiΔe
-	optiΔΩ
-	optiΔω
 	multiOpti
+	// OptiΔaCL allows to optimize thrust for semi major axis change
+	OptiΔaCL
+	// OptiΔiCL allows to optimize thrust for inclination change
+	OptiΔiCL
+	// OptiΔeCL allows to optimize thrust for eccentricity change
+	OptiΔeCL
+	// OptiΔΩCL allows to optimize thrust forRAAN change
+	OptiΔΩCL
+	// OptiΔωCL allows to optimize thrust for argument of perigee change
+	OptiΔωCL
 )
 
 func (cl ControlLaw) String() string {
@@ -33,15 +38,15 @@ func (cl ControlLaw) String() string {
 		return "inversion"
 	case coast:
 		return "coast"
-	case optiΔa:
+	case OptiΔaCL:
 		return "optiΔa"
-	case optiΔe:
+	case OptiΔeCL:
 		return "optiΔe"
-	case optiΔi:
+	case OptiΔiCL:
 		return "optiΔi"
-	case optiΔΩ:
+	case OptiΔΩCL:
 		return "optiΔΩ"
-	case optiΔω:
+	case OptiΔωCL:
 		return "optiΔω"
 	case multiOpti:
 		return "multiOpti"
@@ -192,7 +197,7 @@ func (cl Tangential) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl Tangential) Control(o Orbit) []float64 {
-	return NewOptimalThrust(optiΔa, cl.reason).Control(o)
+	return NewOptimalThrust(OptiΔaCL, cl.reason).Control(o)
 }
 
 // AntiTangential defines an antitangential thrust control law
@@ -212,7 +217,7 @@ func (cl AntiTangential) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl AntiTangential) Control(o Orbit) []float64 {
-	unitV := NewOptimalThrust(optiΔa, cl.reason).Control(o)
+	unitV := NewOptimalThrust(OptiΔaCL, cl.reason).Control(o)
 	unitV[0] *= -1
 	unitV[1] *= -1
 	unitV[2] *= -1
@@ -271,30 +276,30 @@ func (cl OptimalThrust) Control(o Orbit) []float64 {
 func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 	var ctrl func(o Orbit) []float64
 	switch cl {
-	case optiΔa:
+	case OptiΔaCL:
 		ctrl = func(o Orbit) []float64 {
 			sinν, cosν := math.Sincos(o.ν)
 			return unitΔvFromAngles(math.Atan(o.e*sinν/(1+o.e*cosν)), 0.0)
 		}
 		break
-	case optiΔe:
+	case OptiΔeCL:
 		ctrl = func(o Orbit) []float64 {
 			_, cosE := o.GetSinCosE()
 			sinν, cosν := math.Sincos(o.ν)
 			return unitΔvFromAngles(math.Atan(sinν/(cosE+cosν)), 0.0)
 		}
 		break
-	case optiΔi:
+	case OptiΔiCL:
 		ctrl = func(o Orbit) []float64 {
 			return unitΔvFromAngles(0.0, -sign(math.Cos(o.ω+o.ν))*math.Pi/2)
 		}
 		break
-	case optiΔΩ:
+	case OptiΔΩCL:
 		ctrl = func(o Orbit) []float64 {
 			return unitΔvFromAngles(0.0, sign(math.Sin(o.ω+o.ν))*math.Pi/2)
 		}
 		break
-	case optiΔω:
+	case OptiΔωCL:
 		ctrl = func(o Orbit) []float64 {
 			cotν := 1 / math.Tan(o.ν)
 			coti := 1 / math.Tan(o.i)
@@ -333,7 +338,7 @@ func NewOptimalΔOrbit(target Orbit, laws ...ControlLaw) *OptimalΔOrbit {
 	cl.ωtarget = target.ω
 	cl.Ωtarget = target.Ω
 	if len(laws) == 0 {
-		laws = []ControlLaw{optiΔa, optiΔe, optiΔi, optiΔΩ, optiΔω}
+		laws = []ControlLaw{OptiΔaCL, OptiΔeCL, OptiΔiCL, OptiΔΩCL, OptiΔωCL}
 	}
 	cl.controls = make([]ThrustControl, len(laws))
 	for i, law := range laws {
@@ -357,10 +362,10 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	}
 
 	factor := func(oscul, init, target, tol float64) float64 {
-		if !floats.EqualWithinAbs(init, target, tol) {
+		if floats.EqualWithinAbs(init, target, tol) {
 			return 0 // Don't want no NaNs now.
 		}
-		if !floats.EqualWithinAbs(oscul, target, tol) {
+		if floats.EqualWithinAbs(oscul, target, tol) {
 			return 0
 		}
 		return (target - oscul) / (target - init)
@@ -369,27 +374,27 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	for _, ctrl := range cl.controls {
 		var oscul, init, target, tol float64
 		switch ctrl.Type() {
-		case optiΔa:
+		case OptiΔaCL:
 			oscul = o.a
 			init = cl.ainit
 			target = cl.atarget
 			tol = distanceε
-		case optiΔe:
+		case OptiΔeCL:
 			oscul = o.e
 			init = cl.einit
 			target = cl.etarget
 			tol = eccentricityε
-		case optiΔi:
+		case OptiΔiCL:
 			oscul = o.i
 			init = cl.iinit
 			target = cl.itarget
 			tol = angleε
-		case optiΔΩ:
+		case OptiΔΩCL:
 			oscul = o.Ω
 			init = cl.Ωinit
 			target = cl.Ωtarget
 			tol = angleε
-		case optiΔω:
+		case OptiΔωCL:
 			oscul = o.ω
 			init = cl.ωinit
 			target = cl.ωtarget

@@ -55,54 +55,61 @@ func TestOrbitRefChange(t *testing.T) {
 	ν0 := 2.830590
 
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
-	R := o.GetR()
-	V := o.GetV()
-	// The time is the edge case here, quite close to the vernal I guess.
-	dt := time.Date(2016, 03, 24, 20, 41, 48, 0, time.UTC)
-	var earthR1, earthV1, earthR2, earthV2, helioR, helioV [3]float64
-	copy(earthR1[:], R)
-	copy(earthV1[:], V)
-	o.ToXCentric(Sun, dt)
-	R = o.GetR()
-	V = o.GetV()
-	copy(helioR[:], R)
-	copy(helioV[:], V)
-	for i := 0; i < 3; i++ {
-		if math.IsNaN(R[i]) {
-			t.Fatalf("R[%d]=NaN", i)
+	// These are two edge cases were cosν is slight below -1 or slightly above +1, leading math.Acos to return NaN.
+	// Given the difference is on the order of 1e-18, I suspect this is an approximation error (hence the fix in orbit.go).
+	// Let's ensure these edge cases are handled.
+	for _, dt := range []time.Time{time.Date(2016, 03, 24, 20, 41, 48, 0, time.UTC),
+		time.Date(2016, 04, 14, 20, 50, 23, 0, time.UTC),
+		time.Date(2016, 05, 12, 18, 0, 15, 0, time.UTC)} {
+
+		R := o.GetR()
+		V := o.GetV()
+
+		var earthR1, earthV1, earthR2, earthV2, helioR, helioV [3]float64
+		copy(earthR1[:], R)
+		copy(earthV1[:], V)
+		o.ToXCentric(Sun, dt)
+		R = o.GetR()
+		V = o.GetV()
+		copy(helioR[:], R)
+		copy(helioV[:], V)
+		for i := 0; i < 3; i++ {
+			if math.IsNaN(R[i]) {
+				t.Fatalf("R[%d]=NaN", i)
+			}
+			if math.IsNaN(V[i]) {
+				t.Fatalf("V[%d]=NaN", i)
+			}
 		}
-		if math.IsNaN(V[i]) {
-			t.Fatalf("V[%d]=NaN", i)
+		if vectorsEqual(helioR[:], earthR1[:]) {
+			t.Fatal("helioR == earthR1")
 		}
-	}
-	if vectorsEqual(helioR[:], earthR1[:]) {
-		t.Fatal("helioR == earthR1")
-	}
-	if vectorsEqual(helioV[:], earthV1[:]) {
-		t.Fatal("helioV == earthV1")
-	}
-	// Revert back to Earth centric
-	o.ToXCentric(Earth, dt)
-	R = o.GetR()
-	V = o.GetV()
-	copy(earthR2[:], R)
-	copy(earthV2[:], V)
-	if vectorsEqual(helioR[:], earthR2[:]) {
-		t.Fatal("helioR == earthR2")
-	}
-	if vectorsEqual(helioV[:], earthV2[:]) {
-		t.Fatal("helioV == earthV2")
-	}
-	if !vectorsEqual(earthR1[:], earthR2[:]) {
-		t.Logf("r1=%+f", earthR1)
-		t.Logf("r2=%+f", earthR2)
-		t.Fatal("earthR1 != earthR2")
-	}
-	if !vectorsEqual(earthV1[:], earthV2[:]) {
-		t.Fatal("earthV1 != earthV2")
-	}
-	// Test panic
-	assertPanic(t, func() {
+		if vectorsEqual(helioV[:], earthV1[:]) {
+			t.Fatal("helioV == earthV1")
+		}
+		// Revert back to Earth centric
 		o.ToXCentric(Earth, dt)
-	})
+		R = o.GetR()
+		V = o.GetV()
+		copy(earthR2[:], R)
+		copy(earthV2[:], V)
+		if vectorsEqual(helioR[:], earthR2[:]) {
+			t.Fatal("helioR == earthR2")
+		}
+		if vectorsEqual(helioV[:], earthV2[:]) {
+			t.Fatal("helioV == earthV2")
+		}
+		if !vectorsEqual(earthR1[:], earthR2[:]) {
+			t.Logf("r1=%+f", earthR1)
+			t.Logf("r2=%+f", earthR2)
+			t.Fatal("earthR1 != earthR2")
+		}
+		if !vectorsEqual(earthV1[:], earthV2[:]) {
+			t.Fatal("earthV1 != earthV2")
+		}
+		// Test panic
+		assertPanic(t, func() {
+			o.ToXCentric(Earth, dt)
+		})
+	}
 }

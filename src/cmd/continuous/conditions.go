@@ -9,18 +9,11 @@ import (
 func InitialEarthOrbit() *dynamics.Orbit {
 	// Falcon 9 delivers at 24.68 350x250km.
 	// SES-9 was delivered differently: http://spaceflight101.com/falcon-9-ses-9/ses-9-launch-success/
-	/*a, e := dynamics.Radii2ae(39300+dynamics.Earth.Radius, 290+dynamics.Earth.Radius)
-	i := dynamics.Deg2rad(28.0)
-	ω := dynamics.Deg2rad(10) // Made up
-	Ω := dynamics.Deg2rad(5)  // Made up
-	ν := dynamics.Deg2rad(1)  // I don't care about that guy.*/
-	// From the last step before crash.
-	a := 187176.235
-	e := 0.610
-	i := 10.000
-	ω := 27.195
-	Ω := 1.000
-	ν := 133.637
+	a, e := dynamics.Radii2ae(39300+dynamics.Earth.Radius, 290+dynamics.Earth.Radius)
+	i := 28.0
+	ω := 10.0
+	Ω := 5.0
+	ν := 0.0
 	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, dynamics.Earth)
 }
 
@@ -28,10 +21,16 @@ func InitialEarthOrbit() *dynamics.Orbit {
 func FromEarthWaypoints(destination dynamics.Orbit) []dynamics.Waypoint {
 	ref2Sun := &dynamics.WaypointAction{Type: dynamics.REFSUN, Cargo: nil}
 	ref2Mars := &dynamics.WaypointAction{Type: dynamics.REFMARS, Cargo: nil}
-	return []dynamics.Waypoint{ //dynamics.NewLoiter(time.Duration(24*2)*time.Hour, nil),
+	return []dynamics.Waypoint{
+		// Loiter for 12 hours (eg. IOT)
+		dynamics.NewLoiter(time.Duration(12)*time.Hour, nil),
+		// Change the inclination by 12 degrees
+		//dynamics.NewRelativeOrbitTarget(nil, []dynamics.RelativeOE{dynamics.RelativeOE{Law: dynamics.OptiΔiCL, Value: 12.0}}),
+		// Leave Earth
 		dynamics.NewOutwardSpiral(dynamics.Earth, ref2Sun),
-		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil),
+		// Go straight to Mars destination
 		dynamics.NewOrbitTarget(destination, ref2Mars),
+		// Wait a week on arrival
 		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil)}
 }
 

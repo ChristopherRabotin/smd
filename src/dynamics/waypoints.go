@@ -266,11 +266,11 @@ func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 	if math.Abs(o.i-wp.cacheDest.i) > (0.2 / (2 * math.Pi)) {
 		// Inclination difference of more than 1 degree, let's change this ASAP since
 		// the faster we go, the more energy is needed.
-		cl = NewOptimalThrust(optiΔi, "inclination change required")
+		cl = NewOptimalThrust(OptiΔiCL, "inclination change required")
 	} else if r := o.GetApoapsis(); r < wp.destSOIUpper {
 		// Next if the apoapsis isn't going to hit Mars, increase it until it does.
 		//cl = Tangential{"not in theoretical SOI"}
-		cl = NewOptimalThrust(optiΔa, "apoapsis not in theoretical SOI")
+		cl = NewOptimalThrust(OptiΔaCL, "apoapsis not in theoretical SOI")
 	} else {
 		// Actually, the best is probably to simply target a given orbit and then
 		// use the sum thrust function of the paper and thrust that until reached.
@@ -364,4 +364,74 @@ func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 // NewOrbitTarget defines a new orbit target.
 func NewOrbitTarget(target Orbit, action *WaypointAction) *OrbitTarget {
 	return &OrbitTarget{target, NewOptimalΔOrbit(target), action, false}
+}
+
+// RelativeOrbitTarget allows to target an orbit relative from the first control.
+type RelativeOrbitTarget struct {
+	initd   bool
+	targets []RelativeOE
+	target  Orbit
+	ctrl    ThrustControl
+	action  *WaypointAction
+	cleared bool
+}
+
+// String implements the Waypoint interface.
+func (wp *RelativeOrbitTarget) String() string {
+	return fmt.Sprintf("targeting relative orbit")
+}
+
+// Cleared implements the Waypoint interface.
+func (wp *RelativeOrbitTarget) Cleared() bool {
+	return wp.cleared
+}
+
+// Action implements the Waypoint interface.
+func (wp *RelativeOrbitTarget) Action() *WaypointAction {
+	if wp.cleared {
+		return wp.action
+	}
+	return nil
+}
+
+// ThrustDirection implements (inefficently) the optimal orbit target.
+func (wp *RelativeOrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
+	if !wp.initd {
+		// Initialize the relative target.
+		wp.target = Orbit{o.a, o.e, o.i, o.Ω, o.ω, o.ν, o.Origin}
+		fmt.Printf("initial: %s\n", wp.target.String())
+		for _, oe := range wp.targets {
+			switch oe.Law {
+			case OptiΔaCL:
+				wp.target.a += oe.Value
+			case OptiΔeCL:
+				wp.target.e += oe.Value
+			case OptiΔiCL:
+				wp.target.i += Deg2rad(oe.Value)
+			case OptiΔΩCL:
+				wp.target.Ω += Deg2rad(oe.Value)
+			case OptiΔωCL:
+				wp.target.ω += Deg2rad(oe.Value)
+			}
+		}
+		fmt.Printf("initial: %s\n", wp.target.String())
+		wp.initd = true
+		wp.ctrl = NewOptimalΔOrbit(wp.target)
+		return Coast{}, false
+	}
+	if ok, _ := wp.target.Equals(o); ok {
+		wp.cleared = true
+	}
+	return wp.ctrl, wp.cleared
+}
+
+// NewRelativeOrbitTarget defines a new orbit target.
+func NewRelativeOrbitTarget(action *WaypointAction, targets []RelativeOE) *RelativeOrbitTarget {
+	return &RelativeOrbitTarget{false, targets, Orbit{}, new(OptimalΔOrbit), action, false}
+}
+
+// RelativeOE is used in NewRelativeOrbitTarget to specify what OE needs change.
+type RelativeOE struct {
+	Law   ControlLaw
+	Value float64
 }
