@@ -73,9 +73,8 @@ func Rad2deg(a float64) float64 {
 
 // MxV33 multiplies a matrix with a vector. Note that there is no dimension check!
 func MxV33(m *mat64.Dense, v []float64) (o []float64) {
-	o = make([]float64, 3)
-	o[0] = m.At(0, 0)*v[0] + m.At(0, 1)*v[1] + m.At(0, 2)*v[2]
-	o[1] = m.At(1, 0)*v[0] + m.At(1, 1)*v[1] + m.At(1, 2)*v[2]
-	o[2] = m.At(2, 0)*v[0] + m.At(2, 1)*v[1] + m.At(2, 2)*v[2]
-	return
+	vVec := mat64.NewVector(len(v), v)
+	var rVec mat64.Vector
+	rVec.MulVec(m, vVec)
+	return []float64{rVec.At(0, 0), rVec.At(1, 0), rVec.At(2, 0)}
 }

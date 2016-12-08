@@ -414,7 +414,6 @@ func (wp *RelativeOrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustCon
 				wp.target.ω += Deg2rad(oe.Value)
 			}
 		}
-		fmt.Printf("initial: %s\n", wp.target.String())
 		wp.initd = true
 		wp.ctrl = NewOptimalΔOrbit(wp.target)
 		return Coast{}, false

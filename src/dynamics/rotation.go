@@ -7,12 +7,23 @@ import (
 )
 
 // PQW2ECI converts a given vector from PQW frame to ECI frame.
-func PQW2ECI(i, ω, Ω float64, vI []float64) (v []float64) {
-	mulM := mat64.NewDense(3, 3, nil)
+func PQW2ECI(i, ω, Ω float64, vI []float64) []float64 {
+	//return MxV33(R3R1R3(-i, -ω, -Ω), vI)
+	//mulM := mat64.NewDense(3, 3, nil)
+	var mulM mat64.Dense
 	mulM.Mul(R3(-ω), R1(-i))
-	mulM.Mul(mulM, R3(-Ω))
-	v = MxV33(mulM, vI)
-	return
+	mulM.Mul(&mulM, R3(-Ω))
+	return MxV33(&mulM, vI)
+}
+
+// R3R1R3 simplifies PQW2ECI.
+func R3R1R3(i, ω, Ω float64) *mat64.Dense {
+	si, ci := math.Sincos(i)
+	sω, cω := math.Sincos(ω)
+	sΩ, cΩ := math.Sincos(Ω)
+	return mat64.NewDense(3, 3, []float64{cω*cΩ - sΩ*sω*ci, -1*cΩ*sω - sΩ*cω*ci, sΩ * si,
+		sΩ*cω + cΩ*sω*ci, cΩ*cω*ci - sΩ*sω, -1 * cΩ * si,
+		sω * si, cω * si, ci})
 }
 
 // R1 rotation about the 1st axis.
