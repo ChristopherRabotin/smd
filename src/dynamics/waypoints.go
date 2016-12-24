@@ -398,7 +398,7 @@ func (wp *RelativeOrbitTarget) Action() *WaypointAction {
 func (wp *RelativeOrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
 	if !wp.initd {
 		// Initialize the relative target.
-		wp.target = Orbit{o.a, o.e, o.i, o.Ω, o.ω, o.ν, o.Origin}
+		wp.target = Orbit{o.a, o.e, o.i, o.Ω, o.ω, o.ν, o.Origin, 0.0, nil, nil}
 		fmt.Printf("initial: %s\n", wp.target.String())
 		for _, oe := range wp.targets {
 			switch oe.Law {

@@ -35,7 +35,7 @@ func TestAstrocroChanStop(t *testing.T) {
 	if ok, err := oInit.Equals(*o); !ok {
 		t.Fatalf("1ms propagation changes the orbit: %s", err)
 	}
-	if !floats.EqualWithinAbs(Deg2rad(ν0), o.ν, angleε) {
+	if floats.EqualWithinAbs(Deg2rad(ν0), o.ν, angleε) {
 		t.Fatalf("true anomaly *unchanged*: ν0=%3.6f ν1=%3.6f", Deg2rad(ν0), o.ν)
 	} else {
 		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", o.ν-Deg2rad(ν0), stepSize)

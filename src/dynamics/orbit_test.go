@@ -113,3 +113,11 @@ func TestOrbitRefChange(t *testing.T) {
 		})
 	}
 }
+
+func TestOrbitEquality(t *testing.T) {
+	oInit := NewOrbitFromOE(226090298.679, 0.088, 26.195, 3.516, 326.494, 278.358, Sun)
+	oTest := NewOrbitFromOE(226090230.608, 0.088, 26.195, 3.516, 326.494, 278.358, Sun)
+	if ok, err := oInit.Equals(*oTest); !ok {
+		t.Fatalf("orbits not equal: %s", err)
+	}
+}

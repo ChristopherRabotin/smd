@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	stepSize = 1.0
+	stepSize = 10.0
 )
 
 var wg sync.WaitGroup
@@ -74,7 +74,7 @@ func (a *Astrocodile) LogStatus() {
 func (a *Astrocodile) Propagate() {
 	// Add a ticker status report based on the duration of the simulation.
 	a.LogStatus()
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
 		for _ = range ticker.C {
 			if a.done {
