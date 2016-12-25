@@ -32,9 +32,9 @@ func main() {
 	astroM.Propagate()
 
 	target := astroM.Orbit*/
-	target := dynamics.NewOrbitFromOE(226090298.679, 0.088, 26.195, 3.516, 326.494, 278.358, dynamics.Sun)
-	fmt.Printf("target orbit: %s\n", target)
-	sc := SpacecraftFromEarth("IE", *target)
+	//	target := dynamics.NewOrbitFromOE(226090298.679, 0.088, 26.195, 3.516, 326.494, 278.358, dynamics.Sun)
+	//	fmt.Printf("target orbit: %s\n", target)
+	sc := SpacecraftFromEarth("IE")
 	sc.LogInfo()
 	astro := dynamics.NewAstro(sc, InitialEarthOrbit(), start, end, dynamics.ExportConfig{Filename: "IE", OE: true, Cosmo: true, Timestamp: false})
 	astro.Propagate()

@@ -18,7 +18,7 @@ func InitialEarthOrbit() *dynamics.Orbit {
 }
 
 // FromEarthWaypoints returns the waypoints.
-func FromEarthWaypoints(destination dynamics.Orbit) []dynamics.Waypoint {
+func FromEarthWaypoints() []dynamics.Waypoint {
 	ref2Sun := &dynamics.WaypointAction{Type: dynamics.REFSUN, Cargo: nil}
 	ref2Mars := &dynamics.WaypointAction{Type: dynamics.REFMARS, Cargo: nil}
 	return []dynamics.Waypoint{
@@ -28,8 +28,9 @@ func FromEarthWaypoints(destination dynamics.Orbit) []dynamics.Waypoint {
 		//dynamics.NewRelativeOrbitTarget(nil, []dynamics.RelativeOE{dynamics.RelativeOE{Law: dynamics.OptiΔiCL, Value: 12.0}}),
 		// Leave Earth
 		dynamics.NewOutwardSpiral(dynamics.Earth, ref2Sun),
+		dynamics.NewLoiter(time.Duration(12)*time.Hour, nil),
 		// Go straight to Mars destination
-		dynamics.NewOrbitTarget(destination, ref2Mars),
+		dynamics.NewPlanetTarget(dynamics.Mars, time.Date(2016, 10, 14, 9, 31, 0, 0, time.UTC), ref2Mars),
 		// Wait a week on arrival
 		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil)}
 }

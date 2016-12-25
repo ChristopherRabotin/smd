@@ -219,6 +219,10 @@ func NewReachEnergy(energy, ratio float64, action *WaypointAction) *ReachEnergy 
 }
 
 // PlanetBound is a type of waypoint which thrusts until a given distance is reached from the central body.
+// SHould this work differently? Like give a time at which to reach a destination, and do a full opti thrust
+// until the orbit is actually that of the destination at the given time. The problem here is that the full
+// opti thrust does not work great... But the idea of targetting the planet directly and doing an injection
+// when close enough is quite interesting.
 type PlanetBound struct {
 	destination  CelestialObject
 	destSOILower float64
@@ -267,19 +271,12 @@ func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 		// Inclination difference of more than 1 degree, let's change this ASAP since
 		// the faster we go, the more energy is needed.
 		cl = NewOptimalThrust(OptiΔiCL, "inclination change required")
-	} else if r := o.GetApoapsis(); r < wp.destSOIUpper {
-		// Next if the apoapsis isn't going to hit Mars, increase it until it does.
+	} else if norm(o.GetR()) < wp.destSOIUpper {
+		// Next if the radius isn't going to hit Mars, increase it until it does.
 		//cl = Tangential{"not in theoretical SOI"}
-		cl = NewOptimalThrust(OptiΔaCL, "apoapsis not in theoretical SOI")
+		cl = NewOptimalThrust(OptiΔaCL, "radius not in theoretical SOI")
 	} else {
-		// Actually, the best is probably to simply target a given orbit and then
-		// use the sum thrust function of the paper and thrust that until reached.
-		// Then I can simply use the destination orbit from Mars, but that mean
-		// I need to plan precisely the target orbit, which I'm not sure to have yet.
-		// However, the good thing is that I can then use that to find an optimal escape
-		// orbit. I could then use IMD's information.
-
-		// Inclination and apoapsis are good. The best would be to find whether the vehicle will
+		// Inclination and radius are good. The best would be to find whether the vehicle will
 		// hit its apoapsis about when the destination will be there, and if not, change the
 		// argument of perigee. and if so, need to circularize the orbit slightly before encounter
 		// in order to have a slow relative velocity. This will make the capture easier.
@@ -433,4 +430,49 @@ func NewRelativeOrbitTarget(action *WaypointAction, targets []RelativeOE) *Relat
 type RelativeOE struct {
 	Law   ControlLaw
 	Value float64
+}
+
+// PlanetTarget allows to target an orbit.
+type PlanetTarget struct {
+	target       Orbit
+	ctrl         ThrustControl
+	action       *WaypointAction
+	destSOILower float64
+	destSOIUpper float64
+	cleared      bool
+}
+
+// String implements the Waypoint interface.
+func (wp *PlanetTarget) String() string {
+	return fmt.Sprintf("targeting orbit")
+}
+
+// Cleared implements the Waypoint interface.
+func (wp *PlanetTarget) Cleared() bool {
+	return wp.cleared
+}
+
+// Action implements the Waypoint interface.
+func (wp *PlanetTarget) Action() *WaypointAction {
+	if wp.cleared {
+		return wp.action
+	}
+	return nil
+}
+
+// ThrustDirection implements (inefficently) the optimal orbit target.
+func (wp *PlanetTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
+	if r := norm(o.GetR()); r > wp.destSOILower && r < wp.destSOIUpper {
+		wp.cleared = true
+	}
+	return wp.ctrl, wp.cleared
+}
+
+// NewPlanetTarget defines a new orbit target.
+func NewPlanetTarget(body CelestialObject, dt time.Time, action *WaypointAction) *PlanetTarget {
+	target := body.HelioOrbit(dt)
+	destRAtDT := norm(target.GetR())
+	lower := destRAtDT - body.SOI
+	upper := destRAtDT + body.SOI
+	return &PlanetTarget{target, NewOptimalΔOrbit(target), action, lower, upper, false}
 }
