@@ -440,6 +440,7 @@ type PlanetTarget struct {
 	destSOILower float64
 	destSOIUpper float64
 	cleared      bool
+	switchedCtrl bool
 }
 
 // String implements the Waypoint interface.
@@ -463,7 +464,14 @@ func (wp *PlanetTarget) Action() *WaypointAction {
 // ThrustDirection implements (inefficently) the optimal orbit target.
 func (wp *PlanetTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
 	if r := norm(o.GetR()); r > wp.destSOILower && r < wp.destSOIUpper {
-		wp.cleared = true
+		if ok, _ := wp.target.Equals(o); ok {
+			wp.cleared = true
+		} else if !wp.switchedCtrl {
+			fmt.Println("switching optimal control")
+			wp.switchedCtrl = true
+			// We're within the right distance, let's now focus on changing the other orbital elements only.
+			wp.ctrl = NewOptimalΔOrbit(wp.target, OptiΔaCL, OptiΔeCL, OptiΔiCL)
+		}
 	}
 	return wp.ctrl, wp.cleared
 }
@@ -472,7 +480,7 @@ func (wp *PlanetTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, b
 func NewPlanetTarget(body CelestialObject, dt time.Time, action *WaypointAction) *PlanetTarget {
 	target := body.HelioOrbit(dt)
 	destRAtDT := norm(target.GetR())
-	lower := destRAtDT - body.SOI
-	upper := destRAtDT + body.SOI
-	return &PlanetTarget{target, NewOptimalΔOrbit(target), action, lower, upper, false}
+	lower := destRAtDT - body.SOI*0.01
+	upper := destRAtDT + body.SOI*0.01
+	return &PlanetTarget{target, NewOptimalΔOrbit(target), action, lower, upper, false, false}
 }
