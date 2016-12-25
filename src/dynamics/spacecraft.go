@@ -167,8 +167,11 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 // ToXCentric switches the propagation from the current origin to a new one and logs the change.
 func (sc *Spacecraft) ToXCentric(body CelestialObject, dt time.Time, o *Orbit) func() {
 	return func() {
-		sc.logger.Log("level", "notice", "subsys", "astro", "date", dt, "orbiting", body.Name)
+		sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "fuel(kg)", sc.FuelMass, "orbit", o)
 		o.ToXCentric(body, dt)
+		sc.logger.Log("level", "notice", "subsys", "astro", "date", dt, "orbiting", body.Name)
+		sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "fuel(kg)", sc.FuelMass, "orbit", o)
+		sc.LogInfo()
 	}
 }
 

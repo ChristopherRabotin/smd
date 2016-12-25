@@ -279,19 +279,19 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 	case OptiΔaCL:
 		ctrl = func(o Orbit) []float64 {
 			sinν, cosν := math.Sincos(o.ν)
-			return unitΔvFromAngles(math.Atan(o.e*sinν/(1+o.e*cosν)), 0.0)
+			return unitΔvFromAngles(math.Atan2(o.e*sinν, 1+o.e*cosν), 0.0)
 		}
 		break
 	case OptiΔeCL:
 		ctrl = func(o Orbit) []float64 {
 			_, cosE := o.GetSinCosE()
 			sinν, cosν := math.Sincos(o.ν)
-			return unitΔvFromAngles(math.Atan(sinν/(cosE+cosν)), 0.0)
+			return unitΔvFromAngles(math.Atan2(sinν, cosν+cosE), 0.0)
 		}
 		break
 	case OptiΔiCL:
 		ctrl = func(o Orbit) []float64 {
-			return unitΔvFromAngles(0.0, -sign(math.Cos(o.ω+o.ν))*math.Pi/2)
+			return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
 		}
 		break
 	case OptiΔΩCL:
@@ -305,9 +305,9 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 			coti := 1 / math.Tan(o.i)
 			sinν, cosν := math.Sincos(o.ν)
 			sinων := math.Sin(o.ω + o.ν)
-			α := math.Atan((1 + o.e*cosν) * cotν / (2 + o.e*cosν))
+			α := math.Atan2((1+o.e*cosν)*cotν, 2+o.e*cosν)
 			sinαν := math.Sin(α - o.ν)
-			β := math.Atan((o.e * coti * sinων) / (sinαν*(1+o.e*cosν) - math.Cos(α)*sinν))
+			β := math.Atan2(o.e*coti*sinων, sinαν*(1+o.e*cosν)-math.Cos(α)*sinν)
 			return unitΔvFromAngles(α, β)
 		}
 		break
@@ -338,7 +338,7 @@ func NewOptimalΔOrbit(target Orbit, laws ...ControlLaw) *OptimalΔOrbit {
 	cl.ωtarget = target.ω
 	cl.Ωtarget = target.Ω
 	if len(laws) == 0 {
-		laws = []ControlLaw{OptiΔaCL /* OptiΔeCL, OptiΔiCL OptiΔΩCL, OptiΔωCL*/}
+		laws = []ControlLaw{OptiΔaCL, OptiΔeCL, OptiΔiCL, OptiΔΩCL, OptiΔωCL}
 	}
 	cl.controls = make([]ThrustControl, len(laws))
 	for i, law := range laws {

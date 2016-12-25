@@ -444,7 +444,7 @@ type PlanetTarget struct {
 
 // String implements the Waypoint interface.
 func (wp *PlanetTarget) String() string {
-	return fmt.Sprintf("targeting orbit")
+	return fmt.Sprintf("targeting %s", wp.target.String())
 }
 
 // Cleared implements the Waypoint interface.

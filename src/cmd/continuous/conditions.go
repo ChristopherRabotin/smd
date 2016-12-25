@@ -30,7 +30,7 @@ func FromEarthWaypoints() []dynamics.Waypoint {
 		dynamics.NewOutwardSpiral(dynamics.Earth, ref2Sun),
 		dynamics.NewLoiter(time.Duration(12)*time.Hour, nil),
 		// Go straight to Mars destination
-		dynamics.NewPlanetTarget(dynamics.Mars, time.Date(2016, 10, 14, 9, 31, 0, 0, time.UTC), ref2Mars),
+		dynamics.NewPlanetTarget(dynamics.Mars, time.Date(2016, 3+7, 14, 9, 31, 0, 0, time.UTC), ref2Mars),
 		// Wait a week on arrival
 		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil)}
 }
