@@ -258,7 +258,7 @@ A. Ruggiero, S. Marcuccio and M. Andrenucci */
 func unitΔvFromAngles(α, β float64) []float64 {
 	sinα, cosα := math.Sincos(α)
 	sinβ, cosβ := math.Sincos(β)
-	return []float64{cosβ * sinα, cosα * cosβ, sinβ}
+	return []float64{sinα * cosβ, cosα * cosβ, sinβ}
 }
 
 // OptimalThrust is an optimal thrust.
@@ -368,7 +368,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		if floats.EqualWithinAbs(oscul, target, tol) {
 			return 0
 		}
-		return (target - oscul) / (target - init)
+		return (target - oscul) / math.Abs(target-init)
 	}
 
 	for _, ctrl := range cl.controls {
