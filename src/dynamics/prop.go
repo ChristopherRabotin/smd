@@ -17,15 +17,15 @@ const (
 	coast
 	multiOpti
 	// OptiΔaCL allows to optimize thrust for semi major axis change
-	RuggΔaCL
+	OptiΔaCL
 	// OptiΔiCL allows to optimize thrust for inclination change
-	RuggΔiCL
+	OptiΔiCL
 	// OptiΔeCL allows to optimize thrust for eccentricity change
-	RuggΔeCL
+	OptigΔeCL
 	// OptiΔΩCL allows to optimize thrust forRAAN change
-	RuggΔΩCL
+	OptiΔΩCL
 	// OptiΔωCL allows to optimize thrust for argument of perigee change
-	RuggΔωCL
+	OptiΔωCL
 )
 
 func (cl ControlLaw) String() string {
@@ -38,15 +38,15 @@ func (cl ControlLaw) String() string {
 		return "inversion"
 	case coast:
 		return "coast"
-	case RuggΔaCL:
+	case OptiΔaCL:
 		return "optiΔa"
-	case RuggΔeCL:
+	case OptigΔeCL:
 		return "optiΔe"
-	case RuggΔiCL:
+	case OptiΔiCL:
 		return "optiΔi"
-	case RuggΔΩCL:
+	case OptiΔΩCL:
 		return "optiΔΩ"
-	case RuggΔωCL:
+	case OptiΔωCL:
 		return "optiΔω"
 	case multiOpti:
 		return "multiOpti"
@@ -197,7 +197,7 @@ func (cl Tangential) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl Tangential) Control(o Orbit) []float64 {
-	return NewOptimalThrust(RuggΔaCL, cl.reason).Control(o)
+	return NewOptimalThrust(OptiΔaCL, cl.reason).Control(o)
 }
 
 // AntiTangential defines an antitangential thrust control law
@@ -217,7 +217,7 @@ func (cl AntiTangential) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl AntiTangential) Control(o Orbit) []float64 {
-	unitV := NewOptimalThrust(RuggΔaCL, cl.reason).Control(o)
+	unitV := NewOptimalThrust(OptiΔaCL, cl.reason).Control(o)
 	unitV[0] *= -1
 	unitV[1] *= -1
 	unitV[2] *= -1
@@ -276,30 +276,30 @@ func (cl OptimalThrust) Control(o Orbit) []float64 {
 func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 	var ctrl func(o Orbit) []float64
 	switch cl {
-	case RuggΔaCL:
+	case OptiΔaCL:
 		ctrl = func(o Orbit) []float64 {
 			sinν, cosν := math.Sincos(o.ν)
 			return unitΔvFromAngles(math.Atan2(o.e*sinν, 1+o.e*cosν), 0.0)
 		}
 		break
-	case RuggΔeCL:
+	case OptigΔeCL:
 		ctrl = func(o Orbit) []float64 {
 			_, cosE := o.GetSinCosE()
 			sinν, cosν := math.Sincos(o.ν)
 			return unitΔvFromAngles(math.Atan2(sinν, cosν+cosE), 0.0)
 		}
 		break
-	case RuggΔiCL:
+	case OptiΔiCL:
 		ctrl = func(o Orbit) []float64 {
 			return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
 		}
 		break
-	case RuggΔΩCL:
+	case OptiΔΩCL:
 		ctrl = func(o Orbit) []float64 {
 			return unitΔvFromAngles(0.0, sign(math.Sin(o.ω+o.ν))*math.Pi/2)
 		}
 		break
-	case RuggΔωCL:
+	case OptiΔωCL:
 		ctrl = func(o Orbit) []float64 {
 			cotν := 1 / math.Tan(o.ν)
 			coti := 1 / math.Tan(o.i)
@@ -338,7 +338,7 @@ func NewOptimalΔOrbit(target Orbit, laws ...ControlLaw) *OptimalΔOrbit {
 	cl.ωtarget = target.ω
 	cl.Ωtarget = target.Ω
 	if len(laws) == 0 {
-		laws = []ControlLaw{RuggΔaCL, RuggΔeCL, RuggΔiCL, RuggΔΩCL, RuggΔωCL}
+		laws = []ControlLaw{OptiΔaCL, OptigΔeCL, OptiΔiCL, OptiΔΩCL, OptiΔωCL}
 	}
 	cl.controls = make([]ThrustControl, len(laws))
 	for i, law := range laws {
@@ -374,27 +374,27 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	for _, ctrl := range cl.controls {
 		var oscul, init, target, tol float64
 		switch ctrl.Type() {
-		case RuggΔaCL:
+		case OptiΔaCL:
 			oscul = o.a
 			init = cl.ainit
 			target = cl.atarget
 			tol = distanceε
-		case RuggΔeCL:
+		case OptigΔeCL:
 			oscul = o.e
 			init = cl.einit
 			target = cl.etarget
 			tol = eccentricityε
-		case RuggΔiCL:
+		case OptiΔiCL:
 			oscul = o.i
 			init = cl.iinit
 			target = cl.itarget
 			tol = angleε
-		case RuggΔΩCL:
+		case OptiΔΩCL:
 			oscul = o.Ω
 			init = cl.Ωinit
 			target = cl.Ωtarget
 			tol = angleε
-		case RuggΔωCL:
+		case OptiΔωCL:
 			oscul = o.ω
 			init = cl.ωinit
 			target = cl.ωtarget

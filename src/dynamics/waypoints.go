@@ -38,6 +38,19 @@ type Waypoint interface {
 
 // NewOutwardSpiral defines a new outward spiral from a celestial object.
 func NewOutwardSpiral(body CelestialObject, action *WaypointAction) *ReachDistance {
+	/*
+		Add the following possibilities, where:
+		the delta V vector for me is f_r, f_theta, f_h.
+		+Pinkham's spiral:
+		f_r = (q*sqrt(mu*p)*v_r)/(2*r**2)
+		f_theta = (q*sqrt(mu*p)*v_theta)/(2*r**2)
+		p = p_s * exp*(q0)
+		r = (p*(1+q**1))/(1+exp(q0)*(1+q**2)*k*cos(theta-omega))
+
+		+ Lawden's spiral
+		r = (r_s*(sin alpha)^6)/(1-3*(sin(alpha))^2)
+		theta = theta_0 - 4*alpha-3*cotan(alpha) -- cotan == cot
+	*/
 	return &ReachDistance{body.SOI, action, false}
 }
 
@@ -270,11 +283,11 @@ func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 	if math.Abs(o.i-wp.cacheDest.i) > (0.2 / (2 * math.Pi)) {
 		// Inclination difference of more than 1 degree, let's change this ASAP since
 		// the faster we go, the more energy is needed.
-		cl = NewOptimalThrust(RuggΔiCL, "inclination change required")
+		cl = NewOptimalThrust(OptiΔiCL, "inclination change required")
 	} else if norm(o.GetR()) < wp.destSOIUpper {
 		// Next if the radius isn't going to hit Mars, increase it until it does.
 		//cl = Tangential{"not in theoretical SOI"}
-		cl = NewOptimalThrust(RuggΔaCL, "radius not in theoretical SOI")
+		cl = NewOptimalThrust(OptiΔaCL, "radius not in theoretical SOI")
 	} else {
 		// Inclination and radius are good. The best would be to find whether the vehicle will
 		// hit its apoapsis about when the destination will be there, and if not, change the
@@ -399,15 +412,15 @@ func (wp *RelativeOrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustCon
 		fmt.Printf("initial: %s\n", wp.target.String())
 		for _, oe := range wp.targets {
 			switch oe.Law {
-			case RuggΔaCL:
+			case OptiΔaCL:
 				wp.target.a += oe.Value
-			case RuggΔeCL:
+			case OptigΔeCL:
 				wp.target.e += oe.Value
-			case RuggΔiCL:
+			case OptiΔiCL:
 				wp.target.i += Deg2rad(oe.Value)
-			case RuggΔΩCL:
+			case OptiΔΩCL:
 				wp.target.Ω += Deg2rad(oe.Value)
-			case RuggΔωCL:
+			case OptiΔωCL:
 				wp.target.ω += Deg2rad(oe.Value)
 			}
 		}
