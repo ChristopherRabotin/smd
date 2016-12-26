@@ -151,13 +151,13 @@ func (o *Orbit) Equals(o1 Orbit) (bool, error) {
 	}
 	if !floats.EqualWithinAbs(o.a, o1.a, distanceε) {
 		return false, errors.New("semi major axis invalid")
+	}
+	if !floats.EqualWithinAbs(o.e, o1.e, eccentricityε) {
+		return false, errors.New("eccentricity invalid")
+	}
+	if !floats.EqualWithinAbs(o.i, o1.i, angleε) {
+		return false, errors.New("inclination invalid")
 	} /*
-		if !floats.EqualWithinAbs(o.e, o1.e, eccentricityε) {
-			return false, errors.New("eccentricity invalid")
-		}
-		if !floats.EqualWithinAbs(o.i, o1.i, angleε) {
-			return false, errors.New("inclination invalid")
-		}
 		if !floats.EqualWithinAbs(o.Ω, o1.Ω, angleε) {
 			return false, errors.New("RAAN invalid")
 		}

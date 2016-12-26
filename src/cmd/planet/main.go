@@ -43,7 +43,8 @@ func main() {
 	curCgItem := &dynamics.CgItems{Class: "spacecraft", Name: filename, StartTime: start.String(), EndTime: "", Center: "Sun", Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
 	// Propagate the Earth.
 	for start.Before(end) {
-		R, V := dynamics.Earth.HelioOrbit(start)
+		orb := dynamics.Earth.HelioOrbit(start)
+		R, V := orb.GetRV()
 		is := dynamics.CgInterpolatedState{JD: julian.TimeToJD(start), Position: R, Velocity: V}
 		if _, err := f.WriteString("\n" + is.ToText()); err != nil {
 			panic(err)

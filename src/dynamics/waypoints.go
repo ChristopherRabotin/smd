@@ -270,11 +270,11 @@ func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 	if math.Abs(o.i-wp.cacheDest.i) > (0.2 / (2 * math.Pi)) {
 		// Inclination difference of more than 1 degree, let's change this ASAP since
 		// the faster we go, the more energy is needed.
-		cl = NewOptimalThrust(OptiΔiCL, "inclination change required")
+		cl = NewOptimalThrust(RuggΔiCL, "inclination change required")
 	} else if norm(o.GetR()) < wp.destSOIUpper {
 		// Next if the radius isn't going to hit Mars, increase it until it does.
 		//cl = Tangential{"not in theoretical SOI"}
-		cl = NewOptimalThrust(OptiΔaCL, "radius not in theoretical SOI")
+		cl = NewOptimalThrust(RuggΔaCL, "radius not in theoretical SOI")
 	} else {
 		// Inclination and radius are good. The best would be to find whether the vehicle will
 		// hit its apoapsis about when the destination will be there, and if not, change the
@@ -399,15 +399,15 @@ func (wp *RelativeOrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustCon
 		fmt.Printf("initial: %s\n", wp.target.String())
 		for _, oe := range wp.targets {
 			switch oe.Law {
-			case OptiΔaCL:
+			case RuggΔaCL:
 				wp.target.a += oe.Value
-			case OptiΔeCL:
+			case RuggΔeCL:
 				wp.target.e += oe.Value
-			case OptiΔiCL:
+			case RuggΔiCL:
 				wp.target.i += Deg2rad(oe.Value)
-			case OptiΔΩCL:
+			case RuggΔΩCL:
 				wp.target.Ω += Deg2rad(oe.Value)
-			case OptiΔωCL:
+			case RuggΔωCL:
 				wp.target.ω += Deg2rad(oe.Value)
 			}
 		}
@@ -463,16 +463,15 @@ func (wp *PlanetTarget) Action() *WaypointAction {
 
 // ThrustDirection implements (inefficently) the optimal orbit target.
 func (wp *PlanetTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if r := norm(o.GetR()); r > wp.destSOILower && r < wp.destSOIUpper {
-		if ok, _ := wp.target.Equals(o); ok {
-			wp.cleared = true
-		} else if !wp.switchedCtrl {
-			fmt.Println("switching optimal control")
-			wp.switchedCtrl = true
-			// We're within the right distance, let's now focus on changing the other orbital elements only.
-			wp.ctrl = NewOptimalΔOrbit(wp.target, OptiΔaCL, OptiΔeCL, OptiΔiCL)
-		}
-	}
+	//	if r := norm(o.GetR()); r > wp.destSOILower && r < wp.destSOIUpper {
+	if ok, _ := wp.target.Equals(o); ok {
+		wp.cleared = true
+	} /*else if !wp.switchedCtrl {
+		fmt.Println("switching optimal control")
+		wp.switchedCtrl = true
+		wp.ctrl = NewOptimalΔOrbit(wp.target, OptiΔeCL, OptiΔiCL)
+	}*/
+	//}
 	return wp.ctrl, wp.cleared
 }
 
@@ -480,7 +479,7 @@ func (wp *PlanetTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, b
 func NewPlanetTarget(body CelestialObject, dt time.Time, action *WaypointAction) *PlanetTarget {
 	target := body.HelioOrbit(dt)
 	destRAtDT := norm(target.GetR())
-	lower := destRAtDT - body.SOI*0.01
-	upper := destRAtDT + body.SOI*0.01
+	lower := destRAtDT + body.SOI*0.01
+	upper := destRAtDT + body.SOI*0.10
 	return &PlanetTarget{target, NewOptimalΔOrbit(target), action, lower, upper, false, false}
 }
