@@ -135,12 +135,9 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			continue
 		}
 		Δv := ctrl.Control(*o)
-		if Δv[0] == 0 && Δv[1] == 0 && Δv[2] == 0 {
-			// Nothing to do, we're probably just loitering.
-			return []float64{0, 0, 0}, 0
-		}
 		// Let's normalize the allocation.
 		if ΔvNorm := norm(Δv); ΔvNorm == 0 {
+			// Nothing to do, we're probably just loitering.
 			return []float64{0, 0, 0}, 0
 		} else if math.Abs(ΔvNorm-1) > 1e-12 {
 			panic(fmt.Errorf("Δv = %+v! Normalization not implemented yet:", Δv))

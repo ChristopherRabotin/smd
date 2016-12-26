@@ -14,6 +14,9 @@ func norm(v []float64) float64 {
 // unit returns the unit vector of a given vector.
 func unit(a []float64) (b []float64) {
 	n := norm(a)
+	if n == 0 {
+		return []float64{0, 0, 0}
+	}
 	b = make([]float64, len(a))
 	for i, val := range a {
 		b[i] = val / n

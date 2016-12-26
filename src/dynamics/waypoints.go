@@ -340,7 +340,7 @@ func NewPlanetBound(destination CelestialObject, action *WaypointAction) *Planet
 // OrbitTarget allows to target an orbit.
 type OrbitTarget struct {
 	target  Orbit
-	ctrl    ThrustControl
+	ctrl    *OptimalΔOrbit
 	action  *WaypointAction
 	cleared bool
 }
@@ -363,9 +363,11 @@ func (wp *OrbitTarget) Action() *WaypointAction {
 	return nil
 }
 
-// ThrustDirection implements (inefficently) the optimal orbit target.
+// ThrustDirection implements the optimal orbit target.
 func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
 	if ok, _ := wp.target.Equals(o); ok {
+		wp.cleared = true
+	} else if wp.ctrl.cleared {
 		wp.cleared = true
 	}
 	return wp.ctrl, wp.cleared
@@ -373,76 +375,7 @@ func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 
 // NewOrbitTarget defines a new orbit target.
 func NewOrbitTarget(target Orbit, action *WaypointAction) *OrbitTarget {
-	return &OrbitTarget{target, NewOptimalΔOrbit(target), action, false}
-}
-
-// RelativeOrbitTarget allows to target an orbit relative from the first control.
-type RelativeOrbitTarget struct {
-	initd   bool
-	targets []RelativeOE
-	target  Orbit
-	ctrl    ThrustControl
-	action  *WaypointAction
-	cleared bool
-}
-
-// String implements the Waypoint interface.
-func (wp *RelativeOrbitTarget) String() string {
-	return fmt.Sprintf("targeting relative orbit")
-}
-
-// Cleared implements the Waypoint interface.
-func (wp *RelativeOrbitTarget) Cleared() bool {
-	return wp.cleared
-}
-
-// Action implements the Waypoint interface.
-func (wp *RelativeOrbitTarget) Action() *WaypointAction {
-	if wp.cleared {
-		return wp.action
-	}
-	return nil
-}
-
-// ThrustDirection implements (inefficently) the optimal orbit target.
-func (wp *RelativeOrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if !wp.initd {
-		// Initialize the relative target.
-		wp.target = Orbit{o.a, o.e, o.i, o.Ω, o.ω, o.ν, o.Origin, 0.0, nil, nil}
-		fmt.Printf("initial: %s\n", wp.target.String())
-		for _, oe := range wp.targets {
-			switch oe.Law {
-			case OptiΔaCL:
-				wp.target.a += oe.Value
-			case OptigΔeCL:
-				wp.target.e += oe.Value
-			case OptiΔiCL:
-				wp.target.i += Deg2rad(oe.Value)
-			case OptiΔΩCL:
-				wp.target.Ω += Deg2rad(oe.Value)
-			case OptiΔωCL:
-				wp.target.ω += Deg2rad(oe.Value)
-			}
-		}
-		wp.initd = true
-		wp.ctrl = NewOptimalΔOrbit(wp.target)
-		return Coast{}, false
-	}
-	if ok, _ := wp.target.Equals(o); ok {
-		wp.cleared = true
-	}
-	return wp.ctrl, wp.cleared
-}
-
-// NewRelativeOrbitTarget defines a new orbit target.
-func NewRelativeOrbitTarget(action *WaypointAction, targets []RelativeOE) *RelativeOrbitTarget {
-	return &RelativeOrbitTarget{false, targets, Orbit{}, new(OptimalΔOrbit), action, false}
-}
-
-// RelativeOE is used in NewRelativeOrbitTarget to specify what OE needs change.
-type RelativeOE struct {
-	Law   ControlLaw
-	Value float64
+	return &OrbitTarget{target, NewOptimalΔOrbit(target, Ruggerio), action, false}
 }
 
 // PlanetTarget allows to target an orbit.
@@ -494,5 +427,5 @@ func NewPlanetTarget(body CelestialObject, dt time.Time, action *WaypointAction)
 	destRAtDT := norm(target.GetR())
 	lower := destRAtDT + body.SOI*0.01
 	upper := destRAtDT + body.SOI*0.10
-	return &PlanetTarget{target, NewOptimalΔOrbit(target), action, lower, upper, false, false}
+	return &PlanetTarget{target, NewOptimalΔOrbit(target, Ruggerio), action, lower, upper, false, false}
 }

@@ -105,3 +105,66 @@ func TestAstrocroFrame(t *testing.T) {
 		t.Fatal("V1 == V2")
 	}
 }
+
+// TestRuggerioOEa runs the test case from their 2012 conference paper
+func TestRuggerioOEa(t *testing.T) {
+	oInit := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
+	oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
+	eps := NewUnlimitedEPS()
+	thrusters := []Thruster{new(PPS1350)} // VASIMR (approx.)
+	dryMass := 300.0
+	fuelMass := 67.0
+	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	start := time.Now()
+	end := start.Add(time.Duration(30.5*24) * time.Hour) // just after the expected time
+	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
+	astro.Propagate()
+	if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 14, 2) {
+		t.Fatal("too much fuel used")
+	}
+	if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
+		t.Fatal("Ruggerio semi-major axis failed")
+	}
+	t.Logf("final orbit: \n%s", astro.Orbit)
+}
+
+// TestRuggerioOEi runs the test case from their 2012 conference paper
+func TestRuggerioOEi(t *testing.T) {
+	oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
+	oTarget := NewOrbitFromOE(Earth.Radius+350, 0.001, 51.6, 1, 1, 1, Earth)
+	eps := NewUnlimitedEPS()
+	thrusters := []Thruster{new(PPS1350)} // VASIMR (approx.)
+	dryMass := 300.0
+	fuelMass := 67.0
+	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	start := time.Now()
+	end := start.Add(time.Duration(54*24) * time.Hour) // just after the expected time
+	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
+	astro.Propagate()
+	if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 25.8, 2) {
+		t.Fatal("too much fuel used")
+	}
+	if !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) {
+		t.Fatal("Ruggerio inclination failed")
+	}
+	t.Logf("final orbit: \n%s", astro.Orbit)
+}
+
+// TestMultiRuggerio runs the test case from their 2012 conference paper
+func TestMultiRuggerio(t *testing.T) {
+	oInit := NewOrbitFromOE(24396, 0.7283, 7, 1, 1, 1, Earth)
+	oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
+	eps := NewUnlimitedEPS()
+	thrusters := []Thruster{new(PPS1350)} // VASIMR (approx.)
+	dryMass := 300.0
+	fuelMass := 67.0
+	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	start := time.Now()
+	end := start.Add(time.Duration(234*24) * time.Hour) // just after the expected time
+	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
+	astro.Propagate()
+	if ok, err := astro.Orbit.Equals(*oTarget); !ok {
+		t.Logf("final orbit: \n%s", astro.Orbit)
+		t.Fatalf("Ruggerio failed: %s", err)
+	}
+}

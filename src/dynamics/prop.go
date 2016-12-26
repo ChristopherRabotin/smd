@@ -10,6 +10,9 @@ import (
 // ControlLaw defines an enum of control laws.
 type ControlLaw uint8
 
+// ControlLawType defines the way to sum different Lyuapunov optimal CL
+type ControlLawType uint8
+
 const (
 	tangential ControlLaw = iota + 1
 	antiTangential
@@ -21,11 +24,15 @@ const (
 	// OptiΔiCL allows to optimize thrust for inclination change
 	OptiΔiCL
 	// OptiΔeCL allows to optimize thrust for eccentricity change
-	OptigΔeCL
+	OptiΔeCL
 	// OptiΔΩCL allows to optimize thrust forRAAN change
 	OptiΔΩCL
 	// OptiΔωCL allows to optimize thrust for argument of perigee change
 	OptiΔωCL
+	// Ruggerio uses the eponym method of combining the control laws
+	Ruggerio ControlLawType = iota + 1
+	// Petropoulos idem as Ruggerio, but with Petropoulos
+	Petropoulos
 )
 
 func (cl ControlLaw) String() string {
@@ -40,7 +47,7 @@ func (cl ControlLaw) String() string {
 		return "coast"
 	case OptiΔaCL:
 		return "optiΔa"
-	case OptigΔeCL:
+	case OptiΔeCL:
 		return "optiΔe"
 	case OptiΔiCL:
 		return "optiΔi"
@@ -282,7 +289,7 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 			return unitΔvFromAngles(math.Atan2(o.e*sinν, 1+o.e*cosν), 0.0)
 		}
 		break
-	case OptigΔeCL:
+	case OptiΔeCL:
 		ctrl = func(o Orbit) []float64 {
 			_, cosE := o.GetSinCosE()
 			sinν, cosν := math.Sincos(o.ν)
@@ -319,26 +326,29 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 
 // OptimalΔOrbit combines all the control laws from Ruggiero et al.
 type OptimalΔOrbit struct {
-	Initd          bool
+	Initd, cleared bool
 	ainit, atarget float64
 	iinit, itarget float64
 	einit, etarget float64
 	Ωinit, Ωtarget float64
 	ωinit, ωtarget float64
 	controls       []ThrustControl
+	method         ControlLawType
 	GenericCL
 }
 
 // NewOptimalΔOrbit generates a new OptimalΔOrbit based on the provided target orbit.
-func NewOptimalΔOrbit(target Orbit, laws ...ControlLaw) *OptimalΔOrbit {
+func NewOptimalΔOrbit(target Orbit, method ControlLawType, laws ...ControlLaw) *OptimalΔOrbit {
 	cl := OptimalΔOrbit{}
+	cl.cleared = false
+	cl.method = method
 	cl.atarget = target.a
 	cl.etarget = target.e
 	cl.itarget = target.i
 	cl.ωtarget = target.ω
 	cl.Ωtarget = target.Ω
 	if len(laws) == 0 {
-		laws = []ControlLaw{OptiΔaCL, OptigΔeCL, OptiΔiCL, OptiΔΩCL, OptiΔωCL}
+		laws = []ControlLaw{OptiΔaCL, OptiΔeCL, OptiΔiCL, OptiΔΩCL, OptiΔωCL}
 	}
 	cl.controls = make([]ThrustControl, len(laws))
 	for i, law := range laws {
@@ -346,6 +356,10 @@ func NewOptimalΔOrbit(target Orbit, laws ...ControlLaw) *OptimalΔOrbit {
 	}
 	cl.GenericCL = GenericCL{"ΔOrbit", multiOpti}
 	return &cl
+}
+
+func (cl *OptimalΔOrbit) String() string {
+	return "OptimalΔOrbit"
 }
 
 // Control implements the ThrustControl interface.
@@ -358,55 +372,81 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		cl.Ωinit = o.Ω
 		cl.ωinit = o.ω
 		cl.Initd = true
+		if len(cl.controls) == 5 {
+			// Let's populate this with the appropriate laws, so we're resetting it.
+			cl.controls = make([]ThrustControl, 0)
+			if !floats.EqualWithinAbs(cl.ainit, cl.atarget, distanceε) {
+				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔaCL, "Δa"))
+			}
+			if !floats.EqualWithinAbs(cl.einit, cl.etarget, eccentricityε) {
+				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔeCL, "Δe"))
+			}
+			if !floats.EqualWithinAbs(cl.iinit, cl.itarget, angleε) {
+				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔiCL, "Δi"))
+			}
+			if !floats.EqualWithinAbs(cl.Ωinit, cl.Ωtarget, angleε) {
+				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔΩCL, "ΔΩ"))
+			}
+			if !floats.EqualWithinAbs(cl.ωinit, cl.ωtarget, angleε) {
+				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔωCL, "Δω"))
+			}
+		}
 		return thrust
 	}
 
-	factor := func(oscul, init, target, tol float64) float64 {
-		if floats.EqualWithinAbs(init, target, tol) {
-			return 1 // Don't want no NaNs now.
+	if cl.method == Ruggerio {
+		factor := func(oscul, init, target, tol float64) float64 {
+			if floats.EqualWithinAbs(init, target, tol) {
+				return 0 // Don't want no NaNs now.
+			}
+			if floats.EqualWithinAbs(oscul, target, tol) {
+				return 0
+			}
+			return (target - oscul) / (target - init)
 		}
-		if floats.EqualWithinAbs(oscul, target, tol) {
-			return 0
-		}
-		return (target - oscul) / math.Abs(target-init)
-	}
 
-	for _, ctrl := range cl.controls {
-		var oscul, init, target, tol float64
-		switch ctrl.Type() {
-		case OptiΔaCL:
-			oscul = o.a
-			init = cl.ainit
-			target = cl.atarget
-			tol = distanceε
-		case OptigΔeCL:
-			oscul = o.e
-			init = cl.einit
-			target = cl.etarget
-			tol = eccentricityε
-		case OptiΔiCL:
-			oscul = o.i
-			init = cl.iinit
-			target = cl.itarget
-			tol = angleε
-		case OptiΔΩCL:
-			oscul = o.Ω
-			init = cl.Ωinit
-			target = cl.Ωtarget
-			tol = angleε
-		case OptiΔωCL:
-			oscul = o.ω
-			init = cl.ωinit
-			target = cl.ωtarget
-			tol = angleε
-		}
-		fact := factor(oscul, init, target, tol)
-		if fact != 0 {
-			tmpThrust := ctrl.Control(o)
-			for i := 0; i < 3; i++ {
-				thrust[i] += fact * tmpThrust[i]
+		for _, ctrl := range cl.controls {
+			var oscul, init, target, tol float64
+			switch ctrl.Type() {
+			case OptiΔaCL:
+				oscul = o.a
+				init = cl.ainit
+				target = cl.atarget
+				tol = distanceε
+			case OptiΔeCL:
+				oscul = o.e
+				init = cl.einit
+				target = cl.etarget
+				tol = eccentricityε
+			case OptiΔiCL:
+				oscul = o.i
+				init = cl.iinit
+				target = cl.itarget
+				tol = angleε
+			case OptiΔΩCL:
+				oscul = o.Ω
+				init = cl.Ωinit
+				target = cl.Ωtarget
+				tol = angleε
+			case OptiΔωCL:
+				oscul = o.ω
+				init = cl.ωinit
+				target = cl.ωtarget
+				tol = angleε
+			}
+			fact := factor(oscul, init, target, tol)
+			if fact != 0 {
+				tmpThrust := ctrl.Control(o)
+				for i := 0; i < 3; i++ {
+					thrust[i] += fact * tmpThrust[i]
+				}
 			}
 		}
 	}
-	return unit(thrust)
+	rtn := unit(thrust)
+	if floats.EqualWithinAbs(norm(rtn), 0, 1e-12) {
+		// Only reached if there is no more thrust to apply.
+		cl.cleared = true
+	}
+	return rtn
 }

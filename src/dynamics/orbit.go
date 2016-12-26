@@ -157,13 +157,13 @@ func (o *Orbit) Equals(o1 Orbit) (bool, error) {
 	}
 	if !floats.EqualWithinAbs(o.i, o1.i, angleε) {
 		return false, errors.New("inclination invalid")
-	} /*
-		if !floats.EqualWithinAbs(o.Ω, o1.Ω, angleε) {
-			return false, errors.New("RAAN invalid")
-		}
-		if !floats.EqualWithinAbs(o.ω, o1.ω, angleε) {
-			return false, errors.New("argument of perigee invalid")
-		}*/
+	}
+	if !floats.EqualWithinAbs(o.Ω, o1.Ω, angleε) {
+		return false, errors.New("RAAN invalid")
+	}
+	if !floats.EqualWithinAbs(o.ω, o1.ω, angleε) {
+		return false, errors.New("argument of perigee invalid")
+	}
 	return true, nil
 }
 
