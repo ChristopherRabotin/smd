@@ -83,15 +83,16 @@ func (a *Astrocodile) Propagate() {
 			a.LogStatus()
 		}
 	}()
-
+	vInit := norm(a.Orbit.GetV())
 	ode.NewRK4(0, stepSize, a).Solve() // Blocking.
+	vFinal := norm(a.Orbit.GetV())
 	a.done = true
 	duration := a.CurrentDT.Sub(a.StartDT)
 	durStr := duration.String()
 	if duration.Hours() > 24 {
 		durStr += fmt.Sprintf(" (~%.1fd)", duration.Hours()/24)
 	}
-	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "duration", durStr)
+	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "duration", durStr, "Δv(km/s)", math.Abs(vFinal-vInit))
 	a.LogStatus()
 	if a.Vehicle.FuelMass < 0 {
 		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)

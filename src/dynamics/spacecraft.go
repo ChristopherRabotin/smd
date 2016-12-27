@@ -151,10 +151,12 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 				fuel += tThrust / (isp * 9.807)
 			} // Error handling of EPS happens in EPS subsystem.
 		}
-		thrust /= 1e3 // Convert thrust from m/s^-2 to km/s^-2
-		Δv[0] *= thrust / sc.Mass(dt)
-		Δv[1] *= thrust / sc.Mass(dt)
-		Δv[2] *= thrust / sc.Mass(dt)
+		thrust /= sc.Mass(dt) // Convert kg*m/(s^-2) to m/(s^-2)
+		thrust /= 1e3         // Convert m/s^-2 to km/s^-2
+		// Apply norm of the thrust to each component of the normalized Δv vector
+		Δv[0] *= thrust
+		Δv[1] *= thrust
+		Δv[2] *= thrust
 		//fmt.Printf("Δv=%+v\t|Δv|=%f km/s-2\n", Δv, norm(Δv))
 		return Δv, fuel
 	}

@@ -11,8 +11,8 @@ import (
 
 const (
 	eccentricityε = 1e-2
-	angleε        = (5e-1 / 360) * (2 * math.Pi) // Within 0.5 degrees.
-	distanceε     = 1e2
+	angleε        = (1e-3 / 360) * (2 * math.Pi) // Within 0.5 degrees.
+	distanceε     = 5e1                          // 50 km
 )
 
 // Orbit defines an orbit via its orbital elements.

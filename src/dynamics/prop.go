@@ -299,7 +299,8 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 		break
 	case OptiΔiCL:
 		ctrl = func(o Orbit) []float64 {
-			return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
+			//return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
+			return unitΔvFromAngles(0.0, math.Pi/2)
 		}
 		break
 	case OptiΔΩCL:
@@ -396,6 +397,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	}
 
 	if cl.method == Ruggerio {
+		cl.cleared = true
 		factor := func(oscul, init, target, tol float64) float64 {
 			if floats.EqualWithinAbs(init, target, tol) {
 				return 0 // Don't want no NaNs now.
@@ -437,6 +439,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			}
 			fact := factor(oscul, init, target, tol)
 			if fact != 0 {
+				cl.cleared = false // We're not actually done.
 				tmpThrust := ctrl.Control(o)
 				for i := 0; i < 3; i++ {
 					thrust[i] += fact * tmpThrust[i]
@@ -444,12 +447,5 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			}
 		}
 	}
-	/*rtn := unit(thrust)
-	// This isn't right: at some true anomaly, the thrust may go to zero but we're not at the target yet.
-	if floats.EqualWithinAbs(norm(rtn), 0, 1e-12) {
-		// Only reached if there is no more thrust to apply.
-		cl.cleared = true
-	}
-	return rtn*/
 	return unit(thrust)
 }

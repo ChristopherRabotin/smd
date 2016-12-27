@@ -365,11 +365,12 @@ func (wp *OrbitTarget) Action() *WaypointAction {
 
 // ThrustDirection implements the optimal orbit target.
 func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if ok, _ := wp.target.Equals(o); ok {
+	if ok, err := wp.target.Equals(o); ok {
 		wp.cleared = true
-	} /*else if wp.ctrl.cleared {
+	} else if wp.ctrl.cleared {
+		fmt.Printf("[WARNING] Waypoint cleared *but* %s\n", err)
 		wp.cleared = true
-	}*/
+	}
 	return wp.ctrl, wp.cleared
 }
 
