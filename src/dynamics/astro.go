@@ -192,6 +192,7 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	h := tmpOrbit.GetH()
 	r := norm(tmpOrbit.GetR())
 	ζ := tmpOrbit.ω + tmpOrbit.ν
+	sini, cosi := math.Sincos(tmpOrbit.i)
 	sinν, cosν := math.Sincos(tmpOrbit.ν)
 	sinζ, cosζ := math.Sincos(ζ)
 	fDot = make([]float64, 7) // init return vector
@@ -204,9 +205,10 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	// di/dt
 	fDot[2] = math.Mod(Δv[2]*r*cosζ/h, 2*math.Pi)
 	// dΩ/dt
-	fDot[3] = math.Mod(Δv[2]*r*sinζ/(h*math.Sin(tmpOrbit.i)), 2*math.Pi)
+	fDot[3] = math.Mod(Δv[2]*r*sinζ/(h*sini), 2*math.Pi)
+	//fmt.Printf("Δv=%+v\tdi/dt=%.16f\tdΩ/dt=%.16f\n", Δv, fDot[2], fDot[3])
 	// dω/dt
-	fDot[4] = math.Mod((-p*Δv[0]*cosν+(p+r)*Δv[1]*sinν)/(h*tmpOrbit.e)-fDot[3]*math.Cos(tmpOrbit.i), 2*math.Pi)
+	fDot[4] = math.Mod((-p*Δv[0]*cosν+(p+r)*Δv[1]*sinν)/(h*tmpOrbit.e)-fDot[3]*cosi, 2*math.Pi)
 	// dν/dt -- as per Vallado, page 636 (with errata of 4th edition.)
 	fDot[5] = math.Mod(h/(r*r)+((p*cosν*Δv[0])-(p+r)*sinν*Δv[1])/(tmpOrbit.e*h), 2*math.Pi)
 	// d(fuel)/dt

@@ -11,7 +11,7 @@ import (
 
 const (
 	eccentricityε = 1e-2
-	angleε        = 5e-1 / (2 * math.Pi) // Within 0.5 degrees.
+	angleε        = (5e-1 / 360) * (2 * math.Pi) // Within 0.5 degrees.
 	distanceε     = 1e2
 )
 

@@ -111,9 +111,10 @@ func (t *PPS1350) Max() (voltage, power uint) {
 }
 
 // Thrust implements the Thruster interface.
-func (t *PPS1350) Thrust(voltage, power uint) (thrust, fuelMass float64) {
+func (t *PPS1350) Thrust(voltage, power uint) (thrust, isp float64) {
 	if voltage == 350 && power == 2500 {
-		return 140 * 1e-3, 1800
+		//return 140 * 1e-3, 1800
+		return 89e-3, 1650
 	}
 	panic("unsupported voltage or power provided")
 }
@@ -443,10 +444,12 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			}
 		}
 	}
-	rtn := unit(thrust)
+	/*rtn := unit(thrust)
+	// This isn't right: at some true anomaly, the thrust may go to zero but we're not at the target yet.
 	if floats.EqualWithinAbs(norm(rtn), 0, 1e-12) {
 		// Only reached if there is no more thrust to apply.
 		cl.cleared = true
 	}
-	return rtn
+	return rtn*/
+	return unit(thrust)
 }

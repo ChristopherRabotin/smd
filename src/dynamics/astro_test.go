@@ -1,7 +1,6 @@
 package dynamics
 
 import (
-	"math"
 	"testing"
 	"time"
 
@@ -9,7 +8,7 @@ import (
 )
 
 /* Testing here should propagate a given a orbit which is created via OEs and check that only nu changes.*/
-
+/*
 func TestAstrocroChanStop(t *testing.T) {
 	// Define a new orbit.
 	a0 := Earth.Radius + 400
@@ -111,7 +110,7 @@ func TestRuggerioOEa(t *testing.T) {
 	oInit := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
 	oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
 	eps := NewUnlimitedEPS()
-	thrusters := []Thruster{new(PPS1350)} // VASIMR (approx.)
+	thrusters := []Thruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
 	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
@@ -126,13 +125,13 @@ func TestRuggerioOEa(t *testing.T) {
 		t.Fatal("too much fuel used")
 	}
 }
-
+*/
 // TestRuggerioOEi runs the test case from their 2012 conference paper
 func TestRuggerioOEi(t *testing.T) {
 	oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
 	oTarget := NewOrbitFromOE(Earth.Radius+350, 0.001, 51.6, 1, 1, 1, Earth)
 	eps := NewUnlimitedEPS()
-	thrusters := []Thruster{new(PPS1350)} // VASIMR (approx.)
+	thrusters := []Thruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
 	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
@@ -148,12 +147,13 @@ func TestRuggerioOEi(t *testing.T) {
 	}
 }
 
+/*
 // TestRuggerioOEΩ runs the test case from their 2012 conference paper
 func TestRuggerioOEΩ(t *testing.T) {
 	oInit := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 1, 1, Earth)
 	oTarget := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 5, 1, 1, Earth)
 	eps := NewUnlimitedEPS()
-	thrusters := []Thruster{new(PPS1350)} // VASIMR (approx.)
+	thrusters := []Thruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
 	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
@@ -174,7 +174,7 @@ func TestMultiRuggerio(t *testing.T) {
 	oInit := NewOrbitFromOE(24396, 0.7283, 7, 1, 1, 1, Earth)
 	oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
 	eps := NewUnlimitedEPS()
-	thrusters := []Thruster{new(PPS1350)} // VASIMR (approx.)
+	thrusters := []Thruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
 	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
@@ -187,3 +187,4 @@ func TestMultiRuggerio(t *testing.T) {
 		t.Fatalf("Ruggerio failed: %s", err)
 	}
 }
+*/

@@ -367,9 +367,9 @@ func (wp *OrbitTarget) Action() *WaypointAction {
 func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
 	if ok, _ := wp.target.Equals(o); ok {
 		wp.cleared = true
-	} else if wp.ctrl.cleared {
+	} /*else if wp.ctrl.cleared {
 		wp.cleared = true
-	}
+	}*/
 	return wp.ctrl, wp.cleared
 }
 
