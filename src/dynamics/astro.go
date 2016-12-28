@@ -192,26 +192,27 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	p := tmpOrbit.GetSemiParameter()
 	h := tmpOrbit.GetH()
 	r := norm(tmpOrbit.GetR())
-	ζ := tmpOrbit.ω + tmpOrbit.ν
 	sini, cosi := math.Sincos(tmpOrbit.i)
 	sinν, cosν := math.Sincos(tmpOrbit.ν)
-	sinζ, cosζ := math.Sincos(ζ)
+	sinζ, cosζ := math.Sincos(tmpOrbit.ω + tmpOrbit.ν)
 	fDot = make([]float64, 7) // init return vector
 	// Let's add the thrust to increase the magnitude of the velocity.
 	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
+	fR := Δv[0]
+	fS := Δv[1]
+	fW := Δv[2]
 	// da/dt
-	fDot[0] = (2 * tmpOrbit.a * tmpOrbit.a * (tmpOrbit.e*Δv[0]*sinν + (p*Δv[1])/r)) / h
+	fDot[0] = ((2 * tmpOrbit.a * tmpOrbit.a) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
 	// de/dt
-	fDot[1] = (p*Δv[0]*sinν + Δv[1]*((p+r)*cosν+r*tmpOrbit.e)) / h
+	fDot[1] = (p*sinν*fR + fS*((p+r)*cosν+r*tmpOrbit.e)) / h
 	// di/dt
-	fDot[2] = math.Mod(Δv[2]*r*cosζ/h, 2*math.Pi)
+	fDot[2] = math.Mod(fW*r*cosζ/h, 2*math.Pi)
 	// dΩ/dt
-	fDot[3] = math.Mod(Δv[2]*r*sinζ/(h*sini), 2*math.Pi)
-	//fmt.Printf("Δv=%+v\tdi/dt=%.16f\tdΩ/dt=%.16f\n", Δv, fDot[2], fDot[3])
+	fDot[3] = math.Mod(fW*r*sinζ/(h*sini), 2*math.Pi)
 	// dω/dt
-	fDot[4] = math.Mod((-p*Δv[0]*cosν+(p+r)*Δv[1]*sinν)/(h*tmpOrbit.e)-fDot[3]*cosi, 2*math.Pi)
+	fDot[4] = math.Mod((-p*cosν*fR+(p+r)*sinν*fS)/(h*tmpOrbit.e)-fDot[3]*cosi, 2*math.Pi)
 	// dν/dt -- as per Vallado, page 636 (with errata of 4th edition.)
-	fDot[5] = math.Mod(h/(r*r)+((p*cosν*Δv[0])-(p+r)*sinν*Δv[1])/(tmpOrbit.e*h), 2*math.Pi)
+	fDot[5] = math.Mod(h/(r*r)+((p*cosν*fR)-(p+r)*sinν*fS)/(tmpOrbit.e*h), 2*math.Pi)
 	// d(fuel)/dt
 	fDot[6] = -usedFuel
 	for i := 0; i < 7; i++ {

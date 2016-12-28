@@ -368,7 +368,7 @@ func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 	if ok, err := wp.target.Equals(o); ok {
 		wp.cleared = true
 	} else if wp.ctrl.cleared {
-		fmt.Printf("[WARNING] Waypoint cleared *but* %s\n", err)
+		fmt.Printf("[WARNING] OrbitTarget reached *but* %s\n", err)
 		wp.cleared = true
 	}
 	return wp.ctrl, wp.cleared

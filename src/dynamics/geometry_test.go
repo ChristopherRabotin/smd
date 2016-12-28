@@ -71,6 +71,9 @@ func TestMisc(t *testing.T) {
 	if sign(-10) != -1 {
 		t.Fatal("sign of -10 != 1")
 	}
+	if sign(0) != 1 {
+		t.Fatal("sign of 0 != 1")
+	}
 	nilVec := []float64{0, 0, 0}
 	if norm(nilVec) != 0 {
 		t.Fatal("norm of a nil vector was not nil")

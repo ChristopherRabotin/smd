@@ -38,6 +38,7 @@ func TestOrbitDefinition(t *testing.T) {
 
 	o1 := NewOrbitFromRV(R, V, Earth)
 	if ok, err := o0.Equals(*o1); !ok {
+		t.Logf("o0: %s\no1: %s", o0, o1)
 		t.Fatal(err)
 	}
 	if ok, err := anglesEqual(Deg2rad(ν0), o1.ν); !ok {
@@ -116,7 +117,7 @@ func TestOrbitRefChange(t *testing.T) {
 
 func TestOrbitEquality(t *testing.T) {
 	oInit := NewOrbitFromOE(226090298.679, 0.088, 26.195, 3.516, 326.494, 278.358, Sun)
-	oTest := NewOrbitFromOE(226090230.608, 0.088, 26.195, 3.516, 326.494, 278.358, Sun)
+	oTest := NewOrbitFromOE(226090250.608, 0.088, 26.195, 3.516, 326.494, 278.358, Sun)
 	if ok, err := oInit.Equals(*oTest); !ok {
 		t.Fatalf("orbits not equal: %s", err)
 	}
