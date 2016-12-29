@@ -445,7 +445,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				// JIT changes for Ruggerio out of plane thrust direction
 				if ctrl.Type() == OptiΔiCL && target < oscul {
 					tmpThrust[2] *= -1
-				} else if ctrl.Type() == OptiΔΩCL && target < oscul {
+				} else if ctrl.Type() == OptiΔΩCL && target > oscul {
 					tmpThrust[2] *= -1
 				}
 				for i := 0; i < 3; i++ {

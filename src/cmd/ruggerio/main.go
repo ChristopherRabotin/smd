@@ -12,8 +12,8 @@ func main() {
 	Ω := 5.0  // Made up
 	ν := 1.0  // I don't care about that guy.
 
-	initOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, 46, ω, 0.0, ν, dynamics.Earth)
-	targetOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, 46, ω, Ω, ν, dynamics.Earth)
+	initOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, 46, Ω, ω, ν, dynamics.Earth)
+	targetOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, 46, 0.0, ω, ν, dynamics.Earth)
 
 	/* Building spacecraft */
 	eps := dynamics.NewUnlimitedEPS()

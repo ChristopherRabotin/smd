@@ -14,7 +14,7 @@ func InitialEarthOrbit() *dynamics.Orbit {
 	ω := 10.0
 	Ω := 5.0
 	ν := 0.0
-	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, dynamics.Earth)
+	return dynamics.NewOrbitFromOE(a, e, i, Ω, ω, ν, dynamics.Earth)
 }
 
 // FromEarthWaypoints returns the waypoints.
@@ -43,7 +43,7 @@ func InitialMarsOrbit() *dynamics.Orbit {
 	ω := 1.0
 	Ω := 1.0
 	ν := 15.0
-	return dynamics.NewOrbitFromOE(a, e, i, ω, Ω, ν, dynamics.Mars)
+	return dynamics.NewOrbitFromOE(a, e, i, Ω, ω, ν, dynamics.Mars)
 }
 
 // FromMarsWaypoints returns the waypoints.
