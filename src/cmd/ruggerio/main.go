@@ -11,8 +11,9 @@ func main() {
 	ω := 10.0 // Made up
 	Ω := 5.0  // Made up
 	ν := 1.0  // I don't care about that guy.
-	initOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, 46, ω, Ω, ν, dynamics.Earth)
-	targetOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, 51.6, ω, Ω, ν, dynamics.Earth)
+
+	initOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, 46, ω, 0.0, ν, dynamics.Earth)
+	targetOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, 46, ω, Ω, ν, dynamics.Earth)
 
 	/* Building spacecraft */
 	eps := dynamics.NewUnlimitedEPS()
@@ -24,7 +25,7 @@ func main() {
 	sc := dynamics.NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, []*dynamics.Cargo{}, waypoints)
 
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
-	end := start.Add(time.Duration(-1) * time.Nanosecond)  // Propagate until waypoint reached.
+	end := start.Add(time.Duration(54*24) * time.Hour)     // Propagate for 54 days.
 	//end := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC) // Let's not have this last too long if it doesn't converge.
 
 	sc.LogInfo()

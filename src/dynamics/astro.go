@@ -185,9 +185,9 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 // Func is the integration function using Gaussian VOP as per Ruggiero et al. 2011.
 func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	// Fix the angles in case the sum in integrator lead to an overflow.
-	for i := 2; i < 6; i++ {
+	/*for i := 2; i < 6; i++ {
 		f[i] = math.Mod(f[i], 2*math.Pi)
-	}
+	}*/
 	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2], f[3], f[4], f[5], a.Orbit.Origin)
 	p := tmpOrbit.GetSemiParameter()
 	h := tmpOrbit.GetH()
@@ -206,13 +206,13 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	// de/dt
 	fDot[1] = (p*sinν*fR + fS*((p+r)*cosν+r*tmpOrbit.e)) / h
 	// di/dt
-	fDot[2] = math.Mod(fW*r*cosζ/h, 2*math.Pi)
+	fDot[2] = fW * r * cosζ / h
 	// dΩ/dt
-	fDot[3] = math.Mod(fW*r*sinζ/(h*sini), 2*math.Pi)
+	fDot[3] = fW * r * sinζ / (h * sini)
 	// dω/dt
-	fDot[4] = math.Mod((-p*cosν*fR+(p+r)*sinν*fS)/(h*tmpOrbit.e)-fDot[3]*cosi, 2*math.Pi)
+	fDot[4] = (-p*cosν*fR+(p+r)*sinν*fS)/(h*tmpOrbit.e) - fDot[3]*cosi
 	// dν/dt -- as per Vallado, page 636 (with errata of 4th edition.)
-	fDot[5] = math.Mod(h/(r*r)+((p*cosν*fR)-(p+r)*sinν*fS)/(tmpOrbit.e*h), 2*math.Pi)
+	fDot[5] = h/(r*r) + ((p*cosν*fR)-(p+r)*sinν*fS)/(tmpOrbit.e*h)
 	// d(fuel)/dt
 	fDot[6] = -usedFuel
 	for i := 0; i < 7; i++ {
