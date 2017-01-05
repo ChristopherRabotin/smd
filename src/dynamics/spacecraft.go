@@ -157,7 +157,6 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		Δv[0] *= thrust
 		Δv[1] *= thrust
 		Δv[2] *= thrust
-		//fmt.Printf("Δv=%+v\t|Δv|=%f km/s-2\n", Δv, norm(Δv))
 		return Δv, fuel
 	}
 	return

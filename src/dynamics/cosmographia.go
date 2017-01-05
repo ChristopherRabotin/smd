@@ -217,7 +217,7 @@ func StreamStates(conf ExportConfig, stateChan <-chan (AstroState)) {
 			// Let's write the catalog.
 			c := CgCatalog{Version: "1.0", Name: prevStatePtr.sc.Name, Items: cgItems, Require: nil}
 			// Create JSON file.
-			fc, err := os.Create(os.Getenv("DATAOUT") + "/catalog-" + conf.Filename + ".json")
+			fc, err := os.Create(fmt.Sprintf("%s/catalog-%s.json", os.Getenv("DATAOUT"), conf.Filename))
 			if err != nil {
 				panic(err)
 			}
