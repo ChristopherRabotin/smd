@@ -12,8 +12,8 @@ import (
 
 func TestAstrocroChanStop(t *testing.T) {
 	// Define a new orbit.
-	a0 := Earth.Radius - 400 // Collision test
-	e0 := 1e-2
+	a0 := Earth.Radius - 1 // Collision test
+	e0 := 0.8
 	i0 := 38.0
 	ω0 := 10.0
 	Ω0 := 5.0
@@ -29,19 +29,13 @@ func TestAstrocroChanStop(t *testing.T) {
 	// Start propagation.
 	go astro.Propagate()
 	// Check stopping the propagation via the channel.
-	<-time.After(time.Second * 1)
+	<-time.After(time.Millisecond * 1)
 	astro.StopChan <- true
 	if astro.CurrentDT.Equal(astro.StartDT) {
 		t.Fatal("astro did *not* propagate time")
 	}
-
-	if ok, err := oInit.Equals(*o); !ok {
-		t.Fatalf("1ms propagation changes the orbit: %s", err)
-	}
-	if floats.EqualWithinAbs(Deg2rad(ν0), o.ν, angleε) {
-		t.Fatalf("true anomaly *unchanged*: ν0=%3.6f ν1=%3.6f", Deg2rad(ν0), o.ν)
-	} else {
-		t.Logf("ν increased by %5.8f° (step of %0.3f s)\n", o.ν-Deg2rad(ν0), stepSize)
+	if ok, err := oInit.StrictlyEquals(*o); !ok {
+		t.Fatalf("1ms propagation with no waypoints and no end time changes the orbit: %s", err)
 	}
 }
 
