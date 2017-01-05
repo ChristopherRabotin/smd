@@ -33,3 +33,7 @@ func TestPPS1350(t *testing.T) {
 	})
 }
 */
+
+func TestThrustControlI(t *testing.T) {
+	_ = []ThrustControl{Inversion{}, Tangential{}, AntiTangential{}, OptimalThrust{}}
+}

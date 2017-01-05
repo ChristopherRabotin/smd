@@ -236,8 +236,8 @@ func (cl AntiTangential) Control(o Orbit) []float64 {
 // This leads to collisions with main body if the orbit isn't circular enough.
 // cf. Izzo et al. (https://arxiv.org/pdf/1602.00849v2.pdf)
 type Inversion struct {
-	ν      float64
-	reason string
+	ν float64
+	GenericCL
 }
 
 // Reason implements the ThrustControl interface.
@@ -257,6 +257,11 @@ func (cl Inversion) Control(o Orbit) []float64 {
 		return Tangential{}.Control(o)
 	}
 	return AntiTangential{}.Control(o)
+}
+
+// NewInversionCL defines a new inversion control law.
+func NewInversionCL(ν float64) Inversion {
+	return Inversion{ν, GenericCL{inversion.String(), inversion}}
 }
 
 /* Following optimal thrust change are from IEPC 2011's paper:

@@ -4,6 +4,8 @@ import (
 	"math"
 	"testing"
 	"time"
+
+	"github.com/gonum/floats"
 )
 
 func TestOrbitDefinition(t *testing.T) {
@@ -13,12 +15,13 @@ func TestOrbitDefinition(t *testing.T) {
 	ω0 := 53.38
 	Ω0 := 227.898
 	ν0 := 92.335
-	R := []float64{6524.429912390563, 6862.463818182738, 6449.138290037659}
+	//R := []float64{6524.429912390563, 6862.463818182738, 6449.138290037659}
+	R := []float64{6524.834, 6862.875, 6448.296}
 	V := []float64{4.901327, 5.533756, -1.976341}
 
 	o0 := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 	if !vectorsEqual(R, o0.GetR()) {
-		t.Fatal("R vector incorrectly computed")
+		t.Fatalf("R vector incorrectly computed:\n%+v\n%+v", R, o0.GetR())
 	}
 	if !vectorsEqual(V, o0.GetV()) {
 		t.Fatal("V vector incorrectly computed")
@@ -121,4 +124,26 @@ func TestOrbitEquality(t *testing.T) {
 	if ok, err := oInit.Equals(*oTest); !ok {
 		t.Fatalf("orbits not equal: %s", err)
 	}
+	oTest.ω += math.Pi / 6
+	if ok, _ := oInit.Equals(*oTest); ok {
+		t.Fatalf("orbits of different ω are equal")
+	}
+	oTest.ω -= math.Pi / 6 // Reset
+	oTest.Origin = Earth
+	if ok, _ := oInit.Equals(*oTest); ok {
+		t.Fatalf("orbits of different origins are equal")
+	}
+}
+
+func TestRadii2ae(t *testing.T) {
+	a, e := Radii2ae(4, 2)
+	if !floats.EqualWithinAbs(a, 3.0, 1e-12) {
+		t.Fatalf("a=%f instead of 3.0", a)
+	}
+	if !floats.EqualWithinAbs(e, 1/3.0, 1e-12) {
+		t.Fatalf("e=%f instead of 1/3", e)
+	}
+	assertPanic(t, func() {
+		Radii2ae(1, 2)
+	})
 }

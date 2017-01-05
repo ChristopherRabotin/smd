@@ -103,7 +103,6 @@ func (a *Astrocodile) Propagate() {
 // Stop implements the stop call of the integrator.
 func (a *Astrocodile) Stop(i uint64) bool {
 	select {
-	// TODO: Change this to a call to Spacecraft given the orbit information.
 	case <-a.StopChan:
 		if a.histChan != nil {
 			close(a.histChan)
@@ -185,9 +184,9 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 // Func is the integration function using Gaussian VOP as per Ruggiero et al. 2011.
 func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	// Fix the angles in case the sum in integrator lead to an overflow.
-	/*for i := 2; i < 6; i++ {
+	for i := 2; i < 6; i++ {
 		f[i] = math.Mod(f[i], 2*math.Pi)
-	}*/
+	}
 	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2], f[3], f[4], f[5], a.Orbit.Origin)
 	p := tmpOrbit.GetSemiParameter()
 	h := tmpOrbit.GetH()

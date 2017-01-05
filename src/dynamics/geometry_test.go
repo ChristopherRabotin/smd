@@ -65,6 +65,9 @@ func TestSpherical2Cartisean(t *testing.T) {
 }
 
 func TestMisc(t *testing.T) {
+	if vectorsEqual([]float64{1, 0}, []float64{1, 0, 0}) {
+		t.Fatal("vectors of different sizes should not be equal")
+	}
 	if sign(10) != 1 {
 		t.Fatal("sign of 10 != 1")
 	}

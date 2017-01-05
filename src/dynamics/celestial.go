@@ -48,8 +48,6 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 		// Load the planet.
 		var vsopPosition int
 		switch c.Name {
-		case "Sun":
-			return *NewOrbitFromRV([]float64{0, 0, 0}, []float64{0, 0, 0}, *c)
 		case "Venus":
 			vsopPosition = 2
 			break

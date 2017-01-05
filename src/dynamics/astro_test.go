@@ -1,6 +1,7 @@
 package dynamics
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -8,10 +9,10 @@ import (
 )
 
 /* Testing here should propagate a given a orbit which is created via OEs and check that only nu changes.*/
-/*
+
 func TestAstrocroChanStop(t *testing.T) {
 	// Define a new orbit.
-	a0 := Earth.Radius + 400
+	a0 := Earth.Radius - 400 // Collision test
 	e0 := 1e-2
 	i0 := 38.0
 	ω0 := 10.0
@@ -21,16 +22,19 @@ func TestAstrocroChanStop(t *testing.T) {
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 	// Define propagation parameters.
 	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
-	end := start.Add(time.Duration(1) * time.Hour)
-	astro := NewAstro(NewEmptySC("test", 1500), o, start, end, ExportConfig{})
+	end := start.Add(time.Duration(-1) * time.Hour)
+	sc := NewEmptySC("test", 1500)
+	sc.FuelMass = -1
+	astro := NewAstro(sc, o, start, end, ExportConfig{})
 	// Start propagation.
 	go astro.Propagate()
 	// Check stopping the propagation via the channel.
-	<-time.After(time.Millisecond * 1)
+	<-time.After(time.Second * 1)
 	astro.StopChan <- true
-	if astro.EndDT.Sub(astro.CurrentDT).Nanoseconds() <= 0 {
-		t.Fatal("WARNING: propagation NOT stopped via channel")
+	if astro.CurrentDT.Equal(astro.StartDT) {
+		t.Fatal("astro did *not* propagate time")
 	}
+
 	if ok, err := oInit.Equals(*o); !ok {
 		t.Fatalf("1ms propagation changes the orbit: %s", err)
 	}
@@ -49,6 +53,7 @@ func TestAstrocroPropTime(t *testing.T) {
 	ω0 := 10.0
 	Ω0 := 5.0
 	ν0 := 0.0
+	ν0Rad := Deg2rad(ν0)
 	oInit := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 	// Define propagation parameters.
@@ -63,10 +68,10 @@ func TestAstrocroPropTime(t *testing.T) {
 	if ok, err := oInit.Equals(*o); !ok {
 		t.Fatalf("1ms propagation changes the orbit: %s", err)
 	}
-	if ok, err := anglesEqual(o.ν, ν0); !ok {
+	if ok, err := anglesEqual(o.ν, ν0Rad); !ok {
 		t.Fatalf("ν changed too much after one sideral day propagating a GEO vehicle: %s", err)
 	} else {
-		t.Logf("one sideral day GEO ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(math.Abs(o.ν-Deg2rad(ν0))), stepSize)
+		t.Logf("one sideral day GEO ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(math.Abs(o.ν-ν0Rad)), stepSize)
 	}
 	// Check that all angular orbital elements are within 2 pi.
 	for k, angle := range []float64{o.i, o.Ω, o.ω, o.ν} {
@@ -119,13 +124,14 @@ func TestRuggerioOEa(t *testing.T) {
 	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
 	astro.Propagate()
 	if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
+		t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 		t.Fatal("Ruggerio semi-major axis failed")
 	}
 	if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 14, 2) {
 		t.Fatal("too much fuel used")
 	}
 }
-*/
+
 // TestRuggerioOEi runs the test case from their 2012 conference paper
 func TestRuggerioOEi(t *testing.T) {
 	oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
@@ -140,6 +146,7 @@ func TestRuggerioOEi(t *testing.T) {
 	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
 	astro.Propagate()
 	if !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) {
+		t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 		t.Fatal("Ruggerio inclination failed")
 	}
 	if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 25.8, 2) {
@@ -147,7 +154,6 @@ func TestRuggerioOEi(t *testing.T) {
 	}
 }
 
-/*
 // TestRuggerioOEΩ runs the test case from their 2012 conference paper
 func TestRuggerioOEΩ(t *testing.T) {
 	oInit := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 1, 1, Earth)
@@ -162,6 +168,7 @@ func TestRuggerioOEΩ(t *testing.T) {
 	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
 	astro.Propagate()
 	if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
+		t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 		t.Fatal("Ruggerio RAAN failed")
 	}
 	if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 23.5, 2) {
@@ -187,4 +194,3 @@ func TestMultiRuggerio(t *testing.T) {
 		t.Fatalf("Ruggerio failed: %s", err)
 	}
 }
-*/
