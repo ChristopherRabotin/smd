@@ -14,9 +14,18 @@ func TestOrbitRV2COE(t *testing.T) {
 	o := NewOrbitFromRV(R, V, Earth)
 	oT := NewOrbitFromOE(36127.343, 0.832853, 87.870, 227.898, 53.38, 92.335, Earth)
 	if ok, err := o.StrictlyEquals(*oT); !ok {
-		t.Logf("\no=%s\noT=%s", o, oT)
 		t.Fatalf("orbits differ: %s", err)
 	}
+	if ok, err := anglesEqual(Deg2rad(281.282), o.GetTildeω()); !ok {
+		t.Fatalf("longitude of periapsis invalid: %s (%f)", err, o.GetTildeω())
+	}
+	if ok, err := anglesEqual(Deg2rad(145.714), o.GetU()); !ok {
+		t.Fatalf("argument of latitude invalid: %s (%f)", err, o.GetU())
+	}
+	assertPanic(t, func() {
+		// We're far from a circular equatorial orbit, so this call should panic
+		o.Getλtrue()
+	})
 }
 
 func TestOrbitCOE2RV(t *testing.T) {
@@ -36,18 +45,6 @@ func TestOrbitCOE2RV(t *testing.T) {
 	}
 	if !vectorsEqual(V, o0.GetV()) {
 		t.Fatal("V vector incorrectly computed")
-	}
-
-	if ok, err := anglesEqual(Deg2rad(281.27), o0.GetTildeω()); !ok {
-		t.Logf("true longitude of perigee invalid: %s", err)
-	}
-
-	if ok, err := anglesEqual(Deg2rad(145.60549), o0.GetU()); !ok {
-		t.Logf("argument of latitude invalid: %s", err)
-	}
-
-	if ok, err := anglesEqual(Deg2rad(55.282587), o0.Getλtrue()); !ok {
-		t.Logf("true longitude invalid: %s", err)
 	}
 
 	o1 := NewOrbitFromRV(R, V, Earth)

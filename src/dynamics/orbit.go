@@ -28,13 +28,17 @@ func (o *Orbit) Energy() float64 {
 	return -o.Origin.μ / (2 * o.a)
 }
 
-// GetTildeω returns the true longitude of perigee.
+// GetTildeω returns the longitude of periapsis.
 func (o *Orbit) GetTildeω() float64 {
 	return o.ω + o.Ω
 }
 
-// Getλtrue returns the true longitude.
+// Getλtrue returns the *approximate* true longitude.
 func (o *Orbit) Getλtrue() float64 {
+	if o.e > eccentricityε || o.i > angleε {
+		panic("Getλtrue only supports circular equatorial orbits")
+	}
+	// This is an approximation as per Vallado page 103.
 	return o.ω + o.Ω + o.ν
 }
 
@@ -104,7 +108,7 @@ func (o *Orbit) GetRV() ([]float64, []float64) {
 	R[0] = p * cosν / (1 + o.e*cosν)
 	R[1] = p * sinν / (1 + o.e*cosν)
 	R[2] = 0
-	R = PQW2ECI(o.i, ω, Ω, R)
+	R = PQW2ECI(-o.i, -ω, -Ω, R)
 
 	V = make([]float64, 3, 3)
 	V[0] = -math.Sqrt(o.Origin.μ/p) * sinν
