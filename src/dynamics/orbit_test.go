@@ -8,19 +8,30 @@ import (
 	"github.com/gonum/floats"
 )
 
-func TestOrbitDefinition(t *testing.T) {
-	a0 := 36127.337764
-	e0 := 0.832853
-	i0 := 87.870
-	ω0 := 53.38
-	Ω0 := 227.898
-	ν0 := 92.335
-	//R := []float64{6524.429912390563, 6862.463818182738, 6449.138290037659}
+func TestOrbitRV2COE(t *testing.T) {
 	R := []float64{6524.834, 6862.875, 6448.296}
 	V := []float64{4.901327, 5.533756, -1.976341}
+	o := NewOrbitFromRV(R, V, Earth)
+	oT := NewOrbitFromOE(36127.343, 0.832853, 87.870, 227.898, 53.38, 92.335, Earth)
+	if ok, err := o.StrictlyEquals(*oT); !ok {
+		t.Logf("\no=%s\noT=%s", o, oT)
+		t.Fatalf("orbits differ: %s", err)
+	}
+}
+
+func TestOrbitCOE2RV(t *testing.T) {
+	a0 := 36126.64283
+	e0 := 0.83285
+	i0 := 87.87
+	ω0 := 53.38
+	Ω0 := 227.89
+	ν0 := 92.335
+	R := []float64{6524.344, 6861.535, 6449.125}
+	V := []float64{4.902276, 5.533124, -1.975709}
 
 	o0 := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
 	if !vectorsEqual(R, o0.GetR()) {
+		// TODO: Fix this first, via tests from page 114.
 		t.Fatalf("R vector incorrectly computed:\n%+v\n%+v", R, o0.GetR())
 	}
 	if !vectorsEqual(V, o0.GetV()) {

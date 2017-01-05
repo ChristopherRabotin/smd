@@ -143,8 +143,8 @@ func (o *Orbit) String() string {
 	return fmt.Sprintf("a=%.3f e=%.3f i=%.3f ω=%.3f Ω=%.3f ν=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.ω), Rad2deg(o.Ω), Rad2deg(o.ν))
 }
 
-// Equals returns whether two orbits are identical.
-// WARNING: Does not check the true anomaly.
+// Equals returns whether two orbits are identical with free true anomaly.
+// Use StrictlyEquals to also check true anomaly.
 func (o *Orbit) Equals(o1 Orbit) (bool, error) {
 	if !o.Origin.Equals(o1.Origin) {
 		return false, errors.New("different origin")
@@ -165,6 +165,14 @@ func (o *Orbit) Equals(o1 Orbit) (bool, error) {
 		return false, errors.New("argument of perigee invalid")
 	}
 	return true, nil
+}
+
+// StrictlyEquals returns whether two orbits are identical.
+func (o *Orbit) StrictlyEquals(o1 Orbit) (bool, error) {
+	if !floats.EqualWithinAbs(o.ν, o1.ν, angleε) {
+		return false, errors.New("true anomaly invalid")
+	}
+	return o.Equals(o1)
 }
 
 // ToXCentric converts this orbit the provided celestial object centric equivalent.
@@ -253,7 +261,7 @@ func NewOrbitFromRV(R, V []float64, c CelestialObject) *Orbit {
 	if dot(R, V) < 0 {
 		ν = 2*math.Pi - ν
 	}
-	orbit := Orbit{a, e, i, ω, Ω, ν, c, 0.0, R, V}
+	orbit := Orbit{a, e, i, Ω, ω, ν, c, 0.0, R, V}
 	orbit.computeHash()
 	return &orbit
 }
