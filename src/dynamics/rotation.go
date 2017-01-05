@@ -8,11 +8,11 @@ import (
 
 // PQW2ECI converts a given vector from PQW frame to ECI frame.
 func PQW2ECI(i, ω, Ω float64, vI []float64) []float64 {
-	//return MxV33(R3R1R3(-i, -ω, -Ω), vI) // TODO: Do the math manually, Vallado is probably wrong.
-	var mulM mat64.Dense
+	return MxV33(R3R1R3(i, ω, Ω), vI)
+	/*var mulM mat64.Dense
 	mulM.Mul(R3(-ω), R1(-i))
 	mulM.Mul(&mulM, R3(-Ω))
-	return MxV33(&mulM, vI)
+	return MxV33(&mulM, vI)*/
 }
 
 // R3R1R3 simplifies PQW2ECI.
