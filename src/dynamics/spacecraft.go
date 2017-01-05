@@ -1,6 +1,7 @@
 package dynamics
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"time"
@@ -19,6 +20,7 @@ type Spacecraft struct {
 	WayPoints []Waypoint // All waypoints of the tug
 	FuncQ     []func()
 	logger    kitlog.Logger
+	prevCL    *ControlLaw // Stores the previous control law to follow what is going on.
 }
 
 // SCLogInit initializes the logger.
@@ -28,9 +30,24 @@ func SCLogInit(name string) kitlog.Logger {
 	return klog
 }
 
+// LogInfo logs the information of this spacecraft.
+func (sc *Spacecraft) LogInfo() {
+	var wpInfo string
+	for i, wp := range sc.WayPoints {
+		if i > 0 {
+			wpInfo += " -> "
+		}
+		wpInfo += wp.String()
+	}
+	sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wpInfo)
+}
+
 // Mass returns the given vehicle mass based on the provided UTC date time.
 func (sc *Spacecraft) Mass(dt time.Time) (m float64) {
-	m = sc.DryMass + sc.FuelMass
+	m = sc.DryMass
+	if sc.FuelMass > 0 {
+		m += sc.FuelMass // Only add the fuel mass if it isn't negative!
+	}
 	for _, cargo := range sc.Cargo {
 		if dt.After(cargo.Arrival) {
 			m += cargo.DryMass
@@ -55,9 +72,18 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			continue
 		}
 		// We've found a waypoint which isn't reached.
-		Δv, reached := wp.AllocateThrust(*o, dt)
+		ctrl, reached := wp.ThrustDirection(*o, dt)
+		if clType := ctrl.Type(); sc.prevCL == nil || *sc.prevCL != clType {
+			sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "thrust", clType, "reason", ctrl.Reason(), "v(km/s)", norm(o.GetV()))
+			sc.prevCL = &clType
+		}
+		// Check if we're in a parabolic orbit and if so, we're activating the action NOW.
+		if p := o.GetSemiParameter(); p < 0 { // TODO: check if this ever happens anymore.
+			sc.logger.Log("level", "critical", "subsys", "astro", "date", dt, "p", p, "action", wp.Action())
+			reached = true
+		}
 		if reached {
-			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp.String(), "status", "completed")
+			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp, "status", "completed", "r(km)", norm(o.GetR()), "v (km/s)", norm(o.GetV()))
 			// Handle waypoint action
 			if action := wp.Action(); action != nil {
 				switch action.Type {
@@ -94,22 +120,13 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 					}
 					break
 				case REFEARTH:
-					sc.FuncQ = append(sc.FuncQ, func() {
-						sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", "Earth", "time", dt.String())
-						o.ToXCentric(Earth, dt)
-					})
+					sc.FuncQ = append(sc.FuncQ, sc.ToXCentric(Earth, dt, o))
 					break
 				case REFMARS:
-					sc.FuncQ = append(sc.FuncQ, func() {
-						sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", "Mars", "time", dt.String())
-						o.ToXCentric(Mars, dt)
-					})
+					sc.FuncQ = append(sc.FuncQ, sc.ToXCentric(Mars, dt, o))
 					break
 				case REFSUN:
-					sc.FuncQ = append(sc.FuncQ, func() {
-						sc.logger.Log("level", "notice", "subsys", "astro", "nowOrbiting", "Mars", "time", dt.String())
-						o.ToXCentric(Sun, dt)
-					})
+					sc.FuncQ = append(sc.FuncQ, sc.ToXCentric(Sun, dt, o))
 					break
 				default:
 					panic("unknown action")
@@ -117,43 +134,53 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			}
 			continue
 		}
-		if Δv[0] == 0 && Δv[1] == 0 && Δv[2] == 0 {
-			// Nothing to do, we're probably just loitering.
-			return []float64{0, 0, 0}, 0
-		}
+		Δv := ctrl.Control(*o)
 		// Let's normalize the allocation.
 		if ΔvNorm := norm(Δv); ΔvNorm == 0 {
+			// Nothing to do, we're probably just loitering.
 			return []float64{0, 0, 0}, 0
 		} else if math.Abs(ΔvNorm-1) > 1e-12 {
-			panic("ΔvAlloc does not sum up to 1! Normalization not implemented yet.")
+			panic(fmt.Errorf("Δv = %+v! Normalization not implemented yet:", Δv))
 		}
 		for _, thruster := range sc.Thrusters {
 			voltage, power := thruster.Max()
 			if err := sc.EPS.Drain(voltage, power, dt); err == nil {
 				// Okay to thrust.
-				tThrust, tFuelMass := thruster.Thrust(voltage, power)
+				tThrust, isp := thruster.Thrust(voltage, power)
 				thrust += tThrust
-				fuel += tFuelMass
+				fuel += tThrust / (isp * 9.807)
 			} // Error handling of EPS happens in EPS subsystem.
 		}
-		thrust /= 1e3 // Convert thrust from m/s^-2 to km/s^-2
-		Δv[0] *= thrust / sc.Mass(dt)
-		Δv[1] *= thrust / sc.Mass(dt)
-		Δv[2] *= thrust / sc.Mass(dt)
-
+		thrust /= sc.Mass(dt) // Convert kg*m/(s^-2) to m/(s^-2)
+		thrust /= 1e3         // Convert m/s^-2 to km/s^-2
+		// Apply norm of the thrust to each component of the normalized Δv vector
+		Δv[0] *= thrust
+		Δv[1] *= thrust
+		Δv[2] *= thrust
 		return Δv, fuel
 	}
 	return
 }
 
+// ToXCentric switches the propagation from the current origin to a new one and logs the change.
+func (sc *Spacecraft) ToXCentric(body CelestialObject, dt time.Time, o *Orbit) func() {
+	return func() {
+		sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "fuel(kg)", sc.FuelMass, "orbit", o)
+		o.ToXCentric(body, dt)
+		sc.logger.Log("level", "notice", "subsys", "astro", "date", dt, "orbiting", body.Name)
+		sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "fuel(kg)", sc.FuelMass, "orbit", o)
+		sc.LogInfo()
+	}
+}
+
 // NewEmptySC returns a spacecraft with no cargo and no thrusters.
 func NewEmptySC(name string, mass uint) *Spacecraft {
-	return &Spacecraft{name, float64(mass), 0, nil, []Thruster{}, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name)}
+	return &Spacecraft{name, float64(mass), 0, nil, []Thruster{}, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name), nil}
 }
 
 // NewSpacecraft returns a spacecraft with initialized function queue and logger.
 func NewSpacecraft(name string, dryMass, fuelMass float64, eps EPS, prop []Thruster, payload []*Cargo, wp []Waypoint) *Spacecraft {
-	return &Spacecraft{name, dryMass, fuelMass, eps, prop, payload, wp, make([]func(), 5), SCLogInit(name)}
+	return &Spacecraft{name, dryMass, fuelMass, eps, prop, payload, wp, make([]func(), 5), SCLogInit(name), nil}
 }
 
 // Cargo defines a piece of cargo with arrival date and destination orbit

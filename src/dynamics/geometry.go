@@ -3,6 +3,7 @@ package dynamics
 import (
 	"math"
 
+	"github.com/gonum/floats"
 	"github.com/gonum/matrix/mat64"
 )
 
@@ -11,9 +12,30 @@ func norm(v []float64) float64 {
 	return math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
 }
 
-// dot performs the inner product.
+// unit returns the unit vector of a given vector.
+func unit(a []float64) (b []float64) {
+	n := norm(a)
+	if floats.EqualWithinAbs(n, 0, 1e-12) {
+		return []float64{0, 0, 0}
+	}
+	b = make([]float64, len(a))
+	for i, val := range a {
+		b[i] = val / n
+	}
+	return
+}
+
+// sign returns the sign of a given number.
+func sign(v float64) float64 {
+	if floats.EqualWithinAbs(v, 0, 1e-12) {
+		return 1
+	}
+	return v / math.Abs(v)
+}
+
+// dot performs the inner product via mat64/BLAS.
 func dot(a, b []float64) float64 {
-	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+	return mat64.Dot(mat64.NewVector(len(a), a), mat64.NewVector(len(b), b))
 }
 
 // cross performs the inner product.
@@ -48,7 +70,7 @@ func Cartesian2Spherical(a []float64) (b []float64) {
 
 // Deg2rad converts degrees to radians.
 func Deg2rad(a float64) float64 {
-	return a / 360.0 * 2 * math.Pi
+	return (a / 360.0) * 2 * math.Pi
 }
 
 // Rad2deg converts radians to degrees.
@@ -58,9 +80,8 @@ func Rad2deg(a float64) float64 {
 
 // MxV33 multiplies a matrix with a vector. Note that there is no dimension check!
 func MxV33(m *mat64.Dense, v []float64) (o []float64) {
-	o = make([]float64, 3)
-	o[0] = m.At(0, 0)*v[0] + m.At(0, 1)*v[1] + m.At(0, 2)*v[2]
-	o[1] = m.At(1, 0)*v[0] + m.At(1, 1)*v[1] + m.At(1, 2)*v[2]
-	o[2] = m.At(2, 0)*v[0] + m.At(2, 1)*v[1] + m.At(2, 2)*v[2]
-	return
+	vVec := mat64.NewVector(len(v), v)
+	var rVec mat64.Vector
+	rVec.MulVec(m, vVec)
+	return []float64{rVec.At(0, 0), rVec.At(1, 0), rVec.At(2, 0)}
 }

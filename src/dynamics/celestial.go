@@ -40,16 +40,14 @@ func (c *CelestialObject) Equals(b CelestialObject) bool {
 // HelioOrbit returns the heliocentric position and velocity of this planet at a given time in equatorial coordinates.
 // Note that the whole file is loaded. In fact, if we don't, then whoever is the first to call this function will
 // set the Epoch at which the ephemeris are available, and that sucks.
-func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
+func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 	if c.Name == "Sun" {
-		return []float64{0, 0, 0}, []float64{0, 0, 0}
+		return *NewOrbitFromRV([]float64{0, 0, 0}, []float64{0, 0, 0}, *c)
 	}
 	if c.PP == nil {
 		// Load the planet.
 		var vsopPosition int
 		switch c.Name {
-		case "Sun":
-			return []float64{0, 0, 0}, []float64{0, 0, 0}
 		case "Venus":
 			vsopPosition = 2
 			break
@@ -86,7 +84,7 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) ([]float64, []float64) {
 	R = MxV33(R1(Deg2rad(-c.tilt)), R)
 	V = MxV33(R1(Deg2rad(-c.tilt)), V)
 
-	return R, V
+	return *NewOrbitFromRV(R, V, Sun)
 }
 
 /* Definitions */
