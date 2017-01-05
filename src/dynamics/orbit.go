@@ -108,7 +108,7 @@ func (o *Orbit) GetRV() ([]float64, []float64) {
 	R[0] = p * cosν / (1 + o.e*cosν)
 	R[1] = p * sinν / (1 + o.e*cosν)
 	R[2] = 0
-	R = PQW2ECI(-o.i, -ω, -Ω, R)
+	R = PQW2ECI(o.i, ω, Ω, R)
 
 	V = make([]float64, 3, 3)
 	V[0] = -math.Sqrt(o.Origin.μ/p) * sinν

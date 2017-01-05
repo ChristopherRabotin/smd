@@ -38,9 +38,8 @@ func TestOrbitCOE2RV(t *testing.T) {
 	R := []float64{6524.344, 6861.535, 6449.125}
 	V := []float64{4.902276, 5.533124, -1.975709}
 
-	o0 := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
+	o0 := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
 	if !vectorsEqual(R, o0.GetR()) {
-		// TODO: Fix this first, via tests from page 114.
 		t.Fatalf("R vector incorrectly computed:\n%+v\n%+v", R, o0.GetR())
 	}
 	if !vectorsEqual(V, o0.GetV()) {
@@ -66,7 +65,7 @@ func TestOrbitRefChange(t *testing.T) {
 	Ω0 := 0.032732
 	ν0 := 2.830590
 
-	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
+	o := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
 	// These are two edge cases were cosν is slight below -1 or slightly above +1, leading math.Acos to return NaN.
 	// Given the difference is on the order of 1e-18, I suspect this is an approximation error (hence the fix in orbit.go).
 	// Let's ensure these edge cases are handled.

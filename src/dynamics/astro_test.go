@@ -18,8 +18,8 @@ func TestAstrocroChanStop(t *testing.T) {
 	ω0 := 10.0
 	Ω0 := 5.0
 	ν0 := 1.0
-	oInit := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
-	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
+	oInit := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
+	o := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
 	// Define propagation parameters.
 	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
 	end := start.Add(time.Duration(-1) * time.Hour)
@@ -54,8 +54,8 @@ func TestAstrocroPropTime(t *testing.T) {
 	Ω0 := 5.0
 	ν0 := 0.0
 	ν0Rad := Deg2rad(ν0)
-	oInit := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
-	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
+	oInit := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
+	o := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
 	// Define propagation parameters.
 	start := time.Now()
 	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second) + (time.Duration(916) * time.Millisecond)
@@ -89,7 +89,7 @@ func TestAstrocroFrame(t *testing.T) {
 	ω0 := 10.0
 	Ω0 := 5.0
 	ν0 := 0.0
-	o := NewOrbitFromOE(a0, e0, i0, ω0, Ω0, ν0, Earth)
+	o := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
 	var R1, V1, R2, V2 [3]float64
 	copy(R1[:], o.GetR())
 	copy(V1[:], o.GetV())
