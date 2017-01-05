@@ -10,7 +10,37 @@ import (
 
 /* Testing here should propagate a given a orbit which is created via OEs and check that only nu changes.*/
 
-func TestAstrocroChanStop(t *testing.T) {
+func TestAstrocroStopChan(t *testing.T) {
+	// Define a new orbit.
+	a0 := Earth.Radius - 1 // Collision test
+	e0 := 0.8
+	i0 := 38.0
+	ω0 := 10.0
+	Ω0 := 5.0
+	ν0 := 1.0
+	oInit := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
+	o := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
+	// Define propagation parameters.
+	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
+	end := start.Add(time.Duration(24) * time.Hour)
+	sc := NewEmptySC("test", 1500)
+	sc.FuelMass = -1
+	astro := NewAstro(sc, o, start, end, ExportConfig{})
+	// Start propagation.
+	go astro.Propagate()
+	// Check stopping the propagation via the channel.
+	<-time.After(time.Millisecond * 1)
+	astro.StopChan <- true
+	if astro.CurrentDT.Equal(astro.StartDT) {
+		t.Fatal("astro did *not* propagate time")
+	}
+	if ok, err := oInit.Equals(*o); !ok {
+		t.Fatalf("1ms propagation with no waypoints and no end time changes the orbit: %s", err)
+	}
+	t.Logf("\noInit: %s\noOscu: %s", oInit, o)
+}
+
+func TestAstrocroNegTime(t *testing.T) {
 	// Define a new orbit.
 	a0 := Earth.Radius - 1 // Collision test
 	e0 := 0.8
@@ -26,11 +56,7 @@ func TestAstrocroChanStop(t *testing.T) {
 	sc := NewEmptySC("test", 1500)
 	sc.FuelMass = -1
 	astro := NewAstro(sc, o, start, end, ExportConfig{})
-	// Start propagation.
-	go astro.Propagate()
-	// Check stopping the propagation via the channel.
-	<-time.After(time.Millisecond * 1)
-	astro.StopChan <- true
+	astro.Propagate()
 	if astro.CurrentDT.Equal(astro.StartDT) {
 		t.Fatal("astro did *not* propagate time")
 	}

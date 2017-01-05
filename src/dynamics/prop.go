@@ -240,16 +240,6 @@ type Inversion struct {
 	GenericCL
 }
 
-// Reason implements the ThrustControl interface.
-func (cl Inversion) Reason() string {
-	return cl.reason
-}
-
-// Type implements the ThrustControl interface.
-func (cl Inversion) Type() ControlLaw {
-	return inversion
-}
-
 // Control implements the ThrustControl interface.
 func (cl Inversion) Control(o Orbit) []float64 {
 	f := o.ν

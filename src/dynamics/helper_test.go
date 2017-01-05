@@ -3,20 +3,26 @@ package dynamics
 import (
 	"fmt"
 	"math"
+	"testing"
 
 	"github.com/gonum/floats"
 )
 
-const (
-	eps = 1e-3
-)
+func assertPanic(t *testing.T, f func()) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	f()
+}
 
 func vectorsEqual(a, b []float64) bool {
 	if len(a) != len(b) {
 		return false
 	}
 	for i := len(a) - 1; i >= 0; i-- {
-		if !floats.EqualWithinRel(a[i], b[i], eps) {
+		if !floats.EqualWithinRel(a[i], b[i], 1e-3) {
 			return false
 		}
 	}
