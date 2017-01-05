@@ -45,7 +45,7 @@ func TestAstrocroChanStop(t *testing.T) {
 	}
 }
 
-func TestAstrocroPropTime(t *testing.T) {
+func TestAstrocroGEO(t *testing.T) {
 	// Define an approximate GEO orbit.
 	a0 := Earth.Radius + 35786
 	e0 := 1e-4
@@ -53,28 +53,25 @@ func TestAstrocroPropTime(t *testing.T) {
 	ω0 := 10.0
 	Ω0 := 5.0
 	ν0 := 0.0
-	ν0Rad := Deg2rad(ν0)
-	oInit := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
-	o := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
+	// Propagating for 1.5 orbits to ensure that time and orbital elements are changed accordingly.
+	// Note that the 0.08 is needed because of the int64 truncation of the orbit duration.
+	oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0+180.08, Earth)
+	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
 	// Define propagation parameters.
 	start := time.Now()
 	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second) + (time.Duration(916) * time.Millisecond)
-	end := start.Add(geoDur * 2)
-	astro := NewAstro(NewEmptySC("test", 1500), o, start, end, ExportConfig{})
+	end := start.Add(time.Duration(float64(geoDur) * 1.5))
+	astro := NewAstro(NewEmptySC("test", 1500), oOsc, start, end, ExportConfig{})
 	// Start propagation.
 	astro.Propagate()
 	// Must find a way to test the stop channel. via a long propagation and a select probably.
 	// Check the orbital elements.
-	if ok, err := oInit.Equals(*o); !ok {
-		t.Fatalf("1ms propagation changes the orbit: %s", err)
-	}
-	if ok, err := anglesEqual(o.ν, ν0Rad); !ok {
-		t.Fatalf("ν changed too much after one sideral day propagating a GEO vehicle: %s", err)
-	} else {
-		t.Logf("one sideral day GEO ν increased by %5.8f° (step of %0.3f s)\n", Rad2deg(math.Abs(o.ν-ν0Rad)), stepSize)
+	if ok, err := oOsc.StrictlyEquals(*oTgt); !ok {
+		t.Logf("\noOsc: %s\noTgt: %s", oOsc, oTgt)
+		t.Fatalf("GEO 1.5 day propagation leads to incorrect orbit: %s", err)
 	}
 	// Check that all angular orbital elements are within 2 pi.
-	for k, angle := range []float64{o.i, o.Ω, o.ω, o.ν} {
+	for k, angle := range []float64{oOsc.i, oOsc.Ω, oOsc.ω, oOsc.ν} {
 		if !floats.EqualWithinAbs(angle, math.Mod(angle, 2*math.Pi), angleε) {
 			t.Fatalf("angle in position %d was not 2*pi modulo: %f != %f rad", k, angle, math.Mod(angle, 2*math.Pi))
 		}
