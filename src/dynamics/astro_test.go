@@ -129,8 +129,8 @@ func TestAstrocroFrame(t *testing.T) {
 	}
 }
 
-// TestRuggerioOEa runs the test case from their 2012 conference paper
-func TestRuggerioOEa(t *testing.T) {
+// TestCorrectOEa runs the test case from their 2012 conference paper
+func TestCorrectOEa(t *testing.T) {
 	oInit := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
 	oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
 	eps := NewUnlimitedEPS()
@@ -144,19 +144,41 @@ func TestRuggerioOEa(t *testing.T) {
 	astro.Propagate()
 	if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
 		t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-		t.Fatal("Ruggerio semi-major axis failed")
+		t.Fatal("Correct semi-major axis failed")
 	}
 	if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 17, 2) {
 		t.Fatalf("too much fuel used: %f kg instead of 17", fuelMass-astro.Vehicle.FuelMass)
 	}
 }
 
-// Note: for the Ruggerio tests, the paper does not indicate the mass of the vehicle
+// TestCorrectOEaNeg runs the test case from their 2012 conference paper
+func TestCorrectOEaNeg(t *testing.T) {
+	oInit := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
+	oTarget := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
+	eps := NewUnlimitedEPS()
+	thrusters := []Thruster{new(PPS1350)}
+	dryMass := 300.0
+	fuelMass := 67.0
+	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	start := time.Now()
+	end := start.Add(time.Duration(45*24) * time.Hour)
+	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
+	astro.Propagate()
+	if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
+		t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+		t.Fatal("Correct semi-major axis failed")
+	}
+	if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 21, 2) {
+		t.Fatalf("too much fuel used: %f kg instead of 21", fuelMass-astro.Vehicle.FuelMass)
+	}
+}
+
+// Note: for the "CorrectOE" tests, the Ruggerio paper does not indicate the mass of the vehicle
 // nor the amount of fuel. So I have changed the values to those I find from the specified
 // spacecraft so as to detect any change while running the tests.
 
-// TestRuggerioOEi runs the test case from their 2012 conference paper
-func TestRuggerioOEi(t *testing.T) {
+// TestCorrectOEi runs the test case from their 2012 conference paper
+func TestCorrectOEi(t *testing.T) {
 	oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
 	oTarget := NewOrbitFromOE(Earth.Radius+350, 0.001, 51.6, 1, 1, 1, Earth)
 	eps := NewUnlimitedEPS()
@@ -170,15 +192,15 @@ func TestRuggerioOEi(t *testing.T) {
 	astro.Propagate()
 	if !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) {
 		t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-		t.Fatal("Ruggerio inclination failed")
+		t.Fatal("Correct inclination failed")
 	}
 	if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 25.8, 2) {
 		t.Fatalf("too much fuel used: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
 	}
 }
 
-// TestRuggerioOEΩ runs the test case from their 2012 conference paper
-func TestRuggerioOEΩ(t *testing.T) {
+// TestCorrectOEΩ runs the test case from the Ruggerio 2012 conference paper.
+func TestCorrectOEΩ(t *testing.T) {
 	oInit := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 1, 1, Earth)
 	oTarget := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 5, 1, 1, Earth)
 	eps := NewUnlimitedEPS()
@@ -192,15 +214,37 @@ func TestRuggerioOEΩ(t *testing.T) {
 	astro.Propagate()
 	if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
 		t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-		t.Fatal("Ruggerio RAAN failed")
+		t.Fatal("Correct RAAN failed")
 	}
 	if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 16, 2) {
 		t.Fatalf("too much fuel used: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
 	}
 }
 
-// TestMultiRuggerio runs the test case from their 2012 conference paper
-func TestMultiRuggerio(t *testing.T) {
+// TestCorrectOEΩNeg runs the test case from their 2012 conference paper, but backwards.
+func TestCorrectOEΩNeg(t *testing.T) {
+	oInit := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 5, 1, 1, Earth)
+	oTarget := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 1, 1, Earth)
+	eps := NewUnlimitedEPS()
+	thrusters := []Thruster{new(PPS1350)}
+	dryMass := 300.0
+	fuelMass := 67.0
+	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	start := time.Now()
+	end := start.Add(time.Duration(49*24) * time.Hour) // just after the expected time
+	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
+	astro.Propagate()
+	if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
+		t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+		t.Fatal("Correct RAAN failed")
+	}
+	if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 16, 2) {
+		t.Fatalf("too much fuel used: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
+	}
+}
+
+// TestMultiCorrect runs the test case from their 2012 conference paper
+func TestMultiCorrect(t *testing.T) {
 	oInit := NewOrbitFromOE(24396, 0.7283, 7, 1, 1, 1, Earth)
 	oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
 	eps := NewUnlimitedEPS()
@@ -214,11 +258,11 @@ func TestMultiRuggerio(t *testing.T) {
 	astro.Propagate()
 	if ok, err := astro.Orbit.Equals(*oTarget); !ok {
 		t.Logf("final orbit: \n%s", astro.Orbit)
-		t.Fatalf("Ruggerio failed: %s", err)
+		t.Fatalf("Correct failed: %s", err)
 	}
 }
 
-func TestAstroRuggerio(t *testing.T) {
+func TestAstroCorrect(t *testing.T) {
 	ω := 10.0 // Made up
 	Ω := 5.0  // Made up
 	ν := 1.0  // I don't care about that guy.

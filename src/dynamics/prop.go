@@ -393,11 +393,8 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	if cl.method == Ruggerio {
 		cl.cleared = true
 		factor := func(oscul, init, target, tol float64) float64 {
-			if floats.EqualWithinAbs(init, target, tol) {
+			if floats.EqualWithinAbs(init, target, tol) || floats.EqualWithinAbs(oscul, target, tol) {
 				return 0 // Don't want no NaNs now.
-			}
-			if floats.EqualWithinAbs(oscul, target, tol) {
-				return 0
 			}
 			return (target - oscul) / (target - init)
 		}
@@ -436,11 +433,15 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				cl.cleared = false // We're not actually done.
 				tmpThrust := ctrl.Control(o)
 				// JIT changes for Ruggerio out of plane thrust direction
-				if ctrl.Type() == OptiΔiCL && target > oscul {
-					tmpThrust[2] *= -1
-				}
-				if ctrl.Type() == OptiΔΩCL && target > oscul {
-					tmpThrust[2] *= -1
+				if target > oscul {
+					if ctrl.Type() == OptiΔiCL || ctrl.Type() == OptiΔΩCL {
+						tmpThrust[2] *= -1
+					}
+				} else {
+					if ctrl.Type() == OptiΔaCL {
+						tmpThrust[0] *= -1
+						tmpThrust[1] *= -1
+					}
 				}
 				for i := 0; i < 3; i++ {
 					thrust[i] += fact * tmpThrust[i]
