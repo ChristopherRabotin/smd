@@ -294,7 +294,8 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 		break
 	case OptiΔiCL:
 		ctrl = func(o Orbit) []float64 {
-			return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
+			return unitΔvFromAngles(0.0, -math.Pi/2)
+			//return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
 		}
 		break
 	case OptiΔΩCL:
@@ -350,7 +351,11 @@ func NewOptimalΔOrbit(target Orbit, method ControlLawType, laws ...ControlLaw) 
 	for i, law := range laws {
 		cl.controls[i] = NewOptimalThrust(law, "multi-opti")
 	}
-	cl.GenericCL = GenericCL{"ΔOrbit", multiOpti}
+	if len(cl.controls) > 1 {
+		cl.GenericCL = GenericCL{"ΔOrbit", multiOpti}
+	} else {
+		cl.GenericCL = GenericCL{"ΔOrbit", cl.controls[0].Type()}
+	}
 	return &cl
 }
 
