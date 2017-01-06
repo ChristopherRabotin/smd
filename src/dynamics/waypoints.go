@@ -375,8 +375,8 @@ func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 }
 
 // NewOrbitTarget defines a new orbit target.
-func NewOrbitTarget(target Orbit, action *WaypointAction) *OrbitTarget {
-	return &OrbitTarget{target, NewOptimalΔOrbit(target, Ruggerio), action, false}
+func NewOrbitTarget(target Orbit, action *WaypointAction, laws ...ControlLaw) *OrbitTarget {
+	return &OrbitTarget{target, NewOptimalΔOrbit(target, Ruggerio, laws), action, false}
 }
 
 // PlanetTarget allows to target an orbit.
@@ -413,12 +413,7 @@ func (wp *PlanetTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, b
 	//	if r := norm(o.GetR()); r > wp.destSOILower && r < wp.destSOIUpper {
 	if ok, _ := wp.target.Equals(o); ok {
 		wp.cleared = true
-	} /*else if !wp.switchedCtrl {
-		fmt.Println("switching optimal control")
-		wp.switchedCtrl = true
-		wp.ctrl = NewOptimalΔOrbit(wp.target, OptiΔeCL, OptiΔiCL)
-	}*/
-	//}
+	}
 	return wp.ctrl, wp.cleared
 }
 
@@ -428,5 +423,5 @@ func NewPlanetTarget(body CelestialObject, dt time.Time, action *WaypointAction)
 	destRAtDT := norm(target.GetR())
 	lower := destRAtDT + body.SOI*0.01
 	upper := destRAtDT + body.SOI*0.10
-	return &PlanetTarget{target, NewOptimalΔOrbit(target, Ruggerio), action, lower, upper, false, false}
+	return &PlanetTarget{target, NewOptimalΔOrbit(target, Ruggerio, []ControlLaw{}), action, lower, upper, false, false}
 }

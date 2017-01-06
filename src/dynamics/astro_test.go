@@ -141,7 +141,7 @@ func TestCorrectOEa(t *testing.T) {
 	thrusters := []Thruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
-	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, OptiΔaCL)})
 	start := time.Now()
 	end := start.Add(time.Duration(37*24) * time.Hour)
 	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
@@ -163,7 +163,7 @@ func TestCorrectOEaNeg(t *testing.T) {
 	thrusters := []Thruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
-	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, OptiΔaCL)})
 	start := time.Now()
 	end := start.Add(time.Duration(45*24) * time.Hour)
 	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
@@ -185,7 +185,7 @@ func TestCorrectOEi(t *testing.T) {
 	thrusters := []Thruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
-	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, OptiΔiCL)})
 	start := time.Now()
 	end := start.Add(time.Duration(54*24) * time.Hour)
 	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
@@ -207,7 +207,7 @@ func TestCorrectOEiNeg(t *testing.T) {
 	thrusters := []Thruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
-	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, OptiΔiCL)})
 	start := time.Now()
 	end := start.Add(time.Duration(54*24) * time.Hour)
 	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
@@ -229,7 +229,7 @@ func TestCorrectOEΩ(t *testing.T) {
 	thrusters := []Thruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
-	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, OptiΔΩCL)})
 	start := time.Now()
 	end := start.Add(time.Duration(49*24) * time.Hour) // just after the expected time
 	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
@@ -251,7 +251,7 @@ func TestCorrectOEΩNeg(t *testing.T) {
 	thrusters := []Thruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
-	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, OptiΔΩCL)})
 	start := time.Now()
 	end := start.Add(time.Duration(49*24) * time.Hour) // just after the expected time
 	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
@@ -265,8 +265,8 @@ func TestCorrectOEΩNeg(t *testing.T) {
 	}
 }
 
-// TestMultiCorrect runs the test case from the Ruggerio 2012 conference paper.
-func TestMultiCorrect(t *testing.T) {
+// TestMultiCorrectOE runs the test case from the Ruggerio 2012 conference paper.
+func TestMultiCorrectOE(t *testing.T) {
 	oInit := NewOrbitFromOE(24396, 0.7283, 7, 1, 1, 1, Earth)
 	oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
 	eps := NewUnlimitedEPS()

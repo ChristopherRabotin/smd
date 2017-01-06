@@ -335,7 +335,7 @@ type OptimalΔOrbit struct {
 }
 
 // NewOptimalΔOrbit generates a new OptimalΔOrbit based on the provided target orbit.
-func NewOptimalΔOrbit(target Orbit, method ControlLawType, laws ...ControlLaw) *OptimalΔOrbit {
+func NewOptimalΔOrbit(target Orbit, method ControlLawType, laws []ControlLaw) *OptimalΔOrbit {
 	cl := OptimalΔOrbit{}
 	cl.cleared = false
 	cl.method = method
