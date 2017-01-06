@@ -294,14 +294,12 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 		break
 	case OptiΔiCL:
 		ctrl = func(o Orbit) []float64 {
-			return unitΔvFromAngles(0.0, math.Pi/2)
-			//return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
+			return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
 		}
 		break
 	case OptiΔΩCL:
 		ctrl = func(o Orbit) []float64 {
-			return unitΔvFromAngles(0.0, -math.Pi/2)
-			//return unitΔvFromAngles(0.0, sign(math.Sin(o.ω+o.ν))*math.Pi/2)
+			return unitΔvFromAngles(0.0, sign(math.Sin(o.ω+o.ν))*math.Pi/2)
 		}
 		break
 	case OptiΔωCL:
@@ -438,9 +436,10 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				cl.cleared = false // We're not actually done.
 				tmpThrust := ctrl.Control(o)
 				// JIT changes for Ruggerio out of plane thrust direction
-				if ctrl.Type() == OptiΔiCL && target < oscul {
+				if ctrl.Type() == OptiΔiCL && target > oscul {
 					tmpThrust[2] *= -1
-				} else if ctrl.Type() == OptiΔΩCL && target > oscul {
+				}
+				if ctrl.Type() == OptiΔΩCL && target > oscul {
 					tmpThrust[2] *= -1
 				}
 				for i := 0; i < 3; i++ {
