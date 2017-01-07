@@ -153,7 +153,7 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	// Note that we modulo here *and* in Func because the last step of the integrator
 	// adds up all the previous values with weights!
 	a.Orbit.a = s[0]
-	a.Orbit.e = s[1] // eccentricity is always a positive number
+	a.Orbit.e = math.Abs(s[1]) // eccentricity is always a positive number
 	a.Orbit.i = math.Mod(s[2], 2*math.Pi)
 	a.Orbit.Ω = math.Mod(s[3], 2*math.Pi)
 	a.Orbit.ω = math.Mod(s[4], 2*math.Pi)
