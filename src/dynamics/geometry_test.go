@@ -32,6 +32,12 @@ func TestAngles(t *testing.T) {
 			t.Fatalf("incorrect conversion for %3.2f", i)
 		}
 	}
+	if ok, _ := anglesEqual(1, Rad2deg(Deg2rad(-359.))); !ok {
+		t.Fatal("incorrect conversion for -359")
+	}
+	if ok, _ := anglesEqual(math.Pi/3, Deg2rad(Rad2deg(-5*math.Pi/3))); !ok {
+		t.Fatal("incorrect conversion for -pi/3")
+	}
 }
 
 func TestSpherical2Cartisean(t *testing.T) {

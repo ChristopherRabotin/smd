@@ -75,14 +75,13 @@ func TestAstrocroGEO(t *testing.T) {
 	ω0 := 10.0
 	Ω0 := 5.0
 	ν0 := 0.0
-	// Propagating for 1.5 orbits to ensure that time and orbital elements are changed accordingly.
-	// Note that the 0.08 is needed because of the int64 truncation of the orbit duration.
-	oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0+180.08, Earth)
+	// Propagating for 0.5 orbits to ensure that time and orbital elements are changed accordingly.
+	oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0+180.06, Earth)
 	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
 	// Define propagation parameters.
 	start := time.Now()
-	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second) + (time.Duration(916) * time.Millisecond)
-	end := start.Add(time.Duration(float64(geoDur) * 1.5))
+	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
+	end := start.Add(time.Duration(float64(geoDur) * 0.5))
 	astro := NewAstro(NewEmptySC("test", 1500), oOsc, start, end, ExportConfig{})
 	// Start propagation.
 	astro.Propagate()

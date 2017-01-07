@@ -49,8 +49,7 @@ func (o *Orbit) GetU() float64 {
 
 // GetH returns the orbital angular momentum.
 func (o *Orbit) GetH() float64 {
-	R, V := o.GetRV()
-	return norm(cross(R, V))
+	return norm(cross(o.GetRV()))
 }
 
 // GetSemiParameter returns the apoapsis.

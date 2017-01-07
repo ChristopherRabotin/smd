@@ -68,13 +68,19 @@ func Cartesian2Spherical(a []float64) (b []float64) {
 	return
 }
 
-// Deg2rad converts degrees to radians.
+// Deg2rad converts degrees to radians, and enforced only positive numbers.
 func Deg2rad(a float64) float64 {
+	if a < 0 {
+		a += 360
+	}
 	return (a / 360.0) * 2 * math.Pi
 }
 
-// Rad2deg converts radians to degrees.
+// Rad2deg converts radians to degrees, and enforced only positive numbers.
 func Rad2deg(a float64) float64 {
+	if a < 0 {
+		a += 2 * math.Pi
+	}
 	return a / (2 * math.Pi) * 360.0
 }
 
