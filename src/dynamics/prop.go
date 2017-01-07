@@ -289,7 +289,8 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 		ctrl = func(o Orbit) []float64 {
 			_, cosE := o.GetSinCosE()
 			sinν, cosν := math.Sincos(o.ν)
-			return unitΔvFromAngles(math.Atan2(sinν, cosν+cosE), 0.0)
+			// WARNING: Using Atan2 for quadrant check actually breaks things...
+			return unitΔvFromAngles(math.Atan(sinν/(cosν+cosE)), 0.0)
 		}
 		break
 	case OptiΔiCL:
