@@ -12,7 +12,6 @@ func TestOrbitRV2COE(t *testing.T) {
 	R := []float64{6524.834, 6862.875, 6448.296}
 	V := []float64{4.901327, 5.533756, -1.976341}
 	o := NewOrbitFromRV(R, V, Earth)
-	//t.Logf("|R|=%f\tr=%f", norm(R), o.GetPeriapsis()/(1+o.e*math.Cos(o.ν)))
 	oT := NewOrbitFromOE(36127.343, 0.832853, 87.870, 227.898, 53.38, 92.335, Earth)
 	if ok, err := o.StrictlyEquals(*oT); !ok {
 		t.Fatalf("orbits differ: %s", err)

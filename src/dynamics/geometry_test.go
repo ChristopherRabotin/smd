@@ -87,6 +87,12 @@ func TestMisc(t *testing.T) {
 	if norm(nilVec) != 0 {
 		t.Fatal("norm of a nil vector was not nil")
 	}
+	five0 := []float64{5, 6, 7}
+	five1 := []float64{7, 6, 5}
+	five2 := []float64{6, 7, 5}
+	if norm(five0) != math.Sqrt(110) || norm(five0) != norm(five1) || norm(five0) != norm(five2) {
+		t.Fatal("norm of the [5, 6, 7] and permutations is invalid")
+	}
 	uNilVec := unit(nilVec)
 	for i := 0; i < 3; i++ {
 		if uNilVec[i] != nilVec[i] {
