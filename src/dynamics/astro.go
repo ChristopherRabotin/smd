@@ -153,7 +153,7 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	// Note that we modulo here *and* in Func because the last step of the integrator
 	// adds up all the previous values with weights!
 	a.Orbit.a = s[0]
-	a.Orbit.e = s[1]
+	a.Orbit.e = math.Abs(s[1]) // eccentricity is always a positive number
 	a.Orbit.i = math.Mod(s[2], 2*math.Pi)
 	a.Orbit.Ω = math.Mod(s[3], 2*math.Pi)
 	a.Orbit.ω = math.Mod(s[4], 2*math.Pi)
@@ -190,7 +190,7 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2], f[3], f[4], f[5], a.Orbit.Origin)
 	p := tmpOrbit.GetSemiParameter()
 	h := tmpOrbit.GetH()
-	r := norm(tmpOrbit.GetR())
+	r := tmpOrbit.GetRNorm()
 	sini, cosi := math.Sincos(tmpOrbit.i)
 	sinν, cosν := math.Sincos(tmpOrbit.ν)
 	sinζ, cosζ := math.Sincos(tmpOrbit.ω + tmpOrbit.ν)
@@ -215,6 +215,9 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	// d(fuel)/dt
 	fDot[6] = -usedFuel
 	for i := 0; i < 7; i++ {
+		if i > 2 && i < 6 {
+			fDot[i] = math.Mod(fDot[i], 2*math.Pi)
+		}
 		if math.IsNaN(fDot[i]) {
 			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\np=%f\th=%f\tsin=%f\tdv=%+v\ntmp:%s\ncur:%s", i, a.CurrentDT, p, h, sinν, Δv, tmpOrbit, a.Orbit))
 		}

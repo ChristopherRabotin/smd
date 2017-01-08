@@ -3,6 +3,7 @@ package dynamics
 import (
 	"fmt"
 	"math"
+	"os"
 	"testing"
 	"time"
 )
@@ -37,4 +38,41 @@ func TestHelio(t *testing.T) {
 	if math.Abs(norm(h1.GetV())-norm(h2.GetV())) > 1e-4 {
 		t.Fatal("velocity changed by more than 1 m/s in a minute")
 	}
+}
+
+func TestCosmoBodyChange(t *testing.T) {
+	ω := 10.0 // Made up
+	Ω := 5.0  // Made up
+	ν := 1.0  // I don't care about that guy.
+
+	initOrbit := NewOrbitFromOE(350+Earth.Radius, 0.01, 46, Ω, ω, ν, Earth)
+
+	/* Building spacecraft */
+	eps := NewUnlimitedEPS()
+	thrusters := []Thruster{new(PPS1350)}
+	dryMass := 300.0
+	fuelMass := 67.0
+	cargo := &Cargo{time.Now(), NewEmptySC("cargo0", 50)}
+	ref2sun := WaypointAction{Type: REFSUN, Cargo: cargo}
+	endLoiter := WaypointAction{Type: DROPCARGO, Cargo: nil}
+	waypoints := []Waypoint{
+		NewOutwardSpiral(Earth, &ref2sun),
+		NewLoiter(time.Duration(12)*time.Hour, &endLoiter),
+	}
+	sc := NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, []*Cargo{cargo}, waypoints)
+
+	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
+	end := start.Add(time.Duration(7*24) * time.Hour)      // Propagate for 7 days.
+
+	sc.LogInfo()
+	conf := ExportConfig{Filename: "Rugg", OE: true, Cosmo: true, Timestamp: false}
+	astro := NewAstro(sc, initOrbit, start, end, conf)
+	astro.Propagate()
+
+	// Delete the output files.
+	os.Remove(fmt.Sprintf("%s/orbital-elements-%s-0.csv", os.Getenv("DATAOUT"), conf.Filename))
+	os.Remove(fmt.Sprintf("%s/prop-%s-0.xyzv", os.Getenv("DATAOUT"), conf.Filename))
+	os.Remove(fmt.Sprintf("%s/orbital-elements-%s-1.csv", os.Getenv("DATAOUT"), conf.Filename))
+	os.Remove(fmt.Sprintf("%s/prop-%s-1.xyzv", os.Getenv("DATAOUT"), conf.Filename))
+	os.Remove(fmt.Sprintf("%s/catalog-%s.json", os.Getenv("DATAOUT"), conf.Filename))
 }

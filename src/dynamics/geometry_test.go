@@ -32,6 +32,12 @@ func TestAngles(t *testing.T) {
 			t.Fatalf("incorrect conversion for %3.2f", i)
 		}
 	}
+	if ok, _ := anglesEqual(1, Rad2deg(Deg2rad(-359.))); !ok {
+		t.Fatal("incorrect conversion for -359")
+	}
+	if ok, _ := anglesEqual(math.Pi/3, Deg2rad(Rad2deg(-5*math.Pi/3))); !ok {
+		t.Fatal("incorrect conversion for -pi/3")
+	}
 }
 
 func TestSpherical2Cartisean(t *testing.T) {
@@ -80,6 +86,12 @@ func TestMisc(t *testing.T) {
 	nilVec := []float64{0, 0, 0}
 	if norm(nilVec) != 0 {
 		t.Fatal("norm of a nil vector was not nil")
+	}
+	five0 := []float64{5, 6, 7}
+	five1 := []float64{7, 6, 5}
+	five2 := []float64{6, 7, 5}
+	if norm(five0) != math.Sqrt(110) || norm(five0) != norm(five1) || norm(five0) != norm(five2) {
+		t.Fatal("norm of the [5, 6, 7] and permutations is invalid")
 	}
 	uNilVec := unit(nilVec)
 	for i := 0; i < 3; i++ {

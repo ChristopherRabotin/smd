@@ -49,8 +49,7 @@ func (o *Orbit) GetU() float64 {
 
 // GetH returns the orbital angular momentum.
 func (o *Orbit) GetH() float64 {
-	R, V := o.GetRV()
-	return norm(cross(R, V))
+	return norm(cross(o.GetRV()))
 }
 
 // GetSemiParameter returns the apoapsis.
@@ -126,6 +125,12 @@ func (o *Orbit) GetRV() ([]float64, []float64) {
 func (o *Orbit) GetR() (R []float64) {
 	R, _ = o.GetRV()
 	return R
+}
+
+// GetRNorm returns the norm of the radius vector, but without computing the radius vector.
+// If only the norm is needed, it is encouraged to use this function instead of norm(o.GetR()).
+func (o *Orbit) GetRNorm() float64 {
+	return o.GetPeriapsis() / (1 + o.e*math.Cos(o.ν))
 }
 
 // GetV returns the velocity vector.
