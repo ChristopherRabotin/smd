@@ -375,8 +375,8 @@ func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 }
 
 // NewOrbitTarget defines a new orbit target.
-func NewOrbitTarget(target Orbit, action *WaypointAction, laws ...ControlLaw) *OrbitTarget {
-	return &OrbitTarget{target, NewOptimalΔOrbit(target, Ruggerio, laws), action, false}
+func NewOrbitTarget(target Orbit, action *WaypointAction, meth ControlLawType, laws ...ControlLaw) *OrbitTarget {
+	return &OrbitTarget{target, NewOptimalΔOrbit(target, meth, laws), action, false}
 }
 
 // PlanetTarget allows to target an orbit.
