@@ -396,62 +396,63 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		return thrust
 	}
 
-	if cl.method == Ruggerio {
-		cl.cleared = true
-		factor := func(oscul, init, target, tol float64) float64 {
+	cl.cleared = true
+	factor := func(oscul, init, target, tol float64) float64 {
+		if cl.method == Ruggerio {
 			if floats.EqualWithinAbs(init, target, tol) || floats.EqualWithinAbs(oscul, target, tol) {
 				return 0 // Don't want no NaNs now.
 			}
 			return (target - oscul) / (target - init)
 		}
+		return 0 // No other summing law implemented yet.
+	}
 
-		for _, ctrl := range cl.controls {
-			var oscul, init, target, tol float64
-			switch ctrl.Type() {
-			case OptiΔaCL:
-				oscul = o.a
-				init = cl.ainit
-				target = cl.atarget
-				tol = distanceε
-			case OptiΔeCL:
-				oscul = o.e
-				init = cl.einit
-				target = cl.etarget
-				tol = eccentricityε
-			case OptiΔiCL:
-				oscul = o.i
-				init = cl.iinit
-				target = cl.itarget
-				tol = angleε
-			case OptiΔΩCL:
-				oscul = o.Ω
-				init = cl.Ωinit
-				target = cl.Ωtarget
-				tol = angleε
-			case OptiΔωCL:
-				oscul = o.ω
-				init = cl.ωinit
-				target = cl.ωtarget
-				tol = angleε
+	for _, ctrl := range cl.controls {
+		var oscul, init, target, tol float64
+		switch ctrl.Type() {
+		case OptiΔaCL:
+			oscul = o.a
+			init = cl.ainit
+			target = cl.atarget
+			tol = distanceε
+		case OptiΔeCL:
+			oscul = o.e
+			init = cl.einit
+			target = cl.etarget
+			tol = eccentricityε
+		case OptiΔiCL:
+			oscul = o.i
+			init = cl.iinit
+			target = cl.itarget
+			tol = angleε
+		case OptiΔΩCL:
+			oscul = o.Ω
+			init = cl.Ωinit
+			target = cl.Ωtarget
+			tol = angleε
+		case OptiΔωCL:
+			oscul = o.ω
+			init = cl.ωinit
+			target = cl.ωtarget
+			tol = angleε
+		}
+		fact := factor(oscul, init, target, tol)
+		if fact != 0 {
+			cl.cleared = false // We're not actually done.
+			tmpThrust := ctrl.Control(o)
+			// JIT changes for Ruggerio out of plane thrust direction
+			if target > oscul {
+				if ctrl.Type() == OptiΔiCL || ctrl.Type() == OptiΔΩCL {
+					tmpThrust[2] *= -1
+				}
+			} else {
+				if ctrl.Type() == OptiΔaCL {
+					tmpThrust[0] *= -1
+					tmpThrust[1] *= -1
+				}
 			}
-			fact := factor(oscul, init, target, tol)
-			if fact != 0 {
-				cl.cleared = false // We're not actually done.
-				tmpThrust := ctrl.Control(o)
-				// JIT changes for Ruggerio out of plane thrust direction
-				if target > oscul {
-					if ctrl.Type() == OptiΔiCL || ctrl.Type() == OptiΔΩCL {
-						tmpThrust[2] *= -1
-					}
-				} else {
-					if ctrl.Type() == OptiΔaCL {
-						tmpThrust[0] *= -1
-						tmpThrust[1] *= -1
-					}
-				}
-				for i := 0; i < 3; i++ {
-					thrust[i] += fact * tmpThrust[i]
-				}
+			for i := 0; i < 3; i++ {
+				thrust[i] += fact * tmpThrust[i]
 			}
 		}
 	}

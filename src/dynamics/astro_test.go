@@ -370,3 +370,101 @@ func TestMultiCorrectOE(t *testing.T) {
 		t.Fatalf("Correct failed: %s", err)
 	}
 }
+
+func TestPetropoulosCaseA(t *testing.T) {
+	t.Skip("Case A fails because Petropoulos not yet implemented")
+	oInit := NewOrbitFromOE(7000, 0.01, 0.05, 0, 0, 1, Earth)
+	oTarget := NewOrbitFromOE(42000, 0.01, 0.05, 0, 0, 1, Earth)
+	eps := NewUnlimitedEPS()
+	thrusters := []Thruster{NewGenericEP(1, 3100)}
+	dryMass := 1.0
+	fuelMass := 299.0
+	sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, OptiΔaCL, OptiΔeCL)})
+	start := time.Now()
+	// With eta=0.968, the duration is 152.389 days.
+	end := start.Add(time.Duration(153*24) * time.Hour)
+	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
+	astro.Propagate()
+	if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
+		t.Fatalf("\ntarget orbit: %s\nfinal orbit:  %s", oTarget, astro.Orbit)
+	}
+}
+
+func TestPetropoulosCaseB(t *testing.T) {
+	t.Skip("Case B *panics* because Petropoulos not yet implemented")
+	/*
+			--- FAIL: TestPetropoulosCaseB (10.66s)
+		panic: fDot[0]=NaN @ dt=2017-03-03 05:34:49.897963525 +0000 UTC
+		p=-29614018966.178040   h=NaN   sin=0.048633    dv=[1.7976900650108415e-07 3.2212905975098715e-08 -1.0897265151164653e-16]
+		tmp:a=728041967465511.750 e=1.000 i=0.104 ω=0.541 Ω=359.421 ν=2.788
+		cur:a=24975088807143.336 e=1.000 i=5.957 ω=31.023 Ω=326.848 ν=159.701 [recovered]
+		        panic: fDot[0]=NaN @ dt=2017-03-03 05:34:49.897963525 +0000 UTC
+		p=-29614018966.178040   h=NaN   sin=0.048633    dv=[1.7976900650108415e-07 3.2212905975098715e-08 -1.0897265151164653e-16]
+		tmp:a=728041967465511.750 e=1.000 i=0.104 ω=0.541 Ω=359.421 ν=2.788
+		cur:a=24975088807143.336 e=1.000 i=5.957 ω=31.023 Ω=326.848 ν=159.701
+	*/
+	oInit := NewOrbitFromOE(24505.9, 0.725, 7.05, 0, 0, 1, Earth)
+	oTarget := NewOrbitFromOE(42165, 0.001, 0.05, 0, 1, 1, Earth)
+	eps := NewUnlimitedEPS()
+	thrusters := []Thruster{NewGenericEP(0.350, 2000)}
+	dryMass := 1.0
+	fuelMass := 1999.0
+	sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, OptiΔaCL, OptiΔeCL, OptiΔiCL)})
+	start := time.Now()
+	// There is no provided time, but the graph goes all the way to 1000 days.
+	end := start.Add(time.Duration(1000*24) * time.Hour)
+	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
+	astro.Propagate()
+	if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) || !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) {
+		t.Fatalf("\ntarget orbit: %s\nfinal orbit:  %s", oTarget, astro.Orbit)
+	}
+}
+
+func TestPetropoulosCaseC(t *testing.T) {
+	t.Skip("Case C fails because Petropoulos not yet implemented")
+	oInit := NewOrbitFromOE(9222.7, 0.02, 0.573, 0, 0, 1, Earth)
+	oTarget := NewOrbitFromOE(3000, 0.7, 0.573, 0, 1, 1, Earth)
+	eps := NewUnlimitedEPS()
+	thrusters := []Thruster{NewGenericEP(9.3, 3100)}
+	dryMass := 1.0
+	fuelMass := 299.0
+	sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, OptiΔaCL, OptiΔeCL)})
+	start := time.Now()
+	// There is no provided time, but the graph goes all the way to 1000 days.
+	end := start.Add(time.Duration(8*24) * time.Hour)
+	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
+	astro.Propagate()
+	if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
+		t.Fatalf("\ntarget orbit: %s\nfinal orbit:  %s", oTarget, astro.Orbit)
+	}
+}
+
+func TestPetropoulosCaseE(t *testing.T) {
+	t.Skip("Case E *panics* because Petropoulos not yet implemented")
+	/*
+			--- FAIL: TestPetropoulosCaseE (2.01s)
+		panic: fDot[0]=NaN @ dt=2017-01-16 20:47:31.589238985 +0000 UTC
+		p=-3017860045.633927    h=NaN   sin=0.086988    dv=[-6.264196339417118e-07 8.308510505025826e-07 1.4459733195441482e-14]
+		tmp:a=11953681102430.662 e=1.000 i=0.006 ω=356.515 Ω=3.523 ν=4.990
+		cur:a=409584267023.699 e=0.999 i=0.355 ω=160.296 Ω=201.839 ν=285.949 [recovered]
+		        panic: fDot[0]=NaN @ dt=2017-01-16 20:47:31.589238985 +0000 UTC
+		p=-3017860045.633927    h=NaN   sin=0.086988    dv=[-6.264196339417118e-07 8.308510505025826e-07 1.4459733195441482e-14]
+		tmp:a=11953681102430.662 e=1.000 i=0.006 ω=356.515 Ω=3.523 ν=4.990
+		cur:a=409584267023.699 e=0.999 i=0.355 ω=160.296 Ω=201.839 ν=285.949
+	*/
+	oInit := NewOrbitFromOE(24505.9, 0.725, 0.06, 0, 0, 1, Earth)
+	oTarget := NewOrbitFromOE(26500, 0.7, 116, 270, 180, 1, Earth)
+	eps := NewUnlimitedEPS()
+	thrusters := []Thruster{NewGenericEP(2, 2000)}
+	dryMass := 1.0
+	fuelMass := 1999.0
+	sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil)})
+	start := time.Now()
+	// There is no provided time, but the graph goes all the way to 240 days.
+	end := start.Add(time.Duration(240*24) * time.Hour)
+	astro := NewAstro(sc, oInit, start, end, ExportConfig{})
+	astro.Propagate()
+	if ok, err := astro.Orbit.Equals(*oTarget); !ok {
+		t.Fatalf("error: %s\ntarget orbit: %s\nfinal orbit:  %s", err, oTarget, astro.Orbit)
+	}
+}
