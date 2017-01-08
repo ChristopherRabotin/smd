@@ -474,7 +474,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	case Naasz:
 		// Note that, as described in Hatten MSc. thesis, the summing method only
 		// works one way (because of the δO^2) per OE. So I added the sign function
-		// before that to fix it.
+		// *every here and there* as needed that to fix it.
 		for _, ctrl := range cl.controls {
 			var weight, δO float64
 			p := o.GetSemiParameter()
@@ -487,6 +487,9 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				if math.Abs(δO) < distanceε {
 					δO = 0
 				}
+				if δO > 0 {
+					weight *= -1
+				}
 			case OptiΔeCL:
 				weight = math.Pow(h, 2) / (4 * math.Pow(p, 2))
 				δO = o.e - cl.etarget
@@ -494,13 +497,13 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 					δO = 0
 				}
 			case OptiΔiCL:
-				weight = math.Pow((h+o.e*h*math.Cos(o.ω+math.Asin(o.e*sinω)))/(p*(math.Pow(o.e*sinω, 2)-1)), 2)
+				weight = sign(δO) * math.Pow((h+o.e*h*math.Cos(o.ω+math.Asin(o.e*sinω)))/(p*(math.Pow(o.e*sinω, 2)-1)), 2)
 				δO = o.i - cl.itarget
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}
 			case OptiΔΩCL:
-				weight = math.Pow((h*math.Sin(o.i)*(o.e*math.Sin(o.ω+math.Asin(o.e*cosω))-1))/(p*(1-math.Pow(o.e*cosω, 2))), 2)
+				weight = sign(δO) * math.Pow((h*math.Sin(o.i)*(o.e*math.Sin(o.ω+math.Asin(o.e*cosω))-1))/(p*(1-math.Pow(o.e*cosω, 2))), 2)
 				δO = o.Ω - cl.Ωtarget
 				if math.Abs(δO) < angleε {
 					δO = 0
@@ -515,8 +518,9 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			if δO != 0 {
 				cl.cleared = false // We're not actually done.
 				tmpThrust := ctrl.Control(o)
+				fact := 0.5 * weight * math.Pow(δO, 2)
 				for i := 0; i < 3; i++ {
-					thrust[i] += 0.5 * weight * math.Pow(δO, 2) * tmpThrust[i]
+					thrust[i] += fact * tmpThrust[i]
 				}
 
 			}
