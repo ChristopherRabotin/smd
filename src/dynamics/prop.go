@@ -341,11 +341,7 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 // OptimalΔOrbit combines all the control laws from Ruggiero et al.
 type OptimalΔOrbit struct {
 	Initd, cleared bool
-	ainit, atarget float64
-	iinit, itarget float64
-	einit, etarget float64
-	Ωinit, Ωtarget float64
-	ωinit, ωtarget float64
+	oInit, oTgt    Orbit //local copy of the inital and target orbits.
 	controls       []ThrustControl
 	method         ControlLawType
 	GenericCL
@@ -356,11 +352,7 @@ func NewOptimalΔOrbit(target Orbit, method ControlLawType, laws []ControlLaw) *
 	cl := OptimalΔOrbit{}
 	cl.cleared = false
 	cl.method = method
-	cl.atarget = target.a
-	cl.etarget = target.e
-	cl.itarget = target.i
-	cl.ωtarget = target.ω
-	cl.Ωtarget = target.Ω
+	cl.oTgt = target
 	if len(laws) == 0 {
 		laws = []ControlLaw{OptiΔaCL, OptiΔeCL, OptiΔiCL, OptiΔΩCL, OptiΔωCL}
 	}
@@ -384,28 +376,24 @@ func (cl *OptimalΔOrbit) String() string {
 func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	thrust := []float64{0, 0, 0}
 	if !cl.Initd {
-		cl.ainit = o.a
-		cl.einit = o.e
-		cl.iinit = o.i
-		cl.Ωinit = o.Ω
-		cl.ωinit = o.ω
+		cl.oInit = o
 		cl.Initd = true
 		if len(cl.controls) == 5 {
 			// Let's populate this with the appropriate laws, so we're resetting it.
 			cl.controls = make([]ThrustControl, 0)
-			if !floats.EqualWithinAbs(cl.ainit, cl.atarget, distanceε) {
+			if !floats.EqualWithinAbs(cl.oInit.a, cl.oTgt.a, distanceε) {
 				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔaCL, "Δa"))
 			}
-			if !floats.EqualWithinAbs(cl.einit, cl.etarget, eccentricityε) {
+			if !floats.EqualWithinAbs(cl.oInit.e, cl.oTgt.e, eccentricityε) {
 				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔeCL, "Δe"))
 			}
-			if !floats.EqualWithinAbs(cl.iinit, cl.itarget, angleε) {
+			if !floats.EqualWithinAbs(cl.oInit.i, cl.oTgt.i, angleε) {
 				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔiCL, "Δi"))
 			}
-			if !floats.EqualWithinAbs(cl.Ωinit, cl.Ωtarget, angleε) {
+			if !floats.EqualWithinAbs(cl.oInit.Ω, cl.oTgt.Ω, angleε) {
 				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔΩCL, "ΔΩ"))
 			}
-			if !floats.EqualWithinAbs(cl.ωinit, cl.ωtarget, angleε) {
+			if !floats.EqualWithinAbs(cl.oInit.ω, cl.oTgt.ω, angleε) {
 				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔωCL, "Δω"))
 			}
 		}
@@ -427,28 +415,28 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			switch ctrl.Type() {
 			case OptiΔaCL:
 				oscul = o.a
-				init = cl.ainit
-				target = cl.atarget
+				init = cl.oInit.a
+				target = cl.oTgt.a
 				tol = distanceε
 			case OptiΔeCL:
 				oscul = o.e
-				init = cl.einit
-				target = cl.etarget
+				init = cl.oInit.e
+				target = cl.oTgt.e
 				tol = eccentricityε
 			case OptiΔiCL:
 				oscul = o.i
-				init = cl.iinit
-				target = cl.itarget
+				init = cl.oInit.i
+				target = cl.oTgt.i
 				tol = angleε
 			case OptiΔΩCL:
 				oscul = o.Ω
-				init = cl.Ωinit
-				target = cl.Ωtarget
+				init = cl.oInit.Ω
+				target = cl.oTgt.Ω
 				tol = angleε
 			case OptiΔωCL:
 				oscul = o.ω
-				init = cl.ωinit
-				target = cl.ωtarget
+				init = cl.oInit.ω
+				target = cl.oTgt.ω
 				tol = angleε
 			}
 			fact := factor(oscul, init, target, tol)
@@ -483,7 +471,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			switch ctrl.Type() {
 			case OptiΔaCL:
 				weight = math.Pow(h, 2) / (4 * math.Pow(o.a, 4) * math.Pow(1+o.e, 2))
-				δO = o.a - cl.atarget
+				δO = o.a - cl.oTgt.a
 				if math.Abs(δO) < distanceε {
 					δO = 0
 				}
@@ -492,25 +480,25 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				}
 			case OptiΔeCL:
 				weight = math.Pow(h, 2) / (4 * math.Pow(p, 2))
-				δO = o.e - cl.etarget
+				δO = o.e - cl.oTgt.e
 				if math.Abs(δO) < eccentricityε {
 					δO = 0
 				}
 			case OptiΔiCL:
 				weight = sign(δO) * math.Pow((h+o.e*h*math.Cos(o.ω+math.Asin(o.e*sinω)))/(p*(math.Pow(o.e*sinω, 2)-1)), 2)
-				δO = o.i - cl.itarget
+				δO = o.i - cl.oTgt.i
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}
 			case OptiΔΩCL:
 				weight = sign(δO) * math.Pow((h*math.Sin(o.i)*(o.e*math.Sin(o.ω+math.Asin(o.e*cosω))-1))/(p*(1-math.Pow(o.e*cosω, 2))), 2)
-				δO = o.Ω - cl.Ωtarget
+				δO = o.Ω - cl.oTgt.Ω
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}
 			case OptiΔωCL:
 				weight = (math.Pow(o.e*h, 2) / (4 * math.Pow(p, 2))) * (1 - math.Pow(o.e, 2)/4)
-				δO = o.ω - cl.ωtarget
+				δO = o.ω - cl.oTgt.ω
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}
