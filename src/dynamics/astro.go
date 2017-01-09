@@ -219,7 +219,9 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 			fDot[i] = math.Mod(fDot[i], 2*math.Pi)
 		}
 		if math.IsNaN(fDot[i]) {
-			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\np=%f\th=%f\tsin=%f\tdv=%+v\ntmp:%s\ncur:%s", i, a.CurrentDT, p, h, sinν, Δv, tmpOrbit, a.Orbit))
+			Rcur, Vcur := a.Orbit.GetRV()
+			Rtmp, Vtmp := tmpOrbit.GetRV()
+			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\np=%f\th=%f\tdv=%+v\ntmp:%s\ncur:%s\nR_cur=%+v\tV_cur=%+v\nR_tmp=%+v\tV_tmp=%+v", i, a.CurrentDT, p, h, Δv, tmpOrbit, a.Orbit, Rcur, Vcur, Rtmp, Vtmp))
 		}
 	}
 	return

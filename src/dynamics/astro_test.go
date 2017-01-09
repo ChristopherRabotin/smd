@@ -401,7 +401,7 @@ func TestMultiCorrectOE(t *testing.T) {
 		thrusters := []Thruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth)})
+		sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL, OptiΔiCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(104*24) * time.Hour) // just after the expected time
 		astro := NewAstro(sc, oInit, start, end, ExportConfig{})
