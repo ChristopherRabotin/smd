@@ -358,7 +358,7 @@ func NewOptimalΔOrbit(target Orbit, method ControlLawType, laws []ControlLaw) *
 	}
 	cl.controls = make([]ThrustControl, len(laws))
 	for i, law := range laws {
-		cl.controls[i] = NewOptimalThrust(law, "multi-opti")
+		cl.controls[i] = NewOptimalThrust(law, law.String())
 	}
 	if len(cl.controls) > 1 {
 		cl.GenericCL = GenericCL{"ΔOrbit", multiOpti}
@@ -439,11 +439,11 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				target = cl.oTgt.ω
 				tol = angleε
 			}
-			fact := factor(oscul, init, target, tol)
+			fact := math.Abs(factor(oscul, init, target, tol))
 			if fact != 0 {
 				cl.cleared = false // We're not actually done.
 				tmpThrust := ctrl.Control(o)
-				// JIT changes for Ruggerio
+				// JIT changes for Ruggerio, which makes it non-Lyapunov (\dot{V} \not\leq 0)
 				if target > oscul {
 					if ctrl.Type() == OptiΔiCL || ctrl.Type() == OptiΔΩCL {
 						tmpThrust[2] *= -1
@@ -470,38 +470,35 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			sinω, cosω := math.Sincos(o.ω)
 			switch ctrl.Type() {
 			case OptiΔaCL:
-				weight = math.Pow(h, 2) / (4 * math.Pow(o.a, 4) * math.Pow(1+o.e, 2))
 				δO = o.a - cl.oTgt.a
 				if math.Abs(δO) < distanceε {
 					δO = 0
 				}
-				if δO > 0 {
-					weight *= -1
-				}
+				weight = sign(-δO) * math.Pow(h, 2) / (4 * math.Pow(o.a, 4) * math.Pow(1+o.e, 2))
 			case OptiΔeCL:
-				weight = math.Pow(h, 2) / (4 * math.Pow(p, 2))
 				δO = o.e - cl.oTgt.e
 				if math.Abs(δO) < eccentricityε {
 					δO = 0
 				}
+				weight = math.Pow(h, 2) / (4 * math.Pow(p, 2))
 			case OptiΔiCL:
-				weight = sign(δO) * math.Pow((h+o.e*h*math.Cos(o.ω+math.Asin(o.e*sinω)))/(p*(math.Pow(o.e*sinω, 2)-1)), 2)
 				δO = o.i - cl.oTgt.i
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}
+				weight = sign(δO) * math.Pow((h+o.e*h*math.Cos(o.ω+math.Asin(o.e*sinω)))/(p*(math.Pow(o.e*sinω, 2)-1)), 2)
 			case OptiΔΩCL:
-				weight = sign(δO) * math.Pow((h*math.Sin(o.i)*(o.e*math.Sin(o.ω+math.Asin(o.e*cosω))-1))/(p*(1-math.Pow(o.e*cosω, 2))), 2)
 				δO = o.Ω - cl.oTgt.Ω
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}
+				weight = sign(δO) * math.Pow((h*math.Sin(o.i)*(o.e*math.Sin(o.ω+math.Asin(o.e*cosω))-1))/(p*(1-math.Pow(o.e*cosω, 2))), 2)
 			case OptiΔωCL:
-				weight = (math.Pow(o.e*h, 2) / (4 * math.Pow(p, 2))) * (1 - math.Pow(o.e, 2)/4)
 				δO = o.ω - cl.oTgt.ω
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}
+				weight = (math.Pow(o.e*h, 2) / (4 * math.Pow(p, 2))) * (1 - math.Pow(o.e, 2)/4)
 			}
 			if δO != 0 {
 				cl.cleared = false // We're not actually done.
@@ -510,8 +507,9 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				for i := 0; i < 3; i++ {
 					thrust[i] += fact * tmpThrust[i]
 				}
-
-			}
+			} /*else {
+				fmt.Printf("nil for %s\n", ctrl.Reason())
+			}*/
 		}
 	default:
 		panic(fmt.Errorf("control law sumation %+v not yet supported", cl.method))
