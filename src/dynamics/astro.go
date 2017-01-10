@@ -189,7 +189,7 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	}
 	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2], f[3], f[4], f[5], a.Orbit.Origin)
 	p := tmpOrbit.GetSemiParameter()
-	h := tmpOrbit.GetH()
+	h := tmpOrbit.GetHNorm()
 	r := tmpOrbit.GetRNorm()
 	sini, cosi := math.Sincos(tmpOrbit.i)
 	sinν, cosν := math.Sincos(tmpOrbit.ν)

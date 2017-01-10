@@ -466,7 +466,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		for _, ctrl := range cl.controls {
 			var weight, δO float64
 			p := o.GetSemiParameter()
-			h := o.GetH()
+			h := o.GetHNorm()
 			sinω, cosω := math.Sincos(o.ω)
 			switch ctrl.Type() {
 			case OptiΔaCL:
@@ -508,6 +508,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 					thrust[i] += fact * tmpThrust[i]
 				}
 			} /*else {
+				fmt.Printf("osc: %s\ntgt: %s\n", o, cl.oTgt)
 				fmt.Printf("nil for %s\n", ctrl.Reason())
 			}*/
 		}

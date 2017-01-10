@@ -208,11 +208,11 @@ func (wp *ReachEnergy) Cleared() bool {
 
 // ThrustDirection implements the Waypoint interface.
 func (wp *ReachEnergy) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if math.Abs(wp.finalξ-o.Energy()) < math.Abs(0.00001*wp.finalξ) {
+	if math.Abs(wp.finalξ-o.Getξ()) < math.Abs(0.00001*wp.finalξ) {
 		wp.cleared = true
 		return Coast{}, true
 	}
-	if math.Abs(wp.finalξ/o.Energy()) < wp.ratio {
+	if math.Abs(wp.finalξ/o.Getξ()) < wp.ratio {
 		return AntiTangential{}, false
 	}
 	return Tangential{}, false

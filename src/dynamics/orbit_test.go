@@ -14,6 +14,7 @@ func TestOrbitRV2COE(t *testing.T) {
 	o := NewOrbitFromRV(R, V, Earth)
 	oT := NewOrbitFromOE(36127.343, 0.832853, 87.870, 227.898, 53.38, 92.335, Earth)
 	if ok, err := o.StrictlyEquals(*oT); !ok {
+		t.Logf("\no0: %s\no1: %s", o, oT)
 		t.Fatalf("orbits differ: %s", err)
 	}
 	if ok, err := anglesEqual(Deg2rad(281.282), o.GetTildeω()); !ok {
@@ -21,6 +22,19 @@ func TestOrbitRV2COE(t *testing.T) {
 	}
 	if ok, err := anglesEqual(Deg2rad(145.714), o.GetU()); !ok {
 		t.Fatalf("argument of latitude invalid: %s (%f)", err, o.GetU())
+	}
+	valladoε := 1e-6
+	if !floats.EqualWithinAbs(o.Getξ(), -5.516604, valladoε) {
+		t.Fatalf("incorrect energy ξ=%f", o.Getξ())
+	}
+	if !floats.EqualWithinAbs(norm(o.GetR()), o.GetRNorm(), valladoε) {
+		t.Fatalf("incorrect r norm |R|=%f\tr=%f", norm(o.GetR()), o.GetRNorm())
+	}
+	if !floats.EqualWithinAbs(norm(o.GetV()), o.GetVNorm(), valladoε) {
+		t.Fatalf("incorrect v norm |V|=%f\tv=%f", norm(o.GetV()), o.GetVNorm())
+	}
+	if !floats.EqualWithinAbs(norm(o.GetH()), o.GetHNorm(), valladoε) {
+		t.Fatalf("incorrect h norm |h|=%f\th=%f", norm(o.GetH()), o.GetHNorm())
 	}
 	assertPanic(t, func() {
 		// We're far from a circular equatorial orbit, so this call should panic
@@ -153,4 +167,20 @@ func TestRadii2ae(t *testing.T) {
 	assertPanic(t, func() {
 		Radii2ae(1, 2)
 	})
+}
+
+func TestOrbitΦfpa(t *testing.T) {
+	for _, e := range []float64{0.5, 1} {
+		for _, ν := range []float64{-120, 120} {
+			o := NewOrbitFromOE(1e4, e, 1, 1, 1, ν, Earth)
+			Φ := math.Atan2(o.GetSinΦfpa(), o.GetCosΦfpa())
+			exp := (ν * e) / 2
+			if exp < 0 {
+				exp += 360
+			}
+			if sign(Φ) != sign(ν) || !floats.EqualWithinAbs(Rad2deg(Φ), exp, angleε) {
+				t.Fatalf("Φ = %f (%f) != %f for e=%f with ν=%f", Rad2deg(Φ), Φ, exp, e, ν)
+			}
+		}
+	}
 }
