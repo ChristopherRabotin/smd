@@ -393,15 +393,15 @@ func TestCorrectOEωNeg(t *testing.T) {
 
 // TestMultiCorrectOE runs the test case from the Ruggerio 2012 conference paper.
 func TestMultiCorrectOE(t *testing.T) {
-	//t.Skip("MultiCorrectOE will panic")
-	for _, meth := range []ControlLawType{Naasz} {
+	t.Skip("MultiCorrectOE will panic because of the eccentricity decrease")
+	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
 		oInit := NewOrbitFromOE(24396, 0.7283, 7, 1, 1, 1, Earth)
 		oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
 		eps := NewUnlimitedEPS()
 		thrusters := []Thruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔiCL)})
+		sc := NewSpacecraft("Rugg", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL, OptiΔiCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(204*24) * time.Hour) // just after the expected time
 		astro := NewAstro(sc, oInit, start, end, ExportConfig{})

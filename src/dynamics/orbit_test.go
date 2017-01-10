@@ -170,7 +170,7 @@ func TestRadii2ae(t *testing.T) {
 }
 
 func TestOrbitΦfpa(t *testing.T) {
-	for _, e := range []float64{0.5, 1} {
+	for _, e := range []float64{0.5, 1, 0} {
 		for _, ν := range []float64{-120, 120} {
 			o := NewOrbitFromOE(1e4, e, 1, 1, 1, ν, Earth)
 			Φ := math.Atan2(o.GetSinΦfpa(), o.GetCosΦfpa())
@@ -178,9 +178,32 @@ func TestOrbitΦfpa(t *testing.T) {
 			if exp < 0 {
 				exp += 360
 			}
-			if sign(Φ) != sign(ν) || !floats.EqualWithinAbs(Rad2deg(Φ), exp, angleε) {
+			if (e != 0 && sign(Φ) != sign(ν)) || !floats.EqualWithinAbs(Rad2deg(Φ), exp, angleε) {
 				t.Fatalf("Φ = %f (%f) != %f for e=%f with ν=%f", Rad2deg(Φ), Φ, exp, e, ν)
 			}
+		}
+	}
+}
+
+func TestOrbitEccentricAnomaly(t *testing.T) {
+	o := NewOrbitFromOE(9567205.5, 0.999, 1, 1, 1, 60, Earth)
+	sinE, cosE := o.GetSinCosE()
+	E0 := math.Acos(cosE)
+	E1 := math.Asin(sinE)
+	E2 := math.Atan2(sinE, cosE)
+	if !floats.EqualWithinAbs(E2, E0, angleε) || !floats.EqualWithinAbs(E2, E1, angleε) || !floats.EqualWithinAbs(E2, Deg2rad(1.479658), angleε) {
+		t.Fatal("specific value of E incorrect")
+	}
+	for ν := 0.0; ν < 360.0; ν += 0.1 {
+		o1 := NewOrbitFromOE(1e5, 0.2, 1, 1, 1, 60, Earth)
+		sinE, cosE = o1.GetSinCosE()
+		sinν := sinE * math.Sqrt(1-math.Pow(o1.e, 2)) / (1 - o1.e*cosE)
+		cosν := (cosE - o1.e) / (1 - o1.e*cosE)
+		ν0 := math.Acos(cosν)
+		ν1 := math.Asin(sinν)
+		ν2 := math.Atan2(sinν, cosν)
+		if !floats.EqualWithinAbs(ν2, ν0, angleε) || !floats.EqualWithinAbs(ν2, ν1, angleε) || !floats.EqualWithinAbs(ν2, o1.ν, angleε) {
+			t.Fatalf("computing E failed on ν=%f (cosE=%f\tsinE=%f\tν'=%f')", ν, cosE, sinE, ν0)
 		}
 	}
 }
