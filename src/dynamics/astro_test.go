@@ -151,7 +151,7 @@ func TestCorrectOEa(t *testing.T) {
 		}
 		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 17, 2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("too much fuel used: %f kg instead of 17", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 17", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
@@ -177,7 +177,7 @@ func TestCorrectOEaNeg(t *testing.T) {
 		}
 		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 21, 2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("too much fuel used: %f kg instead of 21", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 21", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
@@ -203,7 +203,7 @@ func TestCorrectOEi(t *testing.T) {
 		}
 		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 16, 2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("too much fuel used: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
@@ -229,7 +229,7 @@ func TestCorrectOEiNeg(t *testing.T) {
 		}
 		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 16, 2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("too much fuel used: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
@@ -255,7 +255,7 @@ func TestCorrectOEΩ(t *testing.T) {
 		}
 		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 16, 2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("too much fuel used: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
@@ -281,7 +281,7 @@ func TestCorrectOEΩNeg(t *testing.T) {
 		}
 		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 16, 2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("too much fuel used: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
@@ -307,14 +307,13 @@ func TestCorrectOEe(t *testing.T) {
 		}
 		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 10, 2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("too much fuel used: %f kg instead of 10", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 10", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
 
 // TestCorrectOEe runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEeNeg(t *testing.T) {
-	t.Skip("Making an orbit *less* eccentric fails (no panic)")
 	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
 		oInit := NewOrbitFromOE(Earth.Radius+9000, 0.15, 98.7, 0, 1, 1, Earth)
 		oTarget := NewOrbitFromOE(Earth.Radius+9000, 0.01, 98.7, 0, 1, 1, Earth)
@@ -332,9 +331,9 @@ func TestCorrectOEeNeg(t *testing.T) {
 			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 			t.Fatal("decreasing eccentricity failed")
 		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 16, 2) {
+		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 10, 2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("too much fuel used: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 10", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
@@ -360,7 +359,7 @@ func TestCorrectOEω(t *testing.T) {
 		}
 		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.3, 0.2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("too much fuel used: %f kg instead of 1", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 1", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
@@ -386,7 +385,7 @@ func TestCorrectOEωNeg(t *testing.T) {
 		}
 		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 23, 2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("too much fuel used: %f kg instead of 23", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 23", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
