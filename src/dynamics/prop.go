@@ -449,9 +449,10 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 						tmpThrust[2] *= -1
 					}
 				} else {
-					if ctrl.Type() == OptiΔaCL || ctrl.Type() == OptiΔeCL {
+					if ctrl.Type() == OptiΔaCL || ctrl.Type() == OptiΔeCL || ctrl.Type() == OptiΔωCL {
 						tmpThrust[0] *= -1
 						tmpThrust[1] *= -1
+						tmpThrust[2] *= -1 // Only needed for the argument of perigee negative change.
 					}
 				}
 				for i := 0; i < 3; i++ {
@@ -498,7 +499,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}
-				weight = (math.Pow(o.e*h, 2) / (4 * math.Pow(p, 2))) * (1 - math.Pow(o.e, 2)/4)
+				weight = sign(-δO) * (math.Pow(o.e*h, 2) / (4 * math.Pow(p, 2))) * (1 - math.Pow(o.e, 2)/4)
 			}
 			if δO != 0 {
 				cl.cleared = false // We're not actually done.

@@ -366,6 +366,7 @@ func TestCorrectOEω(t *testing.T) {
 
 // TestCorrectOEωNeg runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEωNeg(t *testing.T) {
+	//t.Skip("argument of perigee ")
 	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
 		oInit := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 6, 1, Earth)
 		oTarget := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 1, 1, Earth)
@@ -383,9 +384,9 @@ func TestCorrectOEωNeg(t *testing.T) {
 			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 			t.Fatal("decreasing argument of periapsis failed")
 		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 23, 2) {
+		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 1, 0.5) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 23", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of ~1", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
