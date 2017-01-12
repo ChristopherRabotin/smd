@@ -423,8 +423,9 @@ func (wp *PlanetTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, b
 // NewPlanetTarget defines a new orbit target.
 func NewPlanetTarget(body CelestialObject, dt time.Time, action *WaypointAction) *PlanetTarget {
 	target := body.HelioOrbit(dt)
+	target.i = Deg2rad(angleε)
 	destRAtDT := norm(target.GetR())
 	lower := destRAtDT + body.SOI*0.01
 	upper := destRAtDT + body.SOI*0.10
-	return &PlanetTarget{target, NewOptimalΔOrbit(target, Ruggerio, []ControlLaw{}), action, lower, upper, false, false}
+	return &PlanetTarget{target, NewOptimalΔOrbit(target, Ruggerio, []ControlLaw{OptiΔaCL, OptiΔiCL}), action, lower, upper, false, false}
 }

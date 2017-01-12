@@ -21,7 +21,7 @@ func main() {
 	thrusters := []dynamics.Thruster{new(dynamics.PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
-	waypoints := []dynamics.Waypoint{dynamics.NewOrbitTarget(*targetOrbit, nil)}
+	waypoints := []dynamics.Waypoint{dynamics.NewOrbitTarget(*targetOrbit, nil, dynamics.Ruggerio)}
 	sc := dynamics.NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, []*dynamics.Cargo{}, waypoints)
 
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
@@ -29,7 +29,7 @@ func main() {
 	//end := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC) // Let's not have this last too long if it doesn't converge.
 
 	sc.LogInfo()
-	astro := dynamics.NewAstro(sc, initOrbit, start, end, dynamics.ExportConfig{Filename: "Rugg", OE: true, Cosmo: false, Timestamp: false})
+	astro := dynamics.NewMission(sc, initOrbit, start, end, dynamics.ExportConfig{Filename: "Rugg", OE: true, Cosmo: false, Timestamp: false})
 	astro.Propagate()
 
 }
