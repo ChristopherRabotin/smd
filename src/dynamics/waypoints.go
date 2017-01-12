@@ -208,11 +208,11 @@ func (wp *ReachEnergy) Cleared() bool {
 
 // ThrustDirection implements the Waypoint interface.
 func (wp *ReachEnergy) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if math.Abs(wp.finalξ-o.Energy()) < math.Abs(0.00001*wp.finalξ) {
+	if math.Abs(wp.finalξ-o.Getξ()) < math.Abs(0.00001*wp.finalξ) {
 		wp.cleared = true
 		return Coast{}, true
 	}
-	if math.Abs(wp.finalξ/o.Energy()) < wp.ratio {
+	if math.Abs(wp.finalξ/o.Getξ()) < wp.ratio {
 		return AntiTangential{}, false
 	}
 	return Tangential{}, false
@@ -375,8 +375,11 @@ func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 }
 
 // NewOrbitTarget defines a new orbit target.
-func NewOrbitTarget(target Orbit, action *WaypointAction, laws ...ControlLaw) *OrbitTarget {
-	return &OrbitTarget{target, NewOptimalΔOrbit(target, Ruggerio, laws), action, false}
+func NewOrbitTarget(target Orbit, action *WaypointAction, meth ControlLawType, laws ...ControlLaw) *OrbitTarget {
+	if target.GetPeriapsis() < target.Origin.Radius || target.GetApoapsis() < target.Origin.Radius {
+		fmt.Printf("[WARNING] Target orbit on collision course with %s\n", target.Origin)
+	}
+	return &OrbitTarget{target, NewOptimalΔOrbit(target, meth, laws), action, false}
 }
 
 // PlanetTarget allows to target an orbit.

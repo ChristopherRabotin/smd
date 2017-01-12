@@ -23,8 +23,8 @@ type Orbit struct {
 	cachedR, cachedV []float64
 }
 
-// Energy returns the energy ξ of this orbit.
-func (o *Orbit) Energy() float64 {
+// Getξ returns the specific mechanical energy ξ.
+func (o *Orbit) Getξ() float64 {
 	return -o.Origin.μ / (2 * o.a)
 }
 
@@ -47,9 +47,32 @@ func (o *Orbit) GetU() float64 {
 	return o.ν + o.ω
 }
 
-// GetH returns the orbital angular momentum.
-func (o *Orbit) GetH() float64 {
-	return norm(cross(o.GetRV()))
+// GetH returns the orbital angular momentum vector.
+func (o *Orbit) GetH() []float64 {
+	return cross(o.GetRV())
+}
+
+// GetHNorm returns the norm of orbital angular momentum.
+func (o *Orbit) GetHNorm() float64 {
+	return o.GetRNorm() * o.GetVNorm() * o.GetCosΦfpa()
+}
+
+// GetCosΦfpa returns the cosine of the flight path angle.
+// WARNING: As per Vallado page 105, *do not* use math.Acos(o.GetCosΦfpa())
+// to get the flight path angle as you'll have a quadran problem. Instead
+// use math.Atan2(o.GetSinΦfpa(), o.GetCosΦfpa()).
+func (o *Orbit) GetCosΦfpa() float64 {
+	ecosν := o.e * math.Cos(o.ν)
+	return (1 + ecosν) / math.Sqrt(1+2*ecosν+math.Pow(o.e, 2))
+}
+
+// GetSinΦfpa returns the cosine of the flight path angle.
+// WARNING: As per Vallado page 105, *do not* use math.Asin(o.GetSinΦfpa())
+// to get the flight path angle as you'll have a quadran problem. Instead
+// use math.Atan2(o.GetSinΦfpa(), o.GetCosΦfpa()).
+func (o *Orbit) GetSinΦfpa() float64 {
+	sinν, cosν := math.Sincos(o.ν)
+	return (o.e * sinν) / math.Sqrt(1+2*o.e*cosν+math.Pow(o.e, 2))
 }
 
 // GetSemiParameter returns the apoapsis.
@@ -130,13 +153,25 @@ func (o *Orbit) GetR() (R []float64) {
 // GetRNorm returns the norm of the radius vector, but without computing the radius vector.
 // If only the norm is needed, it is encouraged to use this function instead of norm(o.GetR()).
 func (o *Orbit) GetRNorm() float64 {
-	return o.GetPeriapsis() / (1 + o.e*math.Cos(o.ν))
+	return o.GetSemiParameter() / (1 + o.e*math.Cos(o.ν))
 }
 
 // GetV returns the velocity vector.
 func (o *Orbit) GetV() (V []float64) {
 	_, V = o.GetRV()
 	return V
+}
+
+// GetVNorm returns the norm of the velocity vector, but without computing the velocity vector.
+// If only the norm is needed, it is encouraged to use this function instead of norm(o.GetV()).
+func (o *Orbit) GetVNorm() float64 {
+	if floats.EqualWithinAbs(o.e, 0, eccentricityε) {
+		return math.Sqrt(o.Origin.μ / o.GetRNorm())
+	}
+	if floats.EqualWithinAbs(o.e, 1, eccentricityε) {
+		return math.Sqrt(2 * o.Origin.μ / o.GetRNorm())
+	}
+	return math.Sqrt(2 * (o.Origin.μ/o.GetRNorm() + o.Getξ()))
 }
 
 func (o *Orbit) computeHash() {
@@ -147,8 +182,8 @@ func (o *Orbit) hashValid() bool {
 	return o.cacheHash == o.ω+o.ν+o.Ω+o.i+o.e+o.a
 }
 
-// String implements the stringer interface.
-func (o *Orbit) String() string {
+// String implements the stringer interface (hence the value receiver)
+func (o Orbit) String() string {
 	return fmt.Sprintf("a=%.3f e=%.3f i=%.3f ω=%.3f Ω=%.3f ν=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.ω), Rad2deg(o.Ω), Rad2deg(o.ν))
 }
 

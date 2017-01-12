@@ -28,8 +28,8 @@ type CelestialObject struct {
 }
 
 // String implements the Stringer interface.
-func (c *CelestialObject) String() string {
-	return fmt.Sprintf("[Object %s]", c.Name)
+func (c CelestialObject) String() string {
+	return c.Name + " body"
 }
 
 // Equals returns whether the provided celestial object is the same.
