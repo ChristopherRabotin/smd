@@ -10,9 +10,6 @@ import (
 
 func TestCelestialObject(t *testing.T) {
 	for _, object := range []CelestialObject{Sun, Earth, Mars} {
-		if object.String() != fmt.Sprintf("[Object %s]", object.Name) {
-			t.Fatalf("invalid String for %s", object.Name)
-		}
 		object.HelioOrbit(time.Now().UTC())
 	}
 }

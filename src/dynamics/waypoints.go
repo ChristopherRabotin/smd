@@ -376,6 +376,9 @@ func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 
 // NewOrbitTarget defines a new orbit target.
 func NewOrbitTarget(target Orbit, action *WaypointAction, meth ControlLawType, laws ...ControlLaw) *OrbitTarget {
+	if target.GetPeriapsis() < target.Origin.Radius || target.GetApoapsis() < target.Origin.Radius {
+		fmt.Printf("[WARNING] Target orbit on collision course with %s\n", target.Origin)
+	}
 	return &OrbitTarget{target, NewOptimalΔOrbit(target, meth, laws), action, false}
 }
 

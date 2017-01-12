@@ -20,14 +20,14 @@ var wg sync.WaitGroup
 // Astrocodile is an orbit propagator.
 // It's a play on words from STK's Atrogrator.
 type Astrocodile struct {
-	Vehicle   *Spacecraft // As pointer because SC may be altered during propagation.
-	Orbit     *Orbit      // As pointer because the orbit changes during propagation.
-	StartDT   time.Time
-	EndDT     time.Time
-	CurrentDT time.Time
-	StopChan  chan (bool)
-	histChan  chan<- (AstroState)
-	done      bool
+	Vehicle        *Spacecraft // As pointer because SC may be altered during propagation.
+	Orbit          *Orbit      // As pointer because the orbit changes during propagation.
+	StartDT        time.Time
+	EndDT          time.Time
+	CurrentDT      time.Time
+	StopChan       chan (bool)
+	histChan       chan<- (AstroState)
+	done, collided bool
 }
 
 // NewAstro returns a new Astrocodile instance from the position and velocity vectors.
@@ -52,7 +52,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, conf ExportConfig) 
 		end = end.UTC()
 	}
 
-	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan, false}
+	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- AstroState{a.CurrentDT, *s, *o}
@@ -168,9 +168,14 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	a.Vehicle.FuncQ = make([]func(), 5) // Clear the queue.
 
 	// Orbit sanity checks
-	if rNorm := norm(a.Orbit.GetR()); rNorm < a.Orbit.Origin.Radius {
-		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "collided", a.Orbit.Origin.Name)
-	} else if rNorm > a.Orbit.Origin.SOI {
+	if !a.collided && a.Orbit.GetRNorm() < a.Orbit.Origin.Radius {
+		a.collided = true
+		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "collided", a.Orbit.Origin.Name, "dt", a.CurrentDT)
+	} else if a.collided && a.Orbit.GetRNorm() > a.Orbit.Origin.Radius*1.01 {
+		// Now further from the 1% dead zone
+		a.collided = false
+		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "revived", a.Orbit.Origin.Name, "dt", a.CurrentDT)
+	} else if a.Orbit.GetRNorm() > a.Orbit.Origin.SOI {
 		a.Vehicle.ToXCentric(Sun, a.CurrentDT, a.Orbit)
 	}
 

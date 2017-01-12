@@ -507,10 +507,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				for i := 0; i < 3; i++ {
 					thrust[i] += fact * tmpThrust[i]
 				}
-			} /*else {
-				fmt.Printf("osc: %s\ntgt: %s\n", o, cl.oTgt)
-				fmt.Printf("nil for %s\n", ctrl.Reason())
-			}*/
+			}
 		}
 	default:
 		panic(fmt.Errorf("control law sumation %+v not yet supported", cl.method))
