@@ -212,13 +212,6 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	fR := Δv[0]
 	fS := Δv[1]
 	fW := Δv[2]
-	if a.includeJ2 && tmpOrbit.Origin.J2 > 0 {
-		μr2 := tmpOrbit.Origin.μ / math.Pow(r, 2)
-		fR += μr2 * tmpOrbit.Origin.J2 * 3 * math.Pow(tmpOrbit.Origin.Radius/r, 2) * LegendreP2(sini*sinζ)
-		fS += -μr2 * sini * cosζ * tmpOrbit.Origin.J2 * math.Pow(tmpOrbit.Origin.Radius/r, 2) * LegendreP2Prime(sini*sinζ)
-		fW += -μr2 * cosi * tmpOrbit.Origin.J2 * math.Pow(tmpOrbit.Origin.Radius/r, 2) * LegendreP2Prime(sini*sinζ)
-		//		fmt.Printf("%.10f\t%.10f\t%.10f\n", fR, fS, fW)
-	}
 	// da/dt
 	fDot[0] = ((2 * tmpOrbit.a * tmpOrbit.a) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
 	// de/dt
@@ -233,6 +226,14 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	fDot[5] = h/(r*r) + ((p*cosν*fR)-(p+r)*sinν*fS)/(tmpOrbit.e*h)
 	// d(fuel)/dt
 	fDot[6] = -usedFuel
+	if a.includeJ2 && tmpOrbit.Origin.J2 > 0 {
+		// d\bar{Ω}/dt
+		fDot[3] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 2) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * cosi
+		// d\bar{ω}/dt
+		fDot[4] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 4) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * (5*math.Pow(cosi, 2) - 1)
+		// Note: there is no change on the true anomaly. In fact, the mean anomaly is derived from the Ω and ω (indirectly)
+		// so changing these is enough. Example is in the TestMissionGEOJ2 test case (compare with TestMissionGEO).
+	}
 	for i := 0; i < 7; i++ {
 		if i > 2 && i < 6 {
 			fDot[i] = math.Mod(fDot[i], 2*math.Pi)

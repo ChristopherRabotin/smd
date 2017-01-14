@@ -72,9 +72,8 @@ func TestMissionGEO(t *testing.T) {
 	i0 := 1e-4
 	ω0 := 10.0
 	Ω0 := 5.0
-	ν0 := 0.0
 	// Propagating for 0.5 orbits to ensure that time and orbital elements are changed accordingly.
-	oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0+180.01, Earth)
+	oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 180.01, Earth)
 	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
 	// Define propagation parameters.
 	start := time.Now()
@@ -104,9 +103,8 @@ func TestMissionGEOJ2(t *testing.T) {
 	i0 := 1e-4
 	ω0 := 10.0
 	Ω0 := 5.0
-	ν0 := 0.0
 	// Propagating for 0.5 orbits to ensure that time and orbital elements are changed accordingly.
-	oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0+180.01, Earth)
+	oTgt := NewOrbitFromOE(a0, e0, i0, 4.993, 9.987, 180.02, Earth)
 	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
 	// Define propagation parameters.
 	start := time.Now()
