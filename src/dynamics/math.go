@@ -91,3 +91,28 @@ func MxV33(m *mat64.Dense, v []float64) (o []float64) {
 	rVec.MulVec(m, vVec)
 	return []float64{rVec.At(0, 0), rVec.At(1, 0), rVec.At(2, 0)}
 }
+
+// LegendreP0 returns the Legendre polynomial of 0-th order.
+func LegendreP0(γ float64) float64 {
+	return 1
+}
+
+// LegendreP1 returns the Legendre polynomial of 0-th order.
+func LegendreP1(γ float64) float64 {
+	return γ
+}
+
+// LegendreP2 returns the Legendre polynomial of 0-th order.
+func LegendreP2(γ float64) float64 {
+	return 0.5 * (3*γ*γ - 1)
+}
+
+// LegendreP1Prime returns the derivative of the Legendre polynomial of 0-th order.
+func LegendreP1Prime(γ float64) float64 {
+	return (LegendreP0(γ) - γ*LegendreP1(γ)) / (1 - math.Pow(γ, 2))
+}
+
+// LegendreP2Prime returns the derivative of the Legendre polynomial of 0-th order.
+func LegendreP2Prime(γ float64) float64 {
+	return (2*LegendreP1(γ) - 2*γ*LegendreP2(γ)) / (1 - math.Pow(γ, 2))
+}

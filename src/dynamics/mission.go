@@ -10,28 +10,29 @@ import (
 )
 
 const (
-	stepSize = 10.0
+	stepSize = 10
+	stepUnit = time.Second
 )
 
 var wg sync.WaitGroup
 
 /* Handles the astrodynamical propagations. */
 
-// Astrocodile is an orbit propagator.
-// It's a play on words from STK's Atrogrator.
-type Astrocodile struct {
+// Mission defines a mission and does the propagation.
+type Mission struct {
 	Vehicle        *Spacecraft // As pointer because SC may be altered during propagation.
 	Orbit          *Orbit      // As pointer because the orbit changes during propagation.
 	StartDT        time.Time
 	EndDT          time.Time
 	CurrentDT      time.Time
-	StopChan       chan (bool)
+	includeJ2      bool
+	stopChan       chan (bool)
 	histChan       chan<- (AstroState)
 	done, collided bool
 }
 
-// NewAstro returns a new Astrocodile instance from the position and velocity vectors.
-func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, conf ExportConfig) *Astrocodile {
+// NewMission returns a new Mission instance from the position and velocity vectors.
+func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, includeJ2 bool, conf ExportConfig) *Mission {
 	// If no filepath is provided, then no output will be written.
 	var histChan chan (AstroState)
 	if !conf.IsUseless() {
@@ -52,7 +53,7 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, conf ExportConfig) 
 		end = end.UTC()
 	}
 
-	a := &Astrocodile{s, o, start, end, start, make(chan (bool), 1), histChan, false, false}
+	a := &Mission{s, o, start, end, start, includeJ2, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- AstroState{a.CurrentDT, *s, *o}
@@ -66,12 +67,12 @@ func NewAstro(s *Spacecraft, o *Orbit, start, end time.Time, conf ExportConfig) 
 }
 
 // LogStatus returns the status of the propagation and vehicle.
-func (a *Astrocodile) LogStatus() {
+func (a *Mission) LogStatus() {
 	a.Vehicle.logger.Log("level", "info", "subsys", "astro", "date", a.CurrentDT, "fuel(kg)", a.Vehicle.FuelMass, "orbit", a.Orbit)
 }
 
 // Propagate starts the propagation.
-func (a *Astrocodile) Propagate() {
+func (a *Mission) Propagate() {
 	// Add a ticker status report based on the duration of the simulation.
 	a.LogStatus()
 	ticker := time.NewTicker(1 * time.Minute)
@@ -100,16 +101,21 @@ func (a *Astrocodile) Propagate() {
 	wg.Wait() // Don't return until we're done writing all the files.
 }
 
-// Stop implements the stop call of the integrator.
-func (a *Astrocodile) Stop(i uint64) bool {
+// StopPropagation is used to stop the propagation before it is completed.
+func (a *Mission) StopPropagation() {
+	a.stopChan <- true
+}
+
+// Stop implements the stop call of the integrator. To stop the propagation, call StopPropagation().
+func (a *Mission) Stop(i uint64) bool {
 	select {
-	case <-a.StopChan:
+	case <-a.stopChan:
 		if a.histChan != nil {
 			close(a.histChan)
 		}
 		return true // Stop because there is a request to stop.
 	default:
-		a.CurrentDT = a.CurrentDT.Add(time.Duration(stepSize) * time.Second)
+		a.CurrentDT = a.CurrentDT.Add(time.Duration(stepSize) * stepUnit)
 		if a.EndDT.Before(a.StartDT) {
 			// Check if any waypoint still needs to be reached.
 			for _, wp := range a.Vehicle.WayPoints {
@@ -133,7 +139,7 @@ func (a *Astrocodile) Stop(i uint64) bool {
 }
 
 // GetState returns the state for the integrator for the Gaussian VOP.
-func (a *Astrocodile) GetState() (s []float64) {
+func (a *Mission) GetState() (s []float64) {
 	s = make([]float64, 7)
 	s[0] = a.Orbit.a
 	s[1] = a.Orbit.e
@@ -146,7 +152,7 @@ func (a *Astrocodile) GetState() (s []float64) {
 }
 
 // SetState sets the updated state.
-func (a *Astrocodile) SetState(i uint64, s []float64) {
+func (a *Mission) SetState(i uint64, s []float64) {
 	if a.histChan != nil {
 		a.histChan <- AstroState{a.CurrentDT, *a.Vehicle, *a.Orbit}
 	}
@@ -158,6 +164,7 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	a.Orbit.Ω = math.Mod(s[3], 2*math.Pi)
 	a.Orbit.ω = math.Mod(s[4], 2*math.Pi)
 	a.Orbit.ν = math.Mod(s[5], 2*math.Pi)
+
 	// Let's execute any function which is in the queue of this time step.
 	for _, f := range a.Vehicle.FuncQ {
 		if f == nil {
@@ -167,7 +174,7 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 	}
 	a.Vehicle.FuncQ = make([]func(), 5) // Clear the queue.
 
-	// Orbit sanity checks
+	// Orbit sanity checks and warnings.
 	if !a.collided && a.Orbit.GetRNorm() < a.Orbit.Origin.Radius {
 		a.collided = true
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "collided", a.Orbit.Origin.Name, "dt", a.CurrentDT)
@@ -187,7 +194,7 @@ func (a *Astrocodile) SetState(i uint64, s []float64) {
 }
 
 // Func is the integration function using Gaussian VOP as per Ruggiero et al. 2011.
-func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
+func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	// Fix the angles in case the sum in integrator lead to an overflow.
 	for i := 2; i < 6; i++ {
 		f[i] = math.Mod(f[i], 2*math.Pi)
@@ -219,6 +226,14 @@ func (a *Astrocodile) Func(t float64, f []float64) (fDot []float64) {
 	fDot[5] = h/(r*r) + ((p*cosν*fR)-(p+r)*sinν*fS)/(tmpOrbit.e*h)
 	// d(fuel)/dt
 	fDot[6] = -usedFuel
+	if a.includeJ2 && tmpOrbit.Origin.J2 > 0 {
+		// d\bar{Ω}/dt
+		fDot[3] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 2) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * cosi
+		// d\bar{ω}/dt
+		fDot[4] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 4) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * (5*math.Pow(cosi, 2) - 1)
+		// Note: there is no change on the true anomaly. In fact, the mean anomaly is derived from the Ω and ω (indirectly)
+		// so changing these is enough. Example is in the TestMissionGEOJ2 test case (compare with TestMissionGEO).
+	}
 	for i := 0; i < 7; i++ {
 		if i > 2 && i < 6 {
 			fDot[i] = math.Mod(fDot[i], 2*math.Pi)
