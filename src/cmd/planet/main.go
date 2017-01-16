@@ -10,10 +10,10 @@ func main() {
 	end := time.Now().UTC().Add(time.Duration(2) * time.Hour)
 	start := end.Add(time.Duration(-5*30.5*24) * time.Hour)
 	sc := dynamics.NewEmptySC("test", 100)
-	obj := dynamics.Earth
+	obj := dynamics.Mars
 	a := 1.5 * obj.Radius
 	e := 1e-1
-	i := 1e-1
+	i := 97.0 //1e-1
 	Ω := 90.0
 	ω := 45.0
 	ν := 20.5

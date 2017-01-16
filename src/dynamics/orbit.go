@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	eccentricityε = 1e-4
-	angleε        = (1e-2 / 360) * (2 * math.Pi) // Within 0.01 degrees.
-	distanceε     = 5e1                          // 50 km
+	eccentricityε = 5e-5                         // 0.00005
+	angleε        = (5e-3 / 360) * (2 * math.Pi) // 0.005 degrees
+	distanceε     = 2e1                          // 10 km
 )
 
 // Orbit defines an orbit via its orbital elements.
@@ -184,7 +184,7 @@ func (o *Orbit) hashValid() bool {
 
 // String implements the stringer interface (hence the value receiver)
 func (o Orbit) String() string {
-	return fmt.Sprintf("a=%.3f e=%.3f i=%.3f ω=%.3f Ω=%.3f ν=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.ω), Rad2deg(o.Ω), Rad2deg(o.ν))
+	return fmt.Sprintf("a=%.1f e=%.5f i=%.6f ω=%.6f Ω=%.6f ν=%.6f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.ω), Rad2deg(o.Ω), Rad2deg(o.ν))
 }
 
 // Equals returns whether two orbits are identical with free true anomaly.
@@ -305,7 +305,12 @@ func NewOrbitFromRV(R, V []float64, c CelestialObject) *Orbit {
 	if dot(R, V) < 0 {
 		ν = 2*math.Pi - ν
 	}
+
 	orbit := Orbit{a, e, i, Ω, ω, ν, c, 0.0, R, V}
+	/*λ := orbit.Getλtrue()
+	u := orbit.GetU()
+	ωTilde := orbit.GetTildeω()*/
+
 	orbit.computeHash()
 	return &orbit
 }
