@@ -136,7 +136,7 @@ func (o *Orbit) GetRV() ([]float64, []float64) {
 	V[0] = -math.Sqrt(o.Origin.μ/p) * sinν
 	V[1] = math.Sqrt(o.Origin.μ/p) * (o.e + cosν)
 	V[2] = 0
-	V = PQW2ECI(o.i, o.ω, o.Ω, V)
+	V = PQW2ECI(o.i, ω, Ω, V)
 
 	o.cachedR = R
 	o.cachedV = V
