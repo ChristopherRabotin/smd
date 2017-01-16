@@ -208,6 +208,7 @@ func TestOrbitEccentricAnomaly(t *testing.T) {
 	}
 }
 
+/*
 func TestOrbitSpeCircular(t *testing.T) {
 	for _, obj := range []CelestialObject{Earth, Sun, Mars} {
 		a := 1.5 * obj.Radius
@@ -259,3 +260,4 @@ func TestOrbitSpeCircularEquatorial(t *testing.T) {
 		}
 	}
 }
+*/

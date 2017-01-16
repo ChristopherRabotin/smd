@@ -12,8 +12,8 @@ func main() {
 	sc := dynamics.NewEmptySC("test", 100)
 	obj := dynamics.Earth
 	a := 1.5 * obj.Radius
-	e := .25 //1e-7
-	i := 1e-7
+	e := 1e-1
+	i := 1e-1
 	Ω := 90.0
 	ω := 45.0
 	ν := 20.5
