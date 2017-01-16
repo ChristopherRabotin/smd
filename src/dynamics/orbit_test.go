@@ -207,3 +207,55 @@ func TestOrbitEccentricAnomaly(t *testing.T) {
 		}
 	}
 }
+
+func TestOrbitSpeCircular(t *testing.T) {
+	for _, obj := range []CelestialObject{Earth, Sun, Mars} {
+		a := 1.5 * obj.Radius
+		e := 1e-7
+		i := 25.0
+		Ω := 87.0
+		ω := 52.0
+		ν := 20.5
+		oI := NewOrbitFromOE(a, e, i, Ω, ω, ν, obj)
+		R, V := oI.GetRV()
+		oV := NewOrbitFromRV(R, V, obj)
+		if ok, err := oI.StrictlyEquals(*oV); !ok {
+			t.Logf("\noI: %s\noV: %s", oI, oV)
+			t.Fatalf("for %s: %s", obj, err)
+		}
+	}
+}
+func TestOrbitSpeEquatorial(t *testing.T) {
+	for _, obj := range []CelestialObject{Earth, Sun, Mars} {
+		a := 1.5 * obj.Radius
+		e := .25 //1e-7
+		i := 1e-7
+		Ω := 87.0
+		ω := 52.0
+		ν := 20.5
+		oI := NewOrbitFromOE(a, e, i, Ω, ω, ν, obj)
+		R, V := oI.GetRV()
+		oV := NewOrbitFromRV(R, V, obj)
+		if ok, err := oI.StrictlyEquals(*oV); !ok {
+			t.Logf("\noI: %s\noV: %s", oI, oV)
+			t.Fatalf("for %s: %s", obj, err)
+		}
+	}
+}
+func TestOrbitSpeCircularEquatorial(t *testing.T) {
+	for _, obj := range []CelestialObject{Earth, Sun, Mars} {
+		a := 1.5 * obj.Radius
+		e := 1e-7
+		i := 1e-7
+		Ω := 87.0
+		ω := 52.0
+		ν := 20.5
+		oI := NewOrbitFromOE(a, e, i, Ω, ω, ν, obj)
+		R, V := oI.GetRV()
+		oV := NewOrbitFromRV(R, V, obj)
+		if ok, err := oI.StrictlyEquals(*oV); !ok {
+			t.Logf("\noI: %s\noV: %s", oI, oV)
+			t.Fatalf("for %s: %s", obj, err)
+		}
+	}
+}
