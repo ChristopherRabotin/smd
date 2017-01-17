@@ -231,8 +231,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		fDot[3] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 2) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * cosi
 		// d\bar{ω}/dt
 		fDot[4] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 4) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * (5*math.Pow(cosi, 2) - 1)
-		// Note: there is no change on the true anomaly. In fact, the mean anomaly is derived from the Ω and ω (indirectly)
-		// so changing these is enough. Example is in the TestMissionGEOJ2 test case (compare with TestMissionGEO).
+		// TODO: add effect on true anomaly.
 	}
 	for i := 0; i < 7; i++ {
 		if i > 2 && i < 6 {

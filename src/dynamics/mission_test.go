@@ -73,12 +73,12 @@ func TestMissionGEO(t *testing.T) {
 	ω0 := 10.0
 	Ω0 := 5.0
 	// Propagating for 0.5 orbits to ensure that time and orbital elements are changed accordingly.
-	oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 180.018, Earth)
+	oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 180.027, Earth)
 	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
 	// Define propagation parameters.
 	start := time.Now()
 	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
-	end := start.Add(time.Duration(float64(geoDur) * 0.5))
+	end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
 	astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, false, ExportConfig{})
 	// Start propagation.
 	astro.Propagate()
@@ -104,12 +104,12 @@ func TestMissionGEOJ2(t *testing.T) {
 	ω0 := 10.0
 	Ω0 := 5.0
 	// Propagating for 0.5 orbits to ensure that time and orbital elements are changed accordingly.
-	oTgt := NewOrbitFromOE(a0, e0, i0, 4.993, 9.987, 180.018, Earth)
+	oTgt := NewOrbitFromOE(a0, e0, i0, 4.993, 9.987, 180.027, Earth)
 	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
 	// Define propagation parameters.
 	start := time.Now()
 	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
-	end := start.Add(time.Duration(float64(geoDur) * 0.5))
+	end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
 	astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, true, ExportConfig{})
 	// Start propagation.
 	astro.Propagate()

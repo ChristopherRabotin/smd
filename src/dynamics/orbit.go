@@ -12,7 +12,7 @@ import (
 const (
 	eccentricityε = 5e-5                         // 0.00005
 	angleε        = (5e-3 / 360) * (2 * math.Pi) // 0.005 degrees
-	distanceε     = 2e1                          // 10 km
+	distanceε     = 2e1                          // 20 km
 )
 
 // Orbit defines an orbit via its orbital elements.
@@ -109,9 +109,9 @@ func (o *Orbit) GetRV() ([]float64, []float64) {
 	ν := o.ν
 	ω := o.ω
 	Ω := o.Ω
-	if o.e < 1e-6 {
+	if o.e < eccentricityε {
 		ω = 0
-		if o.i < 1e-6 {
+		if o.i < angleε {
 			// Circular equatorial
 			Ω = 0
 			ν = o.Getλtrue()
@@ -119,7 +119,7 @@ func (o *Orbit) GetRV() ([]float64, []float64) {
 			// Circular inclined
 			ν = o.GetU()
 		}
-	} else if o.i < 1e-6 {
+	} else if o.i < angleε {
 		Ω = 0
 		ω = o.GetTildeω()
 	}
