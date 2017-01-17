@@ -8,9 +8,9 @@ import (
 
 func main() {
 	end := time.Now().UTC().Add(time.Duration(2) * time.Hour)
-	start := end.Add(time.Duration(-5*30.5*24) * time.Hour)
+	start := end.Add(time.Duration(-2*30.5*24) * time.Hour)
 	sc := dynamics.NewEmptySC("inc", 100)
-	obj := dynamics.Earth
+	obj := dynamics.Mars
 	oI := obj.HelioOrbit(start)
 	/*a := 20 * obj.Radius
 	e := 1e-1

@@ -22,6 +22,7 @@ type CelestialObject struct {
 	a      float64
 	μ      float64
 	tilt   float64 // Axial tilt
+	incl   float64 // Ecliptic inclination
 	SOI    float64 // With respect to the Sun
 	J2     float64
 	PP     *planetposition.V87Planet
@@ -81,8 +82,13 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 	for i := 0; i < 3; i++ {
 		V[i] = v * vDir[i] / norm(vDir)
 	}
+	// Correct axial tilt
 	R = MxV33(R1(Deg2rad(-c.tilt)), R)
 	V = MxV33(R1(Deg2rad(-c.tilt)), V)
+
+	// Correct ecliptic inclination
+	R = MxV33(R1(Deg2rad(c.incl)), R)
+	V = MxV33(R1(Deg2rad(c.incl)), V)
 
 	return *NewOrbitFromRV(R, V, Sun)
 }
@@ -90,10 +96,10 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 /* Definitions */
 
 // Sun is our closest star.
-var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, 0.0, -1, -1, nil}
+var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, 0.0, 0.0, -1, -1, nil}
 
 // Earth is home.
-var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23.4, 924645.0, 0.0010826269, nil}
+var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23.4, 0.00005, 924645.0, 0.0010826269, nil}
 
 // Mars is the vacation place.
-var Mars = CelestialObject{"Mars", 3397.2, 227939186, 4.305 * 1e4, 25.19, 576000, 0.001964, nil}
+var Mars = CelestialObject{"Mars", 3397.2, 227939186, 4.305 * 1e4, 25.19, 1.85, 576000, 0.001964, nil}
