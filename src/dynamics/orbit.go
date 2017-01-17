@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	eccentricityε = 1e-2
-	angleε        = (1e-2 / 360) * (2 * math.Pi) // Within 0.01 degrees.
-	distanceε     = 5e1                          // 50 km
+	eccentricityε = 5e-5                         // 0.00005
+	angleε        = (5e-3 / 360) * (2 * math.Pi) // 0.005 degrees
+	distanceε     = 2e1                          // 20 km
 )
 
 // Orbit defines an orbit via its orbital elements.
@@ -109,9 +109,9 @@ func (o *Orbit) GetRV() ([]float64, []float64) {
 	ν := o.ν
 	ω := o.ω
 	Ω := o.Ω
-	if o.e < 1e-6 {
+	if o.e < eccentricityε {
 		ω = 0
-		if o.i < 1e-6 {
+		if o.i < angleε {
 			// Circular equatorial
 			Ω = 0
 			ν = o.Getλtrue()
@@ -119,7 +119,7 @@ func (o *Orbit) GetRV() ([]float64, []float64) {
 			// Circular inclined
 			ν = o.GetU()
 		}
-	} else if o.i < 1e-6 {
+	} else if o.i < angleε {
 		Ω = 0
 		ω = o.GetTildeω()
 	}
@@ -136,7 +136,7 @@ func (o *Orbit) GetRV() ([]float64, []float64) {
 	V[0] = -math.Sqrt(o.Origin.μ/p) * sinν
 	V[1] = math.Sqrt(o.Origin.μ/p) * (o.e + cosν)
 	V[2] = 0
-	V = PQW2ECI(o.i, o.ω, o.Ω, V)
+	V = PQW2ECI(o.i, ω, Ω, V)
 
 	o.cachedR = R
 	o.cachedV = V
@@ -184,7 +184,7 @@ func (o *Orbit) hashValid() bool {
 
 // String implements the stringer interface (hence the value receiver)
 func (o Orbit) String() string {
-	return fmt.Sprintf("a=%.3f e=%.3f i=%.3f ω=%.3f Ω=%.3f ν=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.ω), Rad2deg(o.Ω), Rad2deg(o.ν))
+	return fmt.Sprintf("a=%.1f e=%.5f i=%.6f ω=%.6f Ω=%.6f ν=%.6f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.ω), Rad2deg(o.Ω), Rad2deg(o.ν))
 }
 
 // Equals returns whether two orbits are identical with free true anomaly.
@@ -305,7 +305,9 @@ func NewOrbitFromRV(R, V []float64, c CelestialObject) *Orbit {
 	if dot(R, V) < 0 {
 		ν = 2*math.Pi - ν
 	}
+
 	orbit := Orbit{a, e, i, Ω, ω, ν, c, 0.0, R, V}
+
 	orbit.computeHash()
 	return &orbit
 }
