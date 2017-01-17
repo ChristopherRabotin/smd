@@ -307,9 +307,6 @@ func NewOrbitFromRV(R, V []float64, c CelestialObject) *Orbit {
 	}
 
 	orbit := Orbit{a, e, i, Ω, ω, ν, c, 0.0, R, V}
-	/*λ := orbit.Getλtrue()
-	u := orbit.GetU()
-	ωTilde := orbit.GetTildeω()*/
 
 	orbit.computeHash()
 	return &orbit
