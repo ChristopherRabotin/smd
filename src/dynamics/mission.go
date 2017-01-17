@@ -85,6 +85,17 @@ func (a *Mission) Propagate() {
 		}
 	}()
 	vInit := norm(a.Orbit.GetV())
+	// XXX: The step size may very well be wrong here!!!
+	// In fact, it does not account for the unit *and* changing to a much smaller stepsize massively
+	// breaks stuff (e.g. a one second step size leads to a higher true anomaly for the GEO half orbit
+	// as a ten second step, but a 1 Microsecond leads to a different error).
+	// With a 1 Millisecond time step, several orbits are done in just a few hours...
+	// spacecraft=test level=info subsys=astro date=2017-01-17T02:32:18.434321007Z (...) ν=0.000000
+	// spacecraft=test level=info subsys=astro date=2017-01-17T04:06:29.330321007Z (...) ν=214.618862
+	// spacecraft=test level=info subsys=astro date=2017-01-17T05:45:21.279321007Z (...) ν=163.725517
+	// spacecraft=test level=info subsys=astro date=2017-01-17T07:19:20.241321007Z (...) ν=328.460602
+	// spacecraft=test level=info subsys=astro date=2017-01-17T08:56:50.884321007Z (...) ν=297.792346
+	// spacecraft=test level=info subsys=astro date=2017-01-17T10:32:42.367321007Z (...) ν=212.738839
 	ode.NewRK4(0, stepSize, a).Solve() // Blocking.
 	vFinal := norm(a.Orbit.GetV())
 	a.done = true
