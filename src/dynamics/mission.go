@@ -172,7 +172,6 @@ func (a *Mission) SetState(t float64, s []float64) {
 	a.Orbit.Ω = s[3]
 	a.Orbit.ω = s[4]
 	a.Orbit.ν = s[5]
-	//fmt.Printf("%s\n", a.Orbit)
 	// Let's execute any function which is in the queue of this time step.
 	for _, f := range a.Vehicle.FuncQ {
 		if f == nil {

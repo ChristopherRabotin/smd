@@ -317,17 +317,13 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 		}
 		break
 	case OptiΔωCL:
-		// The argument of periapsis control is from Ruggerio. The one in Petropoulos
-		// also changes other orbital elements, although it's much simpler to calculate.
+		// The argument of periapsis control is from Petropoulos and in plane.
+		// The out of plane will change other orbital elements at the same time.
 		ctrl = func(o Orbit) []float64 {
-			cotν := 1 / math.Tan(o.ν)
-			//coti := 1 / math.Tan(o.i)
-			_, cosν := math.Sincos(o.ν)
-			//		sinων := math.Sin(o.ω + o.ν)
-			α := math.Atan2((1+o.e*cosν)*cotν, 2+o.e*cosν)
-			//			sinαν := math.Sin(α - o.ν)
-			//			β := math.Atan2(o.e*coti*sinων, sinαν*(1+o.e*cosν)-math.Cos(α)*sinν)
-			return unitΔvFromAngles(α, 0.0)
+			/*p := o.GetSemiParameter()
+			sinν, cosν := math.Sincos(o.ν)
+			return unitΔvFromAngles(math.Atan2(-p*cosν, (p+o.GetRNorm())*sinν), 0.0)*/
+			return unitΔvFromAngles(0.0, sign(-math.Sin(o.ω+o.ν))*math.Cos(o.i)*math.Pi/2)
 		}
 		break
 	default:
@@ -437,6 +433,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				target = cl.oTgt.ω
 				tol = angleε
 			}
+			// XXX: This summation may be wrong: |\sum x_i| != \sum |x_i|.
 			if fact := factor(oscul, init, target, tol); fact != 0 {
 				cl.cleared = false // We're not actually done.
 				tmpThrust := ctrl.Control(o)
