@@ -184,7 +184,7 @@ func (o *Orbit) hashValid() bool {
 
 // String implements the stringer interface (hence the value receiver)
 func (o Orbit) String() string {
-	return fmt.Sprintf("a=%.1f e=%.5f i=%.6f ω=%.6f Ω=%.6f ν=%.6f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.ω), Rad2deg(o.Ω), Rad2deg(o.ν))
+	return fmt.Sprintf("a=%.1f e=%.4f i=%.3f Ω=%.3f ω=%.3f ν=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.Ω), Rad2deg(o.ω), Rad2deg(o.ν))
 }
 
 // Equals returns whether two orbits are identical with free true anomaly.

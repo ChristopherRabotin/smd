@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	stepSize = 10
-	stepUnit = time.Second
+	// DefaultStepSize is the default step size when propagating an orbit.
+	DefaultStepSize = 10 * time.Second
 )
 
 var wg sync.WaitGroup
@@ -20,8 +20,9 @@ var wg sync.WaitGroup
 
 // Mission defines a mission and does the propagation.
 type Mission struct {
-	Vehicle        *Spacecraft // As pointer because SC may be altered during propagation.
-	Orbit          *Orbit      // As pointer because the orbit changes during propagation.
+	Vehicle        *Spacecraft   // As pointer because SC may be altered during propagation.
+	Orbit          *Orbit        // As pointer because the orbit changes during propagation.
+	StepSize       time.Duration // Step size to use (recommendation is 10*time.Second)
 	StartDT        time.Time
 	EndDT          time.Time
 	CurrentDT      time.Time
@@ -53,7 +54,7 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, includeJ2 bool, c
 		end = end.UTC()
 	}
 
-	a := &Mission{s, o, start, end, start, includeJ2, make(chan (bool), 1), histChan, false, false}
+	a := &Mission{s, o, DefaultStepSize, start, end, start, includeJ2, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- AstroState{a.CurrentDT, *s, *o}
@@ -85,18 +86,7 @@ func (a *Mission) Propagate() {
 		}
 	}()
 	vInit := norm(a.Orbit.GetV())
-	// XXX: The step size may very well be wrong here!!!
-	// In fact, it does not account for the unit *and* changing to a much smaller stepsize massively
-	// breaks stuff (e.g. a one second step size leads to a higher true anomaly for the GEO half orbit
-	// as a ten second step, but a 1 Microsecond leads to a different error).
-	// With a 1 Millisecond time step, several orbits are done in just a few hours...
-	// spacecraft=test level=info subsys=astro date=2017-01-17T02:32:18.434321007Z (...) ν=0.000000
-	// spacecraft=test level=info subsys=astro date=2017-01-17T04:06:29.330321007Z (...) ν=214.618862
-	// spacecraft=test level=info subsys=astro date=2017-01-17T05:45:21.279321007Z (...) ν=163.725517
-	// spacecraft=test level=info subsys=astro date=2017-01-17T07:19:20.241321007Z (...) ν=328.460602
-	// spacecraft=test level=info subsys=astro date=2017-01-17T08:56:50.884321007Z (...) ν=297.792346
-	// spacecraft=test level=info subsys=astro date=2017-01-17T10:32:42.367321007Z (...) ν=212.738839
-	ode.NewRK4(0, stepSize, a).Solve() // Blocking.
+	ode.NewRK4(0, a.StepSize.Seconds(), a).Solve() // Blocking.
 	vFinal := norm(a.Orbit.GetV())
 	a.done = true
 	duration := a.CurrentDT.Sub(a.StartDT)
@@ -118,7 +108,7 @@ func (a *Mission) StopPropagation() {
 }
 
 // Stop implements the stop call of the integrator. To stop the propagation, call StopPropagation().
-func (a *Mission) Stop(i uint64) bool {
+func (a *Mission) Stop(t float64) bool {
 	select {
 	case <-a.stopChan:
 		if a.histChan != nil {
@@ -126,7 +116,7 @@ func (a *Mission) Stop(i uint64) bool {
 		}
 		return true // Stop because there is a request to stop.
 	default:
-		a.CurrentDT = a.CurrentDT.Add(time.Duration(stepSize) * stepUnit)
+		a.CurrentDT = a.CurrentDT.Add(a.StepSize)
 		if a.EndDT.Before(a.StartDT) {
 			// Check if any waypoint still needs to be reached.
 			for _, wp := range a.Vehicle.WayPoints {
@@ -163,19 +153,25 @@ func (a *Mission) GetState() (s []float64) {
 }
 
 // SetState sets the updated state.
-func (a *Mission) SetState(i uint64, s []float64) {
+func (a *Mission) SetState(t float64, s []float64) {
 	if a.histChan != nil {
 		a.histChan <- AstroState{a.CurrentDT, *a.Vehicle, *a.Orbit}
 	}
 	// Note that we modulo here *and* in Func because the last step of the integrator
 	// adds up all the previous values with weights!
+	for i := 2; i <= 5; i++ {
+		if s[i] < 0 {
+			s[i] += 2 * math.Pi
+		}
+		s[i] = math.Mod(s[i], 2*math.Pi)
+	}
+
 	a.Orbit.a = s[0]
 	a.Orbit.e = math.Abs(s[1]) // eccentricity is always a positive number
-	a.Orbit.i = math.Mod(s[2], 2*math.Pi)
-	a.Orbit.Ω = math.Mod(s[3], 2*math.Pi)
-	a.Orbit.ω = math.Mod(s[4], 2*math.Pi)
-	a.Orbit.ν = math.Mod(s[5], 2*math.Pi)
-
+	a.Orbit.i = s[2]
+	a.Orbit.Ω = s[3]
+	a.Orbit.ω = s[4]
+	a.Orbit.ν = s[5]
 	// Let's execute any function which is in the queue of this time step.
 	for _, f := range a.Vehicle.FuncQ {
 		if f == nil {
@@ -206,11 +202,10 @@ func (a *Mission) SetState(i uint64, s []float64) {
 
 // Func is the integration function using Gaussian VOP as per Ruggiero et al. 2011.
 func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
-	// Fix the angles in case the sum in integrator lead to an overflow.
-	for i := 2; i < 6; i++ {
-		f[i] = math.Mod(f[i], 2*math.Pi)
-	}
-	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2], f[3], f[4], f[5], a.Orbit.Origin)
+	// *WARNING*: do not fix the angles here because that leads to errors during the RK4 computation.
+	// Instead the angles must be fixed and checked only at in SetState function.
+	// Note that we don't use Rad2deg because it forces the modulo on the angles, and we want to avoid this for now.
+	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2]/deg2rad, f[3]/deg2rad, f[4]/deg2rad, f[5]/deg2rad, a.Orbit.Origin)
 	p := tmpOrbit.GetSemiParameter()
 	h := tmpOrbit.GetHNorm()
 	r := tmpOrbit.GetRNorm()
@@ -245,9 +240,6 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		// TODO: add effect on true anomaly.
 	}
 	for i := 0; i < 7; i++ {
-		if i > 2 && i < 6 {
-			fDot[i] = math.Mod(fDot[i], 2*math.Pi)
-		}
 		if math.IsNaN(fDot[i]) {
 			Rcur, Vcur := a.Orbit.GetRV()
 			Rtmp, Vtmp := tmpOrbit.GetRV()

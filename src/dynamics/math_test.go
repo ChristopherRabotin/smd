@@ -27,13 +27,57 @@ func TestCross(t *testing.T) {
 }
 
 func TestAngles(t *testing.T) {
-	for i := 0.0; i < 360; i += 0.5 {
-		if ok, _ := anglesEqual(i, Rad2deg(Deg2rad(i))); !ok {
+	for i := 0.0; i <= 360; i += 0.5 {
+		// Specific tests
+		mi := math.Mod(i, 180)
+		var expPi float64
+		specificCase := false
+		switch mi {
+		case 0:
+			specificCase = true
+			expPi = 0
+			break
+		case 30:
+			specificCase = true
+			expPi = 1 / 6.
+			break
+		case 60:
+			specificCase = true
+			expPi = 1 / 3.
+			break
+		case 90:
+			specificCase = true
+			expPi = 1 / 2.
+			break
+		case 120:
+			specificCase = true
+			expPi = 2 / 3.
+			break
+		case 150:
+			specificCase = true
+			expPi = 5 / 6.
+			break
+		}
+		if specificCase {
+			if i >= 180 && i < 360 {
+				expPi++
+			}
+			if !floats.EqualWithinAbs(Deg2rad(i)/math.Pi, expPi, 1e-10) {
+				t.Fatalf("%f deg %f rad %f exp=%f", mi, Deg2rad(i)/math.Pi, Rad2deg(Deg2rad(i)), expPi)
+			}
+		}
+
+		if ok, _ := anglesEqual(i, Rad2deg(Deg2rad(i))); i < 360 && !ok {
+			t.Fatalf("incorrect conversion for %3.2f", i)
+		} else if i == 360 && Rad2deg(Deg2rad(i)) != 0 {
 			t.Fatalf("incorrect conversion for %3.2f", i)
 		}
 	}
 	if ok, _ := anglesEqual(1, Rad2deg(Deg2rad(-359.))); !ok {
 		t.Fatal("incorrect conversion for -359")
+	}
+	if ok, _ := anglesEqual(180, Rad2deg(Deg2rad(-180.))); !ok {
+		t.Fatal("incorrect conversion for -180")
 	}
 	if ok, _ := anglesEqual(math.Pi/3, Deg2rad(Rad2deg(-5*math.Pi/3))); !ok {
 		t.Fatal("incorrect conversion for -pi/3")

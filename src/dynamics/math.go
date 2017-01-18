@@ -7,6 +7,10 @@ import (
 	"github.com/gonum/matrix/mat64"
 )
 
+const (
+	deg2rad = math.Pi / 180
+)
+
 // norm returns the norm of a given vector which is supposed to be 3x1.
 func norm(v []float64) float64 {
 	return math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
@@ -73,7 +77,7 @@ func Deg2rad(a float64) float64 {
 	if a < 0 {
 		a += 360
 	}
-	return (2 * math.Pi) * (a / 360.0)
+	return math.Mod(a*deg2rad, 2*math.Pi)
 }
 
 // Rad2deg converts radians to degrees, and enforced only positive numbers.
@@ -81,7 +85,7 @@ func Rad2deg(a float64) float64 {
 	if a < 0 {
 		a += 2 * math.Pi
 	}
-	return 360.0 * (a / (2 * math.Pi))
+	return math.Mod(a/deg2rad, 360)
 }
 
 // MxV33 multiplies a matrix with a vector. Note that there is no dimension check!
@@ -90,29 +94,4 @@ func MxV33(m *mat64.Dense, v []float64) (o []float64) {
 	var rVec mat64.Vector
 	rVec.MulVec(m, vVec)
 	return []float64{rVec.At(0, 0), rVec.At(1, 0), rVec.At(2, 0)}
-}
-
-// LegendreP0 returns the Legendre polynomial of 0-th order.
-func LegendreP0(γ float64) float64 {
-	return 1
-}
-
-// LegendreP1 returns the Legendre polynomial of 0-th order.
-func LegendreP1(γ float64) float64 {
-	return γ
-}
-
-// LegendreP2 returns the Legendre polynomial of 0-th order.
-func LegendreP2(γ float64) float64 {
-	return 0.5 * (3*γ*γ - 1)
-}
-
-// LegendreP1Prime returns the derivative of the Legendre polynomial of 0-th order.
-func LegendreP1Prime(γ float64) float64 {
-	return (LegendreP0(γ) - γ*LegendreP1(γ)) / (1 - math.Pow(γ, 2))
-}
-
-// LegendreP2Prime returns the derivative of the Legendre polynomial of 0-th order.
-func LegendreP2Prime(γ float64) float64 {
-	return (2*LegendreP1(γ) - 2*γ*LegendreP2(γ)) / (1 - math.Pow(γ, 2))
 }
