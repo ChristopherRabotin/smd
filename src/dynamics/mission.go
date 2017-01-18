@@ -118,7 +118,7 @@ func (a *Mission) StopPropagation() {
 }
 
 // Stop implements the stop call of the integrator. To stop the propagation, call StopPropagation().
-func (a *Mission) Stop(i uint64) bool {
+func (a *Mission) Stop(t float64) bool {
 	select {
 	case <-a.stopChan:
 		if a.histChan != nil {
@@ -163,7 +163,7 @@ func (a *Mission) GetState() (s []float64) {
 }
 
 // SetState sets the updated state.
-func (a *Mission) SetState(i uint64, s []float64) {
+func (a *Mission) SetState(t float64, s []float64) {
 	if a.histChan != nil {
 		a.histChan <- AstroState{a.CurrentDT, *a.Vehicle, *a.Orbit}
 	}
