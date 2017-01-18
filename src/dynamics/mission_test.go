@@ -292,7 +292,7 @@ func TestCorrectOEΩ(t *testing.T) {
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
 		start := time.Now()
-		end := start.Add(time.Duration(103*24) * time.Hour)
+		end := start.Add(time.Duration(49*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
@@ -300,7 +300,7 @@ func TestCorrectOEΩ(t *testing.T) {
 			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 			t.Fatal("increasing RAAN failed")
 		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 48, 2) {
+		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 23, 2) {
 			t.Logf("METHOD = %s", meth)
 			t.Fatalf("invalid fuel usage: %f kg instead of 48", fuelMass-astro.Vehicle.FuelMass)
 		}
@@ -388,8 +388,8 @@ func TestCorrectOEeNeg(t *testing.T) {
 // TestCorrectOEω runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEω(t *testing.T) {
 	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 1, 1, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 6, 1, Earth)
+		oInit := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 178, 1, Earth)
+		oTarget := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 183, 1, Earth)
 		eps := NewUnlimitedEPS()
 		thrusters := []Thruster{new(PPS1350)}
 		dryMass := 300.0
@@ -416,15 +416,15 @@ func TestCorrectOEω(t *testing.T) {
 func TestCorrectOEωNeg(t *testing.T) {
 	//t.Skip("argument of perigee ")
 	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 6, 1, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 1, 1, Earth)
+		oInit := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 183, 1, Earth)
+		oTarget := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 178, 1, Earth)
 		eps := NewUnlimitedEPS()
 		thrusters := []Thruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
 		start := time.Now()
-		end := start.Add(time.Duration(49*24) * time.Hour) // just after the expected time
+		end := start.Add(time.Duration(12*24) * time.Hour) // just after the expected time
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
 		astro.Propagate()
 		//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
