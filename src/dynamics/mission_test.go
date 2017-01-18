@@ -75,6 +75,7 @@ func TestMissionGEO(t *testing.T) {
 	// Propagating for 0.5 orbits to ensure that time and orbital elements are changed accordingly.
 	oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 180.005, Earth)
 	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
+	ξ0 := oOsc.Getξ()
 	// Define propagation parameters.
 	start := time.Now()
 	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
@@ -90,9 +91,13 @@ func TestMissionGEO(t *testing.T) {
 	}
 	// Check that all angular orbital elements are within 2 pi.
 	for k, angle := range []float64{oOsc.i, oOsc.Ω, oOsc.ω, oOsc.ν} {
-		if !floats.EqualWithinAbs(angle, math.Mod(angle, 2*math.Pi), angleε) {
+		if !floats.EqualWithinAbs(angle, math.Mod(angle, 2*math.Pi), angleε) || angle < 0 {
 			t.Fatalf("angle in position %d was not 2*pi modulo: %f != %f rad", k, angle, math.Mod(angle, 2*math.Pi))
 		}
+	}
+	// Check specific energy remained constant.
+	if ξ1 := oOsc.Getξ(); !floats.EqualWithinAbs(ξ1, ξ0, 1e-16) {
+		t.Fatalf("specific energy changed during the orbit: %f -> %f", ξ0, ξ1)
 	}
 }
 
