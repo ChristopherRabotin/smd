@@ -449,7 +449,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 						tmpThrust[2] *= -1
 					}
 				} else {
-					if ctrl.Type() == OptiΔaCL || ctrl.Type() == OptiΔeCL || ctrl.Type() == OptiΔωCL || ctrl.Type() == OptiΔωCL {
+					if ctrl.Type() == OptiΔaCL || ctrl.Type() == OptiΔeCL || ctrl.Type() == OptiΔωCL || ctrl.Type() == OptiΔΩCL {
 						tmpThrust[0] *= -1
 						tmpThrust[1] *= -1
 						tmpThrust[2] *= -1 // Only needed for the argument of perigee negative change.
