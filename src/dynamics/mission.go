@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	stepSize = 10
-	stepUnit = time.Second
+	// DefaultStepSize is the default step size when propagating an orbit.
+	DefaultStepSize = 10 * time.Second
 )
 
 var wg sync.WaitGroup
@@ -20,8 +20,9 @@ var wg sync.WaitGroup
 
 // Mission defines a mission and does the propagation.
 type Mission struct {
-	Vehicle        *Spacecraft // As pointer because SC may be altered during propagation.
-	Orbit          *Orbit      // As pointer because the orbit changes during propagation.
+	Vehicle        *Spacecraft   // As pointer because SC may be altered during propagation.
+	Orbit          *Orbit        // As pointer because the orbit changes during propagation.
+	StepSize       time.Duration // Step size to use (recommendation is 10*time.Second)
 	StartDT        time.Time
 	EndDT          time.Time
 	CurrentDT      time.Time
@@ -53,7 +54,7 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, includeJ2 bool, c
 		end = end.UTC()
 	}
 
-	a := &Mission{s, o, start, end, start, includeJ2, make(chan (bool), 1), histChan, false, false}
+	a := &Mission{s, o, DefaultStepSize, start, end, start, includeJ2, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- AstroState{a.CurrentDT, *s, *o}
@@ -96,7 +97,7 @@ func (a *Mission) Propagate() {
 	// spacecraft=test level=info subsys=astro date=2017-01-17T07:19:20.241321007Z (...) ν=328.460602
 	// spacecraft=test level=info subsys=astro date=2017-01-17T08:56:50.884321007Z (...) ν=297.792346
 	// spacecraft=test level=info subsys=astro date=2017-01-17T10:32:42.367321007Z (...) ν=212.738839
-	ode.NewRK4(0, stepSize, a).Solve() // Blocking.
+	ode.NewRK4(0, a.StepSize.Seconds(), a).Solve() // Blocking.
 	vFinal := norm(a.Orbit.GetV())
 	a.done = true
 	duration := a.CurrentDT.Sub(a.StartDT)
@@ -126,7 +127,7 @@ func (a *Mission) Stop(t float64) bool {
 		}
 		return true // Stop because there is a request to stop.
 	default:
-		a.CurrentDT = a.CurrentDT.Add(time.Duration(stepSize) * stepUnit)
+		a.CurrentDT = a.CurrentDT.Add(a.StepSize)
 		if a.EndDT.Before(a.StartDT) {
 			// Check if any waypoint still needs to be reached.
 			for _, wp := range a.Vehicle.WayPoints {
@@ -208,6 +209,9 @@ func (a *Mission) SetState(t float64, s []float64) {
 func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	// Fix the angles in case the sum in integrator lead to an overflow.
 	for i := 2; i < 6; i++ {
+		if f[i] < 0 {
+			f[i] += 2 * math.Pi
+		}
 		f[i] = math.Mod(f[i], 2*math.Pi)
 	}
 	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2], f[3], f[4], f[5], a.Orbit.Origin)
@@ -246,6 +250,9 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	}
 	for i := 0; i < 7; i++ {
 		if i > 2 && i < 6 {
+			if fDot[i] < 0 {
+				fDot[i] += 2 * math.Pi
+			}
 			fDot[i] = math.Mod(fDot[i], 2*math.Pi)
 		}
 		if math.IsNaN(fDot[i]) {
