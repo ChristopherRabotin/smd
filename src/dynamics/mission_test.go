@@ -326,9 +326,9 @@ func TestCorrectOEΩNeg(t *testing.T) {
 			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 			t.Fatal("decreasing RAAN failed")
 		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 16, 2) {
+		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 23, 2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 23", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
