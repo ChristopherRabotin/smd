@@ -444,17 +444,17 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				tmpThrust := ctrl.Control(o)
 				// JIT changes for Ruggerio, which makes it non-Lyapunov (\dot{V} \not\leq 0)
 				if target > oscul {
-					if /*ctrl.Type() == OptiΔiCL ||*/ ctrl.Type() == OptiΔΩCL {
+					if ctrl.Type() == OptiΔΩCL {
 						tmpThrust[0] *= -1
 						tmpThrust[1] *= -1
 						tmpThrust[2] *= -1
 					}
 				} else {
-					if ctrl.Type() == OptiΔaCL || ctrl.Type() == OptiΔeCL || ctrl.Type() == OptiΔωCL || ctrl.Type() == OptiΔΩCL {
-						tmpThrust[0] *= -1
-						tmpThrust[1] *= -1
-						tmpThrust[2] *= -1 // Only needed for the argument of perigee negative change.
-					}
+					//if ctrl.Type() == OptiΔaCL || ctrl.Type() == OptiΔeCL || ctrl.Type() == OptiΔωCL || ctrl.Type() == OptiΔΩCL {
+					tmpThrust[0] *= -1
+					tmpThrust[1] *= -1
+					tmpThrust[2] *= -1 // Only needed for the argument of perigee negative change.
+					//}
 				}
 				for i := 0; i < 3; i++ {
 					thrust[i] += fact * tmpThrust[i]
@@ -488,7 +488,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}
-				weight = sign(δO) * math.Pow((h+o.e*h*math.Cos(o.ω+math.Asin(o.e*sinω)))/(p*(math.Pow(o.e*sinω, 2)-1)), 2)
+				weight = sign(-δO) * math.Pow((h+o.e*h*math.Cos(o.ω+math.Asin(o.e*sinω)))/(p*(math.Pow(o.e*sinω, 2)-1)), 2)
 			case OptiΔΩCL:
 				δO = o.Ω - cl.oTgt.Ω
 				if math.Abs(δO) < angleε {
