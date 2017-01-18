@@ -267,15 +267,15 @@ func TestCorrectOEiNeg(t *testing.T) {
 // TestCorrectOEΩ runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEΩ(t *testing.T) {
 	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 1, 1, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 5, 1, 1, Earth)
+		oInit := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 0, 1, 0, Earth)
+		oTarget := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 5, 1, 0, Earth)
 		eps := NewUnlimitedEPS()
 		thrusters := []Thruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
 		start := time.Now()
-		end := start.Add(time.Duration(49*24) * time.Hour) // just after the expected time
+		end := start.Add(time.Duration(103*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
@@ -283,9 +283,9 @@ func TestCorrectOEΩ(t *testing.T) {
 			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 			t.Fatal("increasing RAAN failed")
 		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 16, 2) {
+		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 48, 2) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 16", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 48", fuelMass-astro.Vehicle.FuelMass)
 		}
 	}
 }
@@ -293,8 +293,8 @@ func TestCorrectOEΩ(t *testing.T) {
 // TestCorrectOEΩNeg runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEΩNeg(t *testing.T) {
 	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 5, 1, 1, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+900, 0.001, 98.7, 0, 1, 1, Earth)
+		oInit := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 5, 1, 0, Earth)
+		oTarget := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 0, 1, 0, Earth)
 		eps := NewUnlimitedEPS()
 		thrusters := []Thruster{new(PPS1350)}
 		dryMass := 300.0

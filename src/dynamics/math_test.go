@@ -35,6 +35,9 @@ func TestAngles(t *testing.T) {
 	if ok, _ := anglesEqual(1, Rad2deg(Deg2rad(-359.))); !ok {
 		t.Fatal("incorrect conversion for -359")
 	}
+	if ok, _ := anglesEqual(180, Rad2deg(Deg2rad(-180.))); !ok {
+		t.Fatal("incorrect conversion for -180")
+	}
 	if ok, _ := anglesEqual(math.Pi/3, Deg2rad(Rad2deg(-5*math.Pi/3))); !ok {
 		t.Fatal("incorrect conversion for -pi/3")
 	}

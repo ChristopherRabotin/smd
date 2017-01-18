@@ -7,6 +7,10 @@ import (
 	"github.com/gonum/matrix/mat64"
 )
 
+const (
+	deg2rad = math.Pi / 180
+)
+
 // norm returns the norm of a given vector which is supposed to be 3x1.
 func norm(v []float64) float64 {
 	return math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
@@ -73,7 +77,7 @@ func Deg2rad(a float64) float64 {
 	if a < 0 {
 		a += 360
 	}
-	return (2 * math.Pi) * (a / 360.0)
+	return math.Mod(a*deg2rad, 2*math.Pi)
 }
 
 // Rad2deg converts radians to degrees, and enforced only positive numbers.
@@ -81,7 +85,7 @@ func Rad2deg(a float64) float64 {
 	if a < 0 {
 		a += 2 * math.Pi
 	}
-	return 360.0 * (a / (2 * math.Pi))
+	return math.Mod(a/deg2rad, 360)
 }
 
 // MxV33 multiplies a matrix with a vector. Note that there is no dimension check!
