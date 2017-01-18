@@ -445,7 +445,9 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				tmpThrust := ctrl.Control(o)
 				// JIT changes for Ruggerio, which makes it non-Lyapunov (\dot{V} \not\leq 0)
 				if target > oscul {
-					if ctrl.Type() == OptiΔiCL {
+					if ctrl.Type() == OptiΔiCL || ctrl.Type() == OptiΔΩCL {
+						tmpThrust[0] *= -1
+						tmpThrust[1] *= -1
 						tmpThrust[2] *= -1
 					}
 				} else {

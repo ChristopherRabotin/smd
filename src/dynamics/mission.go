@@ -165,13 +165,15 @@ func (a *Mission) SetState(t float64, s []float64) {
 		}
 		s[i] = math.Mod(s[i], 2*math.Pi)
 	}
+	tmpOrbit := NewOrbitFromOE(s[0], s[1], Rad2deg(s[2]), Rad2deg(s[3]), Rad2deg(s[4]), Rad2deg(s[5]), a.Orbit.Origin)
+	fmt.Printf("%s\n", tmpOrbit)
 	a.Orbit.a = s[0]
 	a.Orbit.e = math.Abs(s[1]) // eccentricity is always a positive number
 	a.Orbit.i = s[2]
 	a.Orbit.Ω = s[3]
 	a.Orbit.ω = s[4]
 	a.Orbit.ν = s[5]
-
+	a.LogStatus()
 	// Let's execute any function which is in the queue of this time step.
 	for _, f := range a.Vehicle.FuncQ {
 		if f == nil {
@@ -209,7 +211,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		}
 		f[i] = math.Mod(f[i], 2*math.Pi)
 	}
-	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2], f[3], f[4], f[5], a.Orbit.Origin)
+	tmpOrbit := NewOrbitFromOE(f[0], f[1], Rad2deg(f[2]), Rad2deg(f[3]), Rad2deg(f[4]), Rad2deg(f[5]), a.Orbit.Origin)
 	p := tmpOrbit.GetSemiParameter()
 	h := tmpOrbit.GetHNorm()
 	r := tmpOrbit.GetRNorm()
