@@ -321,13 +321,13 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 		// also changes other orbital elements, although it's much simpler to calculate.
 		ctrl = func(o Orbit) []float64 {
 			cotν := 1 / math.Tan(o.ν)
-			coti := 1 / math.Tan(o.i)
-			sinν, cosν := math.Sincos(o.ν)
-			sinων := math.Sin(o.ω + o.ν)
+			//coti := 1 / math.Tan(o.i)
+			_, cosν := math.Sincos(o.ν)
+			//		sinων := math.Sin(o.ω + o.ν)
 			α := math.Atan2((1+o.e*cosν)*cotν, 2+o.e*cosν)
-			sinαν := math.Sin(α - o.ν)
-			β := math.Atan2(o.e*coti*sinων, sinαν*(1+o.e*cosν)-math.Cos(α)*sinν)
-			return unitΔvFromAngles(α, β)
+			//			sinαν := math.Sin(α - o.ν)
+			//			β := math.Atan2(o.e*coti*sinων, sinαν*(1+o.e*cosν)-math.Cos(α)*sinν)
+			return unitΔvFromAngles(α, 0.0)
 		}
 		break
 	default:
@@ -405,7 +405,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			if floats.EqualWithinAbs(init, target, tol) || floats.EqualWithinAbs(oscul, target, tol) {
 				return 0 // Don't want no NaNs now.
 			}
-			return (target - oscul) / (target - init)
+			return (target - oscul) / math.Abs(target-init)
 		}
 
 		for _, ctrl := range cl.controls {
@@ -437,18 +437,9 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				target = cl.oTgt.ω
 				tol = angleε
 			}
-			fact := math.Abs(factor(oscul, init, target, tol))
-			if fact != 0 {
+			if fact := factor(oscul, init, target, tol); fact != 0 {
 				cl.cleared = false // We're not actually done.
 				tmpThrust := ctrl.Control(o)
-				// JIT changes for Ruggerio, which makes it non-Lyapunov (\dot{V} \not\leq 0)
-				if target < oscul {
-					//if ctrl.Type() == OptiΔaCL || ctrl.Type() == OptiΔeCL || ctrl.Type() == OptiΔωCL || ctrl.Type() == OptiΔΩCL {
-					tmpThrust[0] *= -1
-					tmpThrust[1] *= -1
-					tmpThrust[2] *= -1 // Only needed for the argument of perigee negative change.
-					//}
-				}
 				for i := 0; i < 3; i++ {
 					thrust[i] += fact * tmpThrust[i]
 				}
