@@ -240,7 +240,7 @@ func TestCorrectOEi(t *testing.T) {
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
 		start := time.Now()
-		end := start.Add(time.Duration(54*24) * time.Hour)
+		end := start.Add(time.Duration(55*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) {

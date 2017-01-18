@@ -308,8 +308,8 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 		break
 	case OptiΔiCL:
 		ctrl = func(o Orbit) []float64 {
-			return unitΔvFromAngles(0.0, -math.Pi/2)
-			//return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
+			//return unitΔvFromAngles(0.0, -math.Pi/2)
+			return unitΔvFromAngles(0.0, sign(math.Cos(o.ω+o.ν))*math.Pi/2)
 		}
 		break
 	case OptiΔΩCL:
@@ -444,7 +444,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				tmpThrust := ctrl.Control(o)
 				// JIT changes for Ruggerio, which makes it non-Lyapunov (\dot{V} \not\leq 0)
 				if target > oscul {
-					if ctrl.Type() == OptiΔiCL || ctrl.Type() == OptiΔΩCL {
+					if /*ctrl.Type() == OptiΔiCL ||*/ ctrl.Type() == OptiΔΩCL {
 						tmpThrust[0] *= -1
 						tmpThrust[1] *= -1
 						tmpThrust[2] *= -1
