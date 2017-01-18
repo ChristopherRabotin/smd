@@ -447,7 +447,6 @@ func TestCorrectOEωNeg(t *testing.T) {
 
 // TestMultiCorrectOE runs the test case from the Ruggerio 2012 conference paper.
 func TestMultiCorrectOE(t *testing.T) {
-	t.Log("MultiCorrectOE *does not* correct the eccentricity.")
 	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
 		oInit := NewOrbitFromOE(24396, 0.001, 7, 1, 1, 1, Earth)
 		oTarget := NewOrbitFromOE(42164, 0.7283, 0.001, 1, 1, 1, Earth)
@@ -455,14 +454,27 @@ func TestMultiCorrectOE(t *testing.T) {
 		thrusters := []Thruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL /*OptiΔeCL ,*/, OptiΔiCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL, OptiΔiCL)})
 		start := time.Now()
-		end := start.Add(time.Duration(204*24) * time.Hour)
+		var days int
+		var fuel float64
+		if meth == Ruggerio {
+			days = 113
+			fuel = 51
+		} else {
+			days = 120
+			fuel = 53
+		}
+		end := start.Add(time.Duration(days*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
 		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) || !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
+		if !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) || !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) || !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
 			t.Logf("METHOD = %s", meth)
-			t.Logf("final orbit: \n%s", astro.Orbit)
+			t.Fatalf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+		}
+		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, fuel, 1) {
+			t.Logf("METHOD = %s", meth)
+			t.Fatalf("invalid fuel usage: %f kg instead of %f", fuelMass-astro.Vehicle.FuelMass, fuel)
 		}
 	}
 }
