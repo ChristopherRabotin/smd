@@ -165,15 +165,13 @@ func (a *Mission) SetState(t float64, s []float64) {
 		}
 		s[i] = math.Mod(s[i], 2*math.Pi)
 	}
-	tmpOrbit := NewOrbitFromOE(s[0], s[1], Rad2deg(s[2]), Rad2deg(s[3]), Rad2deg(s[4]), Rad2deg(s[5]), a.Orbit.Origin)
-	fmt.Printf("%s\n", tmpOrbit)
+
 	a.Orbit.a = s[0]
 	a.Orbit.e = math.Abs(s[1]) // eccentricity is always a positive number
 	a.Orbit.i = s[2]
 	a.Orbit.Ω = s[3]
 	a.Orbit.ω = s[4]
 	a.Orbit.ν = s[5]
-	a.LogStatus()
 	// Let's execute any function which is in the queue of this time step.
 	for _, f := range a.Vehicle.FuncQ {
 		if f == nil {
@@ -204,14 +202,18 @@ func (a *Mission) SetState(t float64, s []float64) {
 
 // Func is the integration function using Gaussian VOP as per Ruggiero et al. 2011.
 func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
+	// *WARNING*: do not fix the angles here because that leads to errors during the RK4 computation.
+	// Instead the angles must be fixed and checked only at in SetState function.
 	// Fix the angles in case the sum in integrator lead to an overflow.
-	for i := 2; i < 6; i++ {
+	/*for i := 2; i < 6; i++ {
 		if f[i] < 0 {
 			f[i] += 2 * math.Pi
 		}
 		f[i] = math.Mod(f[i], 2*math.Pi)
-	}
-	tmpOrbit := NewOrbitFromOE(f[0], f[1], Rad2deg(f[2]), Rad2deg(f[3]), Rad2deg(f[4]), Rad2deg(f[5]), a.Orbit.Origin)
+	}*/
+	//	tmpOrbit := NewOrbitFromOE(f[0], f[1], Rad2deg(f[2]), Rad2deg(f[3]), Rad2deg(f[4]), Rad2deg(f[5]), a.Orbit.Origin)
+	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2]/deg2rad, f[3]/deg2rad, f[4]/deg2rad, f[5]/deg2rad, a.Orbit.Origin)
+	//fmt.Printf("tmp %s\n", tmpOrbit)
 	p := tmpOrbit.GetSemiParameter()
 	h := tmpOrbit.GetHNorm()
 	r := tmpOrbit.GetRNorm()
@@ -246,12 +248,12 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		// TODO: add effect on true anomaly.
 	}
 	for i := 0; i < 7; i++ {
-		if i > 2 && i < 6 {
+		/*if i > 2 && i < 6 {
 			if fDot[i] < 0 {
 				fDot[i] += 2 * math.Pi
 			}
 			fDot[i] = math.Mod(fDot[i], 2*math.Pi)
-		}
+		}*/
 		if math.IsNaN(fDot[i]) {
 			Rcur, Vcur := a.Orbit.GetRV()
 			Rtmp, Vtmp := tmpOrbit.GetRV()
