@@ -413,5 +413,5 @@ func NewPlanetTarget(body CelestialObject, dt time.Time, action *WaypointAction)
 	destRAtDT := norm(target.GetR())
 	lower := destRAtDT + body.SOI*0.01
 	upper := destRAtDT + body.SOI*0.10
-	return &PlanetTarget{target, NewOptimalΔOrbit(target, Ruggerio, []ControlLaw{OptiΔaCL, OptiΔiCL, OptiΔeCL}), action, lower, upper, false, false}
+	return &PlanetTarget{target, NewOptimalΔOrbit(target, Naasz, []ControlLaw{OptiΔaCL, OptiΔiCL, OptiΔeCL}), action, lower, upper, false, false}
 }

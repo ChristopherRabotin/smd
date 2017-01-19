@@ -19,7 +19,7 @@ func main() {
 
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
 	//end := start.Add(time.Duration(-1) * time.Nanosecond)  // Propagate until waypoint reached.
-	end := time.Date(2023, 12, 13, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2017, 06, 13, 0, 0, 0, 0, time.UTC)
 
 	/* Let's propagate out of Mars at a guessed date of 7 months after launch date from Earth.
 	Note that we only output the CSV because we don't need to visualize this.

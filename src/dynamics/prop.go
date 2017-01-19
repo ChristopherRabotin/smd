@@ -111,7 +111,6 @@ type Thruster interface {
 /* Available thrusters */
 
 // PPS1350 is the Snecma thruster used on SMART-1.
-// Source: http://www.esa.int/esapub/bulletin/bulletin129/bul129e_estublier.pdf
 type PPS1350 struct{}
 
 // Min implements the Thruster interface.
@@ -127,32 +126,31 @@ func (t *PPS1350) Max() (voltage, power uint) {
 // Thrust implements the Thruster interface.
 func (t *PPS1350) Thrust(voltage, power uint) (thrust, isp float64) {
 	if voltage == 350 && power == 2500 {
-		//return 140 * 1e-3, 1800
 		return 89e-3, 1650
 	}
 	panic("unsupported voltage or power provided")
 }
 
-// HPHET12k5 is based on the NASA & Rocketdyne 12.5kW demo
-/*type HPHET12k5 struct{}
+// HERMeS is based on the NASA & Rocketdyne 12.5kW demo
+type HERMeS struct{}
 
 // Min implements the Thruster interface.
-func (t *HPHET12k5) Min() (voltage, power uint) {
-	return 400, 12500
+func (t *HERMeS) Min() (voltage, power uint) {
+	return t.Max()
 }
 
 // Max implements the Thruster interface.
-func (t *HPHET12k5) Max() (voltage, power uint) {
-	return 400, 12500
+func (t *HERMeS) Max() (voltage, power uint) {
+	return 800, 12500
 }
 
 // Thrust implements the Thruster interface.
-func (t *HPHET12k5) Thrust(voltage, power uint) (thrust, fuelMass float64) {
-	if voltage == 400 && power == 12500 {
-		return 0.680, 4.8 * 1e-5 // fuel usage made up assuming linear from power.
+func (t *HERMeS) Thrust(voltage, power uint) (thrust, isp float64) {
+	if voltage == 800 && power == 12500 {
+		return 0.680, 2960
 	}
 	panic("unsupported voltage or power provided")
-}*/
+}
 
 // GenericEP is a generic EP thruster.
 type GenericEP struct {

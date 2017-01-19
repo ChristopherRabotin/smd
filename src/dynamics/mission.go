@@ -183,7 +183,6 @@ func (a *Mission) SetState(t float64, s []float64) {
 		a.collided = false
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "revived", a.Orbit.Origin.Name, "dt", a.CurrentDT)
 	} else if (a.Orbit.GetRNorm() > a.Orbit.Origin.SOI || floats.EqualWithinAbs(a.Orbit.e, 1, eccentricityε)) && !a.Orbit.Origin.Equals(Sun) {
-		fmt.Printf("%s => %v\n", a.Orbit.Origin, !a.Orbit.Origin.Equals(Sun))
 		a.Vehicle.FuncQ = append(a.Vehicle.FuncQ, a.Vehicle.ToXCentric(Sun, a.CurrentDT, a.Orbit))
 	}
 
