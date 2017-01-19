@@ -319,10 +319,18 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 	case OptiΔωCL:
 		// The argument of periapsis control is from Petropoulos and in plane.
 		// The out of plane will change other orbital elements at the same time.
+		// We determine which one to use based on the efficiency of each.
 		ctrl = func(o Orbit) []float64 {
-			/*p := o.GetSemiParameter()
-			sinν, cosν := math.Sincos(o.ν)
-			return unitΔvFromAngles(math.Atan2(-p*cosν, (p+o.GetRNorm())*sinν), 0.0)*/
+			oe2 := 1 - math.Pow(o.e, 2)
+			e3 := math.Pow(o.e, 3)
+			νOptiα := math.Acos(math.Pow(oe2/(2*e3)+math.Sqrt(0.25*math.Pow(oe2/e3, 2)+1/27.), 1/3.) - math.Pow(-oe2/(2*e3)+math.Sqrt(0.25*math.Pow(oe2/e3, 2)+1/27.), 1/3.) - 1/o.e)
+			νOptiβ := math.Acos(-o.e*math.Cos(o.ω)) - o.ω
+			if math.Abs(o.ν-νOptiα) < math.Abs(o.ν-νOptiβ) {
+				// The true anomaly is closer to the optimal in plane thrust, so let's do an in-plane thrust.
+				p := o.GetSemiParameter()
+				sinν, cosν := math.Sincos(o.ν)
+				return unitΔvFromAngles(math.Atan2(-p*cosν, (p+o.GetRNorm())*sinν), 0.0)
+			}
 			return unitΔvFromAngles(0.0, sign(-math.Sin(o.ω+o.ν))*math.Cos(o.i)*math.Pi/2)
 		}
 		break

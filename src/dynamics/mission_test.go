@@ -402,10 +402,10 @@ func TestCorrectOEω(t *testing.T) {
 		//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
 		tol := angleε
 		if meth == Naasz {
-			tol *= 10
-		} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.8, 0.1) {
+			tol *= 22
+		} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.4, 0.1) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 0.8", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 0.4", fuelMass-astro.Vehicle.FuelMass)
 		}
 		if !floats.EqualWithinAbs(astro.Orbit.ω, oTarget.ω, tol) {
 			t.Logf("METHOD = %s", meth)
@@ -432,10 +432,10 @@ func TestCorrectOEωNeg(t *testing.T) {
 		//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
 		tol := angleε
 		if meth == Naasz {
-			tol *= 60
-		} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.2, 0.1) {
+			tol *= 88
+		} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.06, 0.02) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 0.2", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 0.06", fuelMass-astro.Vehicle.FuelMass)
 		}
 		if !floats.EqualWithinAbs(astro.Orbit.ω, oTarget.ω, tol) {
 			t.Logf("METHOD = %s", meth)
