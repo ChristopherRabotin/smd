@@ -19,7 +19,7 @@ func InitialEarthOrbit() *dynamics.Orbit {
 
 // FromEarthWaypoints returns the waypoints.
 func FromEarthWaypoints() []dynamics.Waypoint {
-	//ref2Sun := &dynamics.WaypointAction{Type: dynamics.REFSUN, Cargo: nil}
+	target := dynamics.Mars.HelioOrbit(time.Date(2016, 3+7, 14, 9, 31, 0, 0, time.UTC))
 	ref2Mars := &dynamics.WaypointAction{Type: dynamics.REFMARS, Cargo: nil}
 	return []dynamics.Waypoint{
 		// Loiter for 12 hours (eg. IOT)
@@ -30,9 +30,9 @@ func FromEarthWaypoints() []dynamics.Waypoint {
 		dynamics.NewOutwardSpiral(dynamics.Earth, nil),
 		dynamics.NewLoiter(time.Duration(12)*time.Hour, nil),
 		// Go straight to Mars destination
-		dynamics.NewPlanetTarget(dynamics.Mars, time.Date(2016, 3+7, 14, 9, 31, 0, 0, time.UTC), ref2Mars),
+		dynamics.NewOrbitTarget(target, ref2Mars, dynamics.Naasz, dynamics.OptiΔaCL, dynamics.OptiΔeCL, dynamics.OptiΔiCL),
 		// Wait a week on arrival
-		dynamics.NewLoiter(time.Duration(24*7)*time.Hour, nil)}
+		dynamics.NewLoiter(time.Duration(3*24)*time.Hour, nil)}
 }
 
 // InitialMarsOrbit returns the initial orbit.
