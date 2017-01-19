@@ -38,19 +38,6 @@ type Waypoint interface {
 
 // NewOutwardSpiral defines a new outward spiral from a celestial object.
 func NewOutwardSpiral(body CelestialObject, action *WaypointAction) *ReachDistance {
-	/*
-		Add the following possibilities, where:
-		the delta V vector for me is f_r, f_theta, f_h.
-		+Pinkham's spiral:
-		f_r = (q*sqrt(mu*p)*v_r)/(2*r**2)
-		f_theta = (q*sqrt(mu*p)*v_theta)/(2*r**2)
-		p = p_s * exp*(q0)
-		r = (p*(1+q**1))/(1+exp(q0)*(1+q**2)*k*cos(theta-omega))
-
-		+ Lawden's spiral
-		r = (r_s*(sin alpha)^6)/(1-3*(sin(alpha))^2)
-		theta = theta_0 - 4*alpha-3*cotan(alpha) -- cotan == cot
-	*/
 	return &ReachDistance{body.SOI, action, false}
 }
 
