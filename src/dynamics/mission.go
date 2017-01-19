@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ChristopherRabotin/ode"
+	"github.com/gonum/floats"
 )
 
 const (
@@ -172,14 +173,6 @@ func (a *Mission) SetState(t float64, s []float64) {
 	a.Orbit.Ω = s[3]
 	a.Orbit.ω = s[4]
 	a.Orbit.ν = s[5]
-	// Let's execute any function which is in the queue of this time step.
-	for _, f := range a.Vehicle.FuncQ {
-		if f == nil {
-			continue
-		}
-		f()
-	}
-	a.Vehicle.FuncQ = make([]func(), 5) // Clear the queue.
 
 	// Orbit sanity checks and warnings.
 	if !a.collided && a.Orbit.GetRNorm() < a.Orbit.Origin.Radius {
@@ -189,8 +182,9 @@ func (a *Mission) SetState(t float64, s []float64) {
 		// Now further from the 1% dead zone
 		a.collided = false
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "revived", a.Orbit.Origin.Name, "dt", a.CurrentDT)
-	} else if a.Orbit.GetRNorm() > a.Orbit.Origin.SOI {
-		a.Vehicle.ToXCentric(Sun, a.CurrentDT, a.Orbit)
+	} else if (a.Orbit.GetRNorm() > a.Orbit.Origin.SOI || floats.EqualWithinAbs(a.Orbit.e, 1, eccentricityε)) && !a.Orbit.Origin.Equals(Sun) {
+		fmt.Printf("%s => %v\n", a.Orbit.Origin, !a.Orbit.Origin.Equals(Sun))
+		a.Vehicle.FuncQ = append(a.Vehicle.FuncQ, a.Vehicle.ToXCentric(Sun, a.CurrentDT, a.Orbit))
 	}
 
 	// Propulsion sanity check
@@ -198,6 +192,16 @@ func (a *Mission) SetState(t float64, s []float64) {
 		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", s[6])
 	}
 	a.Vehicle.FuelMass = s[6]
+
+	// Let's execute any function which is in the queue of this time step.
+	for _, f := range a.Vehicle.FuncQ {
+		if f == nil {
+			continue
+		}
+		f()
+	}
+	a.Vehicle.FuncQ = make([]func(), 5) // Clear the queue.
+
 }
 
 // Func is the integration function using Gaussian VOP as per Ruggiero et al. 2011.
@@ -241,9 +245,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	}
 	for i := 0; i < 7; i++ {
 		if math.IsNaN(fDot[i]) {
-			Rcur, Vcur := a.Orbit.GetRV()
-			Rtmp, Vtmp := tmpOrbit.GetRV()
-			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\np=%f\th=%f\tdv=%+v\ntmp:%s\ncur:%s\nR_cur=%+v\tV_cur=%+v\nR_tmp=%+v\tV_tmp=%+v", i, a.CurrentDT, p, h, Δv, tmpOrbit, a.Orbit, Rcur, Vcur, Rtmp, Vtmp))
+			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ntmp:%s\ncur:%s\n%.20f\n", i, a.CurrentDT, tmpOrbit, a.Orbit, a.Orbit.e-1))
 		}
 	}
 	return
