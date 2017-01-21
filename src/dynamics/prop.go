@@ -98,6 +98,10 @@ func (cl GenericCL) Type() ControlLaw {
 	return cl.cl
 }
 
+func newGenericCLFromCL(cl ControlLaw) GenericCL {
+	return GenericCL{cl.String(), cl}
+}
+
 /* Let's define some control laws. */
 
 // Coast defines an thrust control law which does not thrust.
@@ -183,7 +187,7 @@ func (cl Inversion) Control(o Orbit) []float64 {
 
 // NewInversionCL defines a new inversion control law.
 func NewInversionCL(ν float64) Inversion {
-	return Inversion{ν, GenericCL{inversion.String(), inversion}}
+	return Inversion{ν, newGenericCLFromCL(inversion)}
 }
 
 /* Following optimal thrust change are from IEPC 2011's paper:

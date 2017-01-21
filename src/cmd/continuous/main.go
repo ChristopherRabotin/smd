@@ -19,22 +19,21 @@ func main() {
 
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
 	//end := start.Add(time.Duration(-1) * time.Nanosecond)  // Propagate until waypoint reached.
-	end := time.Date(2017, 07, 13, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2018, 07, 13, 0, 0, 0, 0, time.UTC)
 
 	/* Let's propagate out of Mars at a guessed date of 7 months after launch date from Earth.
 	Note that we only output the CSV because we don't need to visualize this.
-	* /
-	startM := time.Date(2016, 10, 10, 0, 0, 0, 0, time.UTC)
-	endM := time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)
+	*/
+	endM := end.Add(time.Duration(4 * 30.5 * 24))
 	scMars := SpacecraftFromMars("IM")
 	scMars.LogInfo()
-	astroM := dynamics.NewAstro(scMars, InitialMarsOrbit(), startM, endM, dynamics.ExportConfig{Filename: "IM", OE: false, Cosmo: false, Timestamp: false})
+	astroM := dynamics.NewMission(scMars, InitialMarsOrbit(), end, endM, false, dynamics.ExportConfig{Filename: "IM", OE: false, Cosmo: false, Timestamp: false})
 	astroM.Propagate()
 
-	target := astroM.Orbit*/
+	target := astroM.Orbit
 	//	target := dynamics.NewOrbitFromOE(226090298.679, 0.088, 26.195, 3.516, 326.494, 278.358, dynamics.Sun)
 	//	fmt.Printf("target orbit: %s\n", target)
-	sc := SpacecraftFromEarth("IE")
+	sc := SpacecraftFromEarth("IE", *target)
 	sc.LogInfo()
 	astro := dynamics.NewMission(sc, InitialEarthOrbit(), start, end, false, dynamics.ExportConfig{Filename: "IE", OE: true, Cosmo: true, Timestamp: false})
 	astro.Propagate()

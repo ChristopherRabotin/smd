@@ -38,6 +38,11 @@ type Waypoint interface {
 
 // NewOutwardSpiral defines a new outward spiral from a celestial object.
 func NewOutwardSpiral(body CelestialObject, action *WaypointAction) *ReachDistance {
+	if action != nil && action.Type == REFSUN {
+		// This is handled by the SetState function of Mission and the propagator
+		// will crash if there are multiple attempts to switch to another
+		action = nil
+	}
 	return &ReachDistance{body.SOI, action, false}
 }
 
@@ -110,7 +115,7 @@ func (wp *ReachDistance) Cleared() bool {
 
 // ThrustDirection implements the Waypoint interface.
 func (wp *ReachDistance) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if norm(o.GetR()) >= wp.distance {
+	if o.GetRNorm() >= wp.distance {
 		wp.cleared = true
 		return Coast{}, true
 	}
@@ -172,156 +177,6 @@ func (wp *ReachVelocity) Action() *WaypointAction {
 // NewReachVelocity defines a new spiral until a given velocity is reached.
 func NewReachVelocity(velocity float64, action *WaypointAction) *ReachVelocity {
 	return &ReachVelocity{velocity, action, 5, false}
-}
-
-// ReachEnergy is a type of waypoint allows to allocate a good guess of thrust to reach a given energy.
-type ReachEnergy struct {
-	finalξ  float64 // Stores the final energy the vehicle should have.
-	ratio   float64 // Stores the ratio between the current and final energy at which we switch.
-	action  *WaypointAction
-	cleared bool
-	started bool
-}
-
-// String implements the Waypoint interface.
-func (wp *ReachEnergy) String() string {
-	return fmt.Sprintf("Reach energy of %.1f (ratio = %1.1f).", wp.finalξ, wp.ratio)
-}
-
-// Cleared implements the Waypoint interface.
-func (wp *ReachEnergy) Cleared() bool {
-	return wp.cleared
-}
-
-// ThrustDirection implements the Waypoint interface.
-func (wp *ReachEnergy) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if math.Abs(wp.finalξ-o.Getξ()) < math.Abs(0.00001*wp.finalξ) {
-		wp.cleared = true
-		return Coast{}, true
-	}
-	if math.Abs(wp.finalξ/o.Getξ()) < wp.ratio {
-		return AntiTangential{}, false
-	}
-	return Tangential{}, false
-}
-
-// Action implements the Waypoint interface.
-func (wp *ReachEnergy) Action() *WaypointAction {
-	if wp.cleared {
-		return wp.action
-	}
-	return nil
-}
-
-// NewReachEnergy defines a new spiral until a given velocity is reached.
-func NewReachEnergy(energy, ratio float64, action *WaypointAction) *ReachEnergy {
-	return &ReachEnergy{energy, ratio, action, false, false}
-}
-
-// PlanetBound is a type of waypoint which thrusts until a given distance is reached from the central body.
-// SHould this work differently? Like give a time at which to reach a destination, and do a full opti thrust
-// until the orbit is actually that of the destination at the given time. The problem here is that the full
-// opti thrust does not work great... But the idea of targetting the planet directly and doing an injection
-// when close enough is quite interesting.
-type PlanetBound struct {
-	destination  CelestialObject
-	destSOILower float64
-	destSOIUpper float64
-	cacheTime    time.Time
-	cacheDest    Orbit
-	action       *WaypointAction
-	cleared      bool
-}
-
-// String implements the Waypoint interface.
-func (wp *PlanetBound) String() string {
-	return fmt.Sprintf("Toward Planet %s.", wp.destination.Name)
-}
-
-// Cleared implements the Waypoint interface.
-func (wp *PlanetBound) Cleared() bool {
-	return wp.cleared
-}
-
-// ThrustDirection implements the Waypoint interface.
-/*
-Ideas:
-1. Thrust all the way until the given planet theoretical SOI if the planet were there,
-then slow down if the relative velocity would cause the vehicle to flee, or accelerate
-otherwise. Constantly check that the vehicle stays within the theoretical SOI, and
-update thrust in consideration.
-2. Align argument of periapsis with that of the destination planet.
-Then, use the InversionCL in order to thrust only when the planet is on its way to us.
-The problem with this is that it may take a while to reach the destination since we
-aren't always thrusting.
-*/
-func (wp *PlanetBound) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if !o.Origin.Equals(Sun) {
-		panic("must be in a heliocentric orbit prior to being PlanetBound")
-	}
-	// If this is the first call, let's compute the theoretical SOI bounds.
-	if wp.destSOILower == wp.destSOIUpper {
-		wp.cacheTime = dt
-		wp.cacheDest = wp.destination.HelioOrbit(dt)
-		wp.destSOILower = norm(wp.cacheDest.GetR()) - wp.destination.SOI
-		wp.destSOIUpper = norm(wp.cacheDest.GetR()) + wp.destination.SOI
-	}
-	var cl ThrustControl
-	if math.Abs(o.i-wp.cacheDest.i) > (0.2 / (2 * math.Pi)) {
-		// Inclination difference of more than 1 degree, let's change this ASAP since
-		// the faster we go, the more energy is needed.
-		cl = NewOptimalThrust(OptiΔiCL, "inclination change required")
-	} else if norm(o.GetR()) < wp.destSOIUpper {
-		// Next if the radius isn't going to hit Mars, increase it until it does.
-		//cl = Tangential{"not in theoretical SOI"}
-		cl = NewOptimalThrust(OptiΔaCL, "radius not in theoretical SOI")
-	} else {
-		// Inclination and radius are good. The best would be to find whether the vehicle will
-		// hit its apoapsis about when the destination will be there, and if not, change the
-		// argument of perigee. and if so, need to circularize the orbit slightly before encounter
-		// in order to have a slow relative velocity. This will make the capture easier.
-
-		// We cache the destination helio orbit for a full day to make the simulation faster.
-		if wp.cacheTime.After(dt.Add(time.Duration(24) * time.Hour)) {
-			wp.cacheTime = dt
-			wp.cacheDest = wp.destination.HelioOrbit(dt)
-		}
-
-		// We are targeting the theoretical SOI. Let's check if we are within the real SOI.
-		rDiff := make([]float64, 3)
-		R := o.GetR()
-		destR := wp.cacheDest.GetR()
-		for i := 0; i < 3; i++ {
-			rDiff[i] = R[i] - destR[i]
-		}
-		if norm(rDiff) < wp.destination.SOI {
-			// We are in the SOI, let's do an orbital injection.
-			// Note that we return here because we're at destination.
-			wp.cleared = true
-			return Coast{}, true
-		} //else {
-		// If the relative velocity is positive, let's slow down.
-		//cl = AntiTangential{"going faster than planet"}
-		cl = Coast{"waiting for planet"}
-		//}
-	}
-	return cl, false
-}
-
-// Action implements the Waypoint interface.
-func (wp *PlanetBound) Action() *WaypointAction {
-	if wp.cleared {
-		return wp.action
-	}
-	return nil
-}
-
-// NewPlanetBound defines a new trajectory until and including the orbital insertion.
-func NewPlanetBound(destination CelestialObject, action *WaypointAction) *PlanetBound {
-	if action == nil || (action.Type != REFEARTH && action.Type != REFMARS) {
-		panic("PlanetBound requires a REF* action. ")
-	}
-	return &PlanetBound{destination, 0.0, 0.0, time.Unix(0, 0), Orbit{}, action, false}
 }
 
 // OrbitTarget allows to target an orbit.
