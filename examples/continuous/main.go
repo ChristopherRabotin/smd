@@ -1,12 +1,13 @@
 package main
 
 import (
-	"dynamics"
 	"fmt"
 	"math"
 	"os"
 	"runtime"
 	"time"
+
+	"github.com/ChristopherRabotin/smd"
 )
 
 func norm(v []float64) float64 {
@@ -27,15 +28,15 @@ func main() {
 	endM := end.Add(time.Duration(4 * 30.5 * 24))
 	scMars := SpacecraftFromMars("IM")
 	scMars.LogInfo()
-	astroM := dynamics.NewMission(scMars, InitialMarsOrbit(), end, endM, false, dynamics.ExportConfig{Filename: "IM", OE: false, Cosmo: false, Timestamp: false})
+	astroM := smd.NewMission(scMars, InitialMarsOrbit(), end, endM, false, smd.ExportConfig{Filename: "IM", OE: false, Cosmo: false, Timestamp: false})
 	astroM.Propagate()
 
 	target := astroM.Orbit
-	//	target := dynamics.NewOrbitFromOE(226090298.679, 0.088, 26.195, 3.516, 326.494, 278.358, dynamics.Sun)
+	//	target := smd.NewOrbitFromOE(226090298.679, 0.088, 26.195, 3.516, 326.494, 278.358, smd.Sun)
 	//	fmt.Printf("target orbit: %s\n", target)
 	sc := SpacecraftFromEarth("IE", *target)
 	sc.LogInfo()
-	astro := dynamics.NewMission(sc, InitialEarthOrbit(), start, end, false, dynamics.ExportConfig{Filename: "IE", OE: true, Cosmo: true, Timestamp: false})
+	astro := smd.NewMission(sc, InitialEarthOrbit(), start, end, false, smd.ExportConfig{Filename: "IE", OE: true, Cosmo: true, Timestamp: false})
 	astro.Propagate()
 
 }

@@ -1,16 +1,17 @@
 package main
 
 import (
-	"dynamics"
 	"fmt"
 	"time"
+
+	"github.com/ChristopherRabotin/smd"
 )
 
 func main() {
 	end := time.Now().UTC().Add(time.Duration(2) * time.Hour)
 	start := end.Add(time.Duration(-2*30.5*24) * time.Hour)
-	sc := dynamics.NewEmptySC("inc", 100)
-	obj := dynamics.Mars
+	sc := smd.NewEmptySC("inc", 100)
+	obj := smd.Mars
 	oI := obj.HelioOrbit(start)
 	/*a := 20 * obj.Radius
 	e := 1e-1
@@ -18,10 +19,10 @@ func main() {
 	Ω := 1e-1 //90.0
 	ω := 1e-1 //45.0
 	ν := 20.5
-	oI := dynamics.NewOrbitFromOE(a, e, i, Ω, ω, ν, obj)*/
+	oI := smd.NewOrbitFromOE(a, e, i, Ω, ω, ν, obj)*/
 	R, V := oI.GetRV()
-	oV := dynamics.NewOrbitFromRV(R, V, dynamics.Sun)
+	oV := smd.NewOrbitFromRV(R, V, smd.Sun)
 	fmt.Printf("oI: %s\noV: %s\n", oI, oV)
-	mss := dynamics.NewMission(sc, &oI, start, end, false, dynamics.ExportConfig{Filename: "Inc", OE: true, Cosmo: true, Timestamp: false})
+	mss := smd.NewMission(sc, &oI, start, end, false, smd.ExportConfig{Filename: "Inc", OE: true, Cosmo: true, Timestamp: false})
 	mss.Propagate()
 }

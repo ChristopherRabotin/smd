@@ -1,16 +1,17 @@
 package main
 
 import (
-	"dynamics"
 	"fmt"
 	"time"
+
+	"github.com/ChristopherRabotin/smd"
 )
 
 func main() {
 	/* Building spacecraft */
-	eps := dynamics.NewUnlimitedEPS()
-	//thrusters := []dynamics.Thruster{&dynamics.HPHET12k5{}, &dynamics.HPHET12k5{}, &dynamics.HPHET12k5{}, &dynamics.HPHET12k5{}, &dynamics.HPHET12k5{}, &dynamics.HPHET12k5{}}
-	thrusters := []dynamics.Thruster{new(dynamics.PPS1350)}
+	eps := smd.NewUnlimitedEPS()
+	//thrusters := []smd.Thruster{&smd.HPHET12k5{}, &smd.HPHET12k5{}, &smd.HPHET12k5{}, &smd.HPHET12k5{}, &smd.HPHET12k5{}, &smd.HPHET12k5{}}
+	thrusters := []smd.Thruster{new(smd.PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
@@ -23,14 +24,14 @@ func main() {
 	for Ω := 0.0; Ω < 360; Ω += 10.0 {
 		for ω := 0.0; ω < 360; ω += 10.0 {
 			for ν := 0.0; ν < 360; ν += 10.0 {
-				initOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, 46, Ω, ω, ν, dynamics.Earth)
-				targetOrbit := dynamics.NewOrbitFromOE(350+dynamics.Earth.Radius, 0.01, 51.6, Ω, ω, ν, dynamics.Earth)
+				initOrbit := smd.NewOrbitFromOE(350+smd.Earth.Radius, 0.01, 46, Ω, ω, ν, smd.Earth)
+				targetOrbit := smd.NewOrbitFromOE(350+smd.Earth.Radius, 0.01, 51.6, Ω, ω, ν, smd.Earth)
 
-				waypoints := []dynamics.Waypoint{dynamics.NewOrbitTarget(*targetOrbit, nil, dynamics.Ruggerio, dynamics.OptiΔiCL)}
-				sc := dynamics.NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, []*dynamics.Cargo{}, waypoints)
+				waypoints := []smd.Waypoint{smd.NewOrbitTarget(*targetOrbit, nil, smd.Ruggerio, smd.OptiΔiCL)}
+				sc := smd.NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, []*smd.Cargo{}, waypoints)
 
 				sc.LogInfo()
-				astro := dynamics.NewMission(sc, initOrbit, start, end, false, dynamics.ExportConfig{Filename: "Rugg", OE: true, Cosmo: false, Timestamp: false})
+				astro := smd.NewMission(sc, initOrbit, start, end, false, smd.ExportConfig{Filename: "Rugg", OE: true, Cosmo: false, Timestamp: false})
 				astro.Propagate()
 				results += fmt.Sprintf("%s\tΩ=%f\tω=%f\tν=%f\n", initOrbit, Ω, ω, ν)
 			}
