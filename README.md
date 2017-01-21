@@ -1,7 +1,10 @@
 # Space Mission Design (smd)
 Space Mission Design allows one to perform an initial space mission design, around a given celestial body or between celestial bodies.
 
-This package was written to support my thesis and my astrodynamics courses at the University of Colorado Boulder.
+This package was written to support my thesis and my astrodynamics courses (ASEN 6008 Space Mission Design / Interplanetary Mission Design) at the University of Colorado Boulder.
+
+[![Build Status](https://travis-ci.org/ChristopherRabotin/smd.svg?branch=master)](https://travis-ci.org/ChristopherRabotin/smd) [![Coverage Status](https://coveralls.io/repos/ChristopherRabotin/smd/badge.svg?branch=master&service=github)](https://coveralls.io/github/ChristopherRabotin/smd?branch=master)
+[![goreport](https://goreportcard.com/badge/github.com/ChristopherRabotin/smd)](https://goreportcard.com/report/github.com/ChristopherRabotin/smd)
 
 # Features
 _Note:_ this list may not be up to date with the latest developments.
