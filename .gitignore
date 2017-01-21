@@ -1,6 +1,3 @@
 outputdata/
-src/data/jplhorizon
-bin/
-pkg/
-vendor/src/github.com/ChristopherRabotin
-
+data/jplhorizon
+env.sh
