@@ -72,8 +72,8 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 	v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
 	// Get the Cartesian coordinates from L,B,R.
 	R, V := make([]float64, 3), make([]float64, 3)
-	sB, cB := math.Sincos(b)
-	sL, cL := math.Sincos(l)
+	sB, cB := math.Sincos(b.Rad())
+	sL, cL := math.Sincos(l.Rad())
 	R[0] = r * cB * cL
 	R[1] = r * cB * sL
 	R[2] = r * sB
