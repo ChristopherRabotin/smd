@@ -1,4 +1,4 @@
-package dynamics
+package smd
 
 import "testing"
 

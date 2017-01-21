@@ -1,4 +1,4 @@
-package dynamics
+package smd
 
 // Thruster defines a thruster interface.
 type Thruster interface {
