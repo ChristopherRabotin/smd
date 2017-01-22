@@ -265,6 +265,13 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 // NewOrbitFromOE creates an orbit from the orbital elements.
 // WARNING: Angles must be in degrees not radian.
 func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
+	// Making an approximation for circular and equatorial orbits.
+	if e < eccentricityε*1e-6 {
+		e = eccentricityε * 1e-6
+	}
+	if i < angleε*1e-6 {
+		i = angleε * 1e-6
+	}
 	orbit := Orbit{a, e, Deg2rad(i), Deg2rad(Ω), Deg2rad(ω), Deg2rad(ν), c, 0.0, nil, nil}
 	orbit.GetRV()
 	orbit.computeHash()
