@@ -46,7 +46,7 @@ func TestCosmoBodyChange(t *testing.T) {
 
 	/* Building spacecraft */
 	eps := NewUnlimitedEPS()
-	thrusters := []Thruster{new(PPS1350)}
+	thrusters := []EPThruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
 	cargo := &Cargo{time.Now(), NewEmptySC("cargo0", 50)}

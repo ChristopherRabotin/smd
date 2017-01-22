@@ -183,10 +183,10 @@ func TestCorrectOEa(t *testing.T) {
 		oInit := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
 		oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{new(PPS1350)}
+		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(45*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
@@ -209,10 +209,10 @@ func TestCorrectOEaNeg(t *testing.T) {
 		oInit := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
 		oTarget := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{new(PPS1350)}
+		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(45*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
@@ -235,10 +235,10 @@ func TestCorrectOEi(t *testing.T) {
 		oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
 		oTarget := NewOrbitFromOE(Earth.Radius+350, 0.001, 51.6, 1, 1, 1, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{new(PPS1350)}
+		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(55*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
@@ -261,10 +261,10 @@ func TestCorrectOEiNeg(t *testing.T) {
 		oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 51.6, 1, 1, 1, Earth)
 		oTarget := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{new(PPS1350)}
+		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(55*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
@@ -287,10 +287,10 @@ func TestCorrectOEΩ(t *testing.T) {
 		oInit := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 0, 1, 0, Earth)
 		oTarget := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 5, 1, 0, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{new(PPS1350)}
+		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(49*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
@@ -313,10 +313,10 @@ func TestCorrectOEΩNeg(t *testing.T) {
 		oInit := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 5, 1, 0, Earth)
 		oTarget := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 0, 1, 0, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{new(PPS1350)}
+		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(49*24) * time.Hour) // just after the expected time
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
@@ -339,10 +339,10 @@ func TestCorrectOEe(t *testing.T) {
 		oInit := NewOrbitFromOE(Earth.Radius+9000, 0.01, 98.7, 0, 1, 1, Earth)
 		oTarget := NewOrbitFromOE(Earth.Radius+9000, 0.15, 98.7, 0, 1, 1, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{new(PPS1350)}
+		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(30*24) * time.Hour) // just after the expected time
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
@@ -365,10 +365,10 @@ func TestCorrectOEeNeg(t *testing.T) {
 		oInit := NewOrbitFromOE(Earth.Radius+9000, 0.15, 98.7, 0, 1, 1, Earth)
 		oTarget := NewOrbitFromOE(Earth.Radius+9000, 0.01, 98.7, 0, 1, 1, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{new(PPS1350)}
+		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(30*24) * time.Hour) // just after the expected time
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
@@ -391,10 +391,10 @@ func TestCorrectOEω(t *testing.T) {
 		oInit := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 178, angleε, Earth)
 		oTarget := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 183, angleε, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{new(PPS1350)}
+		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(2*24) * time.Hour) // just after the expected time
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
@@ -421,10 +421,10 @@ func TestCorrectOEωNeg(t *testing.T) {
 		oInit := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 183, angleε, Earth)
 		oTarget := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 178, angleε, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{new(PPS1350)}
+		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(1*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
@@ -451,10 +451,10 @@ func TestMultiCorrectOE(t *testing.T) {
 		oInit := NewOrbitFromOE(24396, 0.001, 7, 1, 1, 1, Earth)
 		oTarget := NewOrbitFromOE(42164, 0.7283, 0.001, 1, 1, 1, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{new(PPS1350)}
+		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL, OptiΔiCL)})
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL, OptiΔiCL)})
 		start := time.Now()
 		var days int
 		var fuel float64
@@ -485,10 +485,10 @@ func TestPetropoulosCaseA(t *testing.T) {
 		oInit := NewOrbitFromOE(7000, 0.01, 0.05, 0, 0, 1, Earth)
 		oTarget := NewOrbitFromOE(42000, 0.01, 0.05, 0, 0, 1, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{NewGenericEP(1, 3100)}
+		EPThrusters := []EPThruster{NewGenericEP(1, 3100)}
 		dryMass := 1.0
 		fuelMass := 299.0
-		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
+		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
 		start := time.Now()
 		// With eta=0.968, the duration is 152.389 days.
 		end := start.Add(time.Duration(153*24) * time.Hour)
@@ -507,10 +507,10 @@ func TestPetropoulosCaseB(t *testing.T) {
 		oInit := NewOrbitFromOE(24505.9, 0.725, 7.05, 0, 0, 1, Earth)
 		oTarget := NewOrbitFromOE(42165, 0.001, 0.05, 0, 1, 1, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{NewGenericEP(0.350, 2000)}
+		EPThrusters := []EPThruster{NewGenericEP(0.350, 2000)}
 		dryMass := 1.0
 		fuelMass := 1999.0
-		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔiCL)})
+		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔiCL)})
 		start := time.Now()
 		// About three months is what is needed without the eccentricity change.
 		end := start.Add(time.Duration(90*24) * time.Hour)
@@ -528,10 +528,10 @@ func TestPetropoulosCaseC(t *testing.T) {
 		oInit := NewOrbitFromOE(9222.7, 0.2, 0.573, 0, 0, 1, Earth)
 		oTarget := NewOrbitFromOE(30000, 0.7, 0.573, 0, 1, 1, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{NewGenericEP(9.3, 3100)}
+		EPThrusters := []EPThruster{NewGenericEP(9.3, 3100)}
 		dryMass := 1.0
 		fuelMass := 299.0
-		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
+		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(80*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
@@ -549,10 +549,10 @@ func TestPetropoulosCaseE(t *testing.T) {
 		oInit := NewOrbitFromOE(24505.9, 0.725, 0.06, 0, 0, 1, Earth)
 		oTarget := NewOrbitFromOE(26500, 0.7, 116, 270, 180, 1, Earth)
 		eps := NewUnlimitedEPS()
-		thrusters := []Thruster{NewGenericEP(2, 2000)}
+		EPThrusters := []EPThruster{NewGenericEP(2, 2000)}
 		dryMass := 1.0
 		fuelMass := 1999.0
-		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, thrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth)})
+		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth)})
 		start := time.Now()
 		// There is no provided time, but the graph goes all the way to 240 days.
 		end := start.Add(time.Duration(240*24) * time.Hour)

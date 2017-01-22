@@ -11,16 +11,16 @@ import (
 
 // Spacecraft defines a new spacecraft.
 type Spacecraft struct {
-	Name      string     // Name of spacecraft
-	DryMass   float64    // DryMass of spacecraft (in kg)
-	FuelMass  float64    // FuelMass of spacecraft (in kg) (will panic if runs out of fuel)
-	EPS       EPS        // EPS definition, needed for the thrusters.
-	Thrusters []Thruster // All available thrusters
-	Cargo     []*Cargo   // All onboard cargo
-	WayPoints []Waypoint // All waypoints of the tug
-	FuncQ     []func()
-	logger    kitlog.Logger
-	prevCL    *ControlLaw // Stores the previous control law to follow what is going on.
+	Name        string       // Name of spacecraft
+	DryMass     float64      // DryMass of spacecraft (in kg)
+	FuelMass    float64      // FuelMass of spacecraft (in kg) (will panic if runs out of fuel)
+	EPS         EPS          // EPS definition, needed for the EPThrusters.
+	EPThrusters []EPThruster // All available EP EPThrusters
+	Cargo       []*Cargo     // All onboard cargo
+	WayPoints   []Waypoint   // All waypoints of the tug
+	FuncQ       []func()
+	logger      kitlog.Logger
+	prevCL      *ControlLaw // Stores the previous control law to follow what is going on.
 }
 
 // SCLogInit initializes the logger.
@@ -57,7 +57,7 @@ func (sc *Spacecraft) Mass(dt time.Time) (m float64) {
 }
 
 // Accelerate returns the applied velocity (in km/s) at a given orbital position and date time, and the fuel used.
-// Keeps track of the thrust applied by all thrusters, with necessary optmizations based on next waypoint, *but*
+// Keeps track of the thrust applied by all EPThrusters, with necessary optmizations based on next waypoint, *but*
 // does not update the fuel available (as it needs to be integrated).
 func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel float64) {
 	// Here goes the optimizations based on the available power and whether the goal has been reached.
@@ -137,11 +137,11 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		} else if math.Abs(ΔvNorm-1) > 1e-12 {
 			panic(fmt.Errorf("Δv = %+v! Normalization not implemented yet:", Δv))
 		}
-		for _, thruster := range sc.Thrusters {
-			voltage, power := thruster.Max()
+		for _, EPThruster := range sc.EPThrusters {
+			voltage, power := EPThruster.Max()
 			if err := sc.EPS.Drain(voltage, power, dt); err == nil {
 				// Okay to thrust.
-				tThrust, isp := thruster.Thrust(voltage, power)
+				tThrust, isp := EPThruster.Thrust(voltage, power)
 				thrust += tThrust
 				fuel += tThrust / (isp * 9.807)
 			} // Error handling of EPS happens in EPS subsystem.
@@ -168,13 +168,13 @@ func (sc *Spacecraft) ToXCentric(body CelestialObject, dt time.Time, o *Orbit) f
 	}
 }
 
-// NewEmptySC returns a spacecraft with no cargo and no thrusters.
+// NewEmptySC returns a spacecraft with no cargo and no EPThrusters.
 func NewEmptySC(name string, mass uint) *Spacecraft {
-	return &Spacecraft{name, float64(mass), 0, NewUnlimitedEPS(), []Thruster{}, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name), nil}
+	return &Spacecraft{name, float64(mass), 0, NewUnlimitedEPS(), []EPThruster{}, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name), nil}
 }
 
 // NewSpacecraft returns a spacecraft with initialized function queue and logger.
-func NewSpacecraft(name string, dryMass, fuelMass float64, eps EPS, prop []Thruster, payload []*Cargo, wp []Waypoint) *Spacecraft {
+func NewSpacecraft(name string, dryMass, fuelMass float64, eps EPS, prop []EPThruster, payload []*Cargo, wp []Waypoint) *Spacecraft {
 	return &Spacecraft{name, dryMass, fuelMass, eps, prop, payload, wp, make([]func(), 5), SCLogInit(name), nil}
 }
 
