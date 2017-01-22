@@ -223,3 +223,56 @@ func NewOrbitTarget(target Orbit, action *WaypointAction, meth ControlLawType, l
 	}
 	return &OrbitTarget{target, NewOptimalΔOrbit(target, meth, laws), action, false}
 }
+
+// HohmannTransfer allows to perform an Hohmann transfer.
+type HohmannTransfer struct {
+	action    *WaypointAction
+	ctrl      HohmannΔv
+	arrivalDT time.Time
+	cleared   bool
+}
+
+// String implements the Waypoint interface.
+func (wp *HohmannTransfer) String() string {
+	return fmt.Sprintf("Hohmann transfer")
+}
+
+// Cleared implements the Waypoint interface.
+func (wp *HohmannTransfer) Cleared() bool {
+	return wp.cleared
+}
+
+// Action implements the Waypoint interface.
+func (wp *HohmannTransfer) Action() *WaypointAction {
+	if wp.cleared {
+		return wp.action
+	}
+	return nil
+}
+
+// ThrustDirection implements the optimal orbit target.
+func (wp *HohmannTransfer) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
+	switch wp.ctrl.status {
+	case hohmannCompute:
+		wp.ctrl.Precompute(o)
+		// Update the upcoming status of Hohmann
+		wp.ctrl.status = hohmmanInitΔv
+		break
+	case hohmmanCoast:
+		if dt.After(wp.arrivalDT) {
+			// In actuality, we are performing the burn one time step after the expected TOF.
+			wp.ctrl.status = hohmmanFinalΔv
+		}
+	case hohmmanCompleted:
+		wp.cleared = true
+	}
+	return &wp.ctrl, wp.cleared
+}
+
+// NewHohmannTransfer defines a new Hohmann transfer
+func NewHohmannTransfer(target Orbit, action *WaypointAction) *HohmannTransfer {
+	if target.GetPeriapsis() < target.Origin.Radius || target.GetApoapsis() < target.Origin.Radius {
+		fmt.Printf("[WARNING] Target orbit on collision course with %s\n", target.Origin)
+	}
+	return &HohmannTransfer{action, NewHohmannΔv(target), time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC), false}
+}

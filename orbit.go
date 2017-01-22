@@ -13,6 +13,7 @@ const (
 	eccentricityε = 5e-5                         // 0.00005
 	angleε        = (5e-3 / 360) * (2 * math.Pi) // 0.005 degrees
 	distanceε     = 2e1                          // 20 km
+	velocityε     = 1e-6                         // in km/s
 )
 
 // Orbit defines an orbit via its orbital elements.

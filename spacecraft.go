@@ -170,7 +170,7 @@ func (sc *Spacecraft) ToXCentric(body CelestialObject, dt time.Time, o *Orbit) f
 
 // NewEmptySC returns a spacecraft with no cargo and no thrusters.
 func NewEmptySC(name string, mass uint) *Spacecraft {
-	return &Spacecraft{name, float64(mass), 0, nil, []Thruster{}, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name), nil}
+	return &Spacecraft{name, float64(mass), 0, NewUnlimitedEPS(), []Thruster{}, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name), nil}
 }
 
 // NewSpacecraft returns a spacecraft with initialized function queue and logger.

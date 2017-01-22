@@ -244,7 +244,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	}
 	for i := 0; i < 7; i++ {
 		if math.IsNaN(fDot[i]) {
-			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ntmp:%s\ncur:%s\n%.20f\n", i, a.CurrentDT, tmpOrbit, a.Orbit, a.Orbit.e-1))
+			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ntmp:%s\ncur:%s\n", i, a.CurrentDT, tmpOrbit, a.Orbit))
 		}
 	}
 	return

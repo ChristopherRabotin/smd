@@ -3,6 +3,7 @@ package smd
 import (
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/gonum/floats"
 )
@@ -13,12 +14,15 @@ type ControlLaw uint8
 // ControlLawType defines the way to sum different Lyuapunov optimal CL
 type ControlLawType uint8
 
+type hohmannStatus uint8
+
 const (
 	tangential ControlLaw = iota + 1
 	antiTangential
 	inversion
 	coast
 	multiOpti
+	hohmann
 	// OptiΔaCL allows to optimize thrust for semi major axis change
 	OptiΔaCL
 	// OptiΔiCL allows to optimize thrust for inclination change
@@ -31,10 +35,13 @@ const (
 	OptiΔωCL
 	// Ruggerio uses the eponym method of combining the control laws
 	Ruggerio ControlLawType = iota + 1
-	// Petropoulos idem as Ruggerio, but with Petropoulos
-	Petropoulos
 	// Naasz is another type of combination of control law
 	Naasz
+	hohmannCompute hohmannStatus = iota + 1
+	hohmmanInitΔv
+	hohmmanFinalΔv
+	hohmmanCoast
+	hohmmanCompleted
 )
 
 func (cl ControlLaw) String() string {
@@ -59,6 +66,8 @@ func (cl ControlLaw) String() string {
 		return "optiΔω"
 	case multiOpti:
 		return "multiOpti"
+	case hohmann:
+		return "Hohmann"
 	}
 	panic("cannot stringify unknown control law")
 }
@@ -69,8 +78,6 @@ func (meth ControlLawType) String() string {
 		return "Ruggerio"
 	case Naasz:
 		return "Naasz"
-	case Petropoulos:
-		return "Petro"
 	}
 	panic("cannot stringify unknown control law summation method")
 }
@@ -427,4 +434,52 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	}
 
 	return unit(thrust)
+}
+
+// HohmannΔv computes the Δv needed to go from one orbit to another, and performs an instantaneous Δv.
+type HohmannΔv struct {
+	target        Orbit
+	status        hohmannStatus
+	ΔvApo, ΔvPeri []float64
+	tof           time.Duration
+	GenericCL
+}
+
+// Precompute computes and displays the Hohmann transfer orbit.
+func (cl *HohmannΔv) Precompute(o Orbit) {
+	if !floats.EqualWithinAbs(cl.target.i, o.i, angleε) {
+		fmt.Printf("[WARNING] Hohmann transfer requested on non-coplanar orbits:\nOsc: %s\nTgt: %s\n", o, cl.target)
+	}
+	rInit := o.GetRNorm()
+	rFinal := cl.target.GetRNorm()
+	vInit := o.GetVNorm()
+	vFinal := cl.target.GetVNorm()
+	aTransfer := 0.5 * (rInit + rFinal)
+	vDepature := math.Sqrt((2 * o.Origin.μ / rInit) - (o.Origin.μ / aTransfer))
+	vArrival := math.Sqrt((2 * o.Origin.μ / rFinal) - (o.Origin.μ / aTransfer))
+	cl.ΔvPeri = []float64{0, vDepature - vInit, 0}
+	cl.ΔvApo = []float64{0, vArrival - vFinal, 0}
+	cl.tof = time.Duration(math.Pi*math.Sqrt(math.Pow(aTransfer, 3)/o.Origin.μ)) * time.Second
+	fmt.Printf("----------\nHohmann transfer information - T.O.F.: %s\nvInit=%f km/s\tvFinal=%f km/s\nvDeparture=%f km/s\t vArrival=%f km/s\nΔvPeri=%f km/s\tΔvApo=%f\n", cl.tof, vInit, vFinal, vDepature, vArrival, cl.ΔvPeri, cl.ΔvApo)
+}
+
+// Control implements the ThrustControl interface.
+func (cl *HohmannΔv) Control(o Orbit) []float64 {
+	switch cl.status {
+	case hohmmanCoast:
+		return []float64{0, 0, 0}
+	case hohmmanInitΔv:
+		cl.status = hohmmanCoast
+		return cl.ΔvPeri
+	case hohmmanFinalΔv:
+		cl.status = hohmmanCompleted
+		return cl.ΔvApo
+	default:
+		panic("unreachable line")
+	}
+}
+
+// NewHohmannΔv defines a new inversion control law.
+func NewHohmannΔv(target Orbit) HohmannΔv {
+	return HohmannΔv{target, hohmannCompute, []float64{0, 0, 0}, []float64{0, 0, 0}, time.Duration(-1) * time.Second, newGenericCLFromCL(hohmann)}
 }
