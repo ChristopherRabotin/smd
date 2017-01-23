@@ -68,8 +68,8 @@ func TestMissionNegTime(t *testing.T) {
 func TestMissionGEO(t *testing.T) {
 	// Define an approximate GEO orbit.
 	a0 := Earth.Radius + 35786
-	e0 := eccentricityε
-	i0 := angleε
+	e0 := 0.0
+	i0 := 0.0
 	ω0 := angleε
 	Ω0 := angleε
 	// Propagating for 0.5 orbits to ensure that time and orbital elements are changed accordingly.
@@ -110,8 +110,8 @@ func TestMissionGEO(t *testing.T) {
 func TestMissionGEOJ2(t *testing.T) {
 	// Define an approximate GEO orbit.
 	a0 := Earth.Radius + 35786
-	e0 := eccentricityε
-	i0 := angleε
+	e0 := 0.0
+	i0 := 0.0
 	ω0 := angleε
 	Ω0 := angleε
 	// Propagating for 0.5 orbits to ensure that time and orbital elements are changed accordingly.
@@ -433,7 +433,7 @@ func TestCorrectOEωNeg(t *testing.T) {
 		tol := angleε
 		if meth == Naasz {
 			tol *= 88
-		} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.06, 0.02) {
+		} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.4, 0.1) {
 			t.Logf("METHOD = %s", meth)
 			t.Fatalf("invalid fuel usage: %f kg instead of 0.06", fuelMass-astro.Vehicle.FuelMass)
 		}

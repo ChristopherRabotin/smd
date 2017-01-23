@@ -11,7 +11,7 @@ func main() {
 	/* Building spacecraft */
 	eps := smd.NewUnlimitedEPS()
 	//thrusters := []smd.Thruster{&smd.HPHET12k5{}, &smd.HPHET12k5{}, &smd.HPHET12k5{}, &smd.HPHET12k5{}, &smd.HPHET12k5{}, &smd.HPHET12k5{}}
-	thrusters := []smd.Thruster{new(smd.PPS1350)}
+	thrusters := []smd.EPThruster{new(smd.PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
@@ -28,7 +28,7 @@ func main() {
 				targetOrbit := smd.NewOrbitFromOE(350+smd.Earth.Radius, 0.01, 51.6, Ω, ω, ν, smd.Earth)
 
 				waypoints := []smd.Waypoint{smd.NewOrbitTarget(*targetOrbit, nil, smd.Ruggerio, smd.OptiΔiCL)}
-				sc := smd.NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, []*smd.Cargo{}, waypoints)
+				sc := smd.NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, false, []*smd.Cargo{}, waypoints)
 
 				sc.LogInfo()
 				astro := smd.NewMission(sc, initOrbit, start, end, false, smd.ExportConfig{Filename: "Rugg", OE: true, Cosmo: false, Timestamp: false})
