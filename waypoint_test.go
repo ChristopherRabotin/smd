@@ -58,6 +58,7 @@ func TestHohmannΔv(t *testing.T) {
 	// the number of calls. This is important for the integration function which may call the burn several times.
 	target := *NewOrbitFromOE(Earth.Radius+35781.34857, 0, 0, 0, 0, 90, Earth)
 	oscul := *NewOrbitFromOE(Earth.Radius+191.34411, 0, 0, 0, 0, 90, Earth)
+
 	ΔvApoExp := []float64{0.0, -1.478187, 0.0}
 	ΔvPeriExp := []float64{0.0, 2.457038, 0.0}
 	tofExp := time.Duration(5)*time.Hour + time.Duration(15)*time.Minute + time.Duration(24)*time.Second
@@ -67,6 +68,15 @@ func TestHohmannΔv(t *testing.T) {
 	coastDT := initDT.Add(tofExp / 2)
 	apoDT := initDT.Add(tofExp + StepSize)
 	postDT := apoDT.Add(StepSize)
+
+	// Test panics
+	assertPanic(t, func() {
+		oscul.ν = math.Pi
+		wp.ThrustDirection(oscul, initDT)
+	})
+	// Reset true anomaly after panic test
+	oscul.ν = math.Pi / 2
+
 	for i := 0; i < 5; i++ {
 		ctrl, cleared := wp.ThrustDirection(oscul, initDT)
 		if cleared {

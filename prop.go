@@ -448,6 +448,12 @@ type HohmannΔv struct {
 
 // Precompute computes and displays the Hohmann transfer orbit.
 func (cl *HohmannΔv) Precompute(o Orbit) {
+	if !floats.EqualWithinAbs(cl.target.ν, o.ν, angleε) && !floats.EqualWithinAbs(cl.target.ν, o.ν+math.Pi, angleε) && !floats.EqualWithinAbs(cl.target.ν, o.ν-math.Pi, angleε) {
+		panic(fmt.Errorf("cannot perform Hohmann between orbits with misaligned semi-major axes\nini: %s\ntgt: %s\n", o, cl.target))
+	}
+	if !floats.EqualWithinAbs(o.ν, 0, angleε) && !floats.EqualWithinAbs(o.ν, math.Pi, angleε) {
+		fmt.Printf("[WARNING] Hohmann transfer started neither at apoapsis nor at periapasis (inefficient)\n")
+	}
 	if !floats.EqualWithinAbs(cl.target.i, o.i, angleε) {
 		fmt.Printf("[WARNING] Hohmann transfer requested on non-coplanar orbits:\nOsc: %s\nTgt: %s\n", o, cl.target)
 	}
@@ -469,14 +475,10 @@ func (cl *HohmannΔv) Precompute(o Orbit) {
 func (cl *HohmannΔv) Control(o Orbit) []float64 {
 	switch cl.status {
 	case hohmmanCoast:
-		return []float64{0, 0, 0}
+		fallthrough
 	case hohmmanCompleted:
 		return []float64{0, 0, 0}
 	case hohmmanInitΔv:
-		// XXX: Should this only be changed when the DT actually changes. The RK4 will call this function several times
-		// but this logic causes the Δv be applied only once (instead of at each RK4 call). In the case of EP, it's
-		// recomputed at every new call from the new oscultating parameters.
-
 		return cl.ΔvPeri
 	case hohmmanFinalΔv:
 		return cl.ΔvApo
