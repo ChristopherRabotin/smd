@@ -257,6 +257,8 @@ func (wp *HohmannTransfer) ThrustDirection(o Orbit, dt time.Time) (ThrustControl
 		wp.ctrl.Precompute(o)
 		// Update the upcoming status of Hohmann
 		wp.ctrl.status = hohmmanInitΔv
+		// Compute the arrivial DT
+		wp.arrivalDT = dt.Add(wp.ctrl.tof)
 		break
 	case hohmmanCoast:
 		if dt.After(wp.arrivalDT) {

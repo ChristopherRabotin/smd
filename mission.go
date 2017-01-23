@@ -223,6 +223,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	fW := Δv[2]
 	// da/dt
 	fDot[0] = ((2 * tmpOrbit.a * tmpOrbit.a) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
+	//fmt.Printf("%.10f\t%.10f\t%.10f\n", tmpOrbit.GetRNorm(), tmpOrbit.Origin.μ/tmpOrbit.GetRNorm(), tmpOrbit.Getξ())
 	// de/dt
 	fDot[1] = (p*sinν*fR + fS*((p+r)*cosν+r*tmpOrbit.e)) / h
 	// di/dt

@@ -460,7 +460,8 @@ func (cl *HohmannΔv) Precompute(o Orbit) {
 	cl.ΔvPeri = []float64{0, vDepature - vInit, 0}
 	cl.ΔvApo = []float64{0, vArrival - vFinal, 0}
 	cl.tof = time.Duration(math.Pi*math.Sqrt(math.Pow(aTransfer, 3)/o.Origin.μ)) * time.Second
-	fmt.Printf("----------\nHohmann transfer information - T.O.F.: %s\nvInit=%f km/s\tvFinal=%f km/s\nvDeparture=%f km/s\t vArrival=%f km/s\nΔvPeri=%f km/s\tΔvApo=%f\n", cl.tof, vInit, vFinal, vDepature, vArrival, cl.ΔvPeri, cl.ΔvApo)
+	durStr := cl.tof.String() + fmt.Sprintf(" (~%.1fd)", cl.tof.Hours()/24)
+	fmt.Printf("----------\nHohmann transfer information - T.O.F.: %s\nvInit=%f km/s\tvFinal=%f km/s\nvDeparture=%f km/s\t vArrival=%f km/s\nΔvPeri=%f km/s\tΔvApo=%f\n", durStr, vInit, vFinal, vDepature, vArrival, cl.ΔvPeri, cl.ΔvApo)
 }
 
 // Control implements the ThrustControl interface.
@@ -469,6 +470,9 @@ func (cl *HohmannΔv) Control(o Orbit) []float64 {
 	case hohmmanCoast:
 		return []float64{0, 0, 0}
 	case hohmmanInitΔv:
+		// XXX: Should this only be changed when the DT actually changes. The RK4 will call this function several times
+		// but this logic causes the Δv be applied only once (instead of at each RK4 call). In the case of EP, it's
+		// recomputed at every new call from the new oscultating parameters.
 		cl.status = hohmmanCoast
 		return cl.ΔvPeri
 	case hohmmanFinalΔv:

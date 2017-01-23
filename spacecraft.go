@@ -16,6 +16,7 @@ type Spacecraft struct {
 	FuelMass    float64      // FuelMass of spacecraft (in kg) (will panic if runs out of fuel)
 	EPS         EPS          // EPS definition, needed for the EPThrusters.
 	EPThrusters []EPThruster // All available EP EPThrusters
+	ChemProp    bool         // Set to true to allow Hohmann Transfers.
 	Cargo       []*Cargo     // All onboard cargo
 	WayPoints   []Waypoint   // All waypoints of the tug
 	FuncQ       []func()
@@ -135,6 +136,10 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			// Nothing to do, we're probably just loitering.
 			return []float64{0, 0, 0}, 0
 		} else if math.Abs(ΔvNorm-1) > 1e-12 {
+			// Instantaneous Δv only works if the vehicle has chemical propulsion.
+			if sc.ChemProp {
+				return Δv, 0
+			}
 			panic(fmt.Errorf("Δv = %+v! Normalization not implemented yet:", Δv))
 		}
 		for _, EPThruster := range sc.EPThrusters {
@@ -170,12 +175,12 @@ func (sc *Spacecraft) ToXCentric(body CelestialObject, dt time.Time, o *Orbit) f
 
 // NewEmptySC returns a spacecraft with no cargo and no EPThrusters.
 func NewEmptySC(name string, mass uint) *Spacecraft {
-	return &Spacecraft{name, float64(mass), 0, NewUnlimitedEPS(), []EPThruster{}, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name), nil}
+	return &Spacecraft{name, float64(mass), 0, NewUnlimitedEPS(), []EPThruster{}, false, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name), nil}
 }
 
 // NewSpacecraft returns a spacecraft with initialized function queue and logger.
-func NewSpacecraft(name string, dryMass, fuelMass float64, eps EPS, prop []EPThruster, payload []*Cargo, wp []Waypoint) *Spacecraft {
-	return &Spacecraft{name, dryMass, fuelMass, eps, prop, payload, wp, make([]func(), 5), SCLogInit(name), nil}
+func NewSpacecraft(name string, dryMass, fuelMass float64, eps EPS, prop []EPThruster, impulse bool, payload []*Cargo, wp []Waypoint) *Spacecraft {
+	return &Spacecraft{name, dryMass, fuelMass, eps, prop, impulse, payload, wp, make([]func(), 5), SCLogInit(name), nil}
 }
 
 // Cargo defines a piece of cargo with arrival date and destination orbit
