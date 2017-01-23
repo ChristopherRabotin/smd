@@ -74,7 +74,7 @@ func TestMissionGEO(t *testing.T) {
 	Ω0 := angleε
 	// Propagating for 0.5 orbits to ensure that time and orbital elements are changed accordingly.
 	var finalν float64
-	if DefaultStepSize >= time.Duration(10)*time.Second {
+	if StepSize >= time.Duration(10)*time.Second {
 		finalν = 179.992
 	} else {
 		finalν = 180.000
@@ -116,7 +116,7 @@ func TestMissionGEOJ2(t *testing.T) {
 	Ω0 := angleε
 	// Propagating for 0.5 orbits to ensure that time and orbital elements are changed accordingly.
 	var finalν float64
-	if DefaultStepSize >= time.Duration(10)*time.Second {
+	if StepSize >= time.Duration(10)*time.Second {
 		finalν = 179.992
 	} else {
 		finalν = 180.000

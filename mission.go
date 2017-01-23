@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	// DefaultStepSize is the default step size when propagating an orbit.
-	DefaultStepSize = 10 * time.Second
+	// StepSize is the default step size when propagating an orbit.
+	StepSize = 10 * time.Second
 )
 
 var wg sync.WaitGroup
@@ -21,9 +21,8 @@ var wg sync.WaitGroup
 
 // Mission defines a mission and does the propagation.
 type Mission struct {
-	Vehicle        *Spacecraft   // As pointer because SC may be altered during propagation.
-	Orbit          *Orbit        // As pointer because the orbit changes during propagation.
-	StepSize       time.Duration // Step size to use (recommendation is 10*time.Second)
+	Vehicle        *Spacecraft // As pointer because SC may be altered during propagation.
+	Orbit          *Orbit      // As pointer because the orbit changes during propagation.
 	StartDT        time.Time
 	EndDT          time.Time
 	CurrentDT      time.Time
@@ -55,7 +54,7 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, includeJ2 bool, c
 		end = end.UTC()
 	}
 
-	a := &Mission{s, o, DefaultStepSize, start, end, start, includeJ2, make(chan (bool), 1), histChan, false, false}
+	a := &Mission{s, o, start, end, start, includeJ2, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- AstroState{a.CurrentDT, *s, *o}
@@ -87,7 +86,7 @@ func (a *Mission) Propagate() {
 		}
 	}()
 	vInit := norm(a.Orbit.GetV())
-	ode.NewRK4(0, a.StepSize.Seconds(), a).Solve() // Blocking.
+	ode.NewRK4(0, StepSize.Seconds(), a).Solve() // Blocking.
 	vFinal := norm(a.Orbit.GetV())
 	a.done = true
 	duration := a.CurrentDT.Sub(a.StartDT)
@@ -117,7 +116,7 @@ func (a *Mission) Stop(t float64) bool {
 		}
 		return true // Stop because there is a request to stop.
 	default:
-		a.CurrentDT = a.CurrentDT.Add(a.StepSize)
+		a.CurrentDT = a.CurrentDT.Add(StepSize)
 		if a.EndDT.Before(a.StartDT) {
 			// Check if any waypoint still needs to be reached.
 			for _, wp := range a.Vehicle.WayPoints {

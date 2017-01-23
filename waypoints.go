@@ -226,10 +226,10 @@ func NewOrbitTarget(target Orbit, action *WaypointAction, meth ControlLawType, l
 
 // HohmannTransfer allows to perform an Hohmann transfer.
 type HohmannTransfer struct {
-	action    *WaypointAction
-	ctrl      HohmannΔv
-	arrivalDT time.Time
-	cleared   bool
+	action                     *WaypointAction
+	ctrl                       HohmannΔv
+	arrivalDT, initDT, finalDT time.Time
+	cleared                    bool
 }
 
 // String implements the Waypoint interface.
@@ -259,14 +259,26 @@ func (wp *HohmannTransfer) ThrustDirection(o Orbit, dt time.Time) (ThrustControl
 		wp.ctrl.status = hohmmanInitΔv
 		// Compute the arrivial DT
 		wp.arrivalDT = dt.Add(wp.ctrl.tof)
+		// Set the DT of the initial and final burns
+		wp.initDT = dt.Add(StepSize)
+		wp.finalDT = wp.arrivalDT.Add(StepSize)
 		break
+	case hohmmanInitΔv:
+		if dt.After(wp.initDT) {
+			// Burn time is passed.
+			wp.ctrl.status = hohmmanCoast
+		}
 	case hohmmanCoast:
 		if dt.After(wp.arrivalDT) {
 			// In actuality, we are performing the burn one time step after the expected TOF.
 			wp.ctrl.status = hohmmanFinalΔv
 		}
-	case hohmmanCompleted:
-		wp.cleared = true
+	case hohmmanFinalΔv:
+		if dt.After(wp.finalDT) {
+			// Burn time is passed.
+			wp.ctrl.status = hohmmanCompleted
+			wp.cleared = true
+		}
 	}
 	return &wp.ctrl, wp.cleared
 }
@@ -276,5 +288,6 @@ func NewHohmannTransfer(target Orbit, action *WaypointAction) *HohmannTransfer {
 	if target.GetPeriapsis() < target.Origin.Radius || target.GetApoapsis() < target.Origin.Radius {
 		fmt.Printf("[WARNING] Target orbit on collision course with %s\n", target.Origin)
 	}
-	return &HohmannTransfer{action, NewHohmannΔv(target), time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC), false}
+	epoch := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+	return &HohmannTransfer{action, NewHohmannΔv(target), epoch, epoch, epoch, false}
 }

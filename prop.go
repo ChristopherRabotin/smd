@@ -442,6 +442,7 @@ type HohmannΔv struct {
 	status        hohmannStatus
 	ΔvApo, ΔvPeri []float64
 	tof           time.Duration
+	callCount     uint
 	GenericCL
 }
 
@@ -461,7 +462,7 @@ func (cl *HohmannΔv) Precompute(o Orbit) {
 	cl.ΔvApo = []float64{0, vArrival - vFinal, 0}
 	cl.tof = time.Duration(math.Pi*math.Sqrt(math.Pow(aTransfer, 3)/o.Origin.μ)) * time.Second
 	durStr := cl.tof.String() + fmt.Sprintf(" (~%.1fd)", cl.tof.Hours()/24)
-	fmt.Printf("----------\nHohmann transfer information - T.O.F.: %s\nvInit=%f km/s\tvFinal=%f km/s\nvDeparture=%f km/s\t vArrival=%f km/s\nΔvPeri=%f km/s\tΔvApo=%f\n", durStr, vInit, vFinal, vDepature, vArrival, cl.ΔvPeri, cl.ΔvApo)
+	fmt.Printf("=== HOHMANN TRANSFER INFO ===\nHohmann transfer information - T.O.F.: %s\nvInit=%f km/s\tvFinal=%f km/s\nvDeparture=%f km/s\t vArrival=%f km/s\nΔvPeri=%f km/s\tΔvApo=%f\n=== HOHMANN TRANSFER END ====\n", durStr, vInit, vFinal, vDepature, vArrival, cl.ΔvPeri, cl.ΔvApo)
 }
 
 // Control implements the ThrustControl interface.
@@ -475,10 +476,9 @@ func (cl *HohmannΔv) Control(o Orbit) []float64 {
 		// XXX: Should this only be changed when the DT actually changes. The RK4 will call this function several times
 		// but this logic causes the Δv be applied only once (instead of at each RK4 call). In the case of EP, it's
 		// recomputed at every new call from the new oscultating parameters.
-		cl.status = hohmmanCoast
+
 		return cl.ΔvPeri
 	case hohmmanFinalΔv:
-		cl.status = hohmmanCompleted
 		return cl.ΔvApo
 	default:
 		panic("unreachable code")
@@ -487,5 +487,5 @@ func (cl *HohmannΔv) Control(o Orbit) []float64 {
 
 // NewHohmannΔv defines a new inversion control law.
 func NewHohmannΔv(target Orbit) HohmannΔv {
-	return HohmannΔv{target, hohmannCompute, []float64{0, 0, 0}, []float64{0, 0, 0}, time.Duration(-1) * time.Second, newGenericCLFromCL(hohmann)}
+	return HohmannΔv{target, hohmannCompute, []float64{0, 0, 0}, []float64{0, 0, 0}, time.Duration(-1) * time.Second, 0, newGenericCLFromCL(hohmann)}
 }
