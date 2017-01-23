@@ -418,24 +418,24 @@ func TestCorrectOEω(t *testing.T) {
 // TestCorrectOEωNeg runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEωNeg(t *testing.T) {
 	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 183, angleε, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 178, angleε, Earth)
+		oInit := NewOrbitFromOE(Earth.Radius+900, 0, 0, angleε, 183, angleε, Earth)
+		oTarget := NewOrbitFromOE(Earth.Radius+900, 0, 0, angleε, 178, angleε, Earth)
 		eps := NewUnlimitedEPS()
 		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
 		start := time.Now()
-		end := start.Add(time.Duration(1*24) * time.Hour)
+		end := start.Add(time.Duration(1*24)*time.Hour + 2*time.Hour)
 		astro := NewMission(sc, oInit, start, end, false, ExportConfig{})
 		astro.Propagate()
 		//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
 		tol := angleε
 		if meth == Naasz {
-			tol *= 88
-		} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.4, 0.1) {
+			tol *= 15
+		} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.5, 0.1) {
 			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 0.06", fuelMass-astro.Vehicle.FuelMass)
+			t.Fatalf("invalid fuel usage: %f kg instead of 0.5", fuelMass-astro.Vehicle.FuelMass)
 		}
 		if !floats.EqualWithinAbs(astro.Orbit.ω, oTarget.ω, tol) {
 			t.Logf("METHOD = %s", meth)

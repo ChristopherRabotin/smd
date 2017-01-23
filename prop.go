@@ -469,6 +469,8 @@ func (cl *HohmannΔv) Control(o Orbit) []float64 {
 	switch cl.status {
 	case hohmmanCoast:
 		return []float64{0, 0, 0}
+	case hohmmanCompleted:
+		return []float64{0, 0, 0}
 	case hohmmanInitΔv:
 		// XXX: Should this only be changed when the DT actually changes. The RK4 will call this function several times
 		// but this logic causes the Δv be applied only once (instead of at each RK4 call). In the case of EP, it's
@@ -479,7 +481,7 @@ func (cl *HohmannΔv) Control(o Orbit) []float64 {
 		cl.status = hohmmanCompleted
 		return cl.ΔvApo
 	default:
-		panic("unreachable line")
+		panic("unreachable code")
 	}
 }
 

@@ -89,18 +89,18 @@ func TestHohmannΔv(t *testing.T) {
 	}
 	// Getting the final Δv, which should be nil.
 	oscul.ν += math.Pi / 3.0 // Arbitrary subsequent value
-	ctrl2, cleared2 := wp.ThrustDirection(oscul, initDT.Add(tofExp))
+	// Note that there is a one time-step shift in the completion of the Hohmann transfer.
+	ctrl2, cleared2 := wp.ThrustDirection(oscul, initDT.Add(tofExp+time.Second))
 	if cleared2 {
 		t.Fatalf("Hohmann waypoint cleared on third call")
 	}
 	Δv2 := ctrl2.Control(oscul)
 	for i := 0; i < 3; i++ {
-		if !floats.EqualWithinAbs(Δv2[i], 0, velocityε) {
+		if !floats.EqualWithinAbs(Δv2[i], ΔvApoExp[i], velocityε) {
 			t.Fatalf("ΔvApoExp[%d] failed: %f != %f", i, ΔvApoExp[i], Δv2[i])
 		}
 	}
 	oscul.ν += math.Pi / 3.0 // Arbitrary subsequent value
-	// TODO: Fix bug here. The status is not updated to the correct value so the WP does not say that it's clear.
 	ctrl3, cleared3 := wp.ThrustDirection(oscul, initDT.Add(time.Duration(1)*time.Hour))
 	if !cleared3 {
 		t.Fatalf("Hohmann waypoint should be cleared on fourth call")
