@@ -63,19 +63,38 @@ func TestHohmannΔv(t *testing.T) {
 	ΔvPeriExp := []float64{0.0, 2.457038, 0.0}
 	tofExp := time.Duration(5)*time.Hour + time.Duration(15)*time.Minute + time.Duration(24)*time.Second
 
+	assertPanic(t, func() {
+		target.e = 0.5
+		NewHohmannTransfer(target, nil)
+	})
+	target.e = eccentricityε
+
 	wp := NewHohmannTransfer(target, nil)
 	initDT := time.Date(2017, 1, 20, 12, 13, 14, 15, time.UTC)
 	coastDT := initDT.Add(tofExp / 2)
 	apoDT := initDT.Add(tofExp + StepSize)
 	postDT := apoDT.Add(StepSize)
 
-	// Test panics
 	assertPanic(t, func() {
 		oscul.ν = math.Pi
 		wp.ThrustDirection(oscul, initDT)
 	})
 	// Reset true anomaly after panic test
 	oscul.ν = math.Pi / 2
+
+	assertPanic(t, func() {
+		oscul.e = 0.5
+		wp.ThrustDirection(oscul, initDT)
+	})
+	// Reset true anomaly after panic test
+	oscul.e = eccentricityε
+
+	assertPanic(t, func() {
+		oscul.i = math.Pi / 4
+		wp.ThrustDirection(oscul, initDT)
+	})
+	// Reset true anomaly after panic test
+	oscul.i = angleε
 
 	for i := 0; i < 5; i++ {
 		ctrl, cleared := wp.ThrustDirection(oscul, initDT)

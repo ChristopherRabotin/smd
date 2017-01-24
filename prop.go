@@ -451,11 +451,14 @@ func (cl *HohmannΔv) Precompute(o Orbit) {
 	if !floats.EqualWithinAbs(cl.target.ν, o.ν, angleε) && !floats.EqualWithinAbs(cl.target.ν, o.ν+math.Pi, angleε) && !floats.EqualWithinAbs(cl.target.ν, o.ν-math.Pi, angleε) {
 		panic(fmt.Errorf("cannot perform Hohmann between orbits with misaligned semi-major axes\nini: %s\ntgt: %s\n", o, cl.target))
 	}
-	if !floats.EqualWithinAbs(o.ν, 0, angleε) && !floats.EqualWithinAbs(o.ν, math.Pi, angleε) {
-		fmt.Printf("[WARNING] Hohmann transfer started neither at apoapsis nor at periapasis (inefficient)\n")
+	if !floats.EqualWithinAbs(o.e, 0, eccentricityε) {
+		panic(fmt.Errorf("cannot perform Hohmann from a non elliptical orbit"))
 	}
 	if !floats.EqualWithinAbs(cl.target.i, o.i, angleε) {
-		fmt.Printf("[WARNING] Hohmann transfer requested on non-coplanar orbits:\nOsc: %s\nTgt: %s\n", o, cl.target)
+		panic(fmt.Errorf("cannot perform Hohmann between non co-planar orbits\nini: %s\ntgt: %s\n", o, cl.target))
+	}
+	if !floats.EqualWithinAbs(o.ν, 0, angleε) && !floats.EqualWithinAbs(o.ν, math.Pi, angleε) {
+		fmt.Printf("[WARNING] Hohmann transfer started neither at apoapsis nor at periapasis (inefficient)\n")
 	}
 	rInit := o.GetRNorm()
 	rFinal := cl.target.GetRNorm()
@@ -489,5 +492,8 @@ func (cl *HohmannΔv) Control(o Orbit) []float64 {
 
 // NewHohmannΔv defines a new inversion control law.
 func NewHohmannΔv(target Orbit) HohmannΔv {
+	if !floats.EqualWithinAbs(target.e, 0, eccentricityε) {
+		panic(fmt.Errorf("cannot perform Hohmann to a non elliptical orbit"))
+	}
 	return HohmannΔv{target, hohmannCompute, []float64{0, 0, 0}, []float64{0, 0, 0}, time.Duration(-1) * time.Second, 0, newGenericCLFromCL(hohmann)}
 }
