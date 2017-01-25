@@ -76,7 +76,7 @@ func (a *Mission) LogStatus() {
 func (a *Mission) Propagate() {
 	// Add a ticker status report based on the duration of the simulation.
 	a.LogStatus()
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for _ = range ticker.C {
 			if a.done {
@@ -216,6 +216,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	sinζ, cosζ := math.Sincos(tmpOrbit.ω + tmpOrbit.ν)
 	fDot = make([]float64, 7) // init return vector
 	// Let's add the thrust to increase the magnitude of the velocity.
+	// XXX: Should this Accelerate call be with tmpOrbit?!
 	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
 	fR := Δv[0]
 	fS := Δv[1]

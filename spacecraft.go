@@ -54,6 +54,10 @@ func (sc *Spacecraft) Mass(dt time.Time) (m float64) {
 			m += cargo.DryMass
 		}
 	}
+	// Refuse massless vehicles.
+	if m <= 0 {
+		m = 1
+	}
 	return
 }
 
@@ -136,10 +140,6 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 			// Nothing to do, we're probably just loitering.
 			return []float64{0, 0, 0}, 0
 		} else if math.Abs(ΔvNorm-1) > 1e-12 {
-			// Instantaneous Δv only works if the vehicle has chemical propulsion.
-			if sc.ChemProp {
-				return Δv, 0
-			}
 			panic(fmt.Errorf("Δv = %+v! Normalization not implemented yet:", Δv))
 		}
 		for _, EPThruster := range sc.EPThrusters {
@@ -153,6 +153,10 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		}
 		thrust /= sc.Mass(dt) // Convert kg*m/(s^-2) to m/(s^-2)
 		thrust /= 1e3         // Convert m/s^-2 to km/s^-2
+		// For Chem prop, let's make sure the thrust is not nil.
+		if thrust == 0 && sc.ChemProp {
+			thrust = 1
+		}
 		// Apply norm of the thrust to each component of the normalized Δv vector
 		Δv[0] *= thrust
 		Δv[1] *= thrust
