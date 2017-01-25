@@ -223,3 +223,69 @@ func NewOrbitTarget(target Orbit, action *WaypointAction, meth ControlLawType, l
 	}
 	return &OrbitTarget{target, NewOptimalΔOrbit(target, meth, laws), action, false}
 }
+
+// HohmannTransfer allows to perform an Hohmann transfer.
+type HohmannTransfer struct {
+	action    *WaypointAction
+	ctrl      HohmannΔv
+	arrivalDT time.Time
+	cleared   bool
+}
+
+// String implements the Waypoint interface.
+func (wp *HohmannTransfer) String() string {
+	return fmt.Sprintf("Hohmann transfer")
+}
+
+// Cleared implements the Waypoint interface.
+func (wp *HohmannTransfer) Cleared() bool {
+	return wp.cleared
+}
+
+// Action implements the Waypoint interface.
+func (wp *HohmannTransfer) Action() *WaypointAction {
+	if wp.cleared {
+		return wp.action
+	}
+	return nil
+}
+
+// ThrustDirection implements the optimal orbit target.
+func (wp *HohmannTransfer) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
+	switch wp.ctrl.status {
+	case hohmannCompute:
+		wp.ctrl.Precompute(o)
+		// Update the upcoming status of Hohmann
+		wp.ctrl.status = hohmmanInitΔv
+		// Initialize the Δv with the current knowledge.
+		wp.ctrl.ΔvBurnInit = o.GetVNorm()
+		// Compute the arrivial DT
+		wp.arrivalDT = dt.Add(wp.ctrl.tof)
+		break
+	case hohmmanInitΔv:
+		// Nothing to do.
+	case hohmmanCoast:
+		if dt.After(wp.arrivalDT.Add(-StepSize)) {
+			// Next step will be the arrivial DT.
+			wp.ctrl.status = hohmmanFinalΔv
+			// Initialize the Δv with the current knowledge.
+			wp.ctrl.ΔvBurnInit = o.GetVNorm()
+		}
+	case hohmmanFinalΔv:
+		// Nothing to do.
+	case hohmmanCompleted:
+		// This state is changed in the control. Hence, the cleared status is only
+		// available until the *subsequent* call to ThrustDirection.
+		wp.cleared = true
+	}
+	return &wp.ctrl, wp.cleared
+}
+
+// NewHohmannTransfer defines a new Hohmann transfer
+func NewHohmannTransfer(target Orbit, action *WaypointAction) *HohmannTransfer {
+	if target.GetPeriapsis() < target.Origin.Radius || target.GetApoapsis() < target.Origin.Radius {
+		fmt.Printf("[WARNING] Target orbit on collision course with %s\n", target.Origin)
+	}
+	epoch := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+	return &HohmannTransfer{action, NewHohmannΔv(target), epoch, false}
+}

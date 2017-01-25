@@ -46,7 +46,7 @@ func TestCosmoBodyChange(t *testing.T) {
 
 	/* Building spacecraft */
 	eps := NewUnlimitedEPS()
-	thrusters := []Thruster{new(PPS1350)}
+	thrusters := []EPThruster{new(PPS1350)}
 	dryMass := 300.0
 	fuelMass := 67.0
 	cargo := &Cargo{time.Now(), NewEmptySC("cargo0", 50)}
@@ -56,7 +56,7 @@ func TestCosmoBodyChange(t *testing.T) {
 		NewOutwardSpiral(Earth, &ref2sun),
 		NewLoiter(time.Duration(12)*time.Hour, &endLoiter),
 	}
-	sc := NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, []*Cargo{cargo}, waypoints)
+	sc := NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, false, []*Cargo{cargo}, waypoints)
 
 	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
 	end := start.Add(time.Duration(7*24) * time.Hour)      // Propagate for 7 days.

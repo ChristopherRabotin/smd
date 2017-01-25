@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	// DefaultStepSize is the default step size when propagating an orbit.
-	DefaultStepSize = 10 * time.Second
+	// StepSize is the default step size when propagating an orbit.
+	StepSize = 10 * time.Second
 )
 
 var wg sync.WaitGroup
@@ -21,9 +21,8 @@ var wg sync.WaitGroup
 
 // Mission defines a mission and does the propagation.
 type Mission struct {
-	Vehicle        *Spacecraft   // As pointer because SC may be altered during propagation.
-	Orbit          *Orbit        // As pointer because the orbit changes during propagation.
-	StepSize       time.Duration // Step size to use (recommendation is 10*time.Second)
+	Vehicle        *Spacecraft // As pointer because SC may be altered during propagation.
+	Orbit          *Orbit      // As pointer because the orbit changes during propagation.
 	StartDT        time.Time
 	EndDT          time.Time
 	CurrentDT      time.Time
@@ -55,7 +54,7 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, includeJ2 bool, c
 		end = end.UTC()
 	}
 
-	a := &Mission{s, o, DefaultStepSize, start, end, start, includeJ2, make(chan (bool), 1), histChan, false, false}
+	a := &Mission{s, o, start, end, start, includeJ2, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- AstroState{a.CurrentDT, *s, *o}
@@ -77,7 +76,7 @@ func (a *Mission) LogStatus() {
 func (a *Mission) Propagate() {
 	// Add a ticker status report based on the duration of the simulation.
 	a.LogStatus()
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for _ = range ticker.C {
 			if a.done {
@@ -87,7 +86,7 @@ func (a *Mission) Propagate() {
 		}
 	}()
 	vInit := norm(a.Orbit.GetV())
-	ode.NewRK4(0, a.StepSize.Seconds(), a).Solve() // Blocking.
+	ode.NewRK4(0, StepSize.Seconds(), a).Solve() // Blocking.
 	vFinal := norm(a.Orbit.GetV())
 	a.done = true
 	duration := a.CurrentDT.Sub(a.StartDT)
@@ -117,7 +116,7 @@ func (a *Mission) Stop(t float64) bool {
 		}
 		return true // Stop because there is a request to stop.
 	default:
-		a.CurrentDT = a.CurrentDT.Add(a.StepSize)
+		a.CurrentDT = a.CurrentDT.Add(StepSize)
 		if a.EndDT.Before(a.StartDT) {
 			// Check if any waypoint still needs to be reached.
 			for _, wp := range a.Vehicle.WayPoints {
@@ -217,12 +216,14 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	sinζ, cosζ := math.Sincos(tmpOrbit.ω + tmpOrbit.ν)
 	fDot = make([]float64, 7) // init return vector
 	// Let's add the thrust to increase the magnitude of the velocity.
+	// XXX: Should this Accelerate call be with tmpOrbit?!
 	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
 	fR := Δv[0]
 	fS := Δv[1]
 	fW := Δv[2]
 	// da/dt
 	fDot[0] = ((2 * tmpOrbit.a * tmpOrbit.a) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
+	//fmt.Printf("%.10f\t%.10f\t%.10f\n", tmpOrbit.GetRNorm(), tmpOrbit.Origin.μ/tmpOrbit.GetRNorm(), tmpOrbit.Getξ())
 	// de/dt
 	fDot[1] = (p*sinν*fR + fS*((p+r)*cosν+r*tmpOrbit.e)) / h
 	// di/dt
@@ -244,7 +245,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	}
 	for i := 0; i < 7; i++ {
 		if math.IsNaN(fDot[i]) {
-			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ntmp:%s\ncur:%s\n%.20f\n", i, a.CurrentDT, tmpOrbit, a.Orbit, a.Orbit.e-1))
+			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ntmp:%s\ncur:%s\n", i, a.CurrentDT, tmpOrbit, a.Orbit))
 		}
 	}
 	return

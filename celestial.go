@@ -11,7 +11,7 @@ import (
 
 const (
 	// AU is one astronomical unit in kilometers.
-	AU = 149598000
+	AU = 149597870
 )
 
 // CelestialObject defines a celestial object.
@@ -102,4 +102,4 @@ var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, 0.0, 0.0, -1,
 var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23.4, 0.00005, 924645.0, 0.0010826269, nil}
 
 // Mars is the vacation place.
-var Mars = CelestialObject{"Mars", 3397.2, 227939186, 4.305 * 1e4, 25.19, 1.85, 576000, 0.001964, nil}
+var Mars = CelestialObject{"Mars", 3397.2, 227939282.5616, 4.305 * 1e4, 25.19, 1.85, 576000, 0.001964, nil}

@@ -13,6 +13,7 @@ const (
 	eccentricityε = 5e-5                         // 0.00005
 	angleε        = (5e-3 / 360) * (2 * math.Pi) // 0.005 degrees
 	distanceε     = 2e1                          // 20 km
+	velocityε     = 1e-6                         // in km/s
 )
 
 // Orbit defines an orbit via its orbital elements.
@@ -264,6 +265,13 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 // NewOrbitFromOE creates an orbit from the orbital elements.
 // WARNING: Angles must be in degrees not radian.
 func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
+	// Making an approximation for circular and equatorial orbits.
+	if e < eccentricityε {
+		e = eccentricityε
+	}
+	if i < angleε {
+		i = angleε
+	}
 	orbit := Orbit{a, e, Deg2rad(i), Deg2rad(Ω), Deg2rad(ω), Deg2rad(ν), c, 0.0, nil, nil}
 	orbit.GetRV()
 	orbit.computeHash()

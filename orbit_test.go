@@ -173,6 +173,10 @@ func TestOrbitΦfpa(t *testing.T) {
 	for _, e := range []float64{0.5, 1, 0} {
 		for _, ν := range []float64{-120, 120} {
 			o := NewOrbitFromOE(1e4, e, 1, 1, 1, ν, Earth)
+			if e == 0 {
+				// Let's force this to zero because NewOrbitFromOE does an approximation.
+				o.e = 0
+			}
 			Φ := math.Atan2(o.GetSinΦfpa(), o.GetCosΦfpa())
 			exp := (ν * e) / 2
 			if exp < 0 {
