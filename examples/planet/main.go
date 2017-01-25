@@ -23,6 +23,6 @@ func main() {
 	R, V := oI.GetRV()
 	oV := smd.NewOrbitFromRV(R, V, smd.Sun)
 	fmt.Printf("oI: %s\noV: %s\n", oI, oV)
-	mss := smd.NewMission(sc, &oI, start, end, false, smd.ExportConfig{Filename: "Inc", OE: true, Cosmo: true, Timestamp: false})
+	mss := smd.NewMission(sc, &oI, start, end, false, smd.ExportConfig{Filename: "Inc", AsCSV: true, Cosmo: true, Timestamp: false})
 	mss.Propagate()
 }
