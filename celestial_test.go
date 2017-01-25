@@ -62,7 +62,7 @@ func TestCosmoBodyChange(t *testing.T) {
 	end := start.Add(time.Duration(7*24) * time.Hour)      // Propagate for 7 days.
 
 	sc.LogInfo()
-	conf := ExportConfig{Filename: "Rugg", OE: true, Cosmo: true, Timestamp: false}
+	conf := ExportConfig{Filename: "Rugg", AsCSV: true, Cosmo: true, Timestamp: false}
 	astro := NewMission(sc, initOrbit, start, end, false, conf)
 	astro.Propagate()
 

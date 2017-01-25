@@ -19,7 +19,7 @@ const (
 // Orbit defines an orbit via its orbital elements.
 type Orbit struct {
 	a, e, i, Ω, ω, ν float64
-	Origin           CelestialObject // Orbit orgin
+	Origin           CelestialObject // Orbit origin
 	cacheHash        float64
 	cachedR, cachedV []float64
 }
@@ -98,6 +98,15 @@ func (o *Orbit) GetSinCosE() (sinE, cosE float64) {
 	sinE = math.Sqrt(1-o.e*o.e) * sinν / denom
 	cosE = (o.e + cosν) / denom
 	return
+}
+
+// GetPeriod returns the period of this orbit.
+func (o *Orbit) GetPeriod() time.Duration {
+	// The time package does not trivially handle fractions of a second, so let's
+	// compute this in a convoluted way...
+	seconds := 2 * math.Pi * math.Sqrt(math.Pow(o.a, 3)/o.Origin.μ)
+	duration, _ := time.ParseDuration(fmt.Sprintf("%.6fs", seconds))
+	return duration
 }
 
 // GetRV helps with the cache.

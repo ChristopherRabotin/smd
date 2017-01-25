@@ -14,3 +14,4 @@ _Note:_ this list may not be up to date with the latest developments.
 - Patched conics for interplanetary missions
 - Stream orbital elements as CSV for live visualization of how they change
 - Export as a set of NASA Cosmographia files (cf. http://cosmoguide.org/) for really cool visualization of the overall mission
+- Export mission state as CSV (cf. the `examples/statOD/main.go`)

@@ -28,16 +28,16 @@ type Mission struct {
 	CurrentDT      time.Time
 	includeJ2      bool
 	stopChan       chan (bool)
-	histChan       chan<- (AstroState)
+	histChan       chan<- (MissionState)
 	done, collided bool
 }
 
 // NewMission returns a new Mission instance from the position and velocity vectors.
 func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, includeJ2 bool, conf ExportConfig) *Mission {
 	// If no filepath is provided, then no output will be written.
-	var histChan chan (AstroState)
+	var histChan chan (MissionState)
 	if !conf.IsUseless() {
-		histChan = make(chan (AstroState), 1000) // a 1k entry buffer
+		histChan = make(chan (MissionState), 1000) // a 1k entry buffer
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -57,7 +57,7 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, includeJ2 bool, c
 	a := &Mission{s, o, start, end, start, includeJ2, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
-		histChan <- AstroState{a.CurrentDT, *s, *o}
+		histChan <- MissionState{a.CurrentDT, *s, *o}
 	}
 
 	if end.Before(start) {
@@ -155,7 +155,7 @@ func (a *Mission) GetState() (s []float64) {
 // SetState sets the updated state.
 func (a *Mission) SetState(t float64, s []float64) {
 	if a.histChan != nil {
-		a.histChan <- AstroState{a.CurrentDT, *a.Vehicle, *a.Orbit}
+		a.histChan <- MissionState{a.CurrentDT, *a.Vehicle, *a.Orbit}
 	}
 	// Note that we modulo here *and* in Func because the last step of the integrator
 	// adds up all the previous values with weights!
@@ -251,9 +251,9 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	return
 }
 
-// AstroState stores propagated state.
-type AstroState struct {
-	dt    time.Time
-	sc    Spacecraft
-	orbit Orbit
+// MissionState stores propagated state.
+type MissionState struct {
+	DT    time.Time
+	SC    Spacecraft
+	Orbit Orbit
 }

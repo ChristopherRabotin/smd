@@ -31,7 +31,7 @@ func main() {
 				sc := smd.NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, false, []*smd.Cargo{}, waypoints)
 
 				sc.LogInfo()
-				astro := smd.NewMission(sc, initOrbit, start, end, false, smd.ExportConfig{Filename: "Rugg", OE: true, Cosmo: false, Timestamp: false})
+				astro := smd.NewMission(sc, initOrbit, start, end, false, smd.ExportConfig{Filename: "Rugg", AsCSV: true, Cosmo: false, Timestamp: false})
 				astro.Propagate()
 				results += fmt.Sprintf("%s\tΩ=%f\tω=%f\tν=%f\n", initOrbit, Ω, ω, ν)
 			}
