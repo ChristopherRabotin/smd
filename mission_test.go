@@ -85,6 +85,9 @@ func TestMissionGEO(t *testing.T) {
 	// Define propagation parameters.
 	start := time.Now()
 	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
+	if diff := geoDur - oTgt.GetPeriod(); diff > 100*time.Millisecond {
+		t.Fatalf("invalid period computed: %s", diff)
+	}
 	end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
 	astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, false, ExportConfig{})
 	// Start propagation.

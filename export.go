@@ -183,9 +183,9 @@ func createInterpolatedFile(filename string, stamped bool, stateDT time.Time) *o
 	return f
 }
 
-// createOECSVFile returns a file which requires a defer close statement!
-func createOECSVFile(filename string, stamped bool, stateDT time.Time) *os.File {
-	if stamped {
+// createAsCSVCSVFile returns a file which requires a defer close statement!
+func createAsCSVCSVFile(filename string, conf ExportConfig, stateDT time.Time) *os.File {
+	if conf.Timestamp {
 		t := time.Now()
 		filename = fmt.Sprintf("%s/orbital-elements-%s-%d-%02d-%02dT%02d.%02d.%02d.csv", os.Getenv("DATAOUT"), filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 	} else {
@@ -200,22 +200,26 @@ func createOECSVFile(filename string, stamped bool, stateDT time.Time) *os.File 
 # Records are a, e, i, Ω, ω, ν. All angles are in degrees.
 #   Simulation time start (UTC): %s
 time,a,e,i,Omega,omega,nu`, time.Now(), stateDT.UTC()))
+	if conf.CSVAppendHdr != nil {
+		// Append the headers for the appended columns.
+		f.WriteString(conf.CSVAppendHdr())
+	}
 	return f
 }
 
 // StreamStates streams the output of the channel to the provided file.
-func StreamStates(conf ExportConfig, stateChan <-chan (AstroState)) {
+func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 	// Read from channel
-	var prevStatePtr, firstStatePtr *AstroState
+	var prevStatePtr, firstStatePtr *MissionState
 	var fileNo uint8
-	var f, fOE *os.File
+	var f, fAsCSV *os.File
 	fileNo = 0
 	cgItems := []*CgItems{}
 	var curCgItem *CgItems
 	defer func() {
 		if conf.Cosmo {
 			// Let's write the catalog.
-			c := CgCatalog{Version: "1.0", Name: prevStatePtr.sc.Name, Items: cgItems, Require: nil}
+			c := CgCatalog{Version: "1.0", Name: prevStatePtr.SC.Name, Items: cgItems, Require: nil}
 			// Create JSON file.
 			fc, err := os.Create(fmt.Sprintf("%s/catalog-%s.json", os.Getenv("DATAOUT"), conf.Filename))
 			if err != nil {
@@ -239,40 +243,40 @@ func StreamStates(conf ExportConfig, stateChan <-chan (AstroState)) {
 			if prevStatePtr == nil {
 				firstStatePtr = &state
 				if conf.Cosmo {
-					f = createInterpolatedFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf.Timestamp, state.dt)
+					f = createInterpolatedFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf.Timestamp, state.DT)
 					traj := CgTrajectory{Type: "InterpolatedStates", Source: fmt.Sprintf("prop-%s-%d.xyzv", conf.Filename, fileNo)}
 					// TODO: Switch color based on SC state (e.g. no fuel, not thrusting, etc.)
 					label := CgLabel{Color: color, FadeSize: 1000000, ShowText: true}
 					plot := CgTrajectoryPlot{Color: color, LineWidth: 1, Duration: "", Lead: "0 d", Fade: 0, SampleCount: 10}
-					curCgItem = &CgItems{Class: "spacecraft", Name: fmt.Sprintf("%s-%d", state.sc.Name, fileNo), StartTime: fmt.Sprintf("%s", state.dt.UTC()), EndTime: "", Center: state.orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
+					curCgItem = &CgItems{Class: "spacecraft", Name: fmt.Sprintf("%s-%d", state.SC.Name, fileNo), StartTime: fmt.Sprintf("%s", state.DT.UTC()), EndTime: "", Center: state.Orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
 				}
-				if conf.OE {
-					fOE = createOECSVFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf.Timestamp, state.dt)
+				if conf.AsCSV {
+					fAsCSV = createAsCSVCSVFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf, state.DT)
 				}
 				fileNo++
 			} else {
-				if !prevStatePtr.orbit.Origin.Equals(state.orbit.Origin) {
+				if !prevStatePtr.Orbit.Origin.Equals(state.Orbit.Origin) {
 					if conf.Cosmo {
 						// Before switching files, let's write the end of simulation time.
-						f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", state.dt.UTC()))
+						f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", state.DT.UTC()))
 						// Update plot time propagation.
-						longerEnd := state.dt.Add(time.Duration(1) * time.Hour)
+						longerEnd := state.DT.Add(time.Duration(1) * time.Hour)
 						curCgItem.EndTime = fmt.Sprintf("%s", longerEnd.UTC())
-						curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(longerEnd.Sub(firstStatePtr.dt).Hours()/24+1))
+						curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(longerEnd.Sub(firstStatePtr.DT).Hours()/24+1))
 						// Add this CG item to the list of items.
 						cgItems = append(cgItems, curCgItem)
 						// Switch files.
 						f.Close()
 						// XXX: Copy/paste from above :'(
-						f = createInterpolatedFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf.Timestamp, state.dt)
+						f = createInterpolatedFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf.Timestamp, state.DT)
 						traj := CgTrajectory{Type: "InterpolatedStates", Source: fmt.Sprintf("prop-%s-%d.xyzv", conf.Filename, fileNo)}
 						label := CgLabel{Color: color, FadeSize: 1000000, ShowText: true}
 						plot := CgTrajectoryPlot{Color: color, LineWidth: 1, Duration: "", Lead: "0 d", Fade: 0, SampleCount: 10}
-						curCgItem = &CgItems{Class: "spacecraft", Name: fmt.Sprintf("%s-%d", state.sc.Name, fileNo), StartTime: fmt.Sprintf("%s", state.dt.UTC()), EndTime: "", Center: state.orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
+						curCgItem = &CgItems{Class: "spacecraft", Name: fmt.Sprintf("%s-%d", state.SC.Name, fileNo), StartTime: fmt.Sprintf("%s", state.DT.UTC()), EndTime: "", Center: state.Orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
 					}
-					if conf.OE {
-						fOE.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", state.dt.UTC()))
-						fOE = createOECSVFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf.Timestamp, state.dt)
+					if conf.AsCSV {
+						fAsCSV.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", state.DT.UTC()))
+						fAsCSV = createAsCSVCSVFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf, state.DT)
 					}
 					fileNo++
 					// Force writing this data point now instead of creating N new files.
@@ -290,15 +294,15 @@ func StreamStates(conf ExportConfig, stateChan <-chan (AstroState)) {
 								color[i]++
 							}
 						}
-						asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.GetR(), Velocity: state.orbit.GetV()}
+						asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.DT), Position: state.Orbit.GetR(), Velocity: state.Orbit.GetV()}
 						if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
 							panic(err)
 						}
 					}
 
-					if conf.OE {
-						asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.dt.UTC().Format("2006-01-02 15:04:05"), state.orbit.a, state.orbit.e, Rad2deg(state.orbit.i), Rad2deg(state.orbit.Ω), Rad2deg(state.orbit.ω), Rad2deg(state.orbit.ν))
-						if _, err := fOE.WriteString("\n" + asTxt); err != nil {
+					if conf.AsCSV {
+						asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), state.Orbit.a, state.Orbit.e, Rad2deg(state.Orbit.i), Rad2deg(state.Orbit.Ω), Rad2deg(state.Orbit.ω), Rad2deg(state.Orbit.ν))
+						if _, err := fAsCSV.WriteString("\n" + asTxt); err != nil {
 							panic(err)
 						}
 					}
@@ -306,36 +310,39 @@ func StreamStates(conf ExportConfig, stateChan <-chan (AstroState)) {
 				}
 			}
 			// Only write one datapoint per simulation minute.
-			if prevStatePtr != nil && state.dt.Sub(prevStatePtr.dt) <= time.Duration(1)*time.Minute {
+			if prevStatePtr != nil && state.DT.Sub(prevStatePtr.DT) <= time.Duration(1)*time.Minute {
 				continue
 			}
 			prevStatePtr = &state
 			if conf.Cosmo {
-				asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.dt), Position: state.orbit.GetR(), Velocity: state.orbit.GetV()}
+				asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.DT), Position: state.Orbit.GetR(), Velocity: state.Orbit.GetV()}
 				if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
 					panic(err)
 				}
 			}
-			if conf.OE {
-				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.dt.UTC().Format("2006-01-02 15:04:05"), state.orbit.a, state.orbit.e, Rad2deg(state.orbit.i), Rad2deg(state.orbit.Ω), Rad2deg(state.orbit.ω), Rad2deg(state.orbit.ν))
-				if _, err := fOE.WriteString("\n" + asTxt); err != nil {
+			if conf.AsCSV {
+				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), state.Orbit.a, state.Orbit.e, Rad2deg(state.Orbit.i), Rad2deg(state.Orbit.Ω), Rad2deg(state.Orbit.ω), Rad2deg(state.Orbit.ν))
+				if conf.CSVAppend != nil {
+					asTxt += "," + conf.CSVAppend(state)
+				}
+				if _, err := fAsCSV.WriteString("\n" + asTxt); err != nil {
 					panic(err)
 				}
 			}
 		} else {
 			// The channel is closed, hence the simulation is over.
 			if conf.Cosmo {
-				f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", prevStatePtr.dt.UTC()))
+				f.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", prevStatePtr.DT.UTC()))
 				f.Close()
 			}
-			if conf.OE {
-				fOE.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", prevStatePtr.dt.UTC()))
-				fOE.Close()
+			if conf.AsCSV {
+				fAsCSV.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", prevStatePtr.DT.UTC()))
+				fAsCSV.Close()
 			}
-			longerEnd := prevStatePtr.dt.Add(time.Duration(24) * time.Hour)
+			longerEnd := prevStatePtr.DT.Add(time.Duration(24) * time.Hour)
 			if conf.Cosmo {
 				curCgItem.EndTime = fmt.Sprintf("%s", longerEnd.UTC())
-				curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(longerEnd.Sub(firstStatePtr.dt).Hours()/24+1))
+				curCgItem.TrajectoryPlot.Duration = fmt.Sprintf("%d d", int(longerEnd.Sub(firstStatePtr.DT).Hours()/24+1))
 				cgItems = append(cgItems, curCgItem)
 			}
 			break
@@ -345,13 +352,15 @@ func StreamStates(conf ExportConfig, stateChan <-chan (AstroState)) {
 
 // ExportConfig configures the exporting of the simulation.
 type ExportConfig struct {
-	Filename  string
-	Cosmo     bool
-	OE        bool
-	Timestamp bool
+	Filename     string
+	Cosmo        bool
+	AsCSV        bool
+	Timestamp    bool
+	CSVAppend    func(st MissionState) string // Custom export (do not include leading comma)
+	CSVAppendHdr func() string                // Header for the custom export
 }
 
 // IsUseless returns whether this config doesn't actually do anything.
 func (c ExportConfig) IsUseless() bool {
-	return !c.Cosmo && !c.OE
+	return !c.Cosmo && !c.AsCSV
 }

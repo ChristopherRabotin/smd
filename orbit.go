@@ -100,6 +100,15 @@ func (o *Orbit) GetSinCosE() (sinE, cosE float64) {
 	return
 }
 
+// GetPeriod returns the period of this orbit.
+func (o *Orbit) GetPeriod() time.Duration {
+	// The time package does not trivially handle fractions of a second, so let's
+	// compute this in a convoluted way...
+	seconds := 2 * math.Pi * math.Sqrt(math.Pow(o.a, 3)/o.Origin.μ)
+	duration, _ := time.ParseDuration(fmt.Sprintf("%.6fs", seconds))
+	return duration
+}
+
 // GetRV helps with the cache.
 func (o *Orbit) GetRV() ([]float64, []float64) {
 	if o.hashValid() {
