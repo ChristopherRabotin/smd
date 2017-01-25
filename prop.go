@@ -272,7 +272,7 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 // OptimalΔOrbit combines all the control laws from Ruggiero et al.
 type OptimalΔOrbit struct {
 	Initd, cleared bool
-	oInit, oTgt    Orbit //local copy of the inital and target orbits.
+	oInit, oTgt    Orbit //local copy of the initial and target orbits.
 	controls       []ThrustControl
 	method         ControlLawType
 	GenericCL

@@ -19,7 +19,7 @@ const (
 // Orbit defines an orbit via its orbital elements.
 type Orbit struct {
 	a, e, i, Ω, ω, ν float64
-	Origin           CelestialObject // Orbit orgin
+	Origin           CelestialObject // Orbit origin
 	cacheHash        float64
 	cachedR, cachedV []float64
 }

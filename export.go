@@ -14,7 +14,7 @@ import (
 	"github.com/soniakeys/meeus/julian"
 )
 
-// CgCatalog definiton.
+// CgCatalog definition.
 type CgCatalog struct {
 	Version string     `json:"version"`
 	Name    string     `json:"name"`
@@ -26,7 +26,7 @@ func (c *CgCatalog) String() string {
 	return c.Name + "(" + c.Version + ")"
 }
 
-// CgItems definiton.
+// CgItems definition.
 type CgItems struct {
 	Class          string            `json:"class"`
 	Name           string            `json:"name"`
@@ -58,7 +58,7 @@ func (t *CgTrajectory) String() string {
 	return t.Source + " as " + t.Type
 }
 
-// CgBodyFrame definiton.
+// CgBodyFrame definition.
 type CgBodyFrame struct {
 	Type string `json:"type,omitempty"`
 	Name string `json:"name,omitempty"`
@@ -68,7 +68,7 @@ func (c *CgBodyFrame) String() string {
 	return c.Name + " (type: " + c.Type + ")"
 }
 
-// CgGeometry definiton.
+// CgGeometry definition.
 type CgGeometry struct {
 	Type   string    `json:"type,omitempty"`
 	Mesh   []float64 `json:"meshRotation,omitempty"`
@@ -76,7 +76,7 @@ type CgGeometry struct {
 	Source string    `json:"source,omitempty"`
 }
 
-// CgLabel definiton.
+// CgLabel definition.
 type CgLabel struct {
 	Color    []float64 `json:"color,omitempty"`
 	FadeSize int       `json:"fadeSize,omitempty"`
@@ -97,7 +97,7 @@ type CgTrajectoryPlot struct {
 	SampleCount int       `json:"sampleCount,omitempty"`
 }
 
-// CgInterpolatedState definiton.
+// CgInterpolatedState definition.
 type CgInterpolatedState struct {
 	JD       float64
 	Position []float64

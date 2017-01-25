@@ -62,7 +62,7 @@ func (sc *Spacecraft) Mass(dt time.Time) (m float64) {
 }
 
 // Accelerate returns the applied velocity (in km/s) at a given orbital position and date time, and the fuel used.
-// Keeps track of the thrust applied by all EPThrusters, with necessary optmizations based on next waypoint, *but*
+// Keeps track of the thrust applied by all EPThrusters, with necessary optimizations based on next waypoint, *but*
 // does not update the fuel available (as it needs to be integrated).
 func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel float64) {
 	// Here goes the optimizations based on the available power and whether the goal has been reached.
