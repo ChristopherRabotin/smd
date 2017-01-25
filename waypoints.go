@@ -226,10 +226,10 @@ func NewOrbitTarget(target Orbit, action *WaypointAction, meth ControlLawType, l
 
 // HohmannTransfer allows to perform an Hohmann transfer.
 type HohmannTransfer struct {
-	action                     *WaypointAction
-	ctrl                       HohmannΔv
-	arrivalDT, initDT, finalDT time.Time
-	cleared                    bool
+	action    *WaypointAction
+	ctrl      HohmannΔv
+	arrivalDT time.Time
+	cleared   bool
 }
 
 // String implements the Waypoint interface.
@@ -257,28 +257,26 @@ func (wp *HohmannTransfer) ThrustDirection(o Orbit, dt time.Time) (ThrustControl
 		wp.ctrl.Precompute(o)
 		// Update the upcoming status of Hohmann
 		wp.ctrl.status = hohmmanInitΔv
+		// Initialize the Δv with the current knowledge.
+		wp.ctrl.ΔvBurnInit = o.GetVNorm()
 		// Compute the arrivial DT
 		wp.arrivalDT = dt.Add(wp.ctrl.tof)
-		// Set the DT of the initial and final burns
-		wp.initDT = dt.Add(StepSize)
-		wp.finalDT = wp.arrivalDT.Add(StepSize)
 		break
 	case hohmmanInitΔv:
-		if dt.After(wp.initDT) {
-			// Burn time is passed.
-			wp.ctrl.status = hohmmanCoast
-		}
+		// Nothing to do.
 	case hohmmanCoast:
-		if dt.After(wp.arrivalDT) {
-			// In actuality, we are performing the burn one time step after the expected TOF.
+		if dt.After(wp.arrivalDT.Add(-StepSize)) {
+			// Next step will be the arrivial DT.
 			wp.ctrl.status = hohmmanFinalΔv
+			// Initialize the Δv with the current knowledge.
+			wp.ctrl.ΔvBurnInit = o.GetVNorm()
 		}
 	case hohmmanFinalΔv:
-		if dt.After(wp.finalDT) {
-			// Burn time is passed.
-			wp.ctrl.status = hohmmanCompleted
-			wp.cleared = true
-		}
+		// Nothing to do.
+	case hohmmanCompleted:
+		// This state is changed in the control. Hence, the cleared status is only
+		// available until the *subsequent* call to ThrustDirection.
+		wp.cleared = true
 	}
 	return &wp.ctrl, wp.cleared
 }
@@ -289,5 +287,5 @@ func NewHohmannTransfer(target Orbit, action *WaypointAction) *HohmannTransfer {
 		fmt.Printf("[WARNING] Target orbit on collision course with %s\n", target.Origin)
 	}
 	epoch := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-	return &HohmannTransfer{action, NewHohmannΔv(target), epoch, epoch, epoch, false}
+	return &HohmannTransfer{action, NewHohmannΔv(target), epoch, false}
 }

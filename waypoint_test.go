@@ -54,14 +54,18 @@ func TestLoiter(t *testing.T) {
 }
 
 func TestHohmannΔv(t *testing.T) {
-	// Throughout this test, we make sure that the burn is time dependent instead of being based on
-	// the number of calls. This is important for the integration function which may call the burn several times.
 	target := *NewOrbitFromOE(Earth.Radius+35781.34857, 0, 0, 0, 0, 90, Earth)
 	oscul := *NewOrbitFromOE(Earth.Radius+191.34411, 0, 0, 0, 0, 90, Earth)
 
-	ΔvApoExp := []float64{0.0, -1.478187, 0.0}
-	ΔvPeriExp := []float64{0.0, 2.457038, 0.0}
+	ΔvFinalExp := -1.478187
+	ΔvInitExp := 2.457038
+	ΔvThrustingPlus := []float64{1, 0, 0}
+	ΔvThrustingMinus := []float64{-1, 0, 0}
+	ΔvCoasting := []float64{0, 0, 0}
 	tofExp := time.Duration(5)*time.Hour + time.Duration(15)*time.Minute + time.Duration(24)*time.Second
+	initDT := time.Date(2017, 1, 20, 12, 13, 14, 15, time.UTC)
+	apoDT := initDT.Add(tofExp)
+	postApoDT := initDT.Add(tofExp + StepSize)
 
 	assertPanic(t, func() {
 		target.e = 0.5
@@ -70,10 +74,6 @@ func TestHohmannΔv(t *testing.T) {
 	target.e = eccentricityε
 
 	wp := NewHohmannTransfer(target, nil)
-	initDT := time.Date(2017, 1, 20, 12, 13, 14, 15, time.UTC)
-	coastDT := initDT.Add(tofExp / 2)
-	apoDT := initDT.Add(tofExp + StepSize)
-	postDT := apoDT.Add(StepSize)
 
 	assertPanic(t, func() {
 		oscul.ν = math.Pi
@@ -96,63 +96,68 @@ func TestHohmannΔv(t *testing.T) {
 	// Reset true anomaly after panic test
 	oscul.i = angleε
 
-	for i := 0; i < 5; i++ {
-		ctrl, cleared := wp.ThrustDirection(oscul, initDT)
-		if cleared {
-			t.Fatalf("Hohmann waypoint cleared on initial call")
-		}
-		Δv0 := ctrl.Control(oscul)
-		for i := 0; i < 3; i++ {
-			if !floats.EqualWithinAbs(ΔvPeriExp[i], Δv0[i], velocityε) {
-				t.Fatalf("ΔvPeri[%d] failed: %f != %f", i, ΔvPeriExp[i], Δv0[i])
-			}
-		}
+	ctrl, cleared := wp.ThrustDirection(oscul, initDT)
+	if cleared {
+		t.Fatalf("Hohmann waypoint cleared on initial call")
+	}
+	Δv := ctrl.Control(oscul)
+	// The Precompute was just called, let's check the values.
+
+	if !floats.EqualWithinAbs(wp.ctrl.ΔvInit, ΔvInitExp, velocityε) {
+		t.Fatalf("ΔvInit=%f != %f", wp.ctrl.ΔvInit, ΔvInitExp)
 	}
 
-	// Getting the next Δv, which should be nil.
-	oscul.ν += math.Pi / 3.0 // Arbitrary subsequent value
-	for i := 0; i < 5; i++ {
-		ctrl1, cleared1 := wp.ThrustDirection(oscul, coastDT)
-		if cleared1 {
-			t.Fatalf("Hohmann waypoint cleared on second call")
-		}
-		Δv1 := ctrl1.Control(oscul)
-		for i := 0; i < 3; i++ {
-			if !floats.EqualWithinAbs(Δv1[i], 0, velocityε) {
-				t.Fatalf("Δv should be nil: %+v", Δv1)
-			}
-		}
-	}
-	if wp.ctrl.tof != tofExp {
-		t.Fatalf("invalid TOF: %d != %d", wp.ctrl.tof, tofExp)
+	if !floats.EqualWithinAbs(wp.ctrl.ΔvFinal, ΔvFinalExp, velocityε) {
+		t.Fatalf("ΔvFinal=%f != %f", wp.ctrl.ΔvFinal, ΔvFinalExp)
 	}
 
-	// Getting the final/apo Δv, which should be nil.
-	oscul.ν += math.Pi / 3.0 // Arbitrary subsequent value
-	for i := 0; i < 5; i++ {
-		// Note that there is a one time-step shift in the completion of the Hohmann transfer.
-		ctrl2, cleared2 := wp.ThrustDirection(oscul, apoDT)
-		if cleared2 {
-			t.Fatalf("Hohmann waypoint cleared on third call")
-		}
-		Δv2 := ctrl2.Control(oscul)
-		for i := 0; i < 3; i++ {
-			if !floats.EqualWithinAbs(Δv2[i], ΔvApoExp[i], velocityε) {
-				t.Fatalf("ΔvApoExp[%d] failed: %f != %f", i, ΔvApoExp[i], Δv2[i])
-			}
-		}
+	if !vectorsEqual(Δv, ΔvThrustingPlus) {
+		t.Fatalf("expected Hohmann thrusting positively, instead got: %+v", Δv)
 	}
-	oscul.ν += math.Pi / 3.0 // Arbitrary subsequent value
-	for i := 0; i < 5; i++ {
-		ctrl3, cleared3 := wp.ThrustDirection(oscul, postDT)
-		if !cleared3 {
-			t.Fatalf("Hohmann waypoint should be cleared on fourth call")
-		}
-		Δv3 := ctrl3.Control(oscul)
-		for i := 0; i < 3; i++ {
-			if !floats.EqualWithinAbs(Δv3[i], 0, velocityε) {
-				t.Fatalf("Δv should be nil: %+v", Δv3)
-			}
-		}
+
+	// Let's increase the velocity norm simply to simulate that the initial Δv was applied.
+	R, V := oscul.GetRV()
+	V[0] += ΔvInitExp
+	oscul = *NewOrbitFromRV(R, V, oscul.Origin)
+	ctrl, cleared = wp.ThrustDirection(oscul, initDT)
+	if cleared {
+		t.Fatalf("Hohmann waypoint cleared on second call")
+	}
+	Δv = ctrl.Control(oscul)
+	if !vectorsEqual(Δv, ΔvCoasting) {
+		t.Fatalf("expected Hohmann coasting, instead got: %+v", Δv)
+	}
+
+	// Let's increase the date to when we are supposed to do the final burn.
+	ctrl, cleared = wp.ThrustDirection(oscul, apoDT)
+	if cleared {
+		t.Fatalf("Hohmann waypoint cleared on third call")
+	}
+	Δv = ctrl.Control(oscul)
+	if !vectorsEqual(Δv, ΔvThrustingMinus) {
+		t.Fatalf("expected Hohmann thrusting negatively, instead got: %+v", Δv)
+	}
+
+	// Let's increase the velocity norm simply to simulate that the final Δv was applied.
+	R, V = oscul.GetRV()
+	V[0] += ΔvFinalExp
+	oscul = *NewOrbitFromRV(R, V, oscul.Origin)
+	ctrl, cleared = wp.ThrustDirection(oscul, apoDT)
+	if cleared {
+		t.Fatalf("Hohmann waypoint cleared on fourth call")
+	}
+	Δv = ctrl.Control(oscul)
+	if !vectorsEqual(Δv, ΔvCoasting) {
+		t.Fatalf("expected Hohmann coasting, instead got: %+v", Δv)
+	}
+
+	// Let's increase the date to when we are supposed to do the final burn.
+	ctrl, cleared = wp.ThrustDirection(oscul, postApoDT)
+	if !cleared {
+		t.Fatalf("Hohmann waypoint cleared on final call")
+	}
+	Δv = ctrl.Control(oscul)
+	if !vectorsEqual(Δv, ΔvCoasting) {
+		t.Fatalf("expected Hohmann coasting, instead got: %+v", Δv)
 	}
 }

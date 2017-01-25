@@ -438,11 +438,10 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 
 // HohmannΔv computes the Δv needed to go from one orbit to another, and performs an instantaneous Δv.
 type HohmannΔv struct {
-	target        Orbit
-	status        hohmannStatus
-	ΔvApo, ΔvPeri []float64
-	tof           time.Duration
-	callCount     uint
+	target                      Orbit
+	status                      hohmannStatus
+	ΔvBurnInit, ΔvInit, ΔvFinal float64
+	tof                         time.Duration
 	GenericCL
 }
 
@@ -467,24 +466,36 @@ func (cl *HohmannΔv) Precompute(o Orbit) {
 	aTransfer := 0.5 * (rInit + rFinal)
 	vDepature := math.Sqrt((2 * o.Origin.μ / rInit) - (o.Origin.μ / aTransfer))
 	vArrival := math.Sqrt((2 * o.Origin.μ / rFinal) - (o.Origin.μ / aTransfer))
-	cl.ΔvPeri = []float64{0, vDepature - vInit, 0}
-	cl.ΔvApo = []float64{0, vArrival - vFinal, 0}
+	cl.ΔvInit = vDepature - vInit
+	cl.ΔvFinal = vArrival - vFinal
 	cl.tof = time.Duration(math.Pi*math.Sqrt(math.Pow(aTransfer, 3)/o.Origin.μ)) * time.Second
 	durStr := cl.tof.String() + fmt.Sprintf(" (~%.1fd)", cl.tof.Hours()/24)
-	fmt.Printf("=== HOHMANN TRANSFER INFO ===\nHohmann transfer information - T.O.F.: %s\nvInit=%f km/s\tvFinal=%f km/s\nvDeparture=%f km/s\t vArrival=%f km/s\nΔvPeri=%f km/s\tΔvApo=%f\n=== HOHMANN TRANSFER END ====\n", durStr, vInit, vFinal, vDepature, vArrival, cl.ΔvPeri, cl.ΔvApo)
+	fmt.Printf("=== HOHMANN TRANSFER INFO ===\nHohmann transfer information - T.O.F.: %s\nvInit=%f km/s\tvFinal=%f km/s\nvDeparture=%f km/s\t vArrival=%f km/s\nΔvInit=%f km/s\tΔvFinal=%f\n=== HOHMANN TRANSFER END ====\n", durStr, vInit, vFinal, vDepature, vArrival, cl.ΔvInit, cl.ΔvFinal)
 }
 
 // Control implements the ThrustControl interface.
 func (cl *HohmannΔv) Control(o Orbit) []float64 {
+
 	switch cl.status {
 	case hohmmanCoast:
 		fallthrough
 	case hohmmanCompleted:
 		return []float64{0, 0, 0}
 	case hohmmanInitΔv:
-		return cl.ΔvPeri
+		if floats.EqualWithinAbs(cl.ΔvBurnInit-o.GetVNorm(), cl.ΔvInit, velocityε) {
+			// We have applied enough Δv, so let's stop burning.
+			cl.status = hohmmanCoast
+			return []float64{0, 0, 0}
+		}
+		return []float64{sign(cl.ΔvInit), 0, 0}
 	case hohmmanFinalΔv:
-		return cl.ΔvApo
+		if floats.EqualWithinAbs(cl.ΔvBurnInit-o.GetVNorm(), cl.ΔvFinal, velocityε) {
+			// We have applied enough Δv, so let's stop burning.
+			cl.status = hohmmanCompleted
+			cl.ΔvBurnInit = 0 // Reset to zero after burn is completed.
+			return []float64{0, 0, 0}
+		}
+		return []float64{sign(cl.ΔvFinal), 0, 0}
 	default:
 		panic("unreachable code")
 	}
@@ -495,5 +506,5 @@ func NewHohmannΔv(target Orbit) HohmannΔv {
 	if !floats.EqualWithinAbs(target.e, 0, eccentricityε) {
 		panic(fmt.Errorf("cannot perform Hohmann to a non elliptical orbit"))
 	}
-	return HohmannΔv{target, hohmannCompute, []float64{0, 0, 0}, []float64{0, 0, 0}, time.Duration(-1) * time.Second, 0, newGenericCLFromCL(hohmann)}
+	return HohmannΔv{target, hohmannCompute, 0, 0, 0, time.Duration(-1) * time.Second, newGenericCLFromCL(hohmann)}
 }
