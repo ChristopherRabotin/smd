@@ -24,75 +24,75 @@ type Orbit struct {
 	cachedR, cachedV []float64
 }
 
-// Getξ returns the specific mechanical energy ξ.
-func (o *Orbit) Getξ() float64 {
+// Energyξ returns the specific mechanical energy ξ.
+func (o Orbit) Energyξ() float64 {
 	return -o.Origin.μ / (2 * o.a)
 }
 
-// GetTildeω returns the longitude of periapsis.
-func (o *Orbit) GetTildeω() float64 {
+// Tildeω returns the longitude of periapsis.
+func (o Orbit) Tildeω() float64 {
 	return o.ω + o.Ω
 }
 
-// Getλtrue returns the *approximate* true longitude.
-func (o *Orbit) Getλtrue() float64 {
-	if o.e > eccentricityε || o.i > angleε {
-		panic("Getλtrue only supports circular equatorial orbits")
+// TrueLongλ returns the *approximate* true longitude.
+func (o Orbit) TrueLongλ() float64 {
+	if o.i > angleε {
+		fmt.Printf("[WARNING] true longitude λ is usually only used for equatorial orbits")
 	}
 	// This is an approximation as per Vallado page 103.
 	return o.ω + o.Ω + o.ν
 }
 
-// GetU returns the argument of latitude.
-func (o *Orbit) GetU() float64 {
+// ArgLatitudeU returns the argument of latitude.
+func (o Orbit) ArgLatitudeU() float64 {
 	return o.ν + o.ω
 }
 
-// GetH returns the orbital angular momentum vector.
-func (o *Orbit) GetH() []float64 {
-	return cross(o.GetRV())
+// H returns the orbital angular momentum vector.
+func (o Orbit) H() []float64 {
+	return cross(o.RV())
 }
 
-// GetHNorm returns the norm of orbital angular momentum.
-func (o *Orbit) GetHNorm() float64 {
-	return o.GetRNorm() * o.GetVNorm() * o.GetCosΦfpa()
+// HNorm returns the norm of orbital angular momentum.
+func (o Orbit) HNorm() float64 {
+	return o.RNorm() * o.VNorm() * o.CosΦfpa()
 }
 
-// GetCosΦfpa returns the cosine of the flight path angle.
-// WARNING: As per Vallado page 105, *do not* use math.Acos(o.GetCosΦfpa())
+// CosΦfpa returns the cosine of the flight path angle.
+// WARNING: As per Vallado page 105, *do not* use math.Acos(o.CosΦfpa())
 // to get the flight path angle as you'll have a quadran problem. Instead
-// use math.Atan2(o.GetSinΦfpa(), o.GetCosΦfpa()).
-func (o *Orbit) GetCosΦfpa() float64 {
+// use math.Atan2(o.GetSinΦfpa(), o.CosΦfpa()).
+func (o Orbit) CosΦfpa() float64 {
 	ecosν := o.e * math.Cos(o.ν)
 	return (1 + ecosν) / math.Sqrt(1+2*ecosν+math.Pow(o.e, 2))
 }
 
-// GetSinΦfpa returns the cosine of the flight path angle.
-// WARNING: As per Vallado page 105, *do not* use math.Asin(o.GetSinΦfpa())
+// SinΦfpa returns the cosine of the flight path angle.
+// WARNING: As per Vallado page 105, *do not* use math.Asin(o.SinΦfpa())
 // to get the flight path angle as you'll have a quadran problem. Instead
-// use math.Atan2(o.GetSinΦfpa(), o.GetCosΦfpa()).
-func (o *Orbit) GetSinΦfpa() float64 {
+// use math.Atan2(o.SinΦfpa(), o.CosΦfpa()).
+func (o Orbit) SinΦfpa() float64 {
 	sinν, cosν := math.Sincos(o.ν)
 	return (o.e * sinν) / math.Sqrt(1+2*o.e*cosν+math.Pow(o.e, 2))
 }
 
-// GetSemiParameter returns the apoapsis.
-func (o *Orbit) GetSemiParameter() float64 {
+// SemiParameter returns the apoapsis.
+func (o Orbit) SemiParameter() float64 {
 	return o.a * (1 - o.e*o.e)
 }
 
-// GetApoapsis returns the apoapsis.
-func (o *Orbit) GetApoapsis() float64 {
+// Apoapsis returns the apoapsis.
+func (o Orbit) Apoapsis() float64 {
 	return o.a * (1 + o.e)
 }
 
-// GetPeriapsis returns the apoapsis.
-func (o *Orbit) GetPeriapsis() float64 {
+// Periapsis returns the apoapsis.
+func (o Orbit) Periapsis() float64 {
 	return o.a * (1 - o.e)
 }
 
-// GetSinCosE returns the eccentric anomaly trig functions (sin and cos).
-func (o *Orbit) GetSinCosE() (sinE, cosE float64) {
+// SinCosE returns the eccentric anomaly trig functions (sin and cos).
+func (o Orbit) SinCosE() (sinE, cosE float64) {
 	sinν, cosν := math.Sincos(o.ν)
 	denom := 1 + o.e*cosν
 	sinE = math.Sqrt(1-o.e*o.e) * sinν / denom
@@ -100,8 +100,8 @@ func (o *Orbit) GetSinCosE() (sinE, cosE float64) {
 	return
 }
 
-// GetPeriod returns the period of this orbit.
-func (o *Orbit) GetPeriod() time.Duration {
+// Period returns the period of this orbit.
+func (o Orbit) Period() time.Duration {
 	// The time package does not trivially handle fractions of a second, so let's
 	// compute this in a convoluted way...
 	seconds := 2 * math.Pi * math.Sqrt(math.Pow(o.a, 3)/o.Origin.μ)
@@ -109,12 +109,12 @@ func (o *Orbit) GetPeriod() time.Duration {
 	return duration
 }
 
-// GetRV helps with the cache.
-func (o *Orbit) GetRV() ([]float64, []float64) {
+// RV helps with the cache.
+func (o *Orbit) RV() ([]float64, []float64) {
 	if o.hashValid() {
 		return o.cachedR, o.cachedV
 	}
-	p := o.GetSemiParameter()
+	p := o.SemiParameter()
 	// Support special orbits.
 	ν := o.ν
 	ω := o.ω
@@ -124,14 +124,14 @@ func (o *Orbit) GetRV() ([]float64, []float64) {
 		if o.i < angleε {
 			// Circular equatorial
 			Ω = 0
-			ν = o.Getλtrue()
+			ν = o.TrueLongλ()
 		} else {
 			// Circular inclined
-			ν = o.GetU()
+			ν = o.ArgLatitudeU()
 		}
 	} else if o.i < angleε {
 		Ω = 0
-		ω = o.GetTildeω()
+		ω = o.Tildeω()
 	}
 
 	R := make([]float64, 3)
@@ -154,41 +154,55 @@ func (o *Orbit) GetRV() ([]float64, []float64) {
 	return R, V
 }
 
-// GetR returns the radius vector.
-func (o *Orbit) GetR() (R []float64) {
-	R, _ = o.GetRV()
+// R returns the radius vector.
+func (o Orbit) R() (R []float64) {
+	R, _ = o.RV()
 	return R
 }
 
-// GetRNorm returns the norm of the radius vector, but without computing the radius vector.
-// If only the norm is needed, it is encouraged to use this function instead of norm(o.GetR()).
-func (o *Orbit) GetRNorm() float64 {
-	return o.GetSemiParameter() / (1 + o.e*math.Cos(o.ν))
+// RNorm returns the norm of the radius vector, but without computing the radius vector.
+// If only the norm is needed, it is encouraged to use this function instead of norm(o.R()).
+func (o Orbit) RNorm() float64 {
+	return o.SemiParameter() / (1 + o.e*math.Cos(o.ν))
 }
 
-// GetV returns the velocity vector.
-func (o *Orbit) GetV() (V []float64) {
-	_, V = o.GetRV()
+// V returns the velocity vector.
+func (o Orbit) V() (V []float64) {
+	_, V = o.RV()
 	return V
 }
 
-// GetVNorm returns the norm of the velocity vector, but without computing the velocity vector.
+// VNorm returns the norm of the velocity vector, but without computing the velocity vector.
 // If only the norm is needed, it is encouraged to use this function instead of norm(o.GetV()).
-func (o *Orbit) GetVNorm() float64 {
+func (o Orbit) VNorm() float64 {
 	if floats.EqualWithinAbs(o.e, 0, eccentricityε) {
-		return math.Sqrt(o.Origin.μ / o.GetRNorm())
+		return math.Sqrt(o.Origin.μ / o.RNorm())
 	}
 	if floats.EqualWithinAbs(o.e, 1, eccentricityε) {
-		return math.Sqrt(2 * o.Origin.μ / o.GetRNorm())
+		return math.Sqrt(2 * o.Origin.μ / o.RNorm())
 	}
-	return math.Sqrt(2 * (o.Origin.μ/o.GetRNorm() + o.Getξ()))
+	return math.Sqrt(2 * (o.Origin.μ/o.RNorm() + o.Energyξ()))
+}
+
+// Elements returns the nine orbital elements which work in all types of orbits
+func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
+	a = o.a
+	e = o.e
+	i = o.i
+	Ω = o.Ω
+	ω = o.ω
+	ν = o.ν
+	λ = o.TrueLongλ()
+	tildeω = o.Tildeω()
+	u = o.ArgLatitudeU()
+	return
 }
 
 func (o *Orbit) computeHash() {
 	o.cacheHash = o.ω + o.ν + o.Ω + o.i + o.e + o.a
 }
 
-func (o *Orbit) hashValid() bool {
+func (o Orbit) hashValid() bool {
 	return o.cacheHash == o.ω+o.ν+o.Ω+o.i+o.e+o.a
 }
 
@@ -199,7 +213,7 @@ func (o Orbit) String() string {
 
 // Equals returns whether two orbits are identical with free true anomaly.
 // Use StrictlyEquals to also check true anomaly.
-func (o *Orbit) Equals(o1 Orbit) (bool, error) {
+func (o Orbit) Equals(o1 Orbit) (bool, error) {
 	if !o.Origin.Equals(o1.Origin) {
 		return false, errors.New("different origin")
 	}
@@ -222,7 +236,7 @@ func (o *Orbit) Equals(o1 Orbit) (bool, error) {
 }
 
 // StrictlyEquals returns whether two orbits are identical.
-func (o *Orbit) StrictlyEquals(o1 Orbit) (bool, error) {
+func (o Orbit) StrictlyEquals(o1 Orbit) (bool, error) {
 	if !floats.EqualWithinAbs(o.ν, o1.ν, angleε) {
 		return false, errors.New("true anomaly invalid")
 	}
@@ -236,14 +250,14 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 	if o.Origin.Name == b.Name {
 		panic(fmt.Errorf("already in orbit around %s", b.Name))
 	}
-	oR := o.GetR()
-	oV := o.GetV()
+	oR := o.R()
+	oV := o.V()
 	if b.SOI == -1 {
 		// Switch to heliocentric
 		// Get planet equatorial coordinates.
 		rel := o.Origin.HelioOrbit(dt)
-		relR := rel.GetR()
-		relV := rel.GetV()
+		relR := rel.R()
+		relV := rel.V()
 		// Switch frame origin.
 		for i := 0; i < 3; i++ {
 			oR[i] += relR[i]
@@ -253,8 +267,8 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 		// Switch to planet centric
 		// Get planet ecliptic coordinates.
 		rel := b.HelioOrbit(dt)
-		relR := rel.GetR()
-		relV := rel.GetV()
+		relR := rel.R()
+		relV := rel.V()
 		// Update frame origin.
 		for i := 0; i < 3; i++ {
 			oR[i] -= relR[i]
@@ -282,7 +296,7 @@ func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
 		i = angleε
 	}
 	orbit := Orbit{a, e, Deg2rad(i), Deg2rad(Ω), Deg2rad(ω), Deg2rad(ν), c, 0.0, nil, nil}
-	orbit.GetRV()
+	orbit.RV()
 	orbit.computeHash()
 	return &orbit
 }

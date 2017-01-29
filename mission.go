@@ -10,9 +10,16 @@ import (
 	"github.com/gonum/floats"
 )
 
+// Propagator defines the different propagation methods available.
+type Propagator uint8
+
 const (
 	// StepSize is the default step size when propagating an orbit.
 	StepSize = 10 * time.Second
+	// GaussianVOP propagator fails for circular, equatorial and hyperbolic orbits
+	GaussianVOP Propagator = iota + 1
+	// Cartesian propagator works in all cases
+	Cartesian
 )
 
 var wg sync.WaitGroup
@@ -26,6 +33,7 @@ type Mission struct {
 	StartDT        time.Time
 	EndDT          time.Time
 	CurrentDT      time.Time
+	Propagator     Propagator
 	includeJ2      bool
 	stopChan       chan (bool)
 	histChan       chan<- (MissionState)
@@ -54,7 +62,7 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, includeJ2 bool, c
 		end = end.UTC()
 	}
 
-	a := &Mission{s, o, start, end, start, includeJ2, make(chan (bool), 1), histChan, false, false}
+	a := &Mission{s, o, start, end, start, GaussianVOP, includeJ2, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- MissionState{a.CurrentDT, *s, *o}
@@ -85,9 +93,9 @@ func (a *Mission) Propagate() {
 			a.LogStatus()
 		}
 	}()
-	vInit := norm(a.Orbit.GetV())
+	vInit := norm(a.Orbit.V())
 	ode.NewRK4(0, StepSize.Seconds(), a).Solve() // Blocking.
-	vFinal := norm(a.Orbit.GetV())
+	vFinal := norm(a.Orbit.V())
 	a.done = true
 	duration := a.CurrentDT.Sub(a.StartDT)
 	durStr := duration.String()
@@ -142,13 +150,18 @@ func (a *Mission) Stop(t float64) bool {
 // GetState returns the state for the integrator for the Gaussian VOP.
 func (a *Mission) GetState() (s []float64) {
 	s = make([]float64, 7)
-	s[0] = a.Orbit.a
-	s[1] = a.Orbit.e
-	s[2] = a.Orbit.i
-	s[3] = a.Orbit.Ω
-	s[4] = a.Orbit.ω
-	s[5] = a.Orbit.ν
-	s[6] = a.Vehicle.FuelMass
+	switch a.Propagator {
+	case GaussianVOP:
+		s[0] = a.Orbit.a
+		s[1] = a.Orbit.e
+		s[2] = a.Orbit.i
+		s[3] = a.Orbit.Ω
+		s[4] = a.Orbit.ω
+		s[5] = a.Orbit.ν
+		s[6] = a.Vehicle.FuelMass
+	default:
+		panic("propagator not implemented")
+	}
 	return
 }
 
@@ -157,31 +170,35 @@ func (a *Mission) SetState(t float64, s []float64) {
 	if a.histChan != nil {
 		a.histChan <- MissionState{a.CurrentDT, *a.Vehicle, *a.Orbit}
 	}
-	// Note that we modulo here *and* in Func because the last step of the integrator
-	// adds up all the previous values with weights!
-	for i := 2; i <= 5; i++ {
-		if s[i] < 0 {
-			s[i] += 2 * math.Pi
+
+	switch a.Propagator {
+	case GaussianVOP:
+		for i := 2; i <= 5; i++ {
+			if s[i] < 0 {
+				s[i] += 2 * math.Pi
+			}
+			s[i] = math.Mod(s[i], 2*math.Pi)
 		}
-		s[i] = math.Mod(s[i], 2*math.Pi)
+
+		a.Orbit.a = s[0]
+		a.Orbit.e = math.Abs(s[1]) // eccentricity is always a positive number
+		a.Orbit.i = s[2]
+		a.Orbit.Ω = s[3]
+		a.Orbit.ω = s[4]
+		a.Orbit.ν = s[5]
+	default:
+		panic("propagator not implemented")
 	}
 
-	a.Orbit.a = s[0]
-	a.Orbit.e = math.Abs(s[1]) // eccentricity is always a positive number
-	a.Orbit.i = s[2]
-	a.Orbit.Ω = s[3]
-	a.Orbit.ω = s[4]
-	a.Orbit.ν = s[5]
-
 	// Orbit sanity checks and warnings.
-	if !a.collided && a.Orbit.GetRNorm() < a.Orbit.Origin.Radius {
+	if !a.collided && a.Orbit.RNorm() < a.Orbit.Origin.Radius {
 		a.collided = true
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "collided", a.Orbit.Origin.Name, "dt", a.CurrentDT)
-	} else if a.collided && a.Orbit.GetRNorm() > a.Orbit.Origin.Radius*1.01 {
+	} else if a.collided && a.Orbit.RNorm() > a.Orbit.Origin.Radius*1.01 {
 		// Now further from the 1% dead zone
 		a.collided = false
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "revived", a.Orbit.Origin.Name, "dt", a.CurrentDT)
-	} else if (a.Orbit.GetRNorm() > a.Orbit.Origin.SOI || floats.EqualWithinAbs(a.Orbit.e, 1, eccentricityε)) && !a.Orbit.Origin.Equals(Sun) {
+	} else if (a.Orbit.RNorm() > a.Orbit.Origin.SOI || floats.EqualWithinAbs(a.Orbit.e, 1, eccentricityε)) && !a.Orbit.Origin.Equals(Sun) {
 		a.Vehicle.FuncQ = append(a.Vehicle.FuncQ, a.Vehicle.ToXCentric(Sun, a.CurrentDT, a.Orbit))
 	}
 
@@ -204,48 +221,54 @@ func (a *Mission) SetState(t float64, s []float64) {
 
 // Func is the integration function using Gaussian VOP as per Ruggiero et al. 2011.
 func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
-	// *WARNING*: do not fix the angles here because that leads to errors during the RK4 computation.
-	// Instead the angles must be fixed and checked only at in SetState function.
-	// Note that we don't use Rad2deg because it forces the modulo on the angles, and we want to avoid this for now.
-	tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2]/deg2rad, f[3]/deg2rad, f[4]/deg2rad, f[5]/deg2rad, a.Orbit.Origin)
-	p := tmpOrbit.GetSemiParameter()
-	h := tmpOrbit.GetHNorm()
-	r := tmpOrbit.GetRNorm()
-	sini, cosi := math.Sincos(tmpOrbit.i)
-	sinν, cosν := math.Sincos(tmpOrbit.ν)
-	sinζ, cosζ := math.Sincos(tmpOrbit.ω + tmpOrbit.ν)
-	fDot = make([]float64, 7) // init return vector
-	// Let's add the thrust to increase the magnitude of the velocity.
-	// XXX: Should this Accelerate call be with tmpOrbit?!
-	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
-	fR := Δv[0]
-	fS := Δv[1]
-	fW := Δv[2]
-	// da/dt
-	fDot[0] = ((2 * tmpOrbit.a * tmpOrbit.a) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
-	//fmt.Printf("%.10f\t%.10f\t%.10f\n", tmpOrbit.GetRNorm(), tmpOrbit.Origin.μ/tmpOrbit.GetRNorm(), tmpOrbit.Getξ())
-	// de/dt
-	fDot[1] = (p*sinν*fR + fS*((p+r)*cosν+r*tmpOrbit.e)) / h
-	// di/dt
-	fDot[2] = fW * r * cosζ / h
-	// dΩ/dt
-	fDot[3] = fW * r * sinζ / (h * sini)
-	// dω/dt
-	fDot[4] = (-p*cosν*fR+(p+r)*sinν*fS)/(h*tmpOrbit.e) - fDot[3]*cosi
-	// dν/dt -- as per Vallado, page 636 (with errata of 4th edition.)
-	fDot[5] = h/(r*r) + ((p*cosν*fR)-(p+r)*sinν*fS)/(tmpOrbit.e*h)
-	// d(fuel)/dt
-	fDot[6] = -usedFuel
-	if a.includeJ2 && tmpOrbit.Origin.J2 > 0 {
-		// d\bar{Ω}/dt
-		fDot[3] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 2) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * cosi
-		// d\bar{ω}/dt
-		fDot[4] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 4) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * (5*math.Pow(cosi, 2) - 1)
-		// TODO: add effect on true anomaly.
+	switch a.Propagator {
+	case GaussianVOP:
+		// *WARNING*: do not fix the angles here because that leads to errors during the RK4 computation.
+		// Instead the angles must be fixed and checked only at in SetState function.
+		// Note that we don't use Rad2deg because it forces the modulo on the angles, and we want to avoid this for now.
+		tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2]/deg2rad, f[3]/deg2rad, f[4]/deg2rad, f[5]/deg2rad, a.Orbit.Origin)
+		p := tmpOrbit.SemiParameter()
+		h := tmpOrbit.HNorm()
+		r := tmpOrbit.RNorm()
+		sini, cosi := math.Sincos(tmpOrbit.i)
+		sinν, cosν := math.Sincos(tmpOrbit.ν)
+		sinζ, cosζ := math.Sincos(tmpOrbit.ω + tmpOrbit.ν)
+		fDot = make([]float64, 7) // init return vector
+		// Let's add the thrust to increase the magnitude of the velocity.
+		// XXX: Should this Accelerate call be with tmpOrbit?!
+		Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
+		fR := Δv[0]
+		fS := Δv[1]
+		fW := Δv[2]
+		// da/dt
+		fDot[0] = ((2 * tmpOrbit.a * tmpOrbit.a) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
+		//fmt.Printf("%.10f\t%.10f\t%.10f\n", tmpOrbit.GetRNorm(), tmpOrbit.Origin.μ/tmpOrbit.GetRNorm(), tmpOrbit.Getξ())
+		// de/dt
+		fDot[1] = (p*sinν*fR + fS*((p+r)*cosν+r*tmpOrbit.e)) / h
+		// di/dt
+		fDot[2] = fW * r * cosζ / h
+		// dΩ/dt
+		fDot[3] = fW * r * sinζ / (h * sini)
+		// dω/dt
+		fDot[4] = (-p*cosν*fR+(p+r)*sinν*fS)/(h*tmpOrbit.e) - fDot[3]*cosi
+		// dν/dt -- as per Vallado, page 636 (with errata of 4th edition.)
+		fDot[5] = h/(r*r) + ((p*cosν*fR)-(p+r)*sinν*fS)/(tmpOrbit.e*h)
+		// d(fuel)/dt
+		fDot[6] = -usedFuel
+		if a.includeJ2 && tmpOrbit.Origin.J2 > 0 {
+			// d\bar{Ω}/dt
+			fDot[3] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 2) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * cosi
+			// d\bar{ω}/dt
+			fDot[4] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 4) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * (5*math.Pow(cosi, 2) - 1)
+			// TODO: add effect on true anomaly.
+		}
+	default:
+		panic("propagator not implemented")
 	}
+
 	for i := 0; i < 7; i++ {
 		if math.IsNaN(fDot[i]) {
-			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ntmp:%s\ncur:%s\n", i, a.CurrentDT, tmpOrbit, a.Orbit))
+			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ncur:%s\n", i, a.CurrentDT, a.Orbit))
 		}
 	}
 	return

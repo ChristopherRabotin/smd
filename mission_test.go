@@ -81,11 +81,11 @@ func TestMissionGEO(t *testing.T) {
 	}
 	oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, finalν, Earth)
 	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
-	ξ0 := oOsc.Getξ()
+	ξ0 := oOsc.Energyξ()
 	// Define propagation parameters.
 	start := time.Now()
 	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
-	if diff := geoDur - oTgt.GetPeriod(); diff > 100*time.Millisecond {
+	if diff := geoDur - oTgt.Period(); diff > 100*time.Millisecond {
 		t.Fatalf("invalid period computed: %s", diff)
 	}
 	end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
@@ -105,7 +105,7 @@ func TestMissionGEO(t *testing.T) {
 		}
 	}
 	// Check specific energy remained constant.
-	if ξ1 := oOsc.Getξ(); !floats.EqualWithinAbs(ξ1, ξ0, 1e-16) {
+	if ξ1 := oOsc.Energyξ(); !floats.EqualWithinAbs(ξ1, ξ0, 1e-16) {
 		t.Fatalf("specific energy changed during the orbit: %f -> %f", ξ0, ξ1)
 	}
 }
@@ -157,8 +157,8 @@ func TestMissionFrameChg(t *testing.T) {
 	ν0 := 0.0
 	o := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
 	var R1, V1, R2, V2 [3]float64
-	copy(R1[:], o.GetR())
-	copy(V1[:], o.GetV())
+	copy(R1[:], o.R())
+	copy(V1[:], o.V())
 	// Define propagation parameters.
 	start := time.Now()
 	end := start.Add(time.Duration(2) * time.Hour)
@@ -166,8 +166,8 @@ func TestMissionFrameChg(t *testing.T) {
 	// Start propagation.
 	astro.Propagate()
 	// Check that in this orbit there is a change.
-	copy(R2[:], o.GetR())
-	copy(V2[:], o.GetV())
+	copy(R2[:], o.R())
+	copy(V2[:], o.V())
 	if vectorsEqual(R1[:], R2[:]) {
 		t.Fatal("R1 == R2")
 	}

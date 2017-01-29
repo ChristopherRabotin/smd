@@ -116,7 +116,7 @@ func TestHohmannΔv(t *testing.T) {
 	}
 
 	// Let's increase the velocity norm simply to simulate that the initial Δv was applied.
-	R, V := oscul.GetRV()
+	R, V := oscul.RV()
 	V[0] += ΔvInitExp
 	oscul = *NewOrbitFromRV(R, V, oscul.Origin)
 	ctrl, cleared = wp.ThrustDirection(oscul, initDT)
@@ -139,7 +139,7 @@ func TestHohmannΔv(t *testing.T) {
 	}
 
 	// Let's increase the velocity norm simply to simulate that the final Δv was applied.
-	R, V = oscul.GetRV()
+	R, V = oscul.RV()
 	V[0] += ΔvFinalExp
 	oscul = *NewOrbitFromRV(R, V, oscul.Origin)
 	ctrl, cleared = wp.ThrustDirection(oscul, apoDT)

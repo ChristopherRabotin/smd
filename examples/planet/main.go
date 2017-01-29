@@ -20,7 +20,7 @@ func main() {
 	ω := 1e-1 //45.0
 	ν := 20.5
 	oI := smd.NewOrbitFromOE(a, e, i, Ω, ω, ν, obj)*/
-	R, V := oI.GetRV()
+	R, V := oI.RV()
 	oV := smd.NewOrbitFromRV(R, V, smd.Sun)
 	fmt.Printf("oI: %s\noV: %s\n", oI, oV)
 	mss := smd.NewMission(sc, &oI, start, end, false, smd.ExportConfig{Filename: "Inc", AsCSV: true, Cosmo: true, Timestamp: false})
