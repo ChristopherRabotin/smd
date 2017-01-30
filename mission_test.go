@@ -26,7 +26,7 @@ func TestMissionStop(t *testing.T) {
 		end := start.Add(time.Duration(24) * time.Hour)
 		sc := NewEmptySC("test", 1500)
 		sc.FuelMass = -1
-		astro := NewMission(sc, o, start, end, meth, false, ExportConfig{})
+		astro := NewMission(sc, o, start, end, meth, Perturbations{}, ExportConfig{})
 		// Start propagation.
 		go astro.Propagate()
 		// Check stopping the propagation via the channel.
@@ -58,7 +58,7 @@ func TestMissionNegTime(t *testing.T) {
 		end := start.Add(time.Duration(-1) * time.Hour)
 		sc := NewEmptySC("test", 1500)
 		sc.FuelMass = -1
-		astro := NewMission(sc, o, start, end, meth, false, ExportConfig{})
+		astro := NewMission(sc, o, start, end, meth, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if astro.CurrentDT.Equal(astro.StartDT) {
 			t.Fatal("astro did *not* propagate time")
@@ -94,14 +94,14 @@ func TestMissionGEO(t *testing.T) {
 			t.Fatalf("invalid period computed: %s", diff)
 		}
 		end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
-		astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, meth, false, ExportConfig{})
+		astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, meth, Perturbations{}, ExportConfig{})
 		// Start propagation.
 		astro.Propagate()
 		// Must find a way to test the stop channel. via a long propagation and a select probably.
 		// Check the orbital elements.
 		if ok, err := oOsc.StrictlyEquals(*oTgt); !ok {
 			t.Logf("\noOsc: %s\noTgt: %s", oOsc, oTgt)
-			t.Fatalf("GEO 1.5 day propagation leads to incorrect orbit: %s", err)
+			t.Fatalf("[%s] GEO 1.5 day propagation leads to incorrect orbit: %s", meth, err)
 		}
 		// Check that all angular orbital elements are within 2 pi.
 		for k, angle := range []float64{oOsc.i, oOsc.Ω, oOsc.ω, oOsc.ν} {
@@ -141,7 +141,7 @@ func TestMissionGEOJ2(t *testing.T) {
 		start := time.Now()
 		geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
 		end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
-		astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, meth, true, ExportConfig{})
+		astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, meth, Perturbations{Jn: 2}, ExportConfig{})
 		// Start propagation.
 		astro.Propagate()
 		// Must find a way to test the stop channel. via a long propagation and a select probably.
@@ -151,7 +151,7 @@ func TestMissionGEOJ2(t *testing.T) {
 			Rt, Vt := oTgt.RV()
 			t.Logf("\noOsc: %+v\t%+v \noTgt: %+v\t%+v", R0, V0, Rt, Vt)
 			t.Logf("\noOsc: %s\noTgt: %s", oOsc, oTgt)
-			t.Fatalf("GEO 1.5 day propagation leads to incorrect orbit: %s", err)
+			t.Fatalf("[%s] GEO 1.5 day propagation leads to incorrect orbit: %s", meth, err)
 		}
 		// Check that all angular orbital elements are within 2 pi.
 		for k, angle := range []float64{oOsc.i, oOsc.Ω, oOsc.ω, oOsc.ν} {
@@ -177,7 +177,7 @@ func TestMissionFrameChg(t *testing.T) {
 	// Define propagation parameters.
 	start := time.Now()
 	end := start.Add(time.Duration(2) * time.Hour)
-	astro := NewMission(NewEmptySC("test", 1500), o, start, end, GaussianVOP, false, ExportConfig{})
+	astro := NewMission(NewEmptySC("test", 1500), o, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 	// Start propagation.
 	astro.Propagate()
 	// Check that in this orbit there is a change.
@@ -207,7 +207,7 @@ func TestCorrectOEa(t *testing.T) {
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(45*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
 			t.Logf("METHOD = %s", meth)
@@ -233,7 +233,7 @@ func TestCorrectOEaNeg(t *testing.T) {
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(45*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
 			t.Logf("METHOD = %s", meth)
@@ -259,7 +259,7 @@ func TestCorrectOEi(t *testing.T) {
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(55*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) {
 			t.Logf("METHOD = %s", meth)
@@ -285,7 +285,7 @@ func TestCorrectOEiNeg(t *testing.T) {
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(55*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) {
 			t.Logf("METHOD = %s", meth)
@@ -311,7 +311,7 @@ func TestCorrectOEΩ(t *testing.T) {
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(49*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
 			t.Logf("METHOD = %s", meth)
@@ -337,7 +337,7 @@ func TestCorrectOEΩNeg(t *testing.T) {
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(49*24) * time.Hour) // just after the expected time
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
 			t.Logf("METHOD = %s", meth)
@@ -363,7 +363,7 @@ func TestCorrectOEe(t *testing.T) {
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(30*24) * time.Hour) // just after the expected time
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
 			t.Logf("METHOD = %s", meth)
@@ -389,7 +389,7 @@ func TestCorrectOEeNeg(t *testing.T) {
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(30*24) * time.Hour) // just after the expected time
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
 			t.Logf("METHOD = %s", meth)
@@ -415,7 +415,7 @@ func TestCorrectOEω(t *testing.T) {
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(2*24) * time.Hour) // just after the expected time
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
 		tol := angleε
@@ -445,7 +445,7 @@ func TestCorrectOEωNeg(t *testing.T) {
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(1*24)*time.Hour + 2*time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
 		tol := angleε
@@ -484,7 +484,7 @@ func TestMultiCorrectOE(t *testing.T) {
 			fuel = 53
 		}
 		end := start.Add(time.Duration(days*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) || !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) || !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
 			t.Logf("METHOD = %s", meth)
@@ -510,7 +510,7 @@ func TestPetropoulosCaseA(t *testing.T) {
 		start := time.Now()
 		// With eta=0.968, the duration is 152.389 days.
 		end := start.Add(time.Duration(153*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
 			t.Logf("METHOD = %s", meth)
@@ -532,7 +532,7 @@ func TestPetropoulosCaseB(t *testing.T) {
 		start := time.Now()
 		// About three months is what is needed without the eccentricity change.
 		end := start.Add(time.Duration(90*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) /*|| !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε)*/ {
 			t.Logf("METHOD = %s", meth)
@@ -552,7 +552,7 @@ func TestPetropoulosCaseC(t *testing.T) {
 		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
 		start := time.Now()
 		end := start.Add(time.Duration(80*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
 			t.Logf("METHOD = %s", meth)
@@ -574,7 +574,7 @@ func TestPetropoulosCaseE(t *testing.T) {
 		start := time.Now()
 		// There is no provided time, but the graph goes all the way to 240 days.
 		end := start.Add(time.Duration(240*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, false, ExportConfig{})
+		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		if ok, err := astro.Orbit.Equals(*oTarget); !ok {
 			t.Logf("METHOD = %s", meth)

@@ -13,6 +13,17 @@ import (
 // Propagator defines the different propagation methods available.
 type Propagator uint8
 
+func (p Propagator) String() string {
+	switch p {
+	case GaussianVOP:
+		return "GVOP"
+	case Cartesian:
+		return "Cartesian"
+	default:
+		panic("unknown propagator")
+	}
+}
+
 const (
 	// StepSize is the default step size when propagating an orbit.
 	StepSize = 10 * time.Second
@@ -33,15 +44,15 @@ type Mission struct {
 	StartDT        time.Time
 	EndDT          time.Time
 	CurrentDT      time.Time
-	Propagator     Propagator
-	includeJ2      bool
+	propMethod     Propagator
+	perts          Perturbations
 	stopChan       chan (bool)
 	histChan       chan<- (MissionState)
 	done, collided bool
 }
 
 // NewMission returns a new Mission instance from the position and velocity vectors.
-func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, method Propagator, includeJ2 bool, conf ExportConfig) *Mission {
+func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, method Propagator, perts Perturbations, conf ExportConfig) *Mission {
 	// If no filepath is provided, then no output will be written.
 	var histChan chan (MissionState)
 	if !conf.IsUseless() {
@@ -62,7 +73,7 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, method Propagator
 		end = end.UTC()
 	}
 
-	a := &Mission{s, o, start, end, start, method, includeJ2, make(chan (bool), 1), histChan, false, false}
+	a := &Mission{s, o, start, end, start, method, perts, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- MissionState{a.CurrentDT, *s, *o}
@@ -150,7 +161,7 @@ func (a *Mission) Stop(t float64) bool {
 // GetState returns the state for the integrator for the Gaussian VOP.
 func (a *Mission) GetState() (s []float64) {
 	s = make([]float64, 7)
-	switch a.Propagator {
+	switch a.propMethod {
 	case GaussianVOP:
 		s[0] = a.Orbit.a
 		s[1] = a.Orbit.e
@@ -179,7 +190,7 @@ func (a *Mission) SetState(t float64, s []float64) {
 		a.histChan <- MissionState{a.CurrentDT, *a.Vehicle, *a.Orbit}
 	}
 
-	switch a.Propagator {
+	switch a.propMethod {
 	case GaussianVOP:
 		for i := 2; i <= 5; i++ {
 			if s[i] < 0 {
@@ -237,12 +248,13 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	// Let's add the thrust to increase the magnitude of the velocity.
 	// XXX: Should this Accelerate call be with tmpOrbit?!
 	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
-	switch a.Propagator {
+	var tmpOrbit *Orbit
+	switch a.propMethod {
 	case GaussianVOP:
 		// *WARNING*: do not fix the angles here because that leads to errors during the RK4 computation.
 		// Instead the angles must be fixed and checked only at in SetState function.
 		// Note that we don't use Rad2deg because it forces the modulo on the angles, and we want to avoid this for now.
-		tmpOrbit := NewOrbitFromOE(f[0], f[1], f[2]/deg2rad, f[3]/deg2rad, f[4]/deg2rad, f[5]/deg2rad, a.Orbit.Origin)
+		tmpOrbit = NewOrbitFromOE(f[0], f[1], f[2]/deg2rad, f[3]/deg2rad, f[4]/deg2rad, f[5]/deg2rad, a.Orbit.Origin)
 		p := tmpOrbit.SemiParameter()
 		h := tmpOrbit.HNorm()
 		r := tmpOrbit.RNorm()
@@ -267,27 +279,14 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		fDot[5] = h/(r*r) + ((p*cosν*fR)-(p+r)*sinν*fS)/(tmpOrbit.e*h)
 		// d(fuel)/dt
 		fDot[6] = -usedFuel
-		if a.includeJ2 && tmpOrbit.Origin.J2 > 0 {
-			// d\bar{Ω}/dt
-			fDot[3] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 2) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * cosi
-			// d\bar{ω}/dt
-			fDot[4] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 4) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * (5*math.Pow(cosi, 2) - 1)
-			// TODO: add effect on true anomaly.
-		}
+
 	case Cartesian:
 		R := []float64{f[0], f[1], f[2]}
 		V := []float64{f[3], f[4], f[5]}
-		tmpOrbit := NewOrbitFromRV(R, V, a.Orbit.Origin)
+		tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
 		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
 		Δv = PQW2ECI(a.Orbit.i, a.Orbit.ω, a.Orbit.Ω, Δv)
-		if a.includeJ2 {
-			r := norm(R)
-			z2 := math.Pow(R[2], 2)
-			acc := -(3 * tmpOrbit.Origin.μ * tmpOrbit.Origin.J2 * math.Pow(tmpOrbit.Origin.Radius, 2)) / (2 * math.Pow(r, 5))
-			Δv[0] += acc * R[0] * (1 - 5*z2/(r*r))
-			Δv[1] += acc * R[1] * (1 - 5*z2/(r*r))
-			Δv[2] += acc * R[2] * (3 - 5*z2/(r*r))
-		}
+
 		fDot[0] = f[3]
 		fDot[1] = f[4]
 		fDot[2] = f[5]
@@ -297,8 +296,12 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	default:
 		panic("propagator not implemented")
 	}
+	// Compute and add the perturbations (which are method dependent).
+	// XXX: Should I be using the temp orbit instead?
+	pert := a.perts.Perturb(*tmpOrbit, a.propMethod)
 
 	for i := 0; i < 7; i++ {
+		fDot[i] += pert[i]
 		if math.IsNaN(fDot[i]) {
 			r, v := a.Orbit.RV()
 			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ncur:%s\tΔv=%+v\nR=%+v\tV=%+v", i, a.CurrentDT, a.Orbit, Δv, r, v))

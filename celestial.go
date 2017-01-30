@@ -25,7 +25,24 @@ type CelestialObject struct {
 	incl   float64 // Ecliptic inclination
 	SOI    float64 // With respect to the Sun
 	J2     float64
+	J3     float64
+	J4     float64
 	PP     *planetposition.V87Planet
+}
+
+// J returns the perturbing J_n factor for the provided n.
+// Currently only J2 and J3 are supported.
+func (c CelestialObject) J(n uint8) float64 {
+	switch n {
+	case 2:
+		return c.J2
+	case 3:
+		return c.J3
+	case 4:
+		return c.J4
+	default:
+		return 0.0
+	}
 }
 
 // String implements the Stringer interface.
@@ -96,10 +113,10 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 /* Definitions */
 
 // Sun is our closest star.
-var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, 0.0, 0.0, -1, -1, nil}
+var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, 0.0, 0.0, -1, 0, 0, 0, nil}
 
 // Earth is home.
-var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23.4, 0.00005, 924645.0, 0.0010826269, nil}
+var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23.4, 0.00005, 924645.0, 1082.6269e-6, -2.5323e-6, -1.6204e-6, nil}
 
 // Mars is the vacation place.
-var Mars = CelestialObject{"Mars", 3397.2, 227939282.5616, 4.305 * 1e4, 25.19, 1.85, 576000, 0.001964, nil}
+var Mars = CelestialObject{"Mars", 3397.2, 227939282.5616, 4.305 * 1e4, 25.19, 1.85, 576000, 1964e-6, 36e-6, -18e-6, nil}

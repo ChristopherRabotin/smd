@@ -16,11 +16,11 @@ func TestCelestialObject(t *testing.T) {
 
 func TestPanics(t *testing.T) {
 	assertPanic(t, func() {
-		fake := CelestialObject{"Fake", -1, -1, -1, -1, -1, -1, -1, nil}
+		fake := CelestialObject{"Fake", -1, -1, -1, -1, -1, -1, -1, -1, -1, nil}
 		fake.HelioOrbit(time.Now())
 	})
 	assertPanic(t, func() {
-		venus := CelestialObject{"Venus", -1, -1, -1, -1, -1, -1, -1, nil}
+		venus := CelestialObject{"Venus", -1, -1, -1, -1, -1, -1, -1, -1, -1, nil}
 		venus.HelioOrbit(time.Now())
 	})
 }
@@ -63,7 +63,7 @@ func TestCosmoBodyChange(t *testing.T) {
 
 	sc.LogInfo()
 	conf := ExportConfig{Filename: "Rugg", AsCSV: true, Cosmo: true, Timestamp: false}
-	astro := NewMission(sc, initOrbit, start, end, GaussianVOP, false, conf)
+	astro := NewMission(sc, initOrbit, start, end, GaussianVOP, Perturbations{}, conf)
 	astro.Propagate()
 
 	// Delete the output files.
