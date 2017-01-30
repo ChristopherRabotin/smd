@@ -28,10 +28,15 @@ func (p Perturbations) Perturb(o Orbit, method Propagator) []float64 {
 		case GaussianVOP:
 			Ra := o.Origin.Radius / o.a
 			acc := math.Sqrt(o.Origin.μ/math.Pow(o.Origin.Radius, 3)) * math.Pow(Ra, 7/2.)
+			J2 := o.Origin.J(2)
+			var J4 float64
+			if p.Jn >= 4 {
+				J4 = o.Origin.J(4)
+			}
 			// d\bar{Ω}/dt
-			pert[3] += -acc * ((3/2.)*o.Origin.J(2) - (9/4.)*math.Pow(o.Origin.J(2), 2))
+			pert[3] += -acc * ((3/2.)*J2 - ((9/4.)*math.Pow(J2, 2)+(15/4.)*J4)*Ra)
 			// d\bar{ω}/dt
-			pert[4] += acc * (3 / 2.) * o.Origin.J(2)
+			pert[4] += acc * ((3/2.)*J2 - (15/4.)*J4*Ra)
 			// TODO: add effect on true anomaly.
 
 		case Cartesian:

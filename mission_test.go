@@ -117,7 +117,7 @@ func TestMissionGEO(t *testing.T) {
 	}
 }
 
-func TestMissionGEOJ2(t *testing.T) {
+func TestMissionGEOJ4(t *testing.T) {
 	// Define an approximate GEO orbit.
 	a0 := Earth.Radius + 35786
 	e0 := 0.0
@@ -137,7 +137,7 @@ func TestMissionGEOJ2(t *testing.T) {
 		start := time.Now()
 		geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
 		end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
-		astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, meth, Perturbations{Jn: 2}, ExportConfig{})
+		astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, meth, Perturbations{Jn: 4}, ExportConfig{})
 		// Start propagation.
 		astro.Propagate()
 		// Must find a way to test the stop channel. via a long propagation and a select probably.
