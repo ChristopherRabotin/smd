@@ -105,8 +105,9 @@ func TestMissionGEO(t *testing.T) {
 		}
 	}
 	// Check specific energy remained constant.
-	if ξ1 := oOsc.Energyξ(); !floats.EqualWithinAbs(ξ1, ξ0, 1e-16) {
-		t.Fatalf("specific energy changed during the orbit: %f -> %f", ξ0, ξ1)
+	// Cartesian propagator is not as precise when it comes to energy.
+	if ξ1 := oOsc.Energyξ(); !floats.EqualWithinAbs(ξ1, ξ0, 1e-12) {
+		t.Fatalf("specific energy changed during the orbit: %.12f -> %.12f", ξ0, ξ1)
 	}
 }
 
@@ -136,7 +137,9 @@ func TestMissionGEOJ2(t *testing.T) {
 	// Must find a way to test the stop channel. via a long propagation and a select probably.
 	// Check the orbital elements.
 	if ok, err := oOsc.StrictlyEquals(*oTgt); !ok {
-		t.Logf("\noOsc: %s\noTgt: %s", oOsc, oTgt)
+		R0, V0 := oOsc.RV()
+		Rt, Vt := oTgt.RV()
+		t.Logf("\noOsc: %+v\t%+v \noTgt: %+v\t%+v", R0, V0, Rt, Vt)
 		t.Fatalf("GEO 1.5 day propagation leads to incorrect orbit: %s", err)
 	}
 	// Check that all angular orbital elements are within 2 pi.

@@ -34,12 +34,9 @@ func (o Orbit) Tildeω() float64 {
 	return o.ω + o.Ω
 }
 
-// TrueLongλ returns the *approximate* true longitude.
+// TrueLongλ returns the *approximate* true longitude (cf. Vallado page 103).
+// NOTE: One should only need this for equatorial orbits.
 func (o Orbit) TrueLongλ() float64 {
-	if o.i > angleε {
-		fmt.Printf("[WARNING] true longitude λ is usually only used for equatorial orbits")
-	}
-	// This is an approximation as per Vallado page 103.
 	return o.ω + o.Ω + o.ν
 }
 
@@ -217,6 +214,7 @@ func (o Orbit) Equals(o1 Orbit) (bool, error) {
 	if !o.Origin.Equals(o1.Origin) {
 		return false, errors.New("different origin")
 	}
+
 	if !floats.EqualWithinAbs(o.a, o1.a, distanceε) {
 		return false, errors.New("semi major axis invalid")
 	}
@@ -232,6 +230,7 @@ func (o Orbit) Equals(o1 Orbit) (bool, error) {
 	if !floats.EqualWithinAbs(o.ω, o1.ω, angleε) {
 		return false, errors.New("argument of perigee invalid")
 	}
+
 	return true, nil
 }
 
@@ -336,6 +335,11 @@ func NewOrbitFromRV(R, V []float64, c CelestialObject) *Orbit {
 	if dot(R, V) < 0 {
 		ν = 2*math.Pi - ν
 	}
+	// Fix rounding errors.
+	i = math.Mod(i, 2*math.Pi)
+	Ω = math.Mod(Ω, 2*math.Pi)
+	ω = math.Mod(ω, 2*math.Pi)
+	ν = math.Mod(ν, 2*math.Pi)
 
 	orbit := Orbit{a, e, i, Ω, ω, ν, c, 0.0, R, V}
 	orbit.computeHash()

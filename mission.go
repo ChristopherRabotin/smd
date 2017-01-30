@@ -62,7 +62,7 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, includeJ2 bool, c
 		end = end.UTC()
 	}
 
-	a := &Mission{s, o, start, end, start, GaussianVOP, includeJ2, make(chan (bool), 1), histChan, false, false}
+	a := &Mission{s, o, start, end, start, Cartesian, includeJ2, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- MissionState{a.CurrentDT, *s, *o}
@@ -158,10 +158,18 @@ func (a *Mission) GetState() (s []float64) {
 		s[3] = a.Orbit.Ω
 		s[4] = a.Orbit.ω
 		s[5] = a.Orbit.ν
-		s[6] = a.Vehicle.FuelMass
+	case Cartesian:
+		R, V := a.Orbit.RV()
+		s[0] = R[0]
+		s[1] = R[1]
+		s[2] = R[2]
+		s[3] = V[0]
+		s[4] = V[1]
+		s[5] = V[2]
 	default:
 		panic("propagator not implemented")
 	}
+	s[6] = a.Vehicle.FuelMass
 	return
 }
 
@@ -186,6 +194,10 @@ func (a *Mission) SetState(t float64, s []float64) {
 		a.Orbit.Ω = s[3]
 		a.Orbit.ω = s[4]
 		a.Orbit.ν = s[5]
+	case Cartesian:
+		R := []float64{s[0], s[1], s[2]}
+		V := []float64{s[3], s[4], s[5]}
+		*a.Orbit = *NewOrbitFromRV(R, V, a.Orbit.Origin)
 	default:
 		panic("propagator not implemented")
 	}
@@ -221,6 +233,10 @@ func (a *Mission) SetState(t float64, s []float64) {
 
 // Func is the integration function using Gaussian VOP as per Ruggiero et al. 2011.
 func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
+	fDot = make([]float64, 7) // init return vector
+	// Let's add the thrust to increase the magnitude of the velocity.
+	// XXX: Should this Accelerate call be with tmpOrbit?!
+	Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
 	switch a.Propagator {
 	case GaussianVOP:
 		// *WARNING*: do not fix the angles here because that leads to errors during the RK4 computation.
@@ -233,10 +249,6 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		sini, cosi := math.Sincos(tmpOrbit.i)
 		sinν, cosν := math.Sincos(tmpOrbit.ν)
 		sinζ, cosζ := math.Sincos(tmpOrbit.ω + tmpOrbit.ν)
-		fDot = make([]float64, 7) // init return vector
-		// Let's add the thrust to increase the magnitude of the velocity.
-		// XXX: Should this Accelerate call be with tmpOrbit?!
-		Δv, usedFuel := a.Vehicle.Accelerate(a.CurrentDT, a.Orbit)
 		fR := Δv[0]
 		fS := Δv[1]
 		fW := Δv[2]
@@ -262,6 +274,25 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			fDot[4] += -(3 * math.Sqrt(tmpOrbit.Origin.μ/math.Pow(tmpOrbit.a, 3)) * tmpOrbit.Origin.J2 / 4) * math.Pow(tmpOrbit.Origin.Radius/p, 2) * (5*math.Pow(cosi, 2) - 1)
 			// TODO: add effect on true anomaly.
 		}
+	case Cartesian:
+		R := []float64{f[0], f[1], f[2]}
+		V := []float64{f[3], f[4], f[5]}
+		tmpOrbit := NewOrbitFromRV(R, V, a.Orbit.Origin)
+		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
+		if a.includeJ2 {
+			r := norm(R)
+			z2 := math.Pow(R[2], 2)
+			acc := -(3 * tmpOrbit.Origin.μ * tmpOrbit.Origin.J2 * math.Pow(tmpOrbit.Origin.Radius, 2)) / (2 * math.Pow(r, 5))
+			Δv[0] += acc * R[0] * (1 - 5*z2/(r*r))
+			Δv[1] += acc * R[1] * (1 - 5*z2/(r*r))
+			Δv[2] += acc * R[2] * (3 - 5*z2/(r*r))
+		}
+		fDot[0] = f[3]
+		fDot[1] = f[4]
+		fDot[2] = f[5]
+		fDot[3] = bodyAcc*f[0] + Δv[0]
+		fDot[4] = bodyAcc*f[1] + Δv[1]
+		fDot[5] = bodyAcc*f[2] + Δv[2]
 	default:
 		panic("propagator not implemented")
 	}
