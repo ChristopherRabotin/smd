@@ -298,7 +298,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	}
 	// Compute and add the perturbations (which are method dependent).
 	// XXX: Should I be using the temp orbit instead?
-	pert := a.perts.Perturb(*tmpOrbit, a.propMethod)
+	pert := a.perts.Perturb(*tmpOrbit, a.CurrentDT, a.propMethod)
 
 	for i := 0; i < 7; i++ {
 		fDot[i] += pert[i]

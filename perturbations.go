@@ -1,6 +1,10 @@
 package smd
 
-import "math"
+import (
+	"fmt"
+	"math"
+	"time"
+)
 
 // Perturbations defines how to handle perturbations during the propagation.
 type Perturbations struct {
@@ -17,7 +21,7 @@ func (p Perturbations) isEmpty() bool {
 // Perturb returns the perturbing state vector based on the kind of propagation being used.
 // For example, if using Cartesian, it'll return the impact on the R vector. If Gaussian, it'll
 // return the impact on Ω, ω, ν (later for ν...).
-func (p Perturbations) Perturb(o Orbit, method Propagator) []float64 {
+func (p Perturbations) Perturb(o Orbit, dt time.Time, method Propagator) []float64 {
 	pert := make([]float64, 7)
 	if p.isEmpty() {
 		return pert
@@ -50,6 +54,35 @@ func (p Perturbations) Perturb(o Orbit, method Propagator) []float64 {
 
 		default:
 			panic("unsupported propagation")
+		}
+	}
+	if p.PerturbingBody != nil && !p.PerturbingBody.Equals(o.Origin) {
+		switch method {
+		case Cartesian:
+			mainR := o.Origin.HelioOrbit(dt).R()
+			pertR := p.PerturbingBody.HelioOrbit(dt).R()
+			if p.PerturbingBody.Equals(Sun) {
+				pertR = []float64{0, 0, 0}
+			}
+			relPertR := make([]float64, 3) // R between main body and pertubing body
+			scPert := make([]float64, 3)   // r_{i/sc} of spacecraft to pertubing body.
+			oppose := 1.
+			if norm(mainR) > norm(pertR) {
+				oppose = -1
+			}
+			scR := o.R()
+			for i := 0; i < 3; i++ {
+				relPertR[i] = oppose * (pertR[i] - mainR[i])
+				scPert[i] = relPertR[i] - scR[i]
+			}
+			relPertRNorm3 := math.Pow(norm(relPertR), 3)
+			scPertNorm3 := math.Pow(norm(scPert), 3)
+			for i := 0; i < 3; i++ {
+				pert[i] += p.PerturbingBody.μ * (scPert[i]/scPertNorm3 - relPertR[i]/relPertRNorm3)
+			}
+
+		default:
+			panic(fmt.Errorf("third body perturbations not supported with %s propagator", method))
 		}
 	}
 	if p.Arbitrary != nil {
