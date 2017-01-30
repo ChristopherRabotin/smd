@@ -341,6 +341,9 @@ func NewOrbitFromRV(R, V []float64, c CelestialObject) *Orbit {
 	}
 	i := math.Acos(hVec[2] / norm(hVec))
 	ω := math.Acos(dot(n, eVec) / (norm(n) * e))
+	if math.IsNaN(ω) {
+		ω = 0
+	}
 	if eVec[2] < 0 {
 		ω = 2*math.Pi - ω
 	}

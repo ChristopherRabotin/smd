@@ -63,7 +63,7 @@ func TestCosmoBodyChange(t *testing.T) {
 
 	sc.LogInfo()
 	conf := ExportConfig{Filename: "Rugg", AsCSV: true, Cosmo: true, Timestamp: false}
-	astro := NewMission(sc, initOrbit, start, end, false, conf)
+	astro := NewMission(sc, initOrbit, start, end, GaussianVOP, false, conf)
 	astro.Propagate()
 
 	// Delete the output files.

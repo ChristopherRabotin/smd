@@ -41,7 +41,7 @@ type Mission struct {
 }
 
 // NewMission returns a new Mission instance from the position and velocity vectors.
-func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, includeJ2 bool, conf ExportConfig) *Mission {
+func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, method Propagator, includeJ2 bool, conf ExportConfig) *Mission {
 	// If no filepath is provided, then no output will be written.
 	var histChan chan (MissionState)
 	if !conf.IsUseless() {
@@ -62,7 +62,7 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, includeJ2 bool, c
 		end = end.UTC()
 	}
 
-	a := &Mission{s, o, start, end, start, Cartesian, includeJ2, make(chan (bool), 1), histChan, false, false}
+	a := &Mission{s, o, start, end, start, method, includeJ2, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- MissionState{a.CurrentDT, *s, *o}
@@ -279,7 +279,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		V := []float64{f[3], f[4], f[5]}
 		tmpOrbit := NewOrbitFromRV(R, V, a.Orbit.Origin)
 		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
-		Δv = PQW2ECI(-tmpOrbit.i, -tmpOrbit.ω, -tmpOrbit.Ω, Δv)
+		Δv = PQW2ECI(a.Orbit.i, a.Orbit.ω, a.Orbit.Ω, Δv)
 		if a.includeJ2 {
 			r := norm(R)
 			z2 := math.Pow(R[2], 2)
