@@ -279,6 +279,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		V := []float64{f[3], f[4], f[5]}
 		tmpOrbit := NewOrbitFromRV(R, V, a.Orbit.Origin)
 		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
+		Δv = PQW2ECI(-tmpOrbit.i, -tmpOrbit.ω, -tmpOrbit.Ω, Δv)
 		if a.includeJ2 {
 			r := norm(R)
 			z2 := math.Pow(R[2], 2)
@@ -299,7 +300,8 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 
 	for i := 0; i < 7; i++ {
 		if math.IsNaN(fDot[i]) {
-			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ncur:%s\n", i, a.CurrentDT, a.Orbit))
+			r, v := a.Orbit.RV()
+			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ncur:%s\tΔv=%+v\nR=%+v\tV=%+v", i, a.CurrentDT, a.Orbit, Δv, r, v))
 		}
 	}
 	return
