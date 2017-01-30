@@ -29,10 +29,10 @@ func TestHelio(t *testing.T) {
 	dt := time.Date(2017, 03, 20, 14, 45, 0, 0, time.UTC)
 	h1 := Earth.HelioOrbit(dt)
 	h2 := Earth.HelioOrbit(dt.Add(time.Duration(1) * time.Minute))
-	if math.Abs(norm(h1.GetR())-norm(h2.GetR())) > 1e2 {
+	if math.Abs(norm(h1.R())-norm(h2.R())) > 1e2 {
 		t.Fatal("radius changed by more than 100 km in a minute")
 	}
-	if math.Abs(norm(h1.GetV())-norm(h2.GetV())) > 1e-4 {
+	if math.Abs(norm(h1.V())-norm(h2.V())) > 1e-4 {
 		t.Fatal("velocity changed by more than 1 m/s in a minute")
 	}
 }
@@ -63,7 +63,7 @@ func TestCosmoBodyChange(t *testing.T) {
 
 	sc.LogInfo()
 	conf := ExportConfig{Filename: "Rugg", AsCSV: true, Cosmo: true, Timestamp: false}
-	astro := NewMission(sc, initOrbit, start, end, false, conf)
+	astro := NewMission(sc, initOrbit, start, end, GaussianVOP, false, conf)
 	astro.Propagate()
 
 	// Delete the output files.

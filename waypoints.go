@@ -115,7 +115,7 @@ func (wp *ReachDistance) Cleared() bool {
 
 // ThrustDirection implements the Waypoint interface.
 func (wp *ReachDistance) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if o.GetRNorm() >= wp.distance {
+	if o.RNorm() >= wp.distance {
 		wp.cleared = true
 		return Coast{}, true
 	}
@@ -152,7 +152,7 @@ func (wp *ReachVelocity) Cleared() bool {
 
 // ThrustDirection implements the Waypoint interface.
 func (wp *ReachVelocity) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	velocity := norm(o.GetV())
+	velocity := norm(o.V())
 	if math.Abs(velocity-wp.velocity) < wp.epsilon {
 		wp.cleared = true
 		return Coast{}, true
@@ -218,7 +218,7 @@ func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 
 // NewOrbitTarget defines a new orbit target.
 func NewOrbitTarget(target Orbit, action *WaypointAction, meth ControlLawType, laws ...ControlLaw) *OrbitTarget {
-	if target.GetPeriapsis() < target.Origin.Radius || target.GetApoapsis() < target.Origin.Radius {
+	if target.Periapsis() < target.Origin.Radius || target.Apoapsis() < target.Origin.Radius {
 		fmt.Printf("[WARNING] Target orbit on collision course with %s\n", target.Origin)
 	}
 	return &OrbitTarget{target, NewOptimalΔOrbit(target, meth, laws), action, false}
@@ -258,7 +258,7 @@ func (wp *HohmannTransfer) ThrustDirection(o Orbit, dt time.Time) (ThrustControl
 		// Update the upcoming status of Hohmann
 		wp.ctrl.status = hohmmanInitΔv
 		// Initialize the Δv with the current knowledge.
-		wp.ctrl.ΔvBurnInit = o.GetVNorm()
+		wp.ctrl.ΔvBurnInit = o.VNorm()
 		// Compute the arrivial DT
 		wp.arrivalDT = dt.Add(wp.ctrl.tof)
 		break
@@ -269,7 +269,7 @@ func (wp *HohmannTransfer) ThrustDirection(o Orbit, dt time.Time) (ThrustControl
 			// Next step will be the arrivial DT.
 			wp.ctrl.status = hohmmanFinalΔv
 			// Initialize the Δv with the current knowledge.
-			wp.ctrl.ΔvBurnInit = o.GetVNorm()
+			wp.ctrl.ΔvBurnInit = o.VNorm()
 		}
 	case hohmmanFinalΔv:
 		// Nothing to do.
@@ -283,7 +283,7 @@ func (wp *HohmannTransfer) ThrustDirection(o Orbit, dt time.Time) (ThrustControl
 
 // NewHohmannTransfer defines a new Hohmann transfer
 func NewHohmannTransfer(target Orbit, action *WaypointAction) *HohmannTransfer {
-	if target.GetPeriapsis() < target.Origin.Radius || target.GetApoapsis() < target.Origin.Radius {
+	if target.Periapsis() < target.Origin.Radius || target.Apoapsis() < target.Origin.Radius {
 		fmt.Printf("[WARNING] Target orbit on collision course with %s\n", target.Origin)
 	}
 	epoch := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)

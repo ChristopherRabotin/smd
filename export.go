@@ -294,7 +294,7 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 								color[i]++
 							}
 						}
-						asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.DT), Position: state.Orbit.GetR(), Velocity: state.Orbit.GetV()}
+						asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.DT), Position: state.Orbit.R(), Velocity: state.Orbit.V()}
 						if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
 							panic(err)
 						}
@@ -315,7 +315,7 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 			}
 			prevStatePtr = &state
 			if conf.Cosmo {
-				asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.DT), Position: state.Orbit.GetR(), Velocity: state.Orbit.GetV()}
+				asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.DT), Position: state.Orbit.R(), Velocity: state.Orbit.V()}
 				if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
 					panic(err)
 				}

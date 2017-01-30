@@ -13,33 +13,61 @@ func TestOrbitRV2COE(t *testing.T) {
 	V := []float64{4.901327, 5.533756, -1.976341}
 	o := NewOrbitFromRV(R, V, Earth)
 	oT := NewOrbitFromOE(36127.343, 0.832853, 87.869126, 227.898260, 53.384931, 92.335157, Earth)
+	t.Logf("ot=%s", oT)
 	if ok, err := o.StrictlyEquals(*oT); !ok {
 		t.Logf("\no0: %s\no1: %s", o, oT)
 		t.Fatalf("orbits differ: %s", err)
 	}
-	if ok, err := anglesEqual(Deg2rad(281.283201), o.GetTildeω()); !ok {
-		t.Fatalf("longitude of periapsis invalid: %s (%f)", err, o.GetTildeω())
-	}
-	if ok, err := anglesEqual(Deg2rad(145.720695), o.GetU()); !ok {
-		t.Fatalf("argument of latitude invalid: %s (%f)", err, o.GetU())
-	}
+
+	a, e, i, Ω, ω, ν, λ, tildeω, u := oT.Elements()
+	i = Rad2deg(i)
+	Ω = Rad2deg(Ω)
+	ω = Rad2deg(ω)
+	ν = Rad2deg(ν)
+	λ = Rad2deg(λ)
+	u = Rad2deg(u)
+	tildeω = Rad2deg(tildeω)
+
 	valladoε := 1e-6
-	if !floats.EqualWithinAbs(o.Getξ(), -5.516604, valladoε) {
-		t.Fatalf("incorrect energy ξ=%f", o.Getξ())
+	if !floats.EqualWithinAbs(a, 36127.343, 1e-3) {
+		t.Fatalf("incorrect semi major axis=%f", a)
 	}
-	if !floats.EqualWithinAbs(norm(o.GetR()), o.GetRNorm(), valladoε) {
-		t.Fatalf("incorrect r norm |R|=%f\tr=%f", norm(o.GetR()), o.GetRNorm())
+	if !floats.EqualWithinAbs(e, 0.832853, valladoε) {
+		t.Fatalf("incorrect eccentricity=%f", e)
 	}
-	if !floats.EqualWithinAbs(norm(o.GetV()), o.GetVNorm(), valladoε) {
-		t.Fatalf("incorrect v norm |V|=%f\tv=%f", norm(o.GetV()), o.GetVNorm())
+	if ok, err := anglesEqual(87.869126, i); !ok {
+		t.Fatalf("inclination invalid: %s (%f)", err, i)
 	}
-	if !floats.EqualWithinAbs(norm(o.GetH()), o.GetHNorm(), valladoε) {
-		t.Fatalf("incorrect h norm |h|=%f\th=%f", norm(o.GetH()), o.GetHNorm())
+	if ok, err := anglesEqual(227.898260, Ω); !ok {
+		t.Fatalf("RAAN invalid: %s (%f)", err, Ω)
 	}
-	assertPanic(t, func() {
-		// We're far from a circular equatorial orbit, so this call should panic
-		o.Getλtrue()
-	})
+	if ok, err := anglesEqual(53.384931, ω); !ok {
+		t.Fatalf("argument of periapsis invalid: %s (%f)", err, ω)
+	}
+	if ok, err := anglesEqual(92.335157, ν); !ok {
+		t.Fatalf("true anomaly invalid: %s (%f)", err, ν)
+	}
+	if ok, err := anglesEqual(281.283201, tildeω); !ok {
+		t.Fatalf("longitude of periapsis invalid: %s (%f)", err, tildeω)
+	}
+	if ok, err := anglesEqual(145.720088, u); !ok {
+		t.Fatalf("argument of latitude invalid: %s (%f)", err, u)
+	}
+	if ok, err := anglesEqual(13.618348, λ); !ok {
+		t.Fatalf("true longitude invalid: %s (%f)", err, λ)
+	}
+	if !floats.EqualWithinAbs(o.Energyξ(), -5.516604, valladoε) {
+		t.Fatalf("incorrect energy ξ=%f", o.Energyξ())
+	}
+	if !floats.EqualWithinAbs(norm(o.R()), o.RNorm(), valladoε) {
+		t.Fatalf("incorrect r norm |R|=%f\tr=%f", norm(o.R()), o.RNorm())
+	}
+	if !floats.EqualWithinAbs(norm(o.V()), o.VNorm(), valladoε) {
+		t.Fatalf("incorrect v norm |V|=%f\tv=%f", norm(o.V()), o.VNorm())
+	}
+	if !floats.EqualWithinAbs(norm(o.H()), o.HNorm(), valladoε) {
+		t.Fatalf("incorrect h norm |h|=%f\th=%f", norm(o.H()), o.HNorm())
+	}
 }
 
 func TestOrbitCOE2RV(t *testing.T) {
@@ -53,10 +81,10 @@ func TestOrbitCOE2RV(t *testing.T) {
 	V := []float64{4.902276, 5.533124, -1.975709}
 
 	o0 := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
-	if !vectorsEqual(R, o0.GetR()) {
-		t.Fatalf("R vector incorrectly computed:\n%+v\n%+v", R, o0.GetR())
+	if !vectorsEqual(R, o0.R()) {
+		t.Fatalf("R vector incorrectly computed:\n%+v\n%+v", R, o0.R())
 	}
-	if !vectorsEqual(V, o0.GetV()) {
+	if !vectorsEqual(V, o0.V()) {
 		t.Fatal("V vector incorrectly computed")
 	}
 
@@ -87,15 +115,15 @@ func TestOrbitRefChange(t *testing.T) {
 		time.Date(2016, 04, 14, 20, 50, 23, 0, time.UTC),
 		time.Date(2016, 05, 12, 18, 0, 15, 0, time.UTC)} {
 
-		R := o.GetR()
-		V := o.GetV()
+		R := o.R()
+		V := o.V()
 
 		var earthR1, earthV1, earthR2, earthV2, helioR, helioV [3]float64
 		copy(earthR1[:], R)
 		copy(earthV1[:], V)
 		o.ToXCentric(Sun, dt)
-		R = o.GetR()
-		V = o.GetV()
+		R = o.R()
+		V = o.V()
 		copy(helioR[:], R)
 		copy(helioV[:], V)
 		for i := 0; i < 3; i++ {
@@ -114,8 +142,8 @@ func TestOrbitRefChange(t *testing.T) {
 		}
 		// Revert back to Earth centric
 		o.ToXCentric(Earth, dt)
-		R = o.GetR()
-		V = o.GetV()
+		R = o.R()
+		V = o.V()
 		copy(earthR2[:], R)
 		copy(earthV2[:], V)
 		if vectorsEqual(helioR[:], earthR2[:]) {
@@ -177,7 +205,7 @@ func TestOrbitΦfpa(t *testing.T) {
 				// Let's force this to zero because NewOrbitFromOE does an approximation.
 				o.e = 0
 			}
-			Φ := math.Atan2(o.GetSinΦfpa(), o.GetCosΦfpa())
+			Φ := math.Atan2(o.SinΦfpa(), o.CosΦfpa())
 			exp := (ν * e) / 2
 			if exp < 0 {
 				exp += 360
@@ -191,7 +219,7 @@ func TestOrbitΦfpa(t *testing.T) {
 
 func TestOrbitEccentricAnomaly(t *testing.T) {
 	o := NewOrbitFromOE(9567205.5, 0.999, 1, 1, 1, 60, Earth)
-	sinE, cosE := o.GetSinCosE()
+	sinE, cosE := o.SinCosE()
 	E0 := math.Acos(cosE)
 	E1 := math.Asin(sinE)
 	E2 := math.Atan2(sinE, cosE)
@@ -200,7 +228,7 @@ func TestOrbitEccentricAnomaly(t *testing.T) {
 	}
 	for ν := 0.0; ν < 360.0; ν += 0.1 {
 		o1 := NewOrbitFromOE(1e5, 0.2, 1, 1, 1, 60, Earth)
-		sinE, cosE = o1.GetSinCosE()
+		sinE, cosE = o1.SinCosE()
 		sinν := sinE * math.Sqrt(1-math.Pow(o1.e, 2)) / (1 - o1.e*cosE)
 		cosν := (cosE - o1.e) / (1 - o1.e*cosE)
 		ν0 := math.Acos(cosν)

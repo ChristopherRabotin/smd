@@ -230,7 +230,7 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 		break
 	case OptiΔeCL:
 		ctrl = func(o Orbit) []float64 {
-			_, cosE := o.GetSinCosE()
+			_, cosE := o.SinCosE()
 			sinν, cosν := math.Sincos(o.ν)
 			return unitΔvFromAngles(math.Atan2(sinν, cosν+cosE), 0.0)
 		}
@@ -256,9 +256,9 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 			νOptiβ := math.Acos(-o.e*math.Cos(o.ω)) - o.ω
 			if math.Abs(o.ν-νOptiα) < math.Abs(o.ν-νOptiβ) {
 				// The true anomaly is closer to the optimal in plane thrust, so let's do an in-plane thrust.
-				p := o.GetSemiParameter()
+				p := o.SemiParameter()
 				sinν, cosν := math.Sincos(o.ν)
-				return unitΔvFromAngles(math.Atan2(-p*cosν, (p+o.GetRNorm())*sinν), 0.0)
+				return unitΔvFromAngles(math.Atan2(-p*cosν, (p+o.RNorm())*sinν), 0.0)
 			}
 			return unitΔvFromAngles(0.0, sign(-math.Sin(o.ω+o.ν))*math.Cos(o.i)*math.Pi/2)
 		}
@@ -385,8 +385,8 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		// *every here and there* as needed that to fix it.
 		for _, ctrl := range cl.controls {
 			var weight, δO float64
-			p := o.GetSemiParameter()
-			h := o.GetHNorm()
+			p := o.SemiParameter()
+			h := o.HNorm()
 			sinω, cosω := math.Sincos(o.ω)
 			switch ctrl.Type() {
 			case OptiΔaCL:
@@ -459,10 +459,10 @@ func (cl *HohmannΔv) Precompute(o Orbit) {
 	if !floats.EqualWithinAbs(o.ν, 0, angleε) && !floats.EqualWithinAbs(o.ν, math.Pi, angleε) {
 		fmt.Printf("[WARNING] Hohmann transfer started neither at apoapsis nor at periapasis (inefficient)\n")
 	}
-	rInit := o.GetRNorm()
-	rFinal := cl.target.GetRNorm()
-	vInit := o.GetVNorm()
-	vFinal := cl.target.GetVNorm()
+	rInit := o.RNorm()
+	rFinal := cl.target.RNorm()
+	vInit := o.VNorm()
+	vFinal := cl.target.VNorm()
 	aTransfer := 0.5 * (rInit + rFinal)
 	vDepature := math.Sqrt((2 * o.Origin.μ / rInit) - (o.Origin.μ / aTransfer))
 	vArrival := math.Sqrt((2 * o.Origin.μ / rFinal) - (o.Origin.μ / aTransfer))
@@ -482,14 +482,14 @@ func (cl *HohmannΔv) Control(o Orbit) []float64 {
 	case hohmmanCompleted:
 		return []float64{0, 0, 0}
 	case hohmmanInitΔv:
-		if floats.EqualWithinAbs(cl.ΔvBurnInit-o.GetVNorm(), cl.ΔvInit, velocityε) {
+		if floats.EqualWithinAbs(cl.ΔvBurnInit-o.VNorm(), cl.ΔvInit, velocityε) {
 			// We have applied enough Δv, so let's stop burning.
 			cl.status = hohmmanCoast
 			return []float64{0, 0, 0}
 		}
 		return []float64{sign(cl.ΔvInit), 0, 0}
 	case hohmmanFinalΔv:
-		if floats.EqualWithinAbs(cl.ΔvBurnInit-o.GetVNorm(), cl.ΔvFinal, velocityε) {
+		if floats.EqualWithinAbs(cl.ΔvBurnInit-o.VNorm(), cl.ΔvFinal, velocityε) {
 			// We have applied enough Δv, so let's stop burning.
 			cl.status = hohmmanCompleted
 			cl.ΔvBurnInit = 0 // Reset to zero after burn is completed.
