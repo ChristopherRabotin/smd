@@ -584,3 +584,9 @@ func TestPetropoulosCaseE(t *testing.T) {
 		}
 	}
 }
+
+func TestPropagators(t *testing.T) {
+	for _, meth := range []Propagator{GaussianVOP, Cartesian} {
+		t.Logf("[OK] %s", meth)
+	}
+}

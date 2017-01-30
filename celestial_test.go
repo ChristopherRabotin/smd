@@ -11,6 +11,20 @@ import (
 func TestCelestialObject(t *testing.T) {
 	for _, object := range []CelestialObject{Sun, Earth, Mars} {
 		object.HelioOrbit(time.Now().UTC())
+		var i uint8
+		for i = 1; i < 6; i++ {
+			if i == 2 && object.J(i) != object.J2 {
+				t.Fatalf("J2 not returned for %s", object)
+			} else if i == 3 && object.J(i) != object.J3 {
+				t.Fatalf("J3 not returned for %s", object)
+			} else if i == 4 && object.J(i) != object.J4 {
+				t.Fatalf("J4 not returned for %s", object)
+			} else if (i < 2 || i > 4) && object.J(i) != 0 {
+				t.Fatalf("J(%d) = %f != 0 for %s", i, object.J(i), object)
+			} else {
+				t.Logf("[OK] J(%d) %s", i, object)
+			}
+		}
 	}
 }
 
