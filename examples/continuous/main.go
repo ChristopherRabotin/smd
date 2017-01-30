@@ -28,7 +28,7 @@ func main() {
 	endM := end.Add(time.Duration(4 * 30.5 * 24))
 	scMars := SpacecraftFromMars("IM")
 	scMars.LogInfo()
-	astroM := smd.NewMission(scMars, InitialMarsOrbit(), end, endM, smd.GaussianVOP, false, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
+	astroM := smd.NewMission(scMars, InitialMarsOrbit(), end, endM, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
 	astroM.Propagate()
 
 	target := astroM.Orbit
@@ -36,7 +36,7 @@ func main() {
 	//	fmt.Printf("target orbit: %s\n", target)
 	sc := SpacecraftFromEarth("IE", *target)
 	sc.LogInfo()
-	astro := smd.NewMission(sc, InitialEarthOrbit(), start, end, smd.GaussianVOP, false, smd.ExportConfig{Filename: "IE", AsCSV: true, Cosmo: true, Timestamp: false})
+	astro := smd.NewMission(sc, InitialEarthOrbit(), start, end, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IE", AsCSV: true, Cosmo: true, Timestamp: false})
 	astro.Propagate()
 
 }

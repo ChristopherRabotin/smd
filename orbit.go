@@ -213,7 +213,7 @@ func (o Orbit) String() string {
 		// Equatorial
 		return fmt.Sprintf("a=%.1f e=%.4f i=%.3f Ω=%.3f λ=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.Ω), Rad2deg(o.TrueLongλ()))
 	}
-	return fmt.Sprintf("a=%.1f e=%.4f i=%.3f Ω=%.3f ω=%.3f ν=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.Ω), Rad2deg(o.ω), Rad2deg(o.ν))
+	return fmt.Sprintf("a=%.1f e=%.4f i=%.3f Ω=%.3f ω=%.3f ν=%.3f λ=%.3f u=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.Ω), Rad2deg(o.ω), Rad2deg(o.ν), Rad2deg(o.TrueLongλ()), Rad2deg(o.ArgLatitudeU()))
 }
 
 // Equals returns whether two orbits are identical with free true anomaly.
