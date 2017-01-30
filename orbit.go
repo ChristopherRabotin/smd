@@ -31,18 +31,18 @@ func (o Orbit) Energyξ() float64 {
 
 // Tildeω returns the longitude of periapsis.
 func (o Orbit) Tildeω() float64 {
-	return o.ω + o.Ω
+	return math.Mod(o.ω+o.Ω, 2*math.Pi)
 }
 
 // TrueLongλ returns the *approximate* true longitude (cf. Vallado page 103).
 // NOTE: One should only need this for equatorial orbits.
 func (o Orbit) TrueLongλ() float64 {
-	return o.ω + o.Ω + o.ν
+	return math.Mod(o.ω+o.Ω+o.ν, 2*math.Pi)
 }
 
 // ArgLatitudeU returns the argument of latitude.
 func (o Orbit) ArgLatitudeU() float64 {
-	return o.ν + o.ω
+	return math.Mod(o.ν+o.ω, 2*math.Pi)
 }
 
 // H returns the orbital angular momentum vector.
@@ -205,6 +205,14 @@ func (o Orbit) hashValid() bool {
 
 // String implements the stringer interface (hence the value receiver)
 func (o Orbit) String() string {
+	if o.e < eccentricityε {
+		// Circular orbit
+		if o.i > angleε {
+			return fmt.Sprintf("a=%.1f e=%.4f i=%.3f Ω=%.3f u=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.Ω), Rad2deg(o.ArgLatitudeU()))
+		}
+		// Equatorial
+		return fmt.Sprintf("a=%.1f e=%.4f i=%.3f Ω=%.3f λ=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.Ω), Rad2deg(o.TrueLongλ()))
+	}
 	return fmt.Sprintf("a=%.1f e=%.4f i=%.3f Ω=%.3f ω=%.3f ν=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.Ω), Rad2deg(o.ω), Rad2deg(o.ν))
 }
 
@@ -227,7 +235,20 @@ func (o Orbit) Equals(o1 Orbit) (bool, error) {
 	if !floats.EqualWithinAbs(o.Ω, o1.Ω, angleε) {
 		return false, errors.New("RAAN invalid")
 	}
-	if !floats.EqualWithinAbs(o.ω, o1.ω, angleε) {
+	if o.e < eccentricityε {
+		// Circular orbit
+		if o.i > angleε {
+			// Inclined
+			if !floats.EqualWithinAbs(o.ArgLatitudeU(), o1.ArgLatitudeU(), angleε) {
+				return false, errors.New("argument of latitude invalid")
+			}
+		} else {
+			// Equatorial
+			if !floats.EqualWithinAbs(o.TrueLongλ(), o1.TrueLongλ(), angleε) {
+				return false, errors.New("true longitude invalid")
+			}
+		}
+	} else if !floats.EqualWithinAbs(o.ω, o1.ω, angleε) {
 		return false, errors.New("argument of perigee invalid")
 	}
 
@@ -236,7 +257,8 @@ func (o Orbit) Equals(o1 Orbit) (bool, error) {
 
 // StrictlyEquals returns whether two orbits are identical.
 func (o Orbit) StrictlyEquals(o1 Orbit) (bool, error) {
-	if !floats.EqualWithinAbs(o.ν, o1.ν, angleε) {
+	// Only check for non circular orbits
+	if o.e > eccentricityε && !floats.EqualWithinAbs(o.ν, o1.ν, angleε) {
 		return false, errors.New("true anomaly invalid")
 	}
 	return o.Equals(o1)
