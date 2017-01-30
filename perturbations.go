@@ -26,13 +26,12 @@ func (p Perturbations) Perturb(o Orbit, method Propagator) []float64 {
 		// Ignore any Jn about the Sun
 		switch method {
 		case GaussianVOP:
-			// TODO: Switch to the more complete description.
-			sp := o.SemiParameter()
-			cosi := math.Cos(o.i)
+			Ra := o.Origin.Radius / o.a
+			acc := math.Sqrt(o.Origin.μ/math.Pow(o.Origin.Radius, 3)) * math.Pow(Ra, 7/2.)
 			// d\bar{Ω}/dt
-			pert[3] += -(3 * math.Sqrt(o.Origin.μ/math.Pow(o.a, 3)) * o.Origin.J2 / 2) * math.Pow(o.Origin.Radius/sp, 2) * cosi
+			pert[3] += -acc * ((3/2.)*o.Origin.J(2) - (9/4.)*math.Pow(o.Origin.J(2), 2))
 			// d\bar{ω}/dt
-			pert[4] += -(3 * math.Sqrt(o.Origin.μ/math.Pow(o.a, 3)) * o.Origin.J2 / 4) * math.Pow(o.Origin.Radius/sp, 2) * (5*math.Pow(cosi, 2) - 1)
+			pert[4] += acc * (3 / 2.) * o.Origin.J(2)
 			// TODO: add effect on true anomaly.
 
 		case Cartesian:

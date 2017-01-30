@@ -132,10 +132,6 @@ func TestMissionGEOJ2(t *testing.T) {
 		finalν = 180.000
 	}
 	for _, meth := range []Propagator{Cartesian, GaussianVOP} {
-		oTgt := NewOrbitFromOE(a0, e0, i0, 359.9934, 359.9867, finalν, Earth)
-		oTgt.e = 0.0
-		oTgt.i = 0.0
-		oTgt.ν = Deg2rad(180.025)
 		oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
 		// Define propagation parameters.
 		start := time.Now()
@@ -146,7 +142,13 @@ func TestMissionGEOJ2(t *testing.T) {
 		astro.Propagate()
 		// Must find a way to test the stop channel. via a long propagation and a select probably.
 		// Check the orbital elements.
-		if ok, err := oOsc.StrictlyEquals(*oTgt); !ok {
+		oTgt := *NewOrbitFromOE(a0, e0, i0, 359.9934, 0.007, finalν, Earth)
+		oTgt.e = 0
+		oTgt.i = 0
+		if meth == Cartesian {
+			oTgt.ν = Deg2rad(180.005)
+		}
+		if ok, err := oOsc.StrictlyEquals(oTgt); !ok {
 			R0, V0 := oOsc.RV()
 			Rt, Vt := oTgt.RV()
 			t.Logf("\noOsc: %+v\t%+v \noTgt: %+v\t%+v", R0, V0, Rt, Vt)
