@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
@@ -18,6 +19,7 @@ func main() {
 	dt := time.Now().UTC()
 	osc := smd.NewOrbitFromOE(7000, 0.001, 30, 80, 40, 0, smd.Earth)
 	R, V := osc.RV()
+	fmt.Printf("R=%+v km\tV=%+v km/s\n", R, V)
 	pert := smd.Perturbations{Jn: 2}
 	mis := smd.NewMission(smd.NewEmptySC("hw10", 0), osc, dt, dt.Add(24*time.Hour), smd.Cartesian, pert, smd.ExportConfig{Filename: "hw1.0", Cosmo: true, AsCSV: true, Timestamp: false})
 	mis.Propagate()
@@ -25,6 +27,7 @@ func main() {
 	// Second with initial error δx.
 	R[0]++
 	V[1] += 10e-3
+	fmt.Printf("R=%+v km\tV=%+v km/s\n", R, V)
 	osc = smd.NewOrbitFromRV(R, V, smd.Earth)
 	mis = smd.NewMission(smd.NewEmptySC("hw11", 0), osc, dt, dt.Add(24*time.Hour), smd.Cartesian, pert, smd.ExportConfig{Filename: "hw1.1", Cosmo: true, AsCSV: true, Timestamp: false})
 	mis.Propagate()
