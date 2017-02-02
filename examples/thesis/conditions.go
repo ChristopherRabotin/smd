@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
@@ -20,6 +21,7 @@ func InitialEarthOrbit() *smd.Orbit {
 
 // FromEarthWaypoints returns the waypoints.
 func FromEarthWaypoints(target smd.Orbit) []smd.Waypoint {
+	fmt.Printf("[TARGET] %s\n", target)
 	ref2Mars := &smd.WaypointAction{Type: smd.REFMARS, Cargo: nil}
 	return []smd.Waypoint{
 		// Leave Earth

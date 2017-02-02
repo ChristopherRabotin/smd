@@ -30,7 +30,8 @@ func main() {
 	scMars.LogInfo()
 	astroM := smd.NewMission(scMars, InitialMarsOrbit(), end, endM, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
 	astroM.Propagate()
-
+	// Convert the position to heliocentric.
+	astroM.Orbit.ToXCentric(smd.Sun, astroM.CurrentDT)
 	target := astroM.Orbit
 	//	target := smd.NewOrbitFromOE(226090298.679, 0.088, 26.195, 3.516, 326.494, 278.358, smd.Sun)
 	//	fmt.Printf("target orbit: %s\n", target)
