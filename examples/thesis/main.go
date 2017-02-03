@@ -18,27 +18,44 @@ func main() {
 	CheckEnvVars()
 	runtime.GOMAXPROCS(3)
 
-	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
-	//end := start.Add(time.Duration(-1) * time.Nanosecond)  // Propagate until waypoint reached.
-	end := time.Date(2018, 07, 13, 0, 0, 0, 0, time.UTC)
+	//start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
+	start := time.Date(2016, 1, 10, 0, 0, 0, 0, time.UTC) // ExoMars launch date.
+	estArrival := time.Date(2017, 7, 24, 0, 0, 0, 0, time.UTC)
+
+	/*
+		Algo for TOF targeting:
+		1. Propagate from random date
+		2. Check when hit SOI
+		3. Compute duration needed to reach that point
+		4. From mean anomaly, compute the time needed for Mars to reach that point (time = DT)
+		4a. This leads to knowing how much in advance we are.
+		5. Repeat full propagation (including Mars departure) with that DT difference.
+	*/
 
 	/* Let's propagate out of Mars at a guessed date of 7 months after launch date from Earth.
 	Note that we only output the CSV because we don't need to visualize this.
 	*/
-	endM := end.Add(time.Duration(4 * 30.5 * 24))
+	// *WITH THE CURRENT DATE AND TIME*, it takes one month and five days to leave the SOI. So let's propagate only for that time.
+	marsEndDT := estArrival.Add(time.Duration(31*24) * time.Hour)
 	scMars := SpacecraftFromMars("IM")
 	scMars.LogInfo()
-	astroM := smd.NewMission(scMars, InitialMarsOrbit(), end, endM, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
+	astroM := smd.NewMission(scMars, InitialMarsOrbit(), estArrival, marsEndDT, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
 	astroM.Propagate()
 	// Convert the position to heliocentric.
 	astroM.Orbit.ToXCentric(smd.Sun, astroM.CurrentDT)
 	target := astroM.Orbit
-	//	target := smd.NewOrbitFromOE(226090298.679, 0.088, 26.195, 3.516, 326.494, 278.358, smd.Sun)
-	//	fmt.Printf("target orbit: %s\n", target)
-	sc := SpacecraftFromEarth("IE", *target)
-	sc.LogInfo()
-	astro := smd.NewMission(sc, InitialEarthOrbit(), start, end, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IE", AsCSV: true, Cosmo: true, Timestamp: false})
-	astro.Propagate()
+
+	for incr := 0; incr < 9; incr++ {
+		actualStart := start.Add(time.Duration(incr * 31 * 24)) // Adding two week periods
+		fmt.Printf("===== %s =====\n", actualStart)
+		name := fmt.Sprintf("IE-%d%d%d", actualStart.Year(), actualStart.Month(), actualStart.Day())
+		sc := SpacecraftFromEarth(name, *target)
+		sc.LogInfo()
+		// Don't propagate longer than 10 months, it should only take about 8 anyway.
+		maxDT := estArrival.Add(time.Duration(10*31*24) * time.Hour)
+		astro := smd.NewMission(sc, InitialEarthOrbit(), start, maxDT, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: name, AsCSV: true, Cosmo: true, Timestamp: false})
+		astro.Propagate()
+	}
 
 }
 
