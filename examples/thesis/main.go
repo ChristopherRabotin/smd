@@ -18,53 +18,58 @@ func main() {
 	CheckEnvVars()
 	runtime.GOMAXPROCS(3)
 
-	//start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
-	//	start := time.Date(2015, 7, 1, 0, 0, 0, 0, time.UTC) // ExoMars launch date.
-	//estArrival := time.Date(2017, 7, 24, 0, 0, 0, 0, time.UTC)
+	/* Propagate Mars only once. Then perform dichotomy to get to Mars. */
 
-	/*
-		Algo for TOF targeting:
-		1. Propagate from random date
-		2. Check when hit SOI
-		3. Compute duration needed to reach that point
-		4. From mean anomaly, compute the time needed for Mars to reach that point (time = DT)
-		4a. This leads to knowing how much in advance we are.
-		5. Repeat full propagation (including Mars departure) with that DT difference.
-	*/
+	baseDepart := time.Date(2015, 8, 30, 0, 0, 0, 0, time.UTC)
+	initTimeStep := time.Duration(4*7*24) * time.Hour
+	estArrival := time.Date(2016, 8, 24, 0, 0, 0, 0, time.UTC)
 
-	/* Let's propagate out of Mars at a guessed date of 7 months after launch date from Earth.
-	Note that we only output the CSV because we don't need to visualize this.
-	*/
-	// *WITH THE CURRENT DATE AND TIME*, it takes one month and five days to leave the SOI. So let's propagate only for that time.
+	marsStartDT := estArrival.Add(-time.Duration(2*31*24) * time.Hour)
+	scMars := SpacecraftFromMars("IM")
+	scMars.LogInfo()
+	// Propagate the Mars orbit until it is heliocentric. We will target this because it means from there, we can return back into Mars SOI.
+	astroM := smd.NewMission(scMars, InitialMarsOrbit(), marsStartDT, marsStartDT.Add(time.Duration(-1)*time.Hour), smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
+	astroM.Propagate()
 
-	for _, tgtDT := range []struct {
-		depart, arrive time.Time
-	}{
-		{depart: time.Date(2015, 8, 10, 0, 0, 0, 0, time.UTC), arrive: time.Date(2016, 8, 24, 0, 0, 0, 0, time.UTC)},
-		{depart: time.Date(2015, 8, 10, 0, 0, 0, 0, time.UTC), arrive: time.Date(2016, 8, 24, 0, 0, 0, 0, time.UTC)},
-		{depart: time.Date(2015, 8, 20, 0, 0, 0, 0, time.UTC), arrive: time.Date(2016, 8, 24, 0, 0, 0, 0, time.UTC)},
-		{depart: time.Date(2015, 8, 30, 0, 0, 0, 0, time.UTC), arrive: time.Date(2016, 8, 24, 0, 0, 0, 0, time.UTC)},
-	} {
-		estArrival := tgtDT.arrive
+	target := astroM.Orbit
 
-		marsStartDT := estArrival.Add(-time.Duration(31*24) * time.Hour)
-		scMars := SpacecraftFromMars("IM")
-		scMars.LogInfo()
-		astroM := smd.NewMission(scMars, InitialMarsOrbit(), marsStartDT, estArrival, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
-		astroM.Propagate()
-		// Convert the position to heliocentric.
-		astroM.Orbit.ToXCentric(smd.Sun, astroM.CurrentDT)
-		target := astroM.Orbit
-
-		actualStart := tgtDT.depart
-		name := fmt.Sprintf("IE-%d%1d%1d", actualStart.Year(), actualStart.Month(), actualStart.Day())
-		fmt.Printf("===== %s (%s) =====\n", actualStart, name)
+	// Start dichotomy
+	iter := 0
+	arrivedEarly := 1 // if arrived early, then set this to 1 (to leave later).
+	timeStep := initTimeStep
+	for timeStep > time.Duration(1*24)*time.Hour {
+		actualStart := baseDepart
+		if iter > 0 {
+			timeStep = time.Duration(arrivedEarly) * timeStep / time.Duration(iter)
+			actualStart = actualStart.Add(timeStep)
+		}
+		name := fmt.Sprintf("IE-%d%1d%1d%1d", actualStart.Year(), actualStart.Month(), actualStart.Day(), actualStart.Hour())
+		fmt.Printf("===== %s (iter=%d early=%d) =====\n", actualStart, iter, arrivedEarly)
 		sc := SpacecraftFromEarth(name, *target)
 		sc.LogInfo()
 		// Only propagate til a bit after the estimated arrival date.
-		maxDT := estArrival.Add(time.Duration(2*31*24) * time.Hour)
+		maxDT := estArrival.Add(time.Duration(3*31*24) * time.Hour)
 		astro := smd.NewMission(sc, InitialEarthOrbit(), actualStart, maxDT, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: name, AsCSV: true, Cosmo: true, Timestamp: false})
 		astro.Propagate()
+		// Determine whether we arrived before or after Mars
+		marsR0 := smd.Mars.HelioOrbit(astro.CurrentDT).R()
+		marsR1 := smd.Mars.HelioOrbit(astro.CurrentDT.Add(time.Hour)).R()
+		scR := astro.Orbit.R()
+		diff0 := []float64{0, 0, 0}
+		diff1 := []float64{0, 0, 0}
+		for i := 0; i < 3; i++ {
+			diff0[i] = marsR0[i] - scR[i]
+			diff1[i] = marsR1[i] - scR[i]
+		}
+		if norm(diff0) > norm(diff1) {
+			// This means the distance has *decreased*, therefore Mars is getting closer, so effectively,
+			// we have to leave slightly later to hopefully catch Mars.
+			arrivedEarly = 1
+		} else {
+			// We are late and Mars is leaving. Need to leave earlier to catch Mars.
+			arrivedEarly = -1
+		}
+		iter++
 	}
 
 }

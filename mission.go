@@ -222,6 +222,9 @@ func (a *Mission) SetState(t float64, s []float64) {
 		a.collided = false
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "revived", a.Orbit.Origin.Name, "dt", a.CurrentDT)
 	} else if (a.Orbit.RNorm() > a.Orbit.Origin.SOI || floats.EqualWithinAbs(a.Orbit.e, 1, eccentricityε)) && !a.Orbit.Origin.Equals(Sun) {
+		// Switch to heliocentric.
+		// XXX: Is this where I switch to propagating in Cartesian instead? But then I guess that I need to start with Cartesian, then switch
+		// to Gaussian for the optmization. Maybe then should the propagator be based on the thrust type... ?!
 		a.Vehicle.FuncQ = append(a.Vehicle.FuncQ, a.Vehicle.ToXCentric(Sun, a.CurrentDT, a.Orbit))
 	}
 
@@ -266,7 +269,6 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		fW := Δv[2]
 		// da/dt
 		fDot[0] = ((2 * tmpOrbit.a * tmpOrbit.a) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
-		//fmt.Printf("%.10f\t%.10f\t%.10f\n", tmpOrbit.GetRNorm(), tmpOrbit.Origin.μ/tmpOrbit.GetRNorm(), tmpOrbit.Getξ())
 		// de/dt
 		fDot[1] = (p*sinν*fR + fS*((p+r)*cosν+r*tmpOrbit.e)) / h
 		// di/dt
