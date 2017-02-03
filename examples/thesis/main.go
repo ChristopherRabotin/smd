@@ -19,8 +19,8 @@ func main() {
 	runtime.GOMAXPROCS(3)
 
 	//start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
-	start := time.Date(2015, 7, 1, 0, 0, 0, 0, time.UTC) // ExoMars launch date.
-	estArrival := time.Date(2017, 7, 24, 0, 0, 0, 0, time.UTC)
+	//	start := time.Date(2015, 7, 1, 0, 0, 0, 0, time.UTC) // ExoMars launch date.
+	//estArrival := time.Date(2017, 7, 24, 0, 0, 0, 0, time.UTC)
 
 	/*
 		Algo for TOF targeting:
@@ -36,23 +36,33 @@ func main() {
 	Note that we only output the CSV because we don't need to visualize this.
 	*/
 	// *WITH THE CURRENT DATE AND TIME*, it takes one month and five days to leave the SOI. So let's propagate only for that time.
-	marsEndDT := estArrival.Add(time.Duration(31*24) * time.Hour)
-	scMars := SpacecraftFromMars("IM")
-	scMars.LogInfo()
-	astroM := smd.NewMission(scMars, InitialMarsOrbit(), estArrival, marsEndDT, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
-	astroM.Propagate()
-	// Convert the position to heliocentric.
-	astroM.Orbit.ToXCentric(smd.Sun, astroM.CurrentDT)
-	target := astroM.Orbit
 
-	for incr := 0; incr < 9; incr++ {
-		actualStart := start.Add(time.Duration(incr*15*24) * time.Hour) // Adding two week periods
+	for _, tgtDT := range []struct {
+		depart, arrive time.Time
+	}{
+		{depart: time.Date(2015, 8, 10, 0, 0, 0, 0, time.UTC), arrive: time.Date(2016, 8, 24, 0, 0, 0, 0, time.UTC)},
+		{depart: time.Date(2015, 8, 10, 0, 0, 0, 0, time.UTC), arrive: time.Date(2016, 8, 24, 0, 0, 0, 0, time.UTC)},
+		{depart: time.Date(2015, 8, 20, 0, 0, 0, 0, time.UTC), arrive: time.Date(2016, 8, 24, 0, 0, 0, 0, time.UTC)},
+		{depart: time.Date(2015, 8, 30, 0, 0, 0, 0, time.UTC), arrive: time.Date(2016, 8, 24, 0, 0, 0, 0, time.UTC)},
+	} {
+		estArrival := tgtDT.arrive
+
+		marsStartDT := estArrival.Add(-time.Duration(31*24) * time.Hour)
+		scMars := SpacecraftFromMars("IM")
+		scMars.LogInfo()
+		astroM := smd.NewMission(scMars, InitialMarsOrbit(), marsStartDT, estArrival, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
+		astroM.Propagate()
+		// Convert the position to heliocentric.
+		astroM.Orbit.ToXCentric(smd.Sun, astroM.CurrentDT)
+		target := astroM.Orbit
+
+		actualStart := tgtDT.depart
 		name := fmt.Sprintf("IE-%d%1d%1d", actualStart.Year(), actualStart.Month(), actualStart.Day())
 		fmt.Printf("===== %s (%s) =====\n", actualStart, name)
 		sc := SpacecraftFromEarth(name, *target)
 		sc.LogInfo()
-		// Don't propagate too long, it should only take about 8 anyway.
-		maxDT := actualStart.Add(time.Duration(12*31*24) * time.Hour)
+		// Only propagate til a bit after the estimated arrival date.
+		maxDT := estArrival.Add(time.Duration(2*31*24) * time.Hour)
 		astro := smd.NewMission(sc, InitialEarthOrbit(), actualStart, maxDT, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: name, AsCSV: true, Cosmo: true, Timestamp: false})
 		astro.Propagate()
 	}

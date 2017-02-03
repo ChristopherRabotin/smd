@@ -26,6 +26,8 @@ func FromEarthWaypoints(target smd.Orbit) []smd.Waypoint {
 	return []smd.Waypoint{
 		// Leave Earth
 		smd.NewOutwardSpiral(smd.Earth, nil),
+		// Fix argument of periapsis and RAAN
+		smd.NewOrbitTarget(target, nil, smd.Naasz, smd.OptiΔΩCL, smd.OptiΔωCL),
 		// Go straight to Mars destination
 		smd.NewOrbitTarget(target, ref2Mars, smd.Naasz, smd.OptiΔaCL, smd.OptiΔeCL, smd.OptiΔiCL),
 		// Wait a week on arrival
