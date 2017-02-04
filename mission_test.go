@@ -598,8 +598,8 @@ func TestMissionSpiral(t *testing.T) {
 
 	a, e := Radii2ae(39300+Earth.Radius, 290+Earth.Radius)
 	ref2Sun := &WaypointAction{Type: REFSUN, Cargo: nil}
-	var finalOrbit *Orbit
-	var finalDT time.Time
+	//var finalOrbit *Orbit
+	//var finalDT time.Time
 	thrusters := []EPThruster{NewGenericEP(5, 5000)} // VASIMR (approx.)
 	for _, meth := range []Propagator{GaussianVOP, Cartesian} {
 		osc := NewOrbitFromOE(a, e, 28, 10, 5, 0, Earth)
@@ -626,8 +626,8 @@ func TestMissionSpiral(t *testing.T) {
 				t.Fatalf("[%s] final orbit invalid (expected / got): %s\n%s\n%s", meth, err, exp, astro.Orbit)
 			}
 		}
-		finalOrbit = astro.Orbit
-		finalDT = astro.CurrentDT
+		//finalOrbit = astro.Orbit
+		//finalDT = astro.CurrentDT
 	}
 	/*	osc := NewOrbitFromOE(a, e, 28, 10, 5, 0, Earth)
 		// Now, let's do a new mission from this orbit down back to a GTO.
