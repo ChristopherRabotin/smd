@@ -199,395 +199,426 @@ func TestMissionFrameChg(t *testing.T) {
 
 // TestCorrectOEa runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEa(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
-		oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{new(PPS1350)}
-		dryMass := 300.0
-		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
-		start := time.Now()
-		end := start.Add(time.Duration(45*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
-			t.Logf("METHOD = %s", meth)
-			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-			t.Fatal("increasing semi-major axis failed")
-		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 21, 2) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 21", fuelMass-astro.Vehicle.FuelMass)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
+			oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{new(PPS1350)}
+			dryMass := 300.0
+			fuelMass := 67.0
+			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
+			start := time.Now()
+			end := start.Add(time.Duration(45*24) * time.Hour)
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
+				t.Logf("METHOD = %s", meth)
+				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+				t.Fatal("increasing semi-major axis failed")
+			}
+			if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 21, 2) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("invalid fuel usage: %f kg instead of 21", fuelMass-astro.Vehicle.FuelMass)
+			}
 		}
 	}
 }
 
 // TestCorrectOEaNeg runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEaNeg(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
-		oTarget := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{new(PPS1350)}
-		dryMass := 300.0
-		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
-		start := time.Now()
-		end := start.Add(time.Duration(45*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
-			t.Logf("METHOD = %s", meth)
-			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-			t.Fatal("decreasing semi-major axis failed")
-		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 21, 2) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 21", fuelMass-astro.Vehicle.FuelMass)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
+			oTarget := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{new(PPS1350)}
+			dryMass := 300.0
+			fuelMass := 67.0
+			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
+			start := time.Now()
+			end := start.Add(time.Duration(45*24) * time.Hour)
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
+				t.Logf("METHOD = %s", meth)
+				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+				t.Fatal("decreasing semi-major axis failed")
+			}
+			if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 21, 2) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("invalid fuel usage: %f kg instead of 21", fuelMass-astro.Vehicle.FuelMass)
+			}
 		}
 	}
 }
 
 // TestCorrectOEi runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEi(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+350, 0.001, 51.6, 1, 1, 1, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{new(PPS1350)}
-		dryMass := 300.0
-		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
-		start := time.Now()
-		end := start.Add(time.Duration(55*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) {
-			t.Logf("METHOD = %s", meth)
-			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-			t.Fatal("increasing inclination failed")
-		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 25, 1) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 25", fuelMass-astro.Vehicle.FuelMass)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
+			oTarget := NewOrbitFromOE(Earth.Radius+350, 0.001, 51.6, 1, 1, 1, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{new(PPS1350)}
+			dryMass := 300.0
+			fuelMass := 67.0
+			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
+			start := time.Now()
+			end := start.Add(time.Duration(55*24) * time.Hour)
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) {
+				t.Logf("METHOD = %s", meth)
+				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+				t.Fatal("increasing inclination failed")
+			}
+			if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 25, 1) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("invalid fuel usage: %f kg instead of 25", fuelMass-astro.Vehicle.FuelMass)
+			}
 		}
 	}
 }
 
 // TestCorrectOEiNeg runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEiNeg(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 51.6, 1, 1, 1, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{new(PPS1350)}
-		dryMass := 300.0
-		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
-		start := time.Now()
-		end := start.Add(time.Duration(55*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) {
-			t.Logf("METHOD = %s", meth)
-			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-			t.Fatal("decreasing inclination failed")
-		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 25, 1) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 25", fuelMass-astro.Vehicle.FuelMass)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 51.6, 1, 1, 1, Earth)
+			oTarget := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{new(PPS1350)}
+			dryMass := 300.0
+			fuelMass := 67.0
+			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
+			start := time.Now()
+			end := start.Add(time.Duration(55*24) * time.Hour)
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) {
+				t.Logf("METHOD = %s", meth)
+				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+				t.Fatal("decreasing inclination failed")
+			}
+			if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 25, 1) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("invalid fuel usage: %f kg instead of 25", fuelMass-astro.Vehicle.FuelMass)
+			}
 		}
 	}
 }
 
 // TestCorrectOEΩ runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEΩ(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 0, 1, 0, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 5, 1, 0, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{new(PPS1350)}
-		dryMass := 300.0
-		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
-		start := time.Now()
-		end := start.Add(time.Duration(49*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
-			t.Logf("METHOD = %s", meth)
-			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-			t.Fatal("increasing RAAN failed")
-		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 23, 2) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 48", fuelMass-astro.Vehicle.FuelMass)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 0, 1, 0, Earth)
+			oTarget := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 5, 1, 0, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{new(PPS1350)}
+			dryMass := 300.0
+			fuelMass := 67.0
+			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
+			start := time.Now()
+			end := start.Add(time.Duration(49*24) * time.Hour)
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
+				t.Logf("METHOD = %s", meth)
+				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+				t.Fatal("increasing RAAN failed")
+			}
+			if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 23, 2) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("invalid fuel usage: %f kg instead of 48", fuelMass-astro.Vehicle.FuelMass)
+			}
 		}
 	}
 }
 
 // TestCorrectOEΩNeg runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEΩNeg(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 5, 1, 0, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 0, 1, 0, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{new(PPS1350)}
-		dryMass := 300.0
-		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
-		start := time.Now()
-		end := start.Add(time.Duration(49*24) * time.Hour) // just after the expected time
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
-			t.Logf("METHOD = %s", meth)
-			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-			t.Fatal("decreasing RAAN failed")
-		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 23, 2) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 23", fuelMass-astro.Vehicle.FuelMass)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 5, 1, 0, Earth)
+			oTarget := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 0, 1, 0, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{new(PPS1350)}
+			dryMass := 300.0
+			fuelMass := 67.0
+			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
+			start := time.Now()
+			end := start.Add(time.Duration(49*24) * time.Hour) // just after the expected time
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
+				t.Logf("METHOD = %s", meth)
+				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+				t.Fatal("decreasing RAAN failed")
+			}
+			if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 23, 2) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("invalid fuel usage: %f kg instead of 23", fuelMass-astro.Vehicle.FuelMass)
+			}
 		}
 	}
 }
 
 // TestCorrectOEe runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEe(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+9000, 0.01, 98.7, 0, 1, 1, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+9000, 0.15, 98.7, 0, 1, 1, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{new(PPS1350)}
-		dryMass := 300.0
-		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
-		start := time.Now()
-		end := start.Add(time.Duration(30*24) * time.Hour) // just after the expected time
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
-			t.Logf("METHOD = %s", meth)
-			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-			t.Fatal("increasing eccentricity failed")
-		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 10, 2) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 10", fuelMass-astro.Vehicle.FuelMass)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(Earth.Radius+9000, 0.01, 98.7, 0, 1, 1, Earth)
+			oTarget := NewOrbitFromOE(Earth.Radius+9000, 0.15, 98.7, 0, 1, 1, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{new(PPS1350)}
+			dryMass := 300.0
+			fuelMass := 67.0
+			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
+			start := time.Now()
+			end := start.Add(time.Duration(30*24) * time.Hour) // just after the expected time
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
+				t.Logf("METHOD = %s", meth)
+				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+				t.Fatal("increasing eccentricity failed")
+			}
+			if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 10, 2) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("invalid fuel usage: %f kg instead of 10", fuelMass-astro.Vehicle.FuelMass)
+			}
 		}
 	}
 }
 
 // TestCorrectOEe runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEeNeg(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+9000, 0.15, 98.7, 0, 1, 1, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+9000, 0.01, 98.7, 0, 1, 1, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{new(PPS1350)}
-		dryMass := 300.0
-		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
-		start := time.Now()
-		end := start.Add(time.Duration(30*24) * time.Hour) // just after the expected time
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
-			t.Logf("METHOD = %s", meth)
-			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-			t.Fatal("decreasing eccentricity failed")
-		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 10, 2) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 10", fuelMass-astro.Vehicle.FuelMass)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(Earth.Radius+9000, 0.15, 98.7, 0, 1, 1, Earth)
+			oTarget := NewOrbitFromOE(Earth.Radius+9000, 0.01, 98.7, 0, 1, 1, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{new(PPS1350)}
+			dryMass := 300.0
+			fuelMass := 67.0
+			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
+			start := time.Now()
+			end := start.Add(time.Duration(30*24) * time.Hour) // just after the expected time
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
+				t.Logf("METHOD = %s", meth)
+				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+				t.Fatal("decreasing eccentricity failed")
+			}
+			if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 10, 2) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("invalid fuel usage: %f kg instead of 10", fuelMass-astro.Vehicle.FuelMass)
+			}
 		}
 	}
 }
 
 // TestCorrectOEω runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEω(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 178, angleε, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 183, angleε, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{new(PPS1350)}
-		dryMass := 300.0
-		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
-		start := time.Now()
-		end := start.Add(time.Duration(2*24) * time.Hour) // just after the expected time
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
-		tol := angleε
-		if meth == Naasz {
-			tol *= 22
-		} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.4, 0.1) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 0.4", fuelMass-astro.Vehicle.FuelMass)
-		}
-		if !floats.EqualWithinAbs(astro.Orbit.ω, oTarget.ω, tol) {
-			t.Logf("METHOD = %s", meth)
-			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-			t.Fatal("decreasing argument of periapsis failed")
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 178, angleε, Earth)
+			oTarget := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 183, angleε, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{new(PPS1350)}
+			dryMass := 300.0
+			fuelMass := 67.0
+			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
+			start := time.Now()
+			end := start.Add(time.Duration(2*24) * time.Hour) // just after the expected time
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
+			tol := angleε
+			if meth == Naasz {
+				tol *= 22
+			} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.4, 0.1) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("invalid fuel usage: %f kg instead of 0.4", fuelMass-astro.Vehicle.FuelMass)
+			}
+			if !floats.EqualWithinAbs(astro.Orbit.ω, oTarget.ω, tol) {
+				t.Logf("METHOD = %s", meth)
+				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+				t.Fatal("decreasing argument of periapsis failed")
+			}
 		}
 	}
 }
 
 // TestCorrectOEωNeg runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEωNeg(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(Earth.Radius+900, 0, 0, angleε, 183, angleε, Earth)
-		oTarget := NewOrbitFromOE(Earth.Radius+900, 0, 0, angleε, 178, angleε, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{new(PPS1350)}
-		dryMass := 300.0
-		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
-		start := time.Now()
-		end := start.Add(time.Duration(1*24)*time.Hour + 2*time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
-		tol := angleε
-		if meth == Naasz {
-			tol *= 15
-		} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.5, 0.1) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of 0.5", fuelMass-astro.Vehicle.FuelMass)
-		}
-		if !floats.EqualWithinAbs(astro.Orbit.ω, oTarget.ω, tol) {
-			t.Logf("METHOD = %s", meth)
-			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-			t.Fatal("decreasing argument of periapsis failed")
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(Earth.Radius+900, 0, 0, angleε, 183, angleε, Earth)
+			oTarget := NewOrbitFromOE(Earth.Radius+900, 0, 0, angleε, 178, angleε, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{new(PPS1350)}
+			dryMass := 300.0
+			fuelMass := 67.0
+			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
+			start := time.Now()
+			end := start.Add(time.Duration(1*24)*time.Hour + 2*time.Hour)
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
+			tol := angleε
+			if meth == Naasz {
+				tol *= 15
+			} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.5, 0.1) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("invalid fuel usage: %f kg instead of 0.5", fuelMass-astro.Vehicle.FuelMass)
+			}
+			if !floats.EqualWithinAbs(astro.Orbit.ω, oTarget.ω, tol) {
+				t.Logf("METHOD = %s", meth)
+				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+				t.Fatal("decreasing argument of periapsis failed")
+			}
 		}
 	}
 }
 
 // TestMultiCorrectOE runs the test case from the Ruggerio 2012 conference paper.
 func TestMultiCorrectOE(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(24396, 0.001, 7, 1, 1, 1, Earth)
-		oTarget := NewOrbitFromOE(42164, 0.7283, 0.001, 1, 1, 1, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{new(PPS1350)}
-		dryMass := 300.0
-		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL, OptiΔiCL)})
-		start := time.Now()
-		var days int
-		var fuel float64
-		if meth == Ruggerio {
-			days = 113
-			fuel = 51
-		} else {
-			days = 120
-			fuel = 53
-		}
-		end := start.Add(time.Duration(days*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) || !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) || !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
-		}
-		if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, fuel, 1) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("invalid fuel usage: %f kg instead of %f", fuelMass-astro.Vehicle.FuelMass, fuel)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(24396, 0.001, 7, 1, 1, 1, Earth)
+			oTarget := NewOrbitFromOE(42164, 0.7283, 0.001, 1, 1, 1, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{new(PPS1350)}
+			dryMass := 300.0
+			fuelMass := 67.0
+			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL, OptiΔiCL)})
+			start := time.Now()
+			var days int
+			var fuel float64
+			if meth == Ruggerio {
+				days = 113
+				fuel = 51
+			} else {
+				days = 120
+				fuel = 53
+			}
+			end := start.Add(time.Duration(days*24) * time.Hour)
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) || !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) || !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+			}
+			if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, fuel, 1) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("invalid fuel usage: %f kg instead of %f", fuelMass-astro.Vehicle.FuelMass, fuel)
+			}
 		}
 	}
 }
 
 func TestPetropoulosCaseA(t *testing.T) {
-	t.Skip("Case A fails (Ruggerio stops although the eccenticity is not good)")
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(7000, 0.01, 0.05, 0, 0, 1, Earth)
-		oTarget := NewOrbitFromOE(42000, 0.01, 0.05, 0, 0, 1, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{NewGenericEP(1, 3100)}
-		dryMass := 1.0
-		fuelMass := 299.0
-		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
-		start := time.Now()
-		// With eta=0.968, the duration is 152.389 days.
-		end := start.Add(time.Duration(153*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("\ntarget orbit: %s\nfinal orbit:  %s", oTarget, astro.Orbit)
+	t.Log("Case A fails with Ruggerio: stops although the eccenticity is not good)")
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Naasz} {
+			oInit := NewOrbitFromOE(7000, 0.01, 0.05, 0, 0, 1, Earth)
+			oTarget := NewOrbitFromOE(42000, 0.01, 0.05, 0, 0, 1, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{NewGenericEP(1, 3100)}
+			dryMass := 1.0
+			fuelMass := 299.0
+			sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
+			start := time.Now()
+			// With eta=0.968, the duration is 152.389 days.
+			end := start.Add(time.Duration(153*24) * time.Hour)
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("\ntarget orbit: %s\nfinal orbit:  %s", oTarget, astro.Orbit)
+			}
 		}
 	}
 }
 
 func TestPetropoulosCaseB(t *testing.T) {
-	t.Log("Case B fails if trying to correct for the eccentricity. This case very similar to MultiCorrectOE.")
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(24505.9, 0.725, 7.05, 0, 0, 1, Earth)
-		oTarget := NewOrbitFromOE(42165, 0.001, 0.05, 0, 1, 1, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{NewGenericEP(0.350, 2000)}
-		dryMass := 1.0
-		fuelMass := 1999.0
-		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔiCL)})
-		start := time.Now()
-		// About three months is what is needed without the eccentricity change.
-		end := start.Add(time.Duration(90*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) /*|| !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε)*/ {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("\ntarget orbit: %s\nfinal orbit:  %s", oTarget, astro.Orbit)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(24505.9, 0.725, 7.05, 0, 0, 1, Earth)
+			oTarget := NewOrbitFromOE(42165, 0.001, 0.05, 0, 1, 1, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{NewGenericEP(0.350, 2000)}
+			dryMass := 1.0
+			fuelMass := 1999.0
+			sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔiCL)})
+			start := time.Now()
+			// About three months is what is needed without the eccentricity change.
+			end := start.Add(time.Duration(90*24) * time.Hour)
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.i, oTarget.i, angleε) /*|| !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε)*/ {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("\ntarget orbit: %s\nfinal orbit:  %s", oTarget, astro.Orbit)
+			}
 		}
 	}
 }
 
 func TestPetropoulosCaseC(t *testing.T) {
-	for _, meth := range []ControlLawType{Naasz} {
-		oInit := NewOrbitFromOE(9222.7, 0.2, 0.573, 0, 0, 1, Earth)
-		oTarget := NewOrbitFromOE(30000, 0.7, 0.573, 0, 1, 1, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{NewGenericEP(9.3, 3100)}
-		dryMass := 1.0
-		fuelMass := 299.0
-		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
-		start := time.Now()
-		end := start.Add(time.Duration(80*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("\ntarget orbit: %s\nfinal orbit:  %s", oTarget, astro.Orbit)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(9222.7, 0.2, 0.573, 0, 0, 1, Earth)
+			oTarget := NewOrbitFromOE(30000, 0.7, 0.573, 0, 1, 1, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{NewGenericEP(9.3, 3100)}
+			dryMass := 1.0
+			fuelMass := 299.0
+			sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
+			start := time.Now()
+			end := start.Add(time.Duration(80*24) * time.Hour)
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if !floats.EqualWithinAbs(astro.Orbit.a, oTarget.a, distanceε) || !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε) {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("\ntarget orbit: %s\nfinal orbit:  %s", oTarget, astro.Orbit)
+			}
 		}
 	}
 }
 
 func TestPetropoulosCaseE(t *testing.T) {
-	t.Skip("Case E *panics* on Naasz (gets exactly parabolic) and fails on Ruggerio (after many collisions)")
-	for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-		oInit := NewOrbitFromOE(24505.9, 0.725, 0.06, 0, 0, 1, Earth)
-		oTarget := NewOrbitFromOE(26500, 0.7, 116, 270, 180, 1, Earth)
-		eps := NewUnlimitedEPS()
-		EPThrusters := []EPThruster{NewGenericEP(2, 2000)}
-		dryMass := 1.0
-		fuelMass := 1999.0
-		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth)})
-		start := time.Now()
-		// There is no provided time, but the graph goes all the way to 240 days.
-		end := start.Add(time.Duration(240*24) * time.Hour)
-		astro := NewMission(sc, oInit, start, end, GaussianVOP, Perturbations{}, ExportConfig{})
-		astro.Propagate()
-		if ok, err := astro.Orbit.Equals(*oTarget); !ok {
-			t.Logf("METHOD = %s", meth)
-			t.Fatalf("error: %s\ntarget orbit: %s\nfinal orbit:  %s", err, oTarget, astro.Orbit)
+	if testing.Short() {
+		t.Skip("Case E Petro is too long")
+	}
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+			oInit := NewOrbitFromOE(24505.9, 0.725, 0.06, 0, 0, 1, Earth)
+			oTarget := NewOrbitFromOE(26500, 0.7, 116, 270, 180, 1, Earth)
+			eps := NewUnlimitedEPS()
+			EPThrusters := []EPThruster{NewGenericEP(2, 2000)}
+			dryMass := 1.0
+			fuelMass := 1999.0
+			sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth)})
+			start := time.Now()
+			// There is no provided time, but the graph goes all the way to 240 days.
+			end := start.Add(time.Duration(190*24) * time.Hour)
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro.Propagate()
+			if ok, err := astro.Orbit.Equals(*oTarget); !ok {
+				t.Logf("METHOD = %s", meth)
+				t.Fatalf("error: %s\ntarget orbit: %s\nfinal orbit:  %s", err, oTarget, astro.Orbit)
+			}
 		}
 	}
 }
 
 func TestPropagators(t *testing.T) {
-	for _, meth := range []Propagator{GaussianVOP, Cartesian} {
-		t.Logf("[OK] %s", meth)
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		t.Logf("[OK] %s", prop)
 	}
 }
 
@@ -601,29 +632,29 @@ func TestMissionSpiral(t *testing.T) {
 	//var finalOrbit *Orbit
 	//var finalDT time.Time
 	thrusters := []EPThruster{NewGenericEP(5, 5000)} // VASIMR (approx.)
-	for _, meth := range []Propagator{GaussianVOP, Cartesian} {
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
 		osc := NewOrbitFromOE(a, e, 28, 10, 5, 0, Earth)
-		name := "testSpiral-" + meth.String()
+		name := "testSpiral-" + prop.String()
 		//TODO: Fix bug where ref2Sun doesn't trigger if not the last waypoint
 		sc := NewSpacecraft(name, 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewOutwardSpiral(Earth, nil), NewLoiter(time.Duration(24)*time.Hour, ref2Sun)})
-		astro := NewMission(sc, osc, depart, endDT, meth, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: true, Timestamp: false})
+		astro := NewMission(sc, osc, depart, endDT, prop, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: true, Timestamp: false})
 		astro.Propagate()
 		if !astro.Orbit.Origin.Equals(Sun) {
 			t.Fatal("outward spiral with ref2sun did not transform this orbit to heliocentric")
 		}
 		if !floats.EqualWithinAbs(sc.FuelMass, 3882, 6) {
-			t.Fatalf("[%s] fuel = %f instead of ~3880", meth, sc.FuelMass)
+			t.Fatalf("[%s] fuel = %f instead of ~3880", prop, sc.FuelMass)
 		}
-		switch meth {
+		switch prop {
 		case GaussianVOP:
 			exp := NewOrbitFromOE(160439651.8, 0.0784, 23.396, 0.418, 91.556, 11.736, Sun)
 			if ok, err := exp.StrictlyEquals(*astro.Orbit); !ok {
-				t.Fatalf("[%s]final orbit invalid (expected / got): %s\n%s\n%s", meth, err, exp, astro.Orbit)
+				t.Fatalf("[%s]final orbit invalid (expected / got): %s\n%s\n%s", prop, err, exp, astro.Orbit)
 			}
 		case Cartesian:
 			exp := NewOrbitFromOE(160828210.0, 0.0808, 23.394, 0.422, 92.678, 11.420, Sun)
 			if ok, err := exp.StrictlyEquals(*astro.Orbit); !ok {
-				t.Fatalf("[%s] final orbit invalid (expected / got): %s\n%s\n%s", meth, err, exp, astro.Orbit)
+				t.Fatalf("[%s] final orbit invalid (expected / got): %s\n%s\n%s", prop, err, exp, astro.Orbit)
 			}
 		}
 		//finalOrbit = astro.Orbit
