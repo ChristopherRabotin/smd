@@ -604,23 +604,36 @@ func TestMissionSpiral(t *testing.T) {
 	for _, meth := range []Propagator{GaussianVOP, Cartesian} {
 		osc := NewOrbitFromOE(a, e, 28, 10, 5, 0, Earth)
 		name := "testSpiral-" + meth.String()
+		//TODO: Fix bug where ref2Sun doesn't trigger if not the last waypoint
 		sc := NewSpacecraft(name, 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewOutwardSpiral(Earth, nil), NewLoiter(time.Duration(24)*time.Hour, ref2Sun)})
-		astro := NewMission(sc, osc, depart, endDT, meth, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: false, Timestamp: false})
+		astro := NewMission(sc, osc, depart, endDT, meth, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: true, Timestamp: false})
 		astro.Propagate()
 		if !astro.Orbit.Origin.Equals(Sun) {
 			t.Fatal("outward spiral with ref2sun did not transform this orbit to heliocentric")
 		}
-		if !floats.EqualWithinAbs(sc.FuelMass, 3882, 10) {
-			t.Fatalf("[%s] fuel = %f instead of ~3882", meth, sc.FuelMass)
+		if !floats.EqualWithinAbs(sc.FuelMass, 3882, 6) {
+			t.Fatalf("[%s] fuel = %f instead of ~3880", meth, sc.FuelMass)
+		}
+		switch meth {
+		case GaussianVOP:
+			exp := NewOrbitFromOE(160439651.8, 0.0784, 23.396, 0.418, 91.556, 11.736, Sun)
+			if ok, err := exp.StrictlyEquals(*astro.Orbit); !ok {
+				t.Fatalf("[%s]final orbit invalid (expected / got): %s\n%s\n%s", meth, err, exp, astro.Orbit)
+			}
+		case Cartesian:
+			exp := NewOrbitFromOE(160828210.0, 0.0808, 23.394, 0.422, 92.678, 11.420, Sun)
+			if ok, err := exp.StrictlyEquals(*astro.Orbit); !ok {
+				t.Fatalf("[%s] final orbit invalid (expected / got): %s\n%s\n%s", meth, err, exp, astro.Orbit)
+			}
 		}
 		finalOrbit = astro.Orbit
 		finalDT = astro.CurrentDT
 	}
-	//osc := NewOrbitFromOE(a, e, 28, 10, 5, 0, Earth)
-	// Now, let's do a new mission from this orbit down back to a GTO.
-	finalOrbit.ToXCentric(Earth, finalDT)
-	sc := NewSpacecraft("Spiral2GTO", 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewReachDistance(39300+Earth.Radius, false, nil), NewLoiter(time.Duration(24)*time.Hour, ref2Sun)})
-	name := "test-inspiral"
-	astro := NewMission(sc, finalOrbit, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: false, Timestamp: false})
-	astro.Propagate()
+	/*	osc := NewOrbitFromOE(a, e, 28, 10, 5, 0, Earth)
+		// Now, let's do a new mission from this orbit down back to a GTO.
+		finalOrbit.ToXCentric(Earth, finalDT)
+		sc := NewSpacecraft("Spiral2GTO", 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*osc, nil, Naasz, OptiΔaCL, OptiΔeCL, OptiΔiCL), NewLoiter(time.Duration(24)*time.Hour, nil)})
+		name := "test-inspiral"
+		astro := NewMission(sc, finalOrbit, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: true, Timestamp: false})
+		astro.Propagate()*/
 }

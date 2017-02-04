@@ -255,7 +255,11 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		tmpOrbit = NewOrbitFromOE(f[0], f[1], f[2]/deg2rad, f[3]/deg2rad, f[4]/deg2rad, f[5]/deg2rad, a.Orbit.Origin)
 		h := tmpOrbit.HNorm()
 		if floats.EqualWithinAbs(tmpOrbit.e, 1, eccentricityε) {
-			tmpOrbit.e += 2 * eccentricityε
+			if tmpOrbit.e > 1 {
+				tmpOrbit.e -= 2 * eccentricityε
+			} else {
+				tmpOrbit.e += 2 * eccentricityε
+			}
 		}
 		p := tmpOrbit.SemiParameter()
 		r := tmpOrbit.RNorm()
@@ -282,9 +286,10 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 
 	case Cartesian:
 		R := []float64{f[0], f[1], f[2]}
+		r := norm(R)
 		V := []float64{f[3], f[4], f[5]}
 		tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
-		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
+		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(r, 3)
 		Δv = Rot313Vec(-a.Orbit.ArgLatitudeU(), -a.Orbit.i, -a.Orbit.Ω, Δv)
 		// d\vec{R}/dt
 		fDot[0] = f[3]
