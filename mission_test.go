@@ -590,3 +590,29 @@ func TestPropagators(t *testing.T) {
 		t.Logf("[OK] %s", meth)
 	}
 }
+
+// TestMissionSpiral tests the outbound and inbound spirals
+func TestMissionSpiral(t *testing.T) {
+	depart := time.Date(2015, 8, 30, 0, 0, 0, 0, time.UTC)
+	endDT := depart.Add(-1)
+
+	a, e := Radii2ae(39300+Earth.Radius, 290+Earth.Radius)
+	ref2Sun := &WaypointAction{Type: REFSUN, Cargo: nil}
+
+	thrusters := []EPThruster{NewGenericEP(5, 5000)} // VASIMR (approx.)
+
+	osc := NewOrbitFromOE(a, e, 28, 10, 5, 0, Earth)
+	sc := NewSpacecraft("GTO2Spiral", 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewOutwardSpiral(Earth, nil), NewLoiter(time.Duration(24)*time.Hour, ref2Sun)})
+	name := "test-outspiral"
+	astro := NewMission(sc, osc, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: true, Cosmo: true, Timestamp: false})
+	astro.Propagate()
+	if !astro.Orbit.Origin.Equals(Sun) {
+		t.Fatal("outward spiral with ref2sun did not transform this orbit to heliocentric")
+	}
+	// Now, let's do a new mission from this orbit down back to a GTO.
+	/*astro.Orbit.ToXCentric(Earth, astro.CurrentDT)
+	sc = NewSpacecraft("Spiral2GTO", 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewReachDistance(39300+Earth.Radius, false, nil), NewLoiter(time.Duration(24)*time.Hour, ref2Sun)})
+	name = "test-inspiral"
+	astro = NewMission(sc, osc, depart, endDT, GaussianVOP, Perturbations{}, ExportConfig{Filename: name, AsCSV: true, Cosmo: true, Timestamp: false})
+	astro.Propagate()*/
+}

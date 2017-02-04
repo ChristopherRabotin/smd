@@ -26,7 +26,11 @@ type Orbit struct {
 
 // Energyξ returns the specific mechanical energy ξ.
 func (o Orbit) Energyξ() float64 {
-	return -o.Origin.μ / (2 * o.a)
+	ξ := -o.Origin.μ / (2 * o.a)
+	if o.e > 1 {
+		ξ *= -1
+	}
+	return ξ
 }
 
 // Tildeω returns the longitude of periapsis.

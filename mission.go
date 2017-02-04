@@ -8,6 +8,7 @@ import (
 
 	"github.com/ChristopherRabotin/ode"
 	"github.com/gonum/floats"
+	"github.com/gonum/matrix/mat64"
 )
 
 // Propagator defines the different propagation methods available.
@@ -221,11 +222,6 @@ func (a *Mission) SetState(t float64, s []float64) {
 		// Now further from the 1% dead zone
 		a.collided = false
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "revived", a.Orbit.Origin.Name, "dt", a.CurrentDT)
-	} else if (a.Orbit.RNorm() > a.Orbit.Origin.SOI || floats.EqualWithinAbs(a.Orbit.e, 1, eccentricityε)) && !a.Orbit.Origin.Equals(Sun) {
-		// Switch to heliocentric.
-		// XXX: Is this where I switch to propagating in Cartesian instead? But then I guess that I need to start with Cartesian, then switch
-		// to Gaussian for the optmization. Maybe then should the propagator be based on the thrust type... ?!
-		a.Vehicle.FuncQ = append(a.Vehicle.FuncQ, a.Vehicle.ToXCentric(Sun, a.CurrentDT, a.Orbit))
 	}
 
 	// Propulsion sanity check
@@ -258,8 +254,11 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		// Instead the angles must be fixed and checked only at in SetState function.
 		// Note that we don't use Rad2deg because it forces the modulo on the angles, and we want to avoid this for now.
 		tmpOrbit = NewOrbitFromOE(f[0], f[1], f[2]/deg2rad, f[3]/deg2rad, f[4]/deg2rad, f[5]/deg2rad, a.Orbit.Origin)
-		p := tmpOrbit.SemiParameter()
 		h := tmpOrbit.HNorm()
+		if floats.EqualWithinAbs(tmpOrbit.e, 1, eccentricityε) {
+			tmpOrbit.e += 2 * eccentricityε
+		}
+		p := tmpOrbit.SemiParameter()
 		r := tmpOrbit.RNorm()
 		sini, cosi := math.Sincos(tmpOrbit.i)
 		sinν, cosν := math.Sincos(tmpOrbit.ν)
@@ -268,7 +267,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		fS := Δv[1]
 		fW := Δv[2]
 		// da/dt
-		fDot[0] = ((2 * tmpOrbit.a * tmpOrbit.a) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
+		fDot[0] = ((2 * math.Pow(tmpOrbit.a, 2)) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
 		// de/dt
 		fDot[1] = (p*sinν*fR + fS*((p+r)*cosν+r*tmpOrbit.e)) / h
 		// di/dt
@@ -287,7 +286,15 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		V := []float64{f[3], f[4], f[5]}
 		tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
 		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
-		Δv = PQW2ECI(a.Orbit.i, a.Orbit.ω, a.Orbit.Ω, Δv)
+		//Δv = PQW2ECI(-a.Orbit.Ω, -a.Orbit.i, -a.Orbit.ω, Δv)
+		var R1R3, R3R1R3 mat64.Dense
+		var ΔvPrime mat64.Vector
+		R1R3.Mul(R1(-a.Orbit.i), R3(-a.Orbit.ArgLatitudeU()))
+		R3R1R3.Mul(R3(-a.Orbit.Ω), &R1R3)
+		ΔvPrime.MulVec(&R3R1R3, mat64.NewVector(3, Δv))
+		for i := 0; i < 3; i++ {
+			Δv[i] = ΔvPrime.At(i, 0)
+		}
 
 		fDot[0] = f[3]
 		fDot[1] = f[4]

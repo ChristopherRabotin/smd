@@ -43,7 +43,7 @@ func NewOutwardSpiral(body CelestialObject, action *WaypointAction) *ReachDistan
 		// will crash if there are multiple attempts to switch to another
 		action = nil
 	}
-	return &ReachDistance{body.SOI, action, false}
+	return &ReachDistance{body.SOI, action, true, false}
 }
 
 // Loiter is a type of waypoint which allows the vehicle to stay at a given position for a given duration.
@@ -98,9 +98,9 @@ func NewLoiter(duration time.Duration, action *WaypointAction) *Loiter {
 
 // ReachDistance is a type of waypoint which thrusts until a given distance is reached from the central body.
 type ReachDistance struct {
-	distance float64
-	action   *WaypointAction
-	cleared  bool
+	distance         float64
+	action           *WaypointAction
+	further, cleared bool
 }
 
 // String implements the Waypoint interface.
@@ -115,11 +115,18 @@ func (wp *ReachDistance) Cleared() bool {
 
 // ThrustDirection implements the Waypoint interface.
 func (wp *ReachDistance) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if o.RNorm() >= wp.distance {
+	if wp.further {
+		if o.RNorm() >= wp.distance {
+			wp.cleared = true
+			return Coast{}, true
+		}
+		return Tangential{}, false
+	}
+	if o.RNorm() <= wp.distance {
 		wp.cleared = true
 		return Coast{}, true
 	}
-	return Tangential{}, false
+	return AntiTangential{}, false
 }
 
 // Action implements the Waypoint interface.
@@ -128,8 +135,8 @@ func (wp *ReachDistance) Action() *WaypointAction {
 }
 
 // NewReachDistance defines a new spiral until a given distance is reached.
-func NewReachDistance(distance float64, action *WaypointAction) *ReachDistance {
-	return &ReachDistance{distance, action, false}
+func NewReachDistance(distance float64, further bool, action *WaypointAction) *ReachDistance {
+	return &ReachDistance{distance, action, further, false}
 }
 
 // ReachVelocity is a type of waypoint which thrusts until a given velocity is reached from the central body.

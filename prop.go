@@ -148,7 +148,7 @@ func (cl Tangential) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl Tangential) Control(o Orbit) []float64 {
-	return NewOptimalThrust(OptiΔaCL, cl.reason).Control(o)
+	return []float64{0, 1, 0}
 }
 
 // AntiTangential defines an antitangential thrust control law
@@ -168,11 +168,7 @@ func (cl AntiTangential) Type() ControlLaw {
 
 // Control implements the ThrustControl interface.
 func (cl AntiTangential) Control(o Orbit) []float64 {
-	unitV := NewOptimalThrust(OptiΔaCL, cl.reason).Control(o)
-	unitV[0] *= -1
-	unitV[1] *= -1
-	unitV[2] *= -1
-	return unitV
+	return []float64{0, -1, 0}
 }
 
 // Inversion keeps the thrust as tangential but inverts its direction within an angle from the orbit apogee.
