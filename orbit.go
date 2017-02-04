@@ -141,13 +141,13 @@ func (o *Orbit) RV() ([]float64, []float64) {
 	R[0] = p * cosν / (1 + o.e*cosν)
 	R[1] = p * sinν / (1 + o.e*cosν)
 	R[2] = 0
-	R = Rot313Vec(o.i, ω, Ω, R)
+	R = Rot313Vec(-ω, -o.i, -Ω, R)
 
 	V = make([]float64, 3, 3)
 	V[0] = -math.Sqrt(o.Origin.μ/p) * sinν
 	V[1] = math.Sqrt(o.Origin.μ/p) * (o.e + cosν)
 	V[2] = 0
-	V = Rot313Vec(o.i, ω, Ω, V)
+	V = Rot313Vec(-ω, -o.i, -Ω, V)
 
 	o.cachedR = R
 	o.cachedV = V

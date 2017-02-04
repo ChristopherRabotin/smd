@@ -598,22 +598,29 @@ func TestMissionSpiral(t *testing.T) {
 
 	a, e := Radii2ae(39300+Earth.Radius, 290+Earth.Radius)
 	ref2Sun := &WaypointAction{Type: REFSUN, Cargo: nil}
-
+	var finalOrbit *Orbit
+	var finalDT time.Time
 	thrusters := []EPThruster{NewGenericEP(5, 5000)} // VASIMR (approx.)
-	for _, meth := range []Propagator{Cartesian, GaussianVOP} {
+	for _, meth := range []Propagator{GaussianVOP, Cartesian} {
 		osc := NewOrbitFromOE(a, e, 28, 10, 5, 0, Earth)
 		name := "testSpiral-" + meth.String()
 		sc := NewSpacecraft(name, 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewOutwardSpiral(Earth, nil), NewLoiter(time.Duration(24)*time.Hour, ref2Sun)})
-		astro := NewMission(sc, osc, depart, endDT, meth, Perturbations{}, ExportConfig{Filename: name, AsCSV: true, Cosmo: true, Timestamp: false})
+		astro := NewMission(sc, osc, depart, endDT, meth, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: false, Timestamp: false})
 		astro.Propagate()
 		if !astro.Orbit.Origin.Equals(Sun) {
 			t.Fatal("outward spiral with ref2sun did not transform this orbit to heliocentric")
 		}
+		if !floats.EqualWithinAbs(sc.FuelMass, 3882, 10) {
+			t.Fatalf("[%s] fuel = %f instead of ~3882", meth, sc.FuelMass)
+		}
+		finalOrbit = astro.Orbit
+		finalDT = astro.CurrentDT
 	}
+	//osc := NewOrbitFromOE(a, e, 28, 10, 5, 0, Earth)
 	// Now, let's do a new mission from this orbit down back to a GTO.
-	/*astro.Orbit.ToXCentric(Earth, astro.CurrentDT)
-	sc = NewSpacecraft("Spiral2GTO", 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewReachDistance(39300+Earth.Radius, false, nil), NewLoiter(time.Duration(24)*time.Hour, ref2Sun)})
-	name = "test-inspiral"
-	astro = NewMission(sc, osc, depart, endDT, GaussianVOP, Perturbations{}, ExportConfig{Filename: name, AsCSV: true, Cosmo: true, Timestamp: false})
-	astro.Propagate()*/
+	finalOrbit.ToXCentric(Earth, finalDT)
+	sc := NewSpacecraft("Spiral2GTO", 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewReachDistance(39300+Earth.Radius, false, nil), NewLoiter(time.Duration(24)*time.Hour, ref2Sun)})
+	name := "test-inspiral"
+	astro := NewMission(sc, finalOrbit, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: false, Timestamp: false})
+	astro.Propagate()
 }
