@@ -2,7 +2,6 @@ package smd
 
 import (
 	"fmt"
-	"math"
 	"time"
 )
 
@@ -137,53 +136,6 @@ func (wp *ReachDistance) Action() *WaypointAction {
 // NewReachDistance defines a new spiral until a given distance is reached.
 func NewReachDistance(distance float64, further bool, action *WaypointAction) *ReachDistance {
 	return &ReachDistance{distance, action, further, false}
-}
-
-// ReachVelocity is a type of waypoint which thrusts until a given velocity is reached from the central body.
-type ReachVelocity struct {
-	velocity float64
-	action   *WaypointAction
-	epsilon  float64 // acceptable error in km/s
-	cleared  bool
-}
-
-// String implements the Waypoint interface.
-func (wp *ReachVelocity) String() string {
-	return fmt.Sprintf("Reach velocity of %.1f km/s.", wp.velocity)
-}
-
-// Cleared implements the Waypoint interface.
-func (wp *ReachVelocity) Cleared() bool {
-	return wp.cleared
-}
-
-// ThrustDirection implements the Waypoint interface.
-func (wp *ReachVelocity) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	velocity := norm(o.V())
-	if math.Abs(velocity-wp.velocity) < wp.epsilon {
-		wp.cleared = true
-		return Coast{}, true
-	}
-	if velocity < wp.velocity {
-		// Increase velocity if the SC isn't going fast enough.
-		return Tangential{}, false
-	}
-	// Decrease velocity if the SC is going too fast.
-	return AntiTangential{}, false
-
-}
-
-// Action implements the Waypoint interface.
-func (wp *ReachVelocity) Action() *WaypointAction {
-	if wp.cleared {
-		return wp.action
-	}
-	return nil
-}
-
-// NewReachVelocity defines a new spiral until a given velocity is reached.
-func NewReachVelocity(velocity float64, action *WaypointAction) *ReachVelocity {
-	return &ReachVelocity{velocity, action, 5, false}
 }
 
 // OrbitTarget allows to target an orbit.
