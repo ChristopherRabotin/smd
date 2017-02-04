@@ -87,11 +87,3 @@ func Rad2deg(a float64) float64 {
 	}
 	return math.Mod(a/deg2rad, 360)
 }
-
-// MxV33 multiplies a matrix with a vector. Note that there is no dimension check!
-func MxV33(m *mat64.Dense, v []float64) (o []float64) {
-	vVec := mat64.NewVector(len(v), v)
-	var rVec mat64.Vector
-	rVec.MulVec(m, vVec)
-	return []float64{rVec.At(0, 0), rVec.At(1, 0), rVec.At(2, 0)}
-}

@@ -8,7 +8,6 @@ import (
 
 	"github.com/ChristopherRabotin/ode"
 	"github.com/gonum/floats"
-	"github.com/gonum/matrix/mat64"
 )
 
 // Propagator defines the different propagation methods available.
@@ -286,22 +285,17 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		V := []float64{f[3], f[4], f[5]}
 		tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
 		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
-		//Δv = PQW2ECI(-a.Orbit.Ω, -a.Orbit.i, -a.Orbit.ω, Δv)
-		var R1R3, R3R1R3 mat64.Dense
-		var ΔvPrime mat64.Vector
-		R1R3.Mul(R1(-a.Orbit.i), R3(-a.Orbit.ArgLatitudeU()))
-		R3R1R3.Mul(R3(-a.Orbit.Ω), &R1R3)
-		ΔvPrime.MulVec(&R3R1R3, mat64.NewVector(3, Δv))
-		for i := 0; i < 3; i++ {
-			Δv[i] = ΔvPrime.At(i, 0)
-		}
-
+		Δv = Rot313Vec(-a.Orbit.ArgLatitudeU(), -a.Orbit.i, -a.Orbit.Ω, Δv)
+		// d\vec{R}/dt
 		fDot[0] = f[3]
 		fDot[1] = f[4]
 		fDot[2] = f[5]
+		// d\vec{V}/dt
 		fDot[3] = bodyAcc*f[0] + Δv[0]
 		fDot[4] = bodyAcc*f[1] + Δv[1]
 		fDot[5] = bodyAcc*f[2] + Δv[2]
+		// d(fuel)/dt
+		fDot[6] = -usedFuel
 	default:
 		panic("propagator not implemented")
 	}

@@ -141,13 +141,13 @@ func (o *Orbit) RV() ([]float64, []float64) {
 	R[0] = p * cosν / (1 + o.e*cosν)
 	R[1] = p * sinν / (1 + o.e*cosν)
 	R[2] = 0
-	R = PQW2ECI(o.i, ω, Ω, R)
+	R = Rot313Vec(o.i, ω, Ω, R)
 
 	V = make([]float64, 3, 3)
 	V[0] = -math.Sqrt(o.Origin.μ/p) * sinν
 	V[1] = math.Sqrt(o.Origin.μ/p) * (o.e + cosν)
 	V[2] = 0
-	V = PQW2ECI(o.i, ω, Ω, V)
+	V = Rot313Vec(o.i, ω, Ω, V)
 
 	o.cachedR = R
 	o.cachedV = V
@@ -340,9 +340,6 @@ func NewOrbitFromRV(R, V []float64, c CelestialObject) *Orbit {
 		eVec[i] = ((v*v-c.μ/r)*R[i] - dot(R, V)*V[i]) / c.μ
 	}
 	e := norm(eVec)
-	if e >= 1 {
-		fmt.Println("[warning] parabolic and hyperpolic orbits not fully supported")
-	}
 	i := math.Acos(hVec[2] / norm(hVec))
 	ω := math.Acos(dot(n, eVec) / (norm(n) * e))
 	if math.IsNaN(ω) {
