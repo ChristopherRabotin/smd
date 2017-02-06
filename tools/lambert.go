@@ -3,13 +3,12 @@ package tools
 import (
 	"errors"
 	"math"
+	"time"
 
 	"github.com/ChristopherRabotin/smd"
 	"github.com/gonum/floats"
 	"github.com/gonum/matrix/mat64"
 )
-
-// TODO: Convert times to time.Duration
 
 const (
 	ε  = 1e-6                   // General epsilon
@@ -21,7 +20,7 @@ const (
 // Given the initial and final radii and a central body, it returns the needed initial and final velocities
 // along with ψ which is the square of the difference in eccentric anomaly. Note that the direction of motion
 // is computed directly in this function to simplify the generation of Pork chop plots.
-func Lambert(Ri, Rf *mat64.Vector, Δt0, dm float64, body smd.CelestialObject) (Vi, Vf *mat64.Vector, ψ float64, err error) {
+func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, dm float64, body smd.CelestialObject) (Vi, Vf *mat64.Vector, ψ float64, err error) {
 	// Initialize return variables
 	Vi = mat64.NewVector(3, nil)
 	Vf = mat64.NewVector(3, nil)
@@ -60,7 +59,13 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0, dm float64, body smd.CelestialObject) (
 	c2 := 1 / 2.
 	c3 := 1 / 6.
 	var Δt, y float64
-	for math.Abs(Δt-Δt0) > tε {
+	Δt0Sec := Δt0.Seconds()
+	var iteration uint
+	for math.Abs(Δt-Δt0Sec) > tε {
+		if iteration > 1000 {
+			err = errors.New("did not converge after 1000 iterations")
+		}
+		iteration++
 		y = rI + rF + A*(ψ*c3-1)/math.Sqrt(c2)
 		if A > 0 && y < 0 {
 			panic("not yet implemented")
@@ -70,7 +75,7 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0, dm float64, body smd.CelestialObject) (
 		}
 		χ := math.Sqrt(y / c2)
 		Δt = (math.Pow(χ, 3)*c3 + A*math.Sqrt(y)) / math.Sqrt(body.GM())
-		if Δt < Δt0 {
+		if Δt < Δt0Sec {
 			ψlow = ψ
 		} else {
 			ψup = ψ
