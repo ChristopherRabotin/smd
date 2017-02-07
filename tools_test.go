@@ -30,6 +30,7 @@ func TestLambert(t *testing.T) {
 			t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(Vf.T()), mat64.Formatted(VfExp.T()))
 			t.Fatalf("[%s] incorrect Vf computed", dm)
 		}
+		t.Logf("[OK] %s", dm)
 	}
 	// Test with dm=-1
 	ViExp = mat64.NewVector(3, []float64{-3.811158, -2.003854, 0})
@@ -49,6 +50,7 @@ func TestLambert(t *testing.T) {
 		t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(Vf.T()), mat64.Formatted(VfExp.T()))
 		t.Fatalf("[%s] incorrect Vf computed", TType2)
 	}
+	t.Logf("[OK] %s", TType2)
 }
 
 func TestLambertErrors(t *testing.T) {
