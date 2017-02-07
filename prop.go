@@ -459,14 +459,12 @@ func (cl *HohmannΔv) Precompute(o Orbit) {
 	rFinal := cl.target.RNorm()
 	vInit := o.VNorm()
 	vFinal := cl.target.VNorm()
-	aTransfer := 0.5 * (rInit + rFinal)
-	vDepature := math.Sqrt((2 * o.Origin.μ / rInit) - (o.Origin.μ / aTransfer))
-	vArrival := math.Sqrt((2 * o.Origin.μ / rFinal) - (o.Origin.μ / aTransfer))
-	cl.ΔvInit = vDepature - vInit
+	vDeparture, vArrival, tof := Hohmann(rInit, vInit, rFinal, vFinal, o.Origin)
+	cl.ΔvInit = vDeparture - vInit
 	cl.ΔvFinal = vArrival - vFinal
-	cl.tof = time.Duration(math.Pi*math.Sqrt(math.Pow(aTransfer, 3)/o.Origin.μ)) * time.Second
+	cl.tof = tof
 	durStr := cl.tof.String() + fmt.Sprintf(" (~%.1fd)", cl.tof.Hours()/24)
-	fmt.Printf("=== HOHMANN TRANSFER INFO ===\nHohmann transfer information - T.O.F.: %s\nvInit=%f km/s\tvFinal=%f km/s\nvDeparture=%f km/s\t vArrival=%f km/s\nΔvInit=%f km/s\tΔvFinal=%f\n=== HOHMANN TRANSFER END ====\n", durStr, vInit, vFinal, vDepature, vArrival, cl.ΔvInit, cl.ΔvFinal)
+	fmt.Printf("=== HOHMANN TRANSFER INFO ===\nHohmann transfer information - T.O.F.: %s\nvInit=%f km/s\tvFinal=%f km/s\nvDeparture=%f km/s\t vArrival=%f km/s\nΔvInit=%f km/s\tΔvFinal=%f\n=== HOHMANN TRANSFER END ====\n", durStr, vInit, vFinal, vDeparture, vArrival, cl.ΔvInit, cl.ΔvFinal)
 }
 
 // Control implements the ThrustControl interface.

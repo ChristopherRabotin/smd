@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
-	"github.com/ChristopherRabotin/smd/tools"
 	"github.com/gonum/matrix/mat64"
 )
 
@@ -34,7 +33,7 @@ func main() {
 		for days := 0; days < 250; days++ {
 			duration := arrivalDT.Add(time.Duration(days) * 24 * time.Hour).Sub(launchDT)
 			Rmars := mat64.NewVector(3, smd.Mars.HelioOrbit(launchDT).R())
-			Vi, _, _, err := tools.Lambert(Rearth, Rmars, duration, dm.val, smd.Sun)
+			Vi, _, _, err := smd.Lambert(Rearth, Rmars, duration, dm.val, smd.Sun)
 			if err != nil {
 				fmt.Printf("[ERROR] %s: %s\n", duration, err)
 				continue

@@ -1,12 +1,13 @@
-package tools
+package smd
 
 import (
 	"testing"
 	"time"
 
-	"github.com/ChristopherRabotin/smd"
 	"github.com/gonum/matrix/mat64"
 )
+
+// The Hohmann tests are in waypoint_test.go
 
 func TestLambert(t *testing.T) {
 	// From Vallado 4th edition, page 497
@@ -15,7 +16,7 @@ func TestLambert(t *testing.T) {
 	ViExp := mat64.NewVector(3, []float64{2.058913, 2.915965, 0})
 	VfExp := mat64.NewVector(3, []float64{-3.451565, 0.910315, 0})
 	for _, dm := range []float64{0, 1} {
-		Vi, Vf, ψ, err := Lambert(Ri, Rf, 76.0*time.Minute, dm, smd.Earth)
+		Vi, Vf, ψ, err := Lambert(Ri, Rf, 76.0*time.Minute, dm, Earth)
 		if err != nil {
 			t.Fatalf("err %s", err)
 		}
@@ -34,7 +35,7 @@ func TestLambert(t *testing.T) {
 	ViExp = mat64.NewVector(3, []float64{-3.811158, -2.003854, 0})
 	VfExp = mat64.NewVector(3, []float64{4.207569, 0.914724, 0})
 
-	Vi, Vf, ψ, err := Lambert(Ri, Rf, 76.0*time.Minute, -1, smd.Earth)
+	Vi, Vf, ψ, err := Lambert(Ri, Rf, 76.0*time.Minute, -1, Earth)
 	if err != nil {
 		t.Fatalf("err %s", err)
 	}
@@ -54,15 +55,15 @@ func TestLambertErrors(t *testing.T) {
 	// Invalid R vectors
 	Ri := mat64.NewVector(3, []float64{15945.34, 0, 0})
 	Rf := mat64.NewVector(3, []float64{12214.83899, 10249.46731, 0})
-	_, _, _, err := Lambert(Ri, Rf, 76.0*time.Minute, 2, smd.Earth)
+	_, _, _, err := Lambert(Ri, Rf, 76.0*time.Minute, 2, Earth)
 	if err == nil {
 		t.Fatal("err should not be nil if dm == 2")
 	}
-	_, _, _, err = Lambert(mat64.NewVector(2, []float64{15945.34, 0}), Rf, 76.0*time.Minute, 2, smd.Earth)
+	_, _, _, err = Lambert(mat64.NewVector(2, []float64{15945.34, 0}), Rf, 76.0*time.Minute, 2, Earth)
 	if err == nil {
 		t.Fatal("err should not be nil if the R vectors are of different dimensions")
 	}
-	_, _, _, err = Lambert(mat64.NewVector(2, []float64{15945.34, 0}), mat64.NewVector(2, []float64{12214.83899, 10249.46731}), 76.0*time.Minute, 2, smd.Earth)
+	_, _, _, err = Lambert(mat64.NewVector(2, []float64{15945.34, 0}), mat64.NewVector(2, []float64{12214.83899, 10249.46731}), 76.0*time.Minute, 2, Earth)
 	if err == nil {
 		t.Fatal("err should not be nil if the R vectors are of not of dimension 3x1")
 	}
