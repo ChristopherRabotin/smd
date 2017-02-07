@@ -3,6 +3,8 @@ package smd
 import (
 	"math"
 	"testing"
+
+	"github.com/gonum/matrix/mat64"
 )
 
 func TestR1R2R3(t *testing.T) {
@@ -48,18 +50,33 @@ func TestR1R2R3(t *testing.T) {
 	}
 }
 
+func TestRot313(t *testing.T) {
+	var R1R3, R3R1R3m mat64.Dense
+	θ1 := math.Pi / 17
+	θ2 := math.Pi / 16
+	θ3 := math.Pi / 15
+	R1R3.Mul(R1(θ2), R3(θ1))
+	R3R1R3m.Mul(R3(θ3), &R1R3)
+	R3R1R3m.Sub(&R3R1R3m, R3R1R3(θ1, θ2, θ3))
+	if !mat64.Equal(&R3R1R3m, mat64.NewDense(3, 3, nil)) {
+		t.Logf("\n%+v", mat64.Formatted(&R3R1R3m))
+		t.Logf("\n%+v", mat64.Formatted(R3R1R3(θ1, θ2, θ3)))
+		t.Fatal("failed")
+	}
+}
+
 func TestPQW2ECI(t *testing.T) {
 	i := Deg2rad(87.87)
 	ω := Deg2rad(53.38)
 	Ω := Deg2rad(227.89)
-	Rp := PQW2ECI(i, ω, Ω, []float64{-466.7639, 11447.0219, 0})
+	Rp := Rot313Vec(-ω, -i, -Ω, []float64{-466.7639, 11447.0219, 0})
 	Re := []float64{6525.368103709379, 6861.531814548294, 6449.118636407358}
 	if !vectorsEqual(Re, Rp) {
-		t.Fatal("R conversion failed")
+		t.Fatalf("R conversion failed:\n%+v\n%+v", Re, Rp)
 	}
-	Vp := PQW2ECI(i, ω, Ω, []float64{-5.996222, 4.753601, 0})
+	Vp := Rot313Vec(-ω, -i, -Ω, []float64{-5.996222, 4.753601, 0})
 	Ve := []float64{4.902278620687254, 5.533139558121602, -1.9757104281719946}
 	if !vectorsEqual(Ve, Vp) {
-		t.Fatal("V conversion failed")
+		t.Fatalf("V conversion failed:\n%+v\n%+v", Ve, Vp)
 	}
 }

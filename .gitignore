@@ -9,3 +9,4 @@
 outputdata/
 data/jplhorizon
 env.sh
+*.csv

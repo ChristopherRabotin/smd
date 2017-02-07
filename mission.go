@@ -221,8 +221,6 @@ func (a *Mission) SetState(t float64, s []float64) {
 		// Now further from the 1% dead zone
 		a.collided = false
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "revived", a.Orbit.Origin.Name, "dt", a.CurrentDT)
-	} else if (a.Orbit.RNorm() > a.Orbit.Origin.SOI || floats.EqualWithinAbs(a.Orbit.e, 1, eccentricityε)) && !a.Orbit.Origin.Equals(Sun) {
-		a.Vehicle.FuncQ = append(a.Vehicle.FuncQ, a.Vehicle.ToXCentric(Sun, a.CurrentDT, a.Orbit))
 	}
 
 	// Propulsion sanity check
@@ -255,8 +253,15 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		// Instead the angles must be fixed and checked only at in SetState function.
 		// Note that we don't use Rad2deg because it forces the modulo on the angles, and we want to avoid this for now.
 		tmpOrbit = NewOrbitFromOE(f[0], f[1], f[2]/deg2rad, f[3]/deg2rad, f[4]/deg2rad, f[5]/deg2rad, a.Orbit.Origin)
-		p := tmpOrbit.SemiParameter()
 		h := tmpOrbit.HNorm()
+		if floats.EqualWithinAbs(tmpOrbit.e, 1, eccentricityε) {
+			if tmpOrbit.e > 1 {
+				tmpOrbit.e -= 2 * eccentricityε
+			} else {
+				tmpOrbit.e += 2 * eccentricityε
+			}
+		}
+		p := tmpOrbit.SemiParameter()
 		r := tmpOrbit.RNorm()
 		sini, cosi := math.Sincos(tmpOrbit.i)
 		sinν, cosν := math.Sincos(tmpOrbit.ν)
@@ -265,8 +270,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		fS := Δv[1]
 		fW := Δv[2]
 		// da/dt
-		fDot[0] = ((2 * tmpOrbit.a * tmpOrbit.a) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
-		//fmt.Printf("%.10f\t%.10f\t%.10f\n", tmpOrbit.GetRNorm(), tmpOrbit.Origin.μ/tmpOrbit.GetRNorm(), tmpOrbit.Getξ())
+		fDot[0] = ((2 * math.Pow(tmpOrbit.a, 2)) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
 		// de/dt
 		fDot[1] = (p*sinν*fR + fS*((p+r)*cosν+r*tmpOrbit.e)) / h
 		// di/dt
@@ -282,17 +286,21 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 
 	case Cartesian:
 		R := []float64{f[0], f[1], f[2]}
+		r := norm(R)
 		V := []float64{f[3], f[4], f[5]}
 		tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
-		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
-		Δv = PQW2ECI(a.Orbit.i, a.Orbit.ω, a.Orbit.Ω, Δv)
-
+		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(r, 3)
+		Δv = Rot313Vec(-a.Orbit.ArgLatitudeU(), -a.Orbit.i, -a.Orbit.Ω, Δv)
+		// d\vec{R}/dt
 		fDot[0] = f[3]
 		fDot[1] = f[4]
 		fDot[2] = f[5]
+		// d\vec{V}/dt
 		fDot[3] = bodyAcc*f[0] + Δv[0]
 		fDot[4] = bodyAcc*f[1] + Δv[1]
 		fDot[5] = bodyAcc*f[2] + Δv[2]
+		// d(fuel)/dt
+		fDot[6] = -usedFuel
 	default:
 		panic("propagator not implemented")
 	}

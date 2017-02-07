@@ -26,7 +26,11 @@ type Orbit struct {
 
 // Energyξ returns the specific mechanical energy ξ.
 func (o Orbit) Energyξ() float64 {
-	return -o.Origin.μ / (2 * o.a)
+	ξ := -o.Origin.μ / (2 * o.a)
+	if o.e > 1 {
+		ξ *= -1
+	}
+	return ξ
 }
 
 // Tildeω returns the longitude of periapsis.
@@ -137,13 +141,13 @@ func (o *Orbit) RV() ([]float64, []float64) {
 	R[0] = p * cosν / (1 + o.e*cosν)
 	R[1] = p * sinν / (1 + o.e*cosν)
 	R[2] = 0
-	R = PQW2ECI(o.i, ω, Ω, R)
+	R = Rot313Vec(-ω, -o.i, -Ω, R)
 
 	V = make([]float64, 3, 3)
 	V[0] = -math.Sqrt(o.Origin.μ/p) * sinν
 	V[1] = math.Sqrt(o.Origin.μ/p) * (o.e + cosν)
 	V[2] = 0
-	V = PQW2ECI(o.i, ω, Ω, V)
+	V = Rot313Vec(-ω, -o.i, -Ω, V)
 
 	o.cachedR = R
 	o.cachedV = V
@@ -205,14 +209,6 @@ func (o Orbit) hashValid() bool {
 
 // String implements the stringer interface (hence the value receiver)
 func (o Orbit) String() string {
-	if o.e < eccentricityε {
-		// Circular orbit
-		if o.i > angleε {
-			return fmt.Sprintf("a=%.1f e=%.4f i=%.3f Ω=%.3f u=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.Ω), Rad2deg(o.ArgLatitudeU()))
-		}
-		// Equatorial
-		return fmt.Sprintf("a=%.1f e=%.4f i=%.3f Ω=%.3f λ=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.Ω), Rad2deg(o.TrueLongλ()))
-	}
 	return fmt.Sprintf("a=%.1f e=%.4f i=%.3f Ω=%.3f ω=%.3f ν=%.3f λ=%.3f u=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.Ω), Rad2deg(o.ω), Rad2deg(o.ν), Rad2deg(o.TrueLongλ()), Rad2deg(o.ArgLatitudeU()))
 }
 
@@ -336,9 +332,6 @@ func NewOrbitFromRV(R, V []float64, c CelestialObject) *Orbit {
 		eVec[i] = ((v*v-c.μ/r)*R[i] - dot(R, V)*V[i]) / c.μ
 	}
 	e := norm(eVec)
-	if e >= 1 {
-		fmt.Println("[warning] parabolic and hyperpolic orbits not fully supported")
-	}
 	i := math.Acos(hVec[2] / norm(hVec))
 	ω := math.Acos(dot(n, eVec) / (norm(n) * e))
 	if math.IsNaN(ω) {

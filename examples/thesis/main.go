@@ -18,26 +18,59 @@ func main() {
 	CheckEnvVars()
 	runtime.GOMAXPROCS(3)
 
-	start := time.Date(2016, 3, 14, 9, 31, 0, 0, time.UTC) // ExoMars launch date.
-	//end := start.Add(time.Duration(-1) * time.Nanosecond)  // Propagate until waypoint reached.
-	end := time.Date(2018, 07, 13, 0, 0, 0, 0, time.UTC)
+	/* Propagate Mars only once. Then perform dichotomy to get to Mars. */
 
-	/* Let's propagate out of Mars at a guessed date of 7 months after launch date from Earth.
-	Note that we only output the CSV because we don't need to visualize this.
-	*/
-	endM := end.Add(time.Duration(4 * 30.5 * 24))
+	baseDepart := time.Date(2015, 8, 30, 0, 0, 0, 0, time.UTC)
+	initTimeStep := time.Duration(4*7*24) * time.Hour
+	estArrival := time.Date(2016, 8, 24, 0, 0, 0, 0, time.UTC)
+
+	marsStartDT := estArrival.Add(-time.Duration(2*31*24) * time.Hour)
 	scMars := SpacecraftFromMars("IM")
 	scMars.LogInfo()
-	astroM := smd.NewMission(scMars, InitialMarsOrbit(), end, endM, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
+	// Propagate the Mars orbit until it is heliocentric. We will target this because it means from there, we can return back into Mars SOI.
+	astroM := smd.NewMission(scMars, InitialMarsOrbit(), marsStartDT, marsStartDT.Add(time.Duration(-1)*time.Hour), smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
 	astroM.Propagate()
 
 	target := astroM.Orbit
-	//	target := smd.NewOrbitFromOE(226090298.679, 0.088, 26.195, 3.516, 326.494, 278.358, smd.Sun)
-	//	fmt.Printf("target orbit: %s\n", target)
-	sc := SpacecraftFromEarth("IE", *target)
-	sc.LogInfo()
-	astro := smd.NewMission(sc, InitialEarthOrbit(), start, end, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "IE", AsCSV: true, Cosmo: true, Timestamp: false})
-	astro.Propagate()
+
+	// Start dichotomy
+	iter := 0
+	arrivedEarly := 1 // if arrived early, then set this to 1 (to leave later).
+	timeStep := initTimeStep
+	for timeStep > time.Duration(1*24)*time.Hour {
+		actualStart := baseDepart
+		if iter > 0 {
+			timeStep = time.Duration(arrivedEarly) * timeStep / time.Duration(iter)
+			actualStart = actualStart.Add(timeStep)
+		}
+		name := fmt.Sprintf("IE-%d%1d%1d%1d", actualStart.Year(), actualStart.Month(), actualStart.Day(), actualStart.Hour())
+		fmt.Printf("===== %s (iter=%d early=%d) =====\n", actualStart, iter, arrivedEarly)
+		sc := SpacecraftFromEarth(name, *target)
+		sc.LogInfo()
+		// Only propagate til a bit after the estimated arrival date.
+		maxDT := estArrival.Add(time.Duration(3*31*24) * time.Hour)
+		astro := smd.NewMission(sc, InitialEarthOrbit(), actualStart, maxDT, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: name, AsCSV: true, Cosmo: true, Timestamp: false})
+		astro.Propagate()
+		// Determine whether we arrived before or after Mars
+		marsR0 := smd.Mars.HelioOrbit(astro.CurrentDT).R()
+		marsR1 := smd.Mars.HelioOrbit(astro.CurrentDT.Add(time.Hour)).R()
+		scR := astro.Orbit.R()
+		diff0 := []float64{0, 0, 0}
+		diff1 := []float64{0, 0, 0}
+		for i := 0; i < 3; i++ {
+			diff0[i] = marsR0[i] - scR[i]
+			diff1[i] = marsR1[i] - scR[i]
+		}
+		if norm(diff0) > norm(diff1) {
+			// This means the distance has *decreased*, therefore Mars is getting closer, so effectively,
+			// we have to leave slightly later to hopefully catch Mars.
+			arrivedEarly = 1
+		} else {
+			// We are late and Mars is leaving. Need to leave earlier to catch Mars.
+			arrivedEarly = -1
+		}
+		iter++
+	}
 
 }
 

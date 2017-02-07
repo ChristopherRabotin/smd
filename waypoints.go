@@ -2,7 +2,6 @@ package smd
 
 import (
 	"fmt"
-	"math"
 	"time"
 )
 
@@ -43,7 +42,7 @@ func NewOutwardSpiral(body CelestialObject, action *WaypointAction) *ReachDistan
 		// will crash if there are multiple attempts to switch to another
 		action = nil
 	}
-	return &ReachDistance{body.SOI, action, false}
+	return &ReachDistance{body.SOI, action, true, false}
 }
 
 // Loiter is a type of waypoint which allows the vehicle to stay at a given position for a given duration.
@@ -98,9 +97,9 @@ func NewLoiter(duration time.Duration, action *WaypointAction) *Loiter {
 
 // ReachDistance is a type of waypoint which thrusts until a given distance is reached from the central body.
 type ReachDistance struct {
-	distance float64
-	action   *WaypointAction
-	cleared  bool
+	distance         float64
+	action           *WaypointAction
+	further, cleared bool
 }
 
 // String implements the Waypoint interface.
@@ -115,11 +114,18 @@ func (wp *ReachDistance) Cleared() bool {
 
 // ThrustDirection implements the Waypoint interface.
 func (wp *ReachDistance) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if o.RNorm() >= wp.distance {
+	if wp.further {
+		if o.RNorm() >= wp.distance {
+			wp.cleared = true
+			return Coast{}, true
+		}
+		return Tangential{}, false
+	}
+	if o.RNorm() <= wp.distance {
 		wp.cleared = true
 		return Coast{}, true
 	}
-	return Tangential{}, false
+	return AntiTangential{}, false
 }
 
 // Action implements the Waypoint interface.
@@ -128,55 +134,8 @@ func (wp *ReachDistance) Action() *WaypointAction {
 }
 
 // NewReachDistance defines a new spiral until a given distance is reached.
-func NewReachDistance(distance float64, action *WaypointAction) *ReachDistance {
-	return &ReachDistance{distance, action, false}
-}
-
-// ReachVelocity is a type of waypoint which thrusts until a given velocity is reached from the central body.
-type ReachVelocity struct {
-	velocity float64
-	action   *WaypointAction
-	epsilon  float64 // acceptable error in km/s
-	cleared  bool
-}
-
-// String implements the Waypoint interface.
-func (wp *ReachVelocity) String() string {
-	return fmt.Sprintf("Reach velocity of %.1f km/s.", wp.velocity)
-}
-
-// Cleared implements the Waypoint interface.
-func (wp *ReachVelocity) Cleared() bool {
-	return wp.cleared
-}
-
-// ThrustDirection implements the Waypoint interface.
-func (wp *ReachVelocity) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	velocity := norm(o.V())
-	if math.Abs(velocity-wp.velocity) < wp.epsilon {
-		wp.cleared = true
-		return Coast{}, true
-	}
-	if velocity < wp.velocity {
-		// Increase velocity if the SC isn't going fast enough.
-		return Tangential{}, false
-	}
-	// Decrease velocity if the SC is going too fast.
-	return AntiTangential{}, false
-
-}
-
-// Action implements the Waypoint interface.
-func (wp *ReachVelocity) Action() *WaypointAction {
-	if wp.cleared {
-		return wp.action
-	}
-	return nil
-}
-
-// NewReachVelocity defines a new spiral until a given velocity is reached.
-func NewReachVelocity(velocity float64, action *WaypointAction) *ReachVelocity {
-	return &ReachVelocity{velocity, action, 5, false}
+func NewReachDistance(distance float64, further bool, action *WaypointAction) *ReachDistance {
+	return &ReachDistance{distance, action, further, false}
 }
 
 // OrbitTarget allows to target an orbit.

@@ -30,6 +30,11 @@ type CelestialObject struct {
 	PP     *planetposition.V87Planet
 }
 
+// GM returns μ (which is unexported because it's a lowercase letter)
+func (c CelestialObject) GM() float64 {
+	return c.μ
+}
+
 // J returns the perturbing J_n factor for the provided n.
 // Currently only J2 and J3 are supported.
 func (c CelestialObject) J(n uint8) float64 {
