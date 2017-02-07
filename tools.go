@@ -9,10 +9,29 @@ import (
 	"github.com/gonum/matrix/mat64"
 )
 
-// REASON
-// Here goes a number of standalone functions
+// TransferType defines the type of Lambert transfer
+type TransferType uint8
+
+func (t TransferType) String() string {
+	switch t {
+	case TTypeAuto:
+		return "auto-revs"
+	case TType1:
+		return "type-1"
+	case TType2:
+		return "type-2"
+	default:
+		panic("unknown transfer type")
+	}
+}
 
 const (
+	// TTypeAuto lets the Lambert solver determine the type
+	TTypeAuto TransferType = iota + 1
+	// TType1 is transfer of type 1 (single revolution, short way)
+	TType1
+	// TType2 is transfer of type 2 (single revolution, long way)
+	TType2
 	lambertε         = 1e-6                   // General epsilon
 	lambertTlambertε = 1e-6                   // Time epsilon (1e-6 seconds)
 	lambertνlambertε = (5e-5 / 180) * math.Pi // 0.00005 degrees
@@ -34,7 +53,7 @@ func Hohmann(rI, vI, rF, vF float64, body CelestialObject) (vDeparture, vArrival
 // Given the initial and final radii and a central body, it returns the needed initial and final velocities
 // along with ψ which is the square of the difference in eccentric anomaly. Note that the direction of motion
 // is computed directly in this function to simplify the generation of Pork chop plots.
-func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, dm float64, body CelestialObject) (Vi, Vf *mat64.Vector, ψ float64, err error) {
+func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body CelestialObject) (Vi, Vf *mat64.Vector, ψ float64, err error) {
 	// Initialize return variables
 	Vi = mat64.NewVector(3, nil)
 	Vf = mat64.NewVector(3, nil)
@@ -51,15 +70,18 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, dm float64, body Celestia
 	// Compute the direction of motion
 	νI := math.Atan2(Ri.At(1, 0), Ri.At(0, 0))
 	νF := math.Atan2(Rf.At(1, 0), Rf.At(0, 0))
-	if dm == 0 {
+	var dm float64
+	switch ttype {
+	case TType1:
+		dm = 1
+	case TType2:
+		dm = -1
+	default:
 		if νF-νI < math.Pi {
 			dm = 1
 		} else {
 			dm = -1
 		}
-	} else if dm != 1 && dm != -1 {
-		err = errors.New("direction of motion must be either 0, -1 or 1 (multi rev not supported)")
-		return
 	}
 	A := dm * math.Sqrt(rI*rF*(1+cosΔν))
 	if νF-νI < lambertνlambertε && floats.EqualWithinAbs(A, 0, lambertε) {
