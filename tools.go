@@ -78,6 +78,7 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, dm float64, body Celestia
 	for math.Abs(Δt-Δt0Sec) > lambertTlambertε {
 		if iteration > 1000 {
 			err = errors.New("did not converge after 1000 iterations")
+			return
 		}
 		iteration++
 		y = rI + rF + A*(ψ*c3-1)/math.Sqrt(c2)
