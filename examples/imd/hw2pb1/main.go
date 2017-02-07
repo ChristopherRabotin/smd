@@ -23,8 +23,7 @@ func main() {
 		csvContent := fmt.Sprintf("# Earth -> Mars Lambert type %s\n#Launch: %s\n#Initial arrival:%s\ndays,c3,vInf,phi2\n", ttype, launchDT, arrivalEstDT)
 		minC3 := 10e4
 		minVinf := 10e4
-		minDurC3 := 0.
-		minDurVinf := 0.
+		var minArrivalDT time.Time
 		for days := 0; days < 200; days++ {
 			arrivalDT := arrivalEstDT.Add(time.Duration(days) * 24 * time.Hour)
 			duration := arrivalDT.Sub(launchDT)
@@ -45,14 +44,11 @@ func main() {
 			// Check if min
 			if vInf < minVinf {
 				minVinf = vInf
-				minDurVinf = tof
-			}
-			if c3 < minC3 {
 				minC3 = c3
-				minDurC3 = tof
+				minArrivalDT = arrivalDT
 			}
 		}
-		fmt.Printf("===== %s min ======\nvInf=%f\tdur=%.0f\nc3=%f\tdur=%.0f\n=======================\n", ttype, minVinf, minDurVinf, minC3, minDurC3)
+		fmt.Printf("==== Minimum for %s ====\nArrival=%s (%.0f days)\nvInf=%f km/s\tc3=%f km^2/s^2\n\n", ttype, minArrivalDT, minArrivalDT.Sub(launchDT).Hours()/24, minVinf, minC3)
 		// Write CSV file.
 		f, err := os.Create(fmt.Sprintf("./pb1-%s.csv", ttype))
 		if err != nil {
