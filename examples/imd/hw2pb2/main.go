@@ -31,7 +31,7 @@ func main() {
 	aTr, eTr := smd.Radii2ae(rATr, rPTr)
 	pTr := aTr * (1 - math.Pow(eTr, 2))
 	νEnc := math.Acos((1 / eTr) * (pTr/rPCeres - 1))
-	trOrbitAtEnc := smd.NewOrbitFromOE(aTr, eTr, 0, 0, 0, νEnc, smd.Sun)
+	trOrbitAtEnc := smd.NewOrbitFromOE(aTr, eTr, 0, 0, 0, νEnc*180/math.Pi, smd.Sun)
 	fmt.Printf("transfer orbit at encounter: %s\n", trOrbitAtEnc)
 	// Compute the mean motion:
 	sinE, cosE := trOrbitAtEnc.SinCosE()
@@ -40,5 +40,5 @@ func main() {
 	nTr := (2 * math.Pi) / trOrbitAtEnc.Period().Seconds()
 	// Compute the time since periapsis, since that's when Dawn departed Vesta:
 	tPeri, _ := time.ParseDuration(fmt.Sprintf("%fs", M/nTr))
-	fmt.Printf("t = %s (~ %.2f days)\n", tPeri, tPeri.Hours()/24)
+	fmt.Printf("t = %s (~%.2f days or ~%.3f years)\n", tPeri, tPeri.Hours()/24, tPeri.Hours()/(24*365.25))
 }
