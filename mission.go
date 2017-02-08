@@ -95,7 +95,7 @@ func (a *Mission) LogStatus() {
 func (a *Mission) Propagate() {
 	// Add a ticker status report based on the duration of the simulation.
 	a.LogStatus()
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	go func() {
 		for _ = range ticker.C {
 			if a.done {
@@ -312,6 +312,9 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		fDot[i] += pert[i]
 		if math.IsNaN(fDot[i]) {
 			r, v := a.Orbit.RV()
+			if a.propMethod == GaussianVOP {
+				fmt.Println("\n\n=====\n/!\\ Use Cartesian propagator if going hyperbolic or circular\n=====")
+			}
 			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ncur:%s\tΔv=%+v\nR=%+v\tV=%+v", i, a.CurrentDT, a.Orbit, Δv, r, v))
 		}
 	}
