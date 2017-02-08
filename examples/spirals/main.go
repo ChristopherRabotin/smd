@@ -19,7 +19,8 @@ func sc() *smd.Spacecraft {
 	thrusters := []smd.EPThruster{smd.NewGenericEP(5, 5000)} // VASIMR (approx.)
 	dryMass := 10000.0
 	fuelMass := 5000.0
-	return smd.NewSpacecraft("Spiral", dryMass, fuelMass, eps, thrusters, false, []*smd.Cargo{}, []smd.Waypoint{smd.NewOutwardSpiral(smd.Earth, nil)})
+	return smd.NewSpacecraft("Spiral", dryMass, fuelMass, eps, thrusters, false, []*smd.Cargo{},
+		[]smd.Waypoint{smd.NewToHyperbolic(nil), smd.NewLoiter(time.Duration(5)*time.Hour, nil), smd.NewToElliptical(nil), smd.NewLoiter(time.Duration(31*24)*time.Hour, nil)})
 }
 
 func initOrbit() *smd.Orbit {
@@ -36,7 +37,7 @@ func main() {
 	runtime.GOMAXPROCS(3)
 
 	depart := time.Date(2015, 8, 30, 0, 0, 0, 0, time.UTC)
-	endDT := time.Date(2016, 2, 27, 0, 0, 0, 0, time.UTC)
+	endDT := time.Date(2016, 7, 27, 0, 0, 0, 0, time.UTC)
 	name := "spiral-a2"
 	astro := smd.NewMission(sc(), initOrbit(), depart, endDT, smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: name, AsCSV: true, Cosmo: true, Timestamp: false})
 	astro.Propagate()

@@ -168,9 +168,12 @@ func TestToElliptical(t *testing.T) {
 	wp := NewToElliptical(&ref2Mars)
 	dt := time.Unix(0, 0)
 	o := *NewOrbitFromOE(Earth.Radius+191.34411, 1.2, 0, 0, 0, 90, Earth)
-	_, cleared := wp.ThrustDirection(o, dt)
+	ctrl, cleared := wp.ThrustDirection(o, dt)
 	if cleared {
 		t.Fatal("cleared was true for hyperbolic orbit")
+	}
+	if ctrl.Type() != antiTangential {
+		t.Fatal("expected the control to be antiTangential")
 	}
 	o = *NewOrbitFromOE(Earth.Radius+191.34411, 1, 0, 0, 0, 90, Earth)
 	_, cleared = wp.ThrustDirection(o, dt)
@@ -181,5 +184,30 @@ func TestToElliptical(t *testing.T) {
 	_, cleared = wp.ThrustDirection(o, dt)
 	if !cleared {
 		t.Fatal("cleared was false for elliptical orbit")
+	}
+}
+
+func TestToHyperbolic(t *testing.T) {
+	// Example action
+	ref2Mars := WaypointAction{Type: REFMARS, Cargo: nil}
+	wp := NewToHyperbolic(&ref2Mars)
+	dt := time.Unix(0, 0)
+	o := *NewOrbitFromOE(Earth.Radius+191.34411, 0.2, 0, 0, 0, 90, Earth)
+	ctrl, cleared := wp.ThrustDirection(o, dt)
+	if cleared {
+		t.Fatal("cleared was true for elliptical orbit")
+	}
+	if ctrl.Type() != tangential {
+		t.Fatal("expected the control to be antiTangential")
+	}
+	o = *NewOrbitFromOE(Earth.Radius+191.34411, 1, 0, 0, 0, 90, Earth)
+	_, cleared = wp.ThrustDirection(o, dt)
+	if cleared {
+		t.Fatal("cleared was true for parabolic orbit")
+	}
+	o = *NewOrbitFromOE(Earth.Radius+191.34411, 1.2, 0, 0, 0, 90, Earth)
+	_, cleared = wp.ThrustDirection(o, dt)
+	if !cleared {
+		t.Fatal("cleared was false for hyperbolic orbit")
 	}
 }

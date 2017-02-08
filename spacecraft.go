@@ -79,7 +79,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		// We've found a waypoint which isn't reached.
 		ctrl, reached := wp.ThrustDirection(*o, dt)
 		if clType := ctrl.Type(); sc.prevCL == nil || *sc.prevCL != clType {
-			sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "thrust", clType, "reason", ctrl.Reason(), "v(km/s)", norm(o.V()))
+			sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "thrust", clType, "reason", ctrl.Reason(), "v(km/s)", norm(o.V()), "orbit", o)
 			sc.prevCL = &clType
 		}
 		if reached {
