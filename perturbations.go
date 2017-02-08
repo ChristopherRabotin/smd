@@ -47,10 +47,17 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, method Propagator) []float
 			R := o.R()
 			r := norm(R)
 			z2 := math.Pow(R[2], 2)
-			acc := -(3 * o.Origin.μ * o.Origin.J2 * math.Pow(o.Origin.Radius, 2)) / (2 * math.Pow(r, 5))
+			acc := -(3 * o.Origin.μ * o.Origin.J(2) * math.Pow(o.Origin.Radius, 2)) / (2 * math.Pow(r, 5))
 			pert[3] = acc * R[0] * (1 - 5*z2/(r*r))
 			pert[4] = acc * R[1] * (1 - 5*z2/(r*r))
 			pert[5] = acc * R[2] * (3 - 5*z2/(r*r))
+			if p.Jn >= 3 {
+				// Add J3
+				accJ3 := o.Origin.μ * math.Pow(o.Origin.Radius, 3) * o.Origin.J(3) / (2 * math.Pow(r, 6))
+				pert[3] += accJ3 * 5 * R[0] * R[2] * (3 - 7*z2/(r*r))
+				pert[4] += accJ3 * 5 * R[1] * R[2] * (3 - 7*z2/(r*r))
+				pert[5] += accJ3 * (3*z2 - 3*math.Pow(r, 3)/5 + 3*z2/r - 7*math.Pow(R[2], 4)/math.Pow(r, 2))
+			}
 
 		default:
 			panic("unsupported propagation")
