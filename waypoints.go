@@ -248,3 +248,40 @@ func NewHohmannTransfer(target Orbit, action *WaypointAction) *HohmannTransfer {
 	epoch := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 	return &HohmannTransfer{action, NewHohmannΔv(target), epoch, false}
 }
+
+// ToElliptical slows down the vehicle until its orbit is elliptical.
+type ToElliptical struct {
+	action  *WaypointAction
+	cleared bool
+}
+
+// String implements the Waypoint interface.
+func (wp *ToElliptical) String() string {
+	return fmt.Sprintf("to elliptical")
+}
+
+// Cleared implements the Waypoint interface.
+func (wp *ToElliptical) Cleared() bool {
+	return wp.cleared
+}
+
+// Action implements the Waypoint interface.
+func (wp *ToElliptical) Action() *WaypointAction {
+	if wp.cleared {
+		return wp.action
+	}
+	return nil
+}
+
+// ThrustDirection implements the optimal orbit target.
+func (wp *ToElliptical) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
+	if o.e < 1 {
+		wp.cleared = true
+	}
+	return AntiTangential{}, wp.cleared
+}
+
+// NewToElliptical defines a ToElliptical waypoint.
+func NewToElliptical(action *WaypointAction) *ToElliptical {
+	return &ToElliptical{action, false}
+}

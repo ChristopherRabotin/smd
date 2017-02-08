@@ -161,3 +161,25 @@ func TestHohmannΔv(t *testing.T) {
 		t.Fatalf("expected Hohmann coasting, instead got: %+v", Δv)
 	}
 }
+
+func TestToElliptical(t *testing.T) {
+	// Example action
+	ref2Mars := WaypointAction{Type: REFMARS, Cargo: nil}
+	wp := NewToElliptical(&ref2Mars)
+	dt := time.Unix(0, 0)
+	o := *NewOrbitFromOE(Earth.Radius+191.34411, 1.2, 0, 0, 0, 90, Earth)
+	_, cleared := wp.ThrustDirection(o, dt)
+	if cleared {
+		t.Fatal("cleared was true for hyperbolic orbit")
+	}
+	o = *NewOrbitFromOE(Earth.Radius+191.34411, 1, 0, 0, 0, 90, Earth)
+	_, cleared = wp.ThrustDirection(o, dt)
+	if cleared {
+		t.Fatal("cleared was true for parabolic orbit")
+	}
+	o = *NewOrbitFromOE(Earth.Radius+191.34411, 0.2, 0, 0, 0, 90, Earth)
+	_, cleared = wp.ThrustDirection(o, dt)
+	if !cleared {
+		t.Fatal("cleared was false for elliptical orbit")
+	}
+}
