@@ -107,6 +107,78 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 	A.Set(0, 3, 1)
 	A.Set(1, 4, 1)
 	A.Set(2, 5, 1)
+	// Jn perturbations:
+	if e.Perts.Jn > 1 {
+		jfact := e.Orbit.Origin.μ * math.Pow(e.Orbit.Origin.Radius, 2) / 2
+		// Notation simplification
+		x := R[0]
+		y := R[1]
+		z := R[2]
+		r := orbit.RNorm()
+		J2 := e.Orbit.Origin.J2
+		j2fact1 := -15 * J2 / math.Pow(r, 6)
+		j2fact2 := 3 * J2 / math.Pow(r, 5)
+		f5zr := 5 * math.Pow(z, 2) / math.Pow(r, 2)
+		f10xz := -10 * x * math.Pow(z, 2) / math.Pow(r, 3)
+		f10yz := 10 * y * math.Pow(z, 2) / math.Pow(r, 3) // Yes, this is +10 ...
+		rzr := (r - math.Pow(z, 2)) / math.Pow(r, 3)
+		// Ai0 = \frac{\partial a}{\partial x}
+		// Ai1 = \frac{\partial a}{\partial y}
+		// Ai2 = \frac{\partial a}{\partial z}
+		// J2
+		A30 := A.At(3, 0)
+		A30 += j2fact1*(1-f5zr)*math.Pow(x, 2) + j2fact2*(1-f5zr+f10xz*x)
+		A40 := A.At(4, 0)
+		A40 += j2fact1*(1-f5zr)*x*y + j2fact2*(f10xz*y)
+		A50 := A.At(5, 0)
+		A50 += j2fact1*(3-f5zr)*x*z + j2fact2*(f10xz*z)
+
+		A31 := A.At(3, 1)
+		A31 += j2fact1*(1-f5zr)*x*y + j2fact2*(f10yz*x)
+		A41 := A.At(4, 1)
+		A41 += j2fact1*(1-f5zr)*x*y*y + j2fact2*(1-f5zr+f10yz*y)
+		A51 := A.At(5, 1)
+		A51 += j2fact1*(3-f5zr)*x*z*y + j2fact2*(f10yz*z)
+
+		A32 := A.At(3, 2)
+		A32 += j2fact1*(1-f5zr)*x*z + j2fact2*10*x*z*rzr
+		A42 := A.At(4, 2)
+		A42 += j2fact1*(1-f5zr)*y*z + j2fact2*10*y*z*rzr
+		A52 := A.At(5, 2)
+		A52 += j2fact1*(3-f5zr)*math.Pow(z, 2) + j2fact2*(10*math.Pow(z, 2)*rzr+3-f5zr)
+		// J3
+		if e.Perts.Jn > 2 {
+			J3 := e.Orbit.Origin.J3
+			j3fact1 := -6 * J3 / math.Pow(r, 7)
+			j3fact2 := J3 / math.Pow(r, 6)
+			f7zr := 7 * math.Pow(z, 2) / math.Pow(r, 2)
+
+			A30 += j3fact1*x*(5*x*z*(3-f7zr)) + j3fact2*(70*math.Pow(x, 2)*math.Pow(z, 3)/math.Pow(r, 3)+5*z*(3-f7zr))
+			A40 += j3fact1*x*(5*y*z*(3-f7zr)) + j3fact2*(70*x*y*math.Pow(z, 3)/math.Pow(r, 3)+5*z*(3-f7zr))
+			A50 += j3fact1*x*(3*math.Pow(z, 2)*(1+1/r)-3*math.Pow(r, 3)/5-f7zr*math.Pow(z, 2)) + j3fact2*x*(2*math.Pow(z, 2)*f7zr-6*math.Pow(z, 2)/math.Pow(r, 2)-9*math.Pow(r, 2)/5)
+
+			A31 += j3fact1*y*(5*x*z*(3-f7zr)) + j3fact2*(5*x*z*f7zr*2*y)
+			A41 += j3fact1*y*(5*y*z*(3-f7zr)) + j3fact2*(70*math.Pow(y, 2)*math.Pow(z, 3)/math.Pow(r, 3)+5*z*(3-f7zr))
+			A51 += j3fact1*y*(3*math.Pow(z, 2)*(1+1/r)-3*math.Pow(r, 3)/5-f7zr*math.Pow(z, 2)) + j3fact2*y*(2*math.Pow(z, 2)*f7zr-6*math.Pow(z, 2)/math.Pow(r, 2)-9*math.Pow(r, 2)/5)
+			// XXX: Doing
+			A32 += j3fact1*z*(5*x*z*(3-f7zr)) + j3fact2*(5*x*(3-f7zr)+70*x*math.Pow(z, 2)*rzr)
+			A42 += j3fact1*z*(5*y*z*(3-f7zr)) + j3fact2*(5*y*(3-f7zr)+70*y*math.Pow(z, 2)*rzr)
+			A52 += j3fact1*z*(3*math.Pow(z, 2)*(1+1/r)-3*math.Pow(r, 3)/5-f7zr*math.Pow(z, 2)) + j3fact2*(6*z+14*z*rzr+(6*z*r-3*math.Pow(z, 3))/math.Pow(r, 2))
+		}
+		// \frac{\partial a}{\partial x}
+		A.Set(3, 0, jfact*A30)
+		A.Set(4, 0, jfact*A40)
+		A.Set(5, 0, jfact*A50)
+		// \partial a/\partial y
+		A.Set(3, 1, jfact*A31)
+		A.Set(4, 1, jfact*A41)
+		A.Set(5, 1, jfact*A51)
+		// \partial a/\partial z
+		A.Set(3, 2, jfact*A32)
+		A.Set(4, 2, jfact*A42)
+		A.Set(5, 2, jfact*A52)
+
+	}
 
 	ΦDot.Mul(A, Φ)
 
