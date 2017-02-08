@@ -275,7 +275,10 @@ func (wp *ToElliptical) Action() *WaypointAction {
 
 // ThrustDirection implements the optimal orbit target.
 func (wp *ToElliptical) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if o.e-1 < eccentricityε {
+	// We use an arbitrary 0.9 eccentricity because if we set it just under the eccentricityε
+	// threshold, rounding errors make it such that it's still computed as hyperbolic. Also,
+	// such a high eccentricity is still good enough.
+	if o.e < 0.9+eccentricityε {
 		wp.cleared = true
 	}
 	return AntiTangential{"toElliptical"}, wp.cleared
