@@ -217,8 +217,8 @@ func (a *Mission) SetState(t float64, s []float64) {
 	if !a.collided && a.Orbit.RNorm() < a.Orbit.Origin.Radius {
 		a.collided = true
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "collided", a.Orbit.Origin.Name, "dt", a.CurrentDT)
-	} else if a.collided && a.Orbit.RNorm() > a.Orbit.Origin.Radius*1.01 {
-		// Now further from the 1% dead zone
+	} else if a.collided && a.Orbit.RNorm() > a.Orbit.Origin.Radius*1.1 {
+		// Now further from the 10% dead zone
 		a.collided = false
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "revived", a.Orbit.Origin.Name, "dt", a.CurrentDT)
 	}
