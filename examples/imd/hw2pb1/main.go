@@ -12,12 +12,15 @@ import (
 
 func main() {
 	/***** CONFIG ******/
-	launchDT := time.Date(2018, 5, 1, 0, 0, 0, 0, time.UTC)
-	departurePlanet := smd.Earth
+	launchDT := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
+	departurePlanet := smd.Mars
 	arrivalEstDT := launchDT.Add(time.Duration(100*24) * time.Hour)
-	arrivalPlanet := smd.Mars
+	arrivalPlanet := smd.Earth
 	exportResults := false
+	window := 250 // in days
+	step := time.Duration(6) * time.Hour
 	/*** END CONFIG ****/
+	fmt.Printf("==== Lambert min solver ====\n%s -> %s\nLaunch:%s \tWindow: %d days\n\n", departurePlanet, arrivalPlanet, launchDT, window)
 	// RV() is a pointer method (because of the cache update)
 	departureOrbit := departurePlanet.HelioOrbit(launchDT)
 	Rdepart := mat64.NewVector(3, departureOrbit.R())
@@ -28,8 +31,9 @@ func main() {
 		minC3 := 10e4
 		minVinf := 10e4
 		var minArrivalDT time.Time
-		for days := 0; days < 200; days++ {
-			arrivalDT := arrivalEstDT.Add(time.Duration(days) * 24 * time.Hour)
+		arrivalDT := arrivalEstDT
+		maxDT := arrivalEstDT.Add(time.Duration(window) * 24 * time.Hour)
+		for ; arrivalDT.Before(maxDT); arrivalDT = arrivalDT.Add(step) {
 			duration := arrivalDT.Sub(launchDT)
 			Rmars := mat64.NewVector(3, arrivalPlanet.HelioOrbit(arrivalDT).R())
 			Vi, _, ψ, err := smd.Lambert(Rdepart, Rmars, duration, ttype, smd.Sun)
