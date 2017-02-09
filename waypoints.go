@@ -315,7 +315,8 @@ func (wp *ToHyperbolic) Action() *WaypointAction {
 
 // ThrustDirection implements the optimal orbit target.
 func (wp *ToHyperbolic) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if o.e-1 > eccentricityε {
+	//if o.e-1 > eccentricityε {
+	if o.e > 1.1 {
 		wp.cleared = true
 	}
 	return Tangential{"toHyperbolic"}, wp.cleared

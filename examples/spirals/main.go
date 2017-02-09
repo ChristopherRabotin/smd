@@ -20,10 +20,10 @@ func sc() *smd.Spacecraft {
 	dryMass := 10000.0
 	fuelMass := 5000.0
 	return smd.NewSpacecraft("Spiral", dryMass, fuelMass, eps, thrusters, false, []*smd.Cargo{},
-		[]smd.Waypoint{smd.NewToHyperbolic(nil), smd.NewToElliptical(nil), smd.NewLoiter(time.Duration(36123)*time.Hour, nil)})
+		[]smd.Waypoint{smd.NewToHyperbolic(nil), smd.NewToElliptical(nil), smd.NewLoiter(time.Duration(32000)*time.Hour, nil)})
 }
 
-func initOrbit() *smd.Orbit {
+func initEarthOrbit() *smd.Orbit {
 	a, e := smd.Radii2ae(39300+smd.Earth.Radius, 290+smd.Earth.Radius)
 	i := 28.0
 	ω := 10.0
@@ -32,20 +32,28 @@ func initOrbit() *smd.Orbit {
 	return smd.NewOrbitFromOE(a, e, i, Ω, ω, ν, smd.Earth)
 }
 
-func main() {
-	CheckEnvVars()
-	runtime.GOMAXPROCS(3)
-
-	depart := time.Date(2015, 8, 30, 0, 0, 0, 0, time.UTC)
-	endDT := depart.Add(-1)
-	name := "spiral-a2"
-	astro := smd.NewMission(sc(), initOrbit(), depart, endDT, smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: name, AsCSV: true, Cosmo: true, Timestamp: false})
-	astro.Propagate()
-
+// initMarsOrbit returns the initial orbit.
+func initMarsOrbit() *smd.Orbit {
+	// Exomars TGO.
+	a, e := smd.Radii2ae(44500+smd.Mars.Radius, 426+smd.Mars.Radius)
+	i := 10.0
+	ω := 1.0
+	Ω := 1.0
+	ν := 15.0
+	return smd.NewOrbitFromOE(a, e, i, Ω, ω, ν, smd.Mars)
 }
 
-// CheckEnvVars checks that all the environment variables required are set, without checking their value. It will panic if one is missing.
-func CheckEnvVars() {
+func main() {
+	//depart := time.Date(2015, 8, 30, 0, 0, 0, 0, time.UTC)
+	depart := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
+	endDT := depart.Add(-1)
+	name := "spiral-mars"
+	astro := smd.NewMission(sc(), initMarsOrbit(), depart, endDT, smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: name, AsCSV: false, Cosmo: true, Timestamp: false})
+	astro.Propagate()
+}
+
+func init() {
+	runtime.GOMAXPROCS(3)
 	envvars := []string{"VSOP87", "DATAOUT"}
 	for _, envvar := range envvars {
 		if os.Getenv(envvar) == "" {
