@@ -365,6 +365,32 @@ func TestCorrectOEΩNeg(t *testing.T) {
 	}
 }
 
+// TestCorrectOEΩShortWay checks that the correction happens on the short way instead of long way
+// despite the need for the modulo.
+func TestCorrectOEΩShortWay(t *testing.T) {
+	t.Skip("Short way correction is only supported by Naasz *BUT* does not converge close enough to actual value to stop integration. PIA.")
+	meth := Naasz
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		oInit := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, 345, angleε, angleε, Earth)
+		oTarget := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, 4.743, angleε, angleε, Earth)
+		eps := NewUnlimitedEPS()
+		EPThrusters := []EPThruster{new(PPS1350)}
+		dryMass := 300.0
+		fuelMass := 67.0
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
+		start := time.Now()
+		end := start.Add(-1)
+		//end := start.Add(time.Duration(26) * time.Hour)
+		astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+		astro.Propagate()
+		if !floats.EqualWithinAbs(astro.Orbit.Ω, oTarget.Ω, angleε) {
+			t.Logf("METHOD=%s\tPROP=%s", meth, prop)
+			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+			t.Fatal("decreasing RAAN short way failed")
+		}
+	}
+}
+
 // TestCorrectOEe runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEe(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
@@ -423,7 +449,6 @@ func TestCorrectOEeNeg(t *testing.T) {
 
 // TestCorrectOEω runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEω(t *testing.T) {
-	t.Log("Skipping fuel usage test (fails and not too important)")
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
 		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
 			oInit := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 178, angleε, Earth)
@@ -485,6 +510,31 @@ func TestCorrectOEωNeg(t *testing.T) {
 				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 				t.Fatal("decreasing argument of periapsis failed")
 			}
+		}
+	}
+}
+
+// TestCorrectOEωShortWay checks that the correction happens on the short way instead of long way
+// despite the need for the modulo.
+func TestCorrectOEωShortWay(t *testing.T) {
+	t.Log("Short way correction is only supported by Naasz.")
+	meth := Naasz
+	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+		oInit := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 345, angleε, Earth)
+		oTarget := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 5.241, angleε, Earth)
+		eps := NewUnlimitedEPS()
+		EPThrusters := []EPThruster{new(PPS1350)}
+		dryMass := 300.0
+		fuelMass := 67.0
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
+		start := time.Now()
+		end := start.Add(time.Duration(26) * time.Hour)
+		astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+		astro.Propagate()
+		if !floats.EqualWithinAbs(astro.Orbit.ω, oTarget.ω, angleε*45) {
+			t.Logf("METHOD=%s\tPROP=%s", meth, prop)
+			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
+			t.Fatal("decreasing argument of periapsis short way failed")
 		}
 	}
 }

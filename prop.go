@@ -399,18 +399,30 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				weight = sign(-δO) * math.Pow(h, 2) / (4 * math.Pow(p, 2))
 			case OptiΔiCL:
 				δO = o.i - cl.oTgt.i
+				if δO > math.Pi {
+					// Enforce short path to correct angle.
+					δO *= -1
+				}
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}
 				weight = sign(-δO) * math.Pow((h+o.e*h*math.Cos(o.ω+math.Asin(o.e*sinω)))/(p*(math.Pow(o.e*sinω, 2)-1)), 2)
 			case OptiΔΩCL:
 				δO = o.Ω - cl.oTgt.Ω
+				if δO > math.Pi {
+					// Enforce short path to correct angle.
+					δO *= -1
+				}
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}
 				weight = sign(-δO) * math.Pow((h*math.Sin(o.i)*(o.e*math.Sin(o.ω+math.Asin(o.e*cosω))-1))/(p*(1-math.Pow(o.e*cosω, 2))), 2)
 			case OptiΔωCL:
 				δO = o.ω - cl.oTgt.ω
+				if δO > math.Pi {
+					// Enforce short path to correct angle.
+					δO *= -1
+				}
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}

@@ -17,9 +17,10 @@ const (
 func main() {
 	if outbound {
 		baseDepart := time.Date(2018, 5, 1, 0, 0, 0, 0, time.UTC)
-		maxPropDT := time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC)
+		maxPropDT := time.Date(2024, 5, 1, 0, 0, 0, 0, time.UTC)
 		// The estimated arrival was computed from the minimum of a Lambert solver.
-		estArrival := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
+		//estArrival := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
+		estArrival := time.Date(2019, 5, 20, 0, 0, 0, 0, time.UTC)
 		// Get Mars orbit at estimated arrival date.
 		//target := smd.Mars.HelioOrbit(estArrival)
 		// This is the outbound hyperbolic orbit when running Spirals on Mars from the ExoMars TGO injection orbit.
