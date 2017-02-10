@@ -399,10 +399,6 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				weight = sign(-δO) * math.Pow(h, 2) / (4 * math.Pow(p, 2))
 			case OptiΔiCL:
 				δO = o.i - cl.oTgt.i
-				if δO > math.Pi {
-					// Enforce short path to correct angle.
-					δO *= -1
-				}
 				if math.Abs(δO) < angleε {
 					δO = 0
 				}

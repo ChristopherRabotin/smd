@@ -30,9 +30,9 @@ func OutboundWaypoints(target smd.Orbit) []smd.Waypoint {
 		/* // Leave Earth
 		smd.NewToHyperbolic(ref2Sun),*/
 		// Go straight to Mars destination
-		//smd.NewOrbitTarget(target, nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔeCL, smd.OptiΔiCL),
+		smd.NewOrbitTarget(target, ref2Mars, smd.Naasz, smd.OptiΔaCL, smd.OptiΔeCL, smd.OptiΔiCL, smd.OptiΔΩCL),
 		// Now attempt to fix everything
-		smd.NewOrbitTarget(target, ref2Mars, smd.Naasz),
+		//smd.NewOrbitTarget(target, ref2Mars, smd.Naasz),
 		// Wait for the ref2Mars to trigger... ?
 		smd.NewLoiter(time.Duration(1)*time.Minute, nil),
 		// Make orbit Elliptical
