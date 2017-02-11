@@ -278,7 +278,8 @@ func (wp *ToElliptical) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, b
 	// We use an arbitrary 0.9 eccentricity because if we set it just under the eccentricityε
 	// threshold, rounding errors make it such that it's still computed as hyperbolic. Also,
 	// such a high eccentricity is still good enough.
-	if o.e < 0.9+eccentricityε {
+	_, e, _, _, _, _, _, _, _ := o.Elements()
+	if e < 0.9+eccentricityε {
 		wp.cleared = true
 	}
 	return AntiTangential{"toElliptical"}, wp.cleared
@@ -315,8 +316,8 @@ func (wp *ToHyperbolic) Action() *WaypointAction {
 
 // ThrustDirection implements the optimal orbit target.
 func (wp *ToHyperbolic) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	//if o.e-1 > eccentricityε {
-	if o.e > 1.1 {
+	_, e, _, _, _, _, _, _, _ := o.Elements()
+	if e > 1.1 {
 		wp.cleared = true
 	}
 	return Tangential{"toHyperbolic"}, wp.cleared

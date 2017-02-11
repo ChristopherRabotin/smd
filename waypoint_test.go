@@ -1,7 +1,6 @@
 package smd
 
 import (
-	"math"
 	"testing"
 	"time"
 
@@ -68,33 +67,26 @@ func TestHohmannΔv(t *testing.T) {
 	postApoDT := initDT.Add(tofExp + StepSize)
 
 	assertPanic(t, func() {
-		target.e = 0.5
-		NewHohmannTransfer(target, nil)
+		tgt := *NewOrbitFromOE(Earth.Radius+35781.34857, 0.5, 0, 0, 0, 90, Earth)
+		NewHohmannTransfer(tgt, nil)
 	})
-	target.e = eccentricityε
 
 	wp := NewHohmannTransfer(target, nil)
 
 	assertPanic(t, func() {
-		oscul.ν = math.Pi
-		wp.ThrustDirection(oscul, initDT)
+		osc := *NewOrbitFromOE(Earth.Radius+191.34411, 0, 0, 0, 0, 180, Earth)
+		wp.ThrustDirection(osc, initDT)
 	})
-	// Reset true anomaly after panic test
-	oscul.ν = math.Pi / 2
 
 	assertPanic(t, func() {
-		oscul.e = 0.5
-		wp.ThrustDirection(oscul, initDT)
+		osc := *NewOrbitFromOE(Earth.Radius+191.34411, 0.5, 0, 0, 0, 90, Earth)
+		wp.ThrustDirection(osc, initDT)
 	})
-	// Reset true anomaly after panic test
-	oscul.e = eccentricityε
 
 	assertPanic(t, func() {
-		oscul.i = math.Pi / 4
-		wp.ThrustDirection(oscul, initDT)
+		osc := *NewOrbitFromOE(Earth.Radius+191.34411, 0, 45, 0, 0, 90, Earth)
+		wp.ThrustDirection(osc, initDT)
 	})
-	// Reset true anomaly after panic test
-	oscul.i = angleε
 
 	ctrl, cleared := wp.ThrustDirection(oscul, initDT)
 	if cleared {

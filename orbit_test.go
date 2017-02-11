@@ -109,12 +109,9 @@ func TestOrbitCOE2RV(t *testing.T) {
 	}
 
 	o1 := NewOrbitFromRV(R, V, Earth)
-	if ok, err := o0.Equals(*o1); !ok {
+	if ok, err := o0.StrictlyEquals(*o1); !ok {
 		t.Logf("\no0: %s\no1: %s", o0, o1)
 		t.Fatal(err)
-	}
-	if ok, err := anglesEqual(Deg2rad(ν0), o1.ν); !ok {
-		t.Fatalf("true anomaly invalid: %s", err)
 	}
 }
 
@@ -193,11 +190,12 @@ func TestOrbitEquality(t *testing.T) {
 	if ok, err := oInit.Equals(*oTest); !ok {
 		t.Fatalf("orbits not equal: %s", err)
 	}
-	oTest.ω += math.Pi / 6
+	oTest = NewOrbitFromOE(226090290.608, 0.088, 26.195, 3.516, 336.494, 278.358, Sun)
 	if ok, _ := oInit.Equals(*oTest); ok {
 		t.Fatalf("orbits of different ω are equal")
 	}
-	oTest.ω -= math.Pi / 6 // Reset
+	// Reset
+	oTest = NewOrbitFromOE(226090290.608, 0.088, 26.195, 3.516, 326.494, 278.358, Sun)
 	oTest.Origin = Earth
 	if ok, _ := oInit.Equals(*oTest); ok {
 		t.Fatalf("orbits of different origins are equal")
@@ -223,7 +221,7 @@ func TestOrbitΦfpa(t *testing.T) {
 			o := NewOrbitFromOE(1e4, e, 1, 1, 1, ν, Earth)
 			if e == 0 {
 				// Let's force this to zero because NewOrbitFromOE does an approximation.
-				o.e = 0
+				o.cche = 0 // XXX: Is there still an approximation?!
 			}
 			Φ := math.Atan2(o.SinΦfpa(), o.CosΦfpa())
 			exp := (ν * e) / 2
@@ -249,12 +247,13 @@ func TestOrbitEccentricAnomaly(t *testing.T) {
 	for ν := 0.0; ν < 360.0; ν += 0.1 {
 		o1 := NewOrbitFromOE(1e5, 0.2, 1, 1, 1, 60, Earth)
 		sinE, cosE = o1.SinCosE()
-		sinν := sinE * math.Sqrt(1-math.Pow(o1.e, 2)) / (1 - o1.e*cosE)
-		cosν := (cosE - o1.e) / (1 - o1.e*cosE)
+		_, e, _, _, _, ν, _, _, _ := o1.Elements()
+		sinν := sinE * math.Sqrt(1-math.Pow(e, 2)) / (1 - e*cosE)
+		cosν := (cosE - e) / (1 - e*cosE)
 		ν0 := math.Acos(cosν)
 		ν1 := math.Asin(sinν)
 		ν2 := math.Atan2(sinν, cosν)
-		if !floats.EqualWithinAbs(ν2, ν0, angleε) || !floats.EqualWithinAbs(ν2, ν1, angleε) || !floats.EqualWithinAbs(ν2, o1.ν, angleε) {
+		if !floats.EqualWithinAbs(ν2, ν0, angleε) || !floats.EqualWithinAbs(ν2, ν1, angleε) || !floats.EqualWithinAbs(ν2, ν, angleε) {
 			t.Fatalf("computing E failed on ν=%f (cosE=%f\tsinE=%f\tν'=%f')", ν, cosE, sinE, ν0)
 		}
 	}

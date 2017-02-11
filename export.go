@@ -301,7 +301,8 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 					}
 
 					if conf.AsCSV {
-						asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), state.Orbit.a, state.Orbit.e, Rad2deg(state.Orbit.i), Rad2deg(state.Orbit.Ω), Rad2deg(state.Orbit.ω), Rad2deg(state.Orbit.ν))
+						a, e, i, Ω, ω, ν, _, _, _ := state.Orbit.Elements()
+						asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), a, e, Rad2deg(i), Rad2deg(Ω), Rad2deg(ω), Rad2deg(ν))
 						if _, err := fAsCSV.WriteString("\n" + asTxt); err != nil {
 							panic(err)
 						}
@@ -321,7 +322,8 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 				}
 			}
 			if conf.AsCSV {
-				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), state.Orbit.a, state.Orbit.e, Rad2deg(state.Orbit.i), Rad2deg(state.Orbit.Ω), Rad2deg(state.Orbit.ω), Rad2deg(state.Orbit.ν))
+				a, e, i, Ω, ω, ν, _, _, _ := state.Orbit.Elements()
+				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), a, e, Rad2deg(i), Rad2deg(Ω), Rad2deg(ω), Rad2deg(ν))
 				if conf.CSVAppend != nil {
 					asTxt += "," + conf.CSVAppend(state)
 				}

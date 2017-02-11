@@ -30,7 +30,8 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, method Propagator) []float
 		// Ignore any Jn about the Sun
 		switch method {
 		case GaussianVOP:
-			Ra := o.Origin.Radius / o.a
+			a, _, _, _, _, _, _, _, _ := o.Elements()
+			Ra := o.Origin.Radius / a
 			acc := math.Sqrt(o.Origin.μ/math.Pow(o.Origin.Radius, 3)) * math.Pow(Ra, 7/2.)
 			J2 := o.Origin.J(2)
 			var J4 float64
