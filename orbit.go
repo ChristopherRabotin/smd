@@ -153,7 +153,7 @@ func (o Orbit) VNorm() float64 {
 	return norm(o.vVec)
 }
 
-// Elements returns the nine orbital elements which work in all types of orbits
+// Elements returns the nine orbital elements in radians which work for circular and elliptical orbits
 func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
 	if o.hashValid() {
 		return o.ccha, o.cche, o.cchi, o.cchΩ, o.cchω, o.cchν, o.cchλ, o.cchtildeω, o.cchu

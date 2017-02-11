@@ -277,7 +277,7 @@ func TestCorrectOEi(t *testing.T) {
 			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
 			astro.Propagate()
 			_, _, i, _, _, _, _, _, _ := astro.Orbit.Elements()
-			if !floats.EqualWithinAbs(i, 51.6/deg2rad, angleε) {
+			if !floats.EqualWithinAbs(i, Deg2rad(51.6), angleε) {
 				t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 				t.Fatal("increasing inclination failed")
@@ -306,7 +306,7 @@ func TestCorrectOEiNeg(t *testing.T) {
 			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
 			astro.Propagate()
 			_, _, i, _, _, _, _, _, _ := astro.Orbit.Elements()
-			if !floats.EqualWithinAbs(i, 46/deg2rad, angleε) {
+			if !floats.EqualWithinAbs(i, Deg2rad(46), angleε) {
 				t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 				t.Fatal("decreasing inclination failed")
@@ -335,7 +335,7 @@ func TestCorrectOEΩ(t *testing.T) {
 			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
 			astro.Propagate()
 			_, _, _, Ω, _, _, _, _, _ := astro.Orbit.Elements()
-			if !floats.EqualWithinAbs(Ω, 5/deg2rad, angleε) {
+			if !floats.EqualWithinAbs(Ω, Deg2rad(5), angleε) {
 				t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 				t.Fatal("increasing RAAN failed")
@@ -396,7 +396,7 @@ func TestCorrectOEΩShortWay(t *testing.T) {
 		astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		_, _, _, Ω, _, _, _, _, _ := astro.Orbit.Elements()
-		if !floats.EqualWithinAbs(Ω, 4.743/deg2rad, angleε) {
+		if !floats.EqualWithinAbs(Ω, Deg2rad(4.743), angleε) {
 			t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 			t.Fatal("decreasing RAAN short way failed")
@@ -474,19 +474,19 @@ func TestCorrectOEω(t *testing.T) {
 			fuelMass := 67.0
 			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
 			start := time.Now()
-			end := start.Add(time.Duration(2*24) * time.Hour) // just after the expected time
+			end := start.Add(time.Duration(2.5*24) * time.Hour) // just after the expected time
 			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
 			astro.Propagate()
-			//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
 			tol := angleε
 			if meth == Naasz {
-				tol = 22 * angleε
+				//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
+				tol = Deg2rad(0.115)
 			}
 			if prop == Cartesian {
 				tol *= 13
 			}
 			_, _, _, _, ω, _, _, _, _ := astro.Orbit.Elements()
-			if !floats.EqualWithinAbs(ω, 183/deg2rad, tol) {
+			if !floats.EqualWithinAbs(ω, Deg2rad(183), tol) {
 				t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 				t.Fatal("decreasing argument of periapsis failed")
@@ -499,8 +499,8 @@ func TestCorrectOEω(t *testing.T) {
 func TestCorrectOEωNeg(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
 		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
-			oInit := NewOrbitFromOE(Earth.Radius+900, 0, 0, angleε, 183, angleε, Earth)
-			oTarget := NewOrbitFromOE(Earth.Radius+900, 0, 0, angleε, 178, angleε, Earth)
+			oInit := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 183, angleε, Earth)
+			oTarget := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 178, angleε, Earth)
 			eps := NewUnlimitedEPS()
 			EPThrusters := []EPThruster{new(PPS1350)}
 			dryMass := 300.0
@@ -513,16 +513,13 @@ func TestCorrectOEωNeg(t *testing.T) {
 			//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
 			tol := angleε
 			if meth == Naasz {
-				tol *= 15
-			} else if !floats.EqualWithinAbs(fuelMass-astro.Vehicle.FuelMass, 0.5, 0.1) {
-				t.Logf("METHOD=%s\tPROP=%s", meth, prop)
-				t.Fatalf("invalid fuel usage: %f kg instead of 0.5", fuelMass-astro.Vehicle.FuelMass)
+				tol = Deg2rad(0.101)
 			}
 			if prop == Cartesian {
 				tol *= 69
 			}
 			_, _, _, _, ω, _, _, _, _ := astro.Orbit.Elements()
-			if !floats.EqualWithinAbs(ω, 178/deg2rad, tol) {
+			if !floats.EqualWithinAbs(ω, Deg2rad(178), tol) {
 				t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 				t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 				t.Fatal("decreasing argument of periapsis failed")
@@ -549,7 +546,7 @@ func TestCorrectOEωShortWay(t *testing.T) {
 		astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		_, _, _, _, ω, _, _, _, _ := astro.Orbit.Elements()
-		if !floats.EqualWithinAbs(ω, 5.241/deg2rad, angleε*45) {
+		if !floats.EqualWithinAbs(ω, Deg2rad(5.241), Deg2rad(0.32)) {
 			t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 			t.Fatal("decreasing argument of periapsis short way failed")

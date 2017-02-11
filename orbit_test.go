@@ -13,16 +13,13 @@ func TestHyperbolicOrbitRV2COE(t *testing.T) {
 	// but hyperbolic orbits were very poorly supported before.
 	R := []float64{-268699.38507486845, 743304.5626288191, 406170.0480721434}
 	V := []float64{-0.905741305869758, 0.22523592084626393, 0.16127777856378084}
-	oT := NewOrbitFromRV(R, V, Mars)
-	t.Logf("\noT:%s", oT)
-	RT, VT := oT.RV()
-	if !vectorsEqual(RT, R) {
-		t.Logf("R invalid:\n%+v\n%v", R, RT)
-		t.FailNow()
+	o := NewOrbitFromRV(R, V, Mars)
+	a, e, _, _, _, _, _, _, _ := o.Elements()
+	if e <= 1 {
+		t.Fatalf("e is not greater than 1: %f", e)
 	}
-	if !vectorsEqual(VT, V) {
-		t.Logf("V invalid:\n%+v\n%v", V, VT)
-		t.FailNow()
+	if a >= 0 {
+		t.Fatalf("a is positive or nil: %f", a)
 	}
 }
 
@@ -238,7 +235,7 @@ func TestOrbitΦfpa(t *testing.T) {
 			o := NewOrbitFromOE(1e4, e, 1, 1, 1, ν, Earth)
 			if e == 0 {
 				// Let's force this to zero because NewOrbitFromOE does an approximation.
-				o.cche = 0 // XXX: Is there still an approximation?!
+				o.cche = 0
 			}
 			Φ := math.Atan2(o.SinΦfpa(), o.CosΦfpa())
 			exp := (ν * e) / 2
@@ -293,6 +290,7 @@ func TestOrbitSpeCircular(t *testing.T) {
 		}
 	}
 }
+
 func TestOrbitSpeEquatorial(t *testing.T) {
 	for _, obj := range []CelestialObject{Earth, Sun, Mars} {
 		a := 1.5 * obj.Radius
@@ -310,6 +308,7 @@ func TestOrbitSpeEquatorial(t *testing.T) {
 		}
 	}
 }
+
 func TestOrbitSpeCircularEquatorial(t *testing.T) {
 	for _, obj := range []CelestialObject{Earth, Sun, Mars} {
 		a := 1.5 * obj.Radius
