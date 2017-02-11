@@ -13,7 +13,7 @@ func main() {
 	baseDepart := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
 	// Est arrival is best according to lambert solver
 	estArrival := time.Date(2019, 03, 23, 0, 0, 0, 0, time.UTC)
-	maxPropDT := estArrival.Add(time.Duration(6*31*24) * time.Hour)
+	maxPropDT := estArrival.Add(time.Duration(24*31*24) * time.Hour)
 
 	// Find target hyperbola
 	hypDepart := estArrival.Add(time.Duration(-6*31*24) * time.Hour)
@@ -22,7 +22,7 @@ func main() {
 	hyp.Propagate()
 
 	// Now let's grab the final hyperbolic orbit as the target.
-	inb := smd.NewMission(InboundSpacecraft("inbSC", *hyp.Orbit), InitialMarsOrbit(), baseDepart, maxPropDT, smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{AsCSV: false, Cosmo: true, Filename: "inb"})
+	inb := smd.NewPreciseMission(InboundSpacecraft("inbSC", *hyp.Orbit), InitialMarsOrbit(), baseDepart, maxPropDT, smd.Cartesian, smd.Perturbations{}, time.Minute, smd.ExportConfig{AsCSV: false, Cosmo: true, Filename: "inb"})
 	inb.Propagate()
 }
 

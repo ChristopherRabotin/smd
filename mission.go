@@ -46,13 +46,19 @@ type Mission struct {
 	CurrentDT      time.Time
 	propMethod     Propagator
 	perts          Perturbations
+	step           time.Duration // time step
 	stopChan       chan (bool)
 	histChan       chan<- (MissionState)
 	done, collided bool
 }
 
-// NewMission returns a new Mission instance from the position and velocity vectors.
+// NewMission is the same as NewPreciseMission with the default step size.
 func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, method Propagator, perts Perturbations, conf ExportConfig) *Mission {
+	return NewPreciseMission(s, o, start, end, method, perts, StepSize, conf)
+}
+
+// NewPreciseMission returns a new Mission instance with custom provided time step.
+func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, method Propagator, perts Perturbations, step time.Duration, conf ExportConfig) *Mission {
 	// If no filepath is provided, then no output will be written.
 	var histChan chan (MissionState)
 	if !conf.IsUseless() {
@@ -73,7 +79,7 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, method Propagator
 		end = end.UTC()
 	}
 
-	a := &Mission{s, o, start, end, start, method, perts, make(chan (bool), 1), histChan, false, false}
+	a := &Mission{s, o, start, end, start, method, perts, step, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- MissionState{a.CurrentDT, *s, *o}
@@ -105,7 +111,7 @@ func (a *Mission) Propagate() {
 		}
 	}()
 	vInit := norm(a.Orbit.V())
-	ode.NewRK4(0, StepSize.Seconds(), a).Solve() // Blocking.
+	ode.NewRK4(0, a.step.Seconds(), a).Solve() // Blocking.
 	vFinal := norm(a.Orbit.V())
 	a.done = true
 	duration := a.CurrentDT.Sub(a.StartDT)
@@ -135,7 +141,7 @@ func (a *Mission) Stop(t float64) bool {
 		}
 		return true // Stop because there is a request to stop.
 	default:
-		a.CurrentDT = a.CurrentDT.Add(StepSize)
+		a.CurrentDT = a.CurrentDT.Add(a.step)
 		if a.EndDT.Before(a.StartDT) {
 			// Check if any waypoint still needs to be reached.
 			for _, wp := range a.Vehicle.WayPoints {

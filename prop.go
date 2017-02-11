@@ -379,6 +379,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		// Note that, as described in Hatten MSc. thesis, the summing method only
 		// works one way (because of the δO^2) per OE. So I added the sign function
 		// *every here and there* as needed that to fix it.
+		dε, eε, aε := o.epsilons()
 		for _, ctrl := range cl.controls {
 			var weight, δO float64
 			p := o.SemiParameter()
@@ -387,19 +388,19 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			switch ctrl.Type() {
 			case OptiΔaCL:
 				δO = o.a - cl.oTgt.a
-				if math.Abs(δO) < distanceε {
+				if math.Abs(δO) < dε {
 					δO = 0
 				}
 				weight = sign(-δO) * math.Pow(h, 2) / (4 * math.Pow(o.a, 4) * math.Pow(1+o.e, 2))
 			case OptiΔeCL:
 				δO = o.e - cl.oTgt.e
-				if math.Abs(δO) < eccentricityε {
+				if math.Abs(δO) < eε {
 					δO = 0
 				}
 				weight = sign(-δO) * math.Pow(h, 2) / (4 * math.Pow(p, 2))
 			case OptiΔiCL:
 				δO = o.i - cl.oTgt.i
-				if math.Abs(δO) < angleε {
+				if math.Abs(δO) < aε {
 					δO = 0
 				}
 				weight = sign(-δO) * math.Pow((h+o.e*h*math.Cos(o.ω+math.Asin(o.e*sinω)))/(p*(math.Pow(o.e*sinω, 2)-1)), 2)
@@ -409,7 +410,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 					// Enforce short path to correct angle.
 					δO *= -1
 				}
-				if math.Abs(δO) < angleε {
+				if math.Abs(δO) < aε {
 					δO = 0
 				}
 				weight = sign(-δO) * math.Pow((h*math.Sin(o.i)*(o.e*math.Sin(o.ω+math.Asin(o.e*cosω))-1))/(p*(1-math.Pow(o.e*cosω, 2))), 2)
@@ -419,7 +420,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 					// Enforce short path to correct angle.
 					δO *= -1
 				}
-				if math.Abs(δO) < angleε {
+				if math.Abs(δO) < aε {
 					δO = 0
 				}
 				weight = sign(-δO) * (math.Pow(o.e*h, 2) / (4 * math.Pow(p, 2))) * (1 - math.Pow(o.e, 2)/4)

@@ -10,10 +10,15 @@ import (
 )
 
 const (
+	// Precise ε
 	eccentricityε = 5e-5                         // 0.00005
 	angleε        = (5e-3 / 360) * (2 * math.Pi) // 0.005 degrees
 	distanceε     = 3e1                          // 20 km
-	velocityε     = 1e-6                         // in km/s
+	// Coarse ε (for interplanetary flight)
+	eccentricityLgε = 1e-2                         // 0.01
+	angleLgε        = (5e-1 / 360) * (2 * math.Pi) // 0.5 degrees
+	distanceLgε     = 5e2                          // 500 km
+	velocityε       = 1e-6                         // in km/s
 )
 
 // Orbit defines an orbit via its orbital elements.
@@ -210,6 +215,14 @@ func (o Orbit) hashValid() bool {
 // String implements the stringer interface (hence the value receiver)
 func (o Orbit) String() string {
 	return fmt.Sprintf("a=%.1f e=%.4f i=%.3f Ω=%.3f ω=%.3f ν=%.3f λ=%.3f u=%.3f", o.a, o.e, Rad2deg(o.i), Rad2deg(o.Ω), Rad2deg(o.ω), Rad2deg(o.ν), Rad2deg(o.TrueLongλ()), Rad2deg(o.ArgLatitudeU()))
+}
+
+// epsilons returns the epsilons used to determine equality.
+func (o Orbit) epsilons() (float64, float64, float64) {
+	if o.RNorm() > 0.5*AU {
+		return distanceLgε, eccentricityLgε, angleLgε
+	}
+	return distanceε, eccentricityε, angleε
 }
 
 // Equals returns whether two orbits are identical with free true anomaly.
