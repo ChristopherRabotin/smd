@@ -18,7 +18,7 @@ func main() {
 	// Find target hyperbola
 	hypDepart := estArrival.Add(time.Duration(-6*31*24) * time.Hour)
 	hypsc := OutboundHyp("hypSC")
-	hyp := smd.NewMission(hypsc, finalGTO(), hypDepart, hypDepart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{})
+	hyp := smd.NewPreciseMission(hypsc, finalGTO(), hypDepart, hypDepart.Add(-1), smd.Cartesian, smd.Perturbations{}, time.Minute, smd.ExportConfig{})
 	hyp.Propagate()
 
 	// Now let's grab the final hyperbolic orbit as the target.

@@ -31,7 +31,7 @@ func main() {
 		// Propagate until all waypoints are reached.
 		sc := OutboundSpacecraft(name, target)
 		sc.LogInfo()
-		astro := smd.NewMission(sc, InitialOrbit(), baseDepart, maxPropDT, smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: name, AsCSV: false, Cosmo: true, Timestamp: false})
+		astro := smd.NewPreciseMission(sc, InitialOrbit(), baseDepart, maxPropDT, smd.Cartesian, smd.Perturbations{}, time.Minute, smd.ExportConfig{Filename: name, AsCSV: false, Cosmo: true, Timestamp: false})
 		astro.Propagate()
 	} else {
 		// Return trajectory from Mars

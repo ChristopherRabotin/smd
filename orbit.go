@@ -18,7 +18,8 @@ const (
 	eccentricityLgε = 1e-2                         // 0.01
 	angleLgε        = (5e-1 / 360) * (2 * math.Pi) // 0.5 degrees
 	distanceLgε     = 5e2                          // 500 km
-	velocityε       = 1e-6                         // in km/s
+	// velocity ε for Hohmann especially
+	velocityε = 1e-6 // in km/s
 )
 
 // Orbit defines an orbit via its orbital elements.
@@ -219,7 +220,7 @@ func (o Orbit) String() string {
 
 // epsilons returns the epsilons used to determine equality.
 func (o Orbit) epsilons() (float64, float64, float64) {
-	if o.RNorm() > 0.5*AU {
+	if o.Origin.Equals(Sun) {
 		return distanceLgε, eccentricityLgε, angleLgε
 	}
 	return distanceε, eccentricityε, angleε

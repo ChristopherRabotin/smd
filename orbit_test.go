@@ -8,6 +8,26 @@ import (
 	"github.com/gonum/floats"
 )
 
+func TestHyperbolicOrbitRV2COE(t *testing.T) {
+	/*
+		a= e=1.0000 i=28.000 Ω=5.000 ω=34.270 ν=68.928 λ=108.198 u=103.198
+	*/
+	R := []float64{-268699.38507486845, 743304.5626288191, 406170.0480721434}
+	V := []float64{-0.905741305869758, 0.22523592084626393, 0.16127777856378084}
+	oT := NewOrbitFromRV(R, V, Mars)
+	o := NewOrbitFromOE(-113351907200.0, 1.00000, 28, 5, 34.270, 68.928, Mars)
+	t.Logf("\noT:%s\no: %s", oT, o)
+	RT, VT := o.RV()
+	if !vectorsEqual(RT, R) {
+		t.Logf("R invalid:\n%+v\n%v", R, RT)
+		t.FailNow()
+	}
+	if !vectorsEqual(VT, V) {
+		t.Logf("V invalid:\n%+v\n%v", V, VT)
+		t.FailNow()
+	}
+}
+
 func TestOrbitRV2COE(t *testing.T) {
 	R := []float64{6524.834, 6862.875, 6448.296}
 	V := []float64{4.901327, 5.533756, -1.976341}

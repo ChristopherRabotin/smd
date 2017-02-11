@@ -57,7 +57,7 @@ func FromMarsWaypoints(target smd.Orbit) []smd.Waypoint {
 	return []smd.Waypoint{
 		smd.NewToHyperbolic(ref2Sun),
 		// Go straight to Earth destination
-		smd.NewOrbitTarget(target, nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔeCL, smd.OptiΔiCL),
+		smd.NewOrbitTarget(target, nil, smd.Naasz /*, smd.OptiΔaCL, smd.OptiΔeCL, smd.OptiΔiCL*/),
 		// Now attempt to fix everything
 		smd.NewOrbitTarget(target, ref2Earth, smd.Naasz),
 		// Wait for the ref2Earth to trigger... ?
