@@ -69,7 +69,7 @@ func TestMissionNegTime(t *testing.T) {
 	}
 }
 
-func TestMissionGEO(t *testing.T) {
+func TestMissionGEOTt(t *testing.T) {
 	// Define an approximate GEO orbit.
 	a0 := Earth.Radius + 35786
 	e0 := 0.0
@@ -84,6 +84,7 @@ func TestMissionGEO(t *testing.T) {
 		finalν = 180.000
 	}
 	for _, meth := range []Propagator{Cartesian, GaussianVOP} {
+		t.Logf("PROP=%s", meth)
 		oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, finalν, Earth)
 		oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
 		ξ0 := oOsc.Energyξ()
@@ -102,6 +103,8 @@ func TestMissionGEO(t *testing.T) {
 		if ok, err := oOsc.StrictlyEquals(*oTgt); !ok {
 			t.Logf("\noOsc: %s\noTgt: %s", oOsc, oTgt)
 			t.Fatalf("[%s] GEO 1.5 day propagation leads to incorrect orbit: %s", meth, err)
+		} else {
+			t.Logf("NO FAIL\noOsc: %s\noTgt: %s", oOsc, oTgt)
 		}
 		// Check that all angular orbital elements are within 2 pi.
 		_, _, i, Ω, ω, ν, λ, tildeω, u := oOsc.Elements()

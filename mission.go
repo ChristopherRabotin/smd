@@ -205,7 +205,10 @@ func (a *Mission) SetState(t float64, s []float64) {
 			}
 			s[i] = math.Mod(s[i], 2*math.Pi)
 		}
-		a.Orbit = NewOrbitFromOE(s[0], math.Abs(s[1]), s[2], s[3], s[4], s[5], a.Orbit.Origin)
+		// BUG: the orbit is not changed -- or more so it reaches a steady state at the third iteration.
+		// Not sure why, but it may be because GEO is a circular equatorial orbit, so technically the true anomaly is not defined.
+		*a.Orbit = *NewOrbitFromOE(s[0], math.Abs(s[1]), s[2], s[3], s[4], s[5], a.Orbit.Origin)
+		//fmt.Printf("%+v\n%s\n", s, a.Orbit)
 	case Cartesian:
 		R := []float64{s[0], s[1], s[2]}
 		V := []float64{s[3], s[4], s[5]}

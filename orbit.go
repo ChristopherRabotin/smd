@@ -18,8 +18,8 @@ const (
 	eccentricityLgε = 1e-2                         // 0.01
 	angleLgε        = (5e-1 / 360) * (2 * math.Pi) // 0.5 degrees
 	distanceLgε     = 5e2                          // 500 km
-	// velocity ε for Hohmann especially
-	velocityε = 1e-6 // in km/s
+	// velocity ε for circular orbit equality and Hohmann
+	velocityε = 1e-4 // in km/s
 )
 
 // Orbit defines an orbit via its orbital elements.
@@ -56,6 +56,14 @@ func (o Orbit) HNorm() float64 {
 // use math.Atan2(o.GetSinΦfpa(), o.CosΦfpa()).
 func (o Orbit) CosΦfpa() float64 {
 	_, e, _, _, _, ν, _, _, _ := o.Elements()
+	if e < eccentricityε {
+		return 1
+	} else if floats.EqualWithinAbs(e, 1, eccentricityε) {
+		return math.Cos(ν / 2)
+	} else if e > 1 {
+		cosh2 := math.Pow((e+math.Cos(ν))/(1+e*math.Cos(ν)), 2)
+		return math.Sqrt((e*e - 1) / (e*e*cosh2 - 1))
+	}
 	ecosν := e * math.Cos(ν)
 	return (1 + ecosν) / math.Sqrt(1+2*ecosν+math.Pow(e, 2))
 }
@@ -66,6 +74,16 @@ func (o Orbit) CosΦfpa() float64 {
 // use math.Atan2(o.SinΦfpa(), o.CosΦfpa()).
 func (o Orbit) SinΦfpa() float64 {
 	_, e, _, _, _, ν, _, _, _ := o.Elements()
+	if e < eccentricityε {
+		return 0
+	} else if floats.EqualWithinAbs(e, 1, eccentricityε) {
+		return math.Sin(ν / 2)
+	} else if e > 1 {
+		sinν, cosν := math.Sincos(ν)
+		cosh2 := math.Pow((e+cosν)/(1+e*cosν), 2)
+		sinh := sinν * math.Sqrt(e*e-1) / (1 + e*cosν)
+		return -(e * sinh) / math.Sqrt(e*e*cosh2-1)
+	}
 	sinν, cosν := math.Sincos(ν)
 	return (e * sinν) / math.Sqrt(1+2*e*cosν+math.Pow(e, 2))
 }
@@ -168,6 +186,9 @@ func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
 		ω = 2*math.Pi - ω
 	}
 	Ω = math.Acos(n[0] / norm(n))
+	if math.IsNaN(Ω) {
+		Ω = angleε
+	}
 	if n[1] < 0 {
 		Ω = 2*math.Pi - Ω
 	}
@@ -177,6 +198,9 @@ func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
 		cosν = sign(cosν) // GTFO NaN!
 	}
 	ν = math.Acos(cosν)
+	if math.IsNaN(ν) {
+		ν = 0
+	}
 	if dot(o.rVec, o.vVec) < 0 {
 		ν = 2*math.Pi - ν
 	}
@@ -275,7 +299,13 @@ func (o Orbit) StrictlyEquals(o1 Orbit) (bool, error) {
 	// Only check for non circular orbits
 	_, e, _, _, _, ν, _, _, _ := o.Elements()
 	_, e, _, _, _, ν1, _, _, _ := o1.Elements()
-	if e > eccentricityε && !floats.EqualWithinAbs(ν, ν1, angleε) {
+	if e < eccentricityε {
+		fmt.Printf("r0=%+v\tv0=%+v\nr1=%+v\tv1=%+v\n", o.rVec, o.vVec, o1.rVec, o1.vVec)
+		if floats.EqualApprox(o.rVec, o1.rVec, 1) && floats.EqualApprox(o.vVec, o1.vVec, velocityε) {
+			return true, nil
+		}
+		return false, errors.New("vectors not equal")
+	} else if e > eccentricityε && !floats.EqualWithinAbs(ν, ν1, angleε) {
 		return false, errors.New("true anomaly invalid")
 	}
 	return o.Equals(o1)
@@ -341,8 +371,8 @@ func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
 		ω = math.Mod(ω+Ω, 2*math.Pi)
 	}
 	p := a * (1 - e*e)
-	if floats.EqualWithinAbs(e, 1, eccentricityε) {
-		panic("initialize parabolic orbits with R, V")
+	if floats.EqualWithinAbs(e, 1, eccentricityε) || e > 1 {
+		panic("initialize parabolic or hyperbolic orbits with R, V")
 	}
 	μOp := math.Sqrt(c.μ / p)
 	sinν, cosν := math.Sincos(ν)
@@ -350,7 +380,6 @@ func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
 	vPQW := []float64{-μOp * sinν, μOp * (e + cosν), 0}
 	rIJK := Rot313Vec(-ω, -i, -Ω, rPQW)
 	vIJK := Rot313Vec(-ω, -i, -Ω, vPQW)
-	//ccha, cche, cchi, cchΩ, cchω, cchν, cchλ, cchtildeω, cchu float64
 	orbit := Orbit{rIJK, vIJK, c, a, e, Deg2rad(i), Deg2rad(Ω), Deg2rad(ω), Deg2rad(ν), 0, 0, 0, 0.0}
 	orbit.Elements()
 	return &orbit

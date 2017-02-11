@@ -9,15 +9,13 @@ import (
 )
 
 func TestHyperbolicOrbitRV2COE(t *testing.T) {
-	/*
-		a= e=1.0000 i=28.000 Ω=5.000 ω=34.270 ν=68.928 λ=108.198 u=103.198
-	*/
+	// XXX: Check how correct this test data is. It came from the outbound hyperbola from Mars
+	// but hyperbolic orbits were very poorly supported before.
 	R := []float64{-268699.38507486845, 743304.5626288191, 406170.0480721434}
 	V := []float64{-0.905741305869758, 0.22523592084626393, 0.16127777856378084}
 	oT := NewOrbitFromRV(R, V, Mars)
-	o := NewOrbitFromOE(-113351907200.0, 1.00000, 28, 5, 34.270, 68.928, Mars)
-	t.Logf("\noT:%s\no: %s", oT, o)
-	RT, VT := o.RV()
+	t.Logf("\noT:%s", oT)
+	RT, VT := oT.RV()
 	if !vectorsEqual(RT, R) {
 		t.Logf("R invalid:\n%+v\n%v", R, RT)
 		t.FailNow()
