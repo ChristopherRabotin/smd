@@ -13,7 +13,7 @@ const (
 	// Precise ε
 	eccentricityε = 5e-5                         // 0.00005
 	angleε        = (5e-3 / 360) * (2 * math.Pi) // 0.005 degrees
-	distanceε     = 3e1                          // 20 km
+	distanceε     = 2e1                          // 20 km
 	// Coarse ε (for interplanetary flight)
 	eccentricityLgε = 1e-2                         // 0.01
 	angleLgε        = (5e-1 / 360) * (2 * math.Pi) // 0.5 degrees

@@ -204,10 +204,11 @@ func TestMissionFrameChg(t *testing.T) {
 
 // TestCorrectOEa runs the test case from the Ruggerio 2012 conference paper.
 func TestCorrectOEa(t *testing.T) {
-	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
+	for _, prop := range []Propagator{Cartesian} {
 		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
 			oInit := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
-			oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
+			// Actual final orbit
+			oTarget := NewOrbitFromOE(42164, 0.003, 0.005, 0.088, 5.352, 75.326, Earth)
 			eps := NewUnlimitedEPS()
 			EPThrusters := []EPThruster{new(PPS1350)}
 			dryMass := 300.0
