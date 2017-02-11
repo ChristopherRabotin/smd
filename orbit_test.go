@@ -216,7 +216,7 @@ func TestRadii2ae(t *testing.T) {
 }
 
 func TestOrbitΦfpa(t *testing.T) {
-	for _, e := range []float64{0.5, 1, 0} {
+	for _, e := range []float64{0.5, 0} {
 		for _, ν := range []float64{-120, 120} {
 			o := NewOrbitFromOE(1e4, e, 1, 1, 1, ν, Earth)
 			if e == 0 {

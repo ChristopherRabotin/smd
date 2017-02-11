@@ -7,8 +7,8 @@ import (
 )
 
 // Rot313Vec converts a given vector from PQW frame to ECI frame.
-func Rot313Vec(i, ω, Ω float64, vI []float64) []float64 {
-	return MxV33(R3R1R3(i, ω, Ω), vI)
+func Rot313Vec(θ1, θ2, θ3 float64, vI []float64) []float64 {
+	return MxV33(R3R1R3(θ1, θ2, θ3), vI)
 }
 
 // R3R1R3 performs a 3-1-3 Euler parameter rotation.

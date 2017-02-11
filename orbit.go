@@ -152,7 +152,14 @@ func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
 		eVec[i] = ((v*v-o.Origin.μ/r)*o.rVec[i] - dot(o.rVec, o.vVec)*o.vVec[i]) / o.Origin.μ
 	}
 	e = norm(eVec)
+	// Prevent nil values for e
+	if e < eccentricityε {
+		e = eccentricityε
+	}
 	i = math.Acos(hVec[2] / norm(hVec))
+	if i < angleε {
+		i = angleε
+	}
 	ω = math.Acos(dot(n, eVec) / (norm(n) * e))
 	if math.IsNaN(ω) {
 		ω = 0
@@ -310,6 +317,11 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 // NewOrbitFromOE creates an orbit from the orbital elements.
 // WARNING: Angles must be in degrees not radians.
 func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
+	// Convert angles to radians
+	i = Deg2rad(i)
+	Ω = Deg2rad(Ω)
+	ω = Deg2rad(ω)
+	ν = Deg2rad(ν)
 	// Algorithm from Vallado, 4th edition, page 118 (COE2RV).
 	if e < eccentricityε {
 		// Circular...
@@ -329,12 +341,15 @@ func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
 		ω = math.Mod(ω+Ω, 2*math.Pi)
 	}
 	p := a * (1 - e*e)
+	if floats.EqualWithinAbs(e, 1, eccentricityε) {
+		panic("initialize parabolic orbits with R, V")
+	}
 	μOp := math.Sqrt(c.μ / p)
 	sinν, cosν := math.Sincos(ν)
 	rPQW := []float64{p * cosν / (1 + e*cosν), p * sinν / (1 + e*cosν), 0}
 	vPQW := []float64{-μOp * sinν, μOp * (e + cosν), 0}
-	rIJK := Rot313Vec(i, ω, Ω, rPQW)
-	vIJK := Rot313Vec(i, ω, Ω, vPQW)
+	rIJK := Rot313Vec(-ω, -i, -Ω, rPQW)
+	vIJK := Rot313Vec(-ω, -i, -Ω, vPQW)
 	//ccha, cche, cchi, cchΩ, cchω, cchν, cchλ, cchtildeω, cchu float64
 	orbit := Orbit{rIJK, vIJK, c, a, e, Deg2rad(i), Deg2rad(Ω), Deg2rad(ω), Deg2rad(ν), 0, 0, 0, 0.0}
 	orbit.Elements()
