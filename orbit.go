@@ -299,8 +299,7 @@ func (o Orbit) StrictlyEquals(o1 Orbit) (bool, error) {
 	// Only check for non circular orbits
 	_, e, _, _, _, ν, _, _, _ := o.Elements()
 	_, e, _, _, _, ν1, _, _, _ := o1.Elements()
-	if e < eccentricityε {
-		fmt.Printf("r0=%+v\tv0=%+v\nr1=%+v\tv1=%+v\n", o.rVec, o.vVec, o1.rVec, o1.vVec)
+	if floats.EqualWithinAbs(e, 0, 2*eccentricityε) {
 		if floats.EqualApprox(o.rVec, o1.rVec, 1) && floats.EqualApprox(o.vVec, o1.vVec, velocityε) {
 			return true, nil
 		}

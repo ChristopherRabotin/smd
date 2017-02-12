@@ -128,37 +128,25 @@ func TestMissionGEOJ4(t *testing.T) {
 	i0 := 0.0
 	ω0 := angleε
 	Ω0 := angleε
-	// Propagating for 0.5 orbits to ensure that time and orbital elements are changed accordingly.
-	var finalν float64
-	if StepSize >= time.Duration(10)*time.Second {
-		finalν = 179.992
-	} else {
-		finalν = 180.000
-	}
-	for _, meth := range []Propagator{Cartesian, GaussianVOP} {
-		oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
-		// Define propagation parameters.
-		start := time.Now()
-		geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
-		end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
-		astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, meth, Perturbations{Jn: 4}, ExportConfig{})
-		// Start propagation.
-		astro.Propagate()
-		// Must find a way to test the stop channel. via a long propagation and a select probably.
-		// Check the orbital elements.
-		oTgt := *NewOrbitFromOE(a0, e0, i0, 359.9934, 0.007, finalν, Earth)
-		oTgt.cche = 0
-		oTgt.cchi = 0
-		if meth == Cartesian {
-			oTgt.cchν = Deg2rad(180.005)
-		}
-		if ok, err := oOsc.StrictlyEquals(oTgt); !ok {
-			R0, V0 := oOsc.RV()
-			Rt, Vt := oTgt.RV()
-			t.Logf("\noOsc: %+v\t%+v \noTgt: %+v\t%+v", R0, V0, Rt, Vt)
-			t.Logf("\noOsc: %s\noTgt: %s", oOsc, oTgt)
-			t.Fatalf("[%s] GEO 1.5 day propagation leads to incorrect orbit: %s", meth, err)
-		}
+
+	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
+	// Define propagation parameters.
+	start := time.Now()
+	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
+	end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
+	astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, Cartesian, Perturbations{Jn: 4}, ExportConfig{})
+	// Start propagation.
+	astro.Propagate()
+	// Must find a way to test the stop channel. via a long propagation and a select probably.
+	// Check the orbital elements.
+	oTgt := *NewOrbitFromRV([]float64{-42161.00253006546, -3.712868842306616, 0}, []float64{0.00027079054401542074, -3.0748898249194507, 0}, Earth)
+	if ok, err := oOsc.StrictlyEquals(oTgt); !ok {
+		R0, V0 := oOsc.RV()
+		Rt, Vt := oTgt.RV()
+		t.Logf("\noOsc: %+v\t%+v \noTgt: %+v\t%+v", R0, V0, Rt, Vt)
+		t.Logf("\noOsc: %s\noTgt: %s", oOsc, oTgt)
+		t.Fatalf("[%s] GEO 1.5 day propagation leads to incorrect orbit: %s", Cartesian, err)
+
 		// Check that all angular orbital elements are within 2 pi.
 		_, _, i, Ω, ω, ν, λ, tildeω, u := oOsc.Elements()
 		for k, angle := range []float64{i, Ω, ω, ν, λ, tildeω, u} {
