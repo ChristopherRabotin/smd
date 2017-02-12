@@ -74,7 +74,7 @@ func TestHohmannΔv(t *testing.T) {
 	wp := NewHohmannTransfer(target, nil)
 
 	assertPanic(t, func() {
-		osc := *NewOrbitFromOE(Earth.Radius+191.34411, 0, 0, 0, 0, 180, Earth)
+		osc := *NewOrbitFromOE(Earth.Radius+191.34411, eccentricityε, 0, 0, 0, 180, Earth)
 		wp.ThrustDirection(osc, initDT)
 	})
 
@@ -84,7 +84,7 @@ func TestHohmannΔv(t *testing.T) {
 	})
 
 	assertPanic(t, func() {
-		osc := *NewOrbitFromOE(Earth.Radius+191.34411, 0, 45, 0, 0, 90, Earth)
+		osc := *NewOrbitFromOE(Earth.Radius+191.34411, eccentricityε, 45, 0, 0, 90, Earth)
 		wp.ThrustDirection(osc, initDT)
 	})
 
@@ -159,18 +159,15 @@ func TestToElliptical(t *testing.T) {
 	ref2Mars := WaypointAction{Type: REFMARS, Cargo: nil}
 	wp := NewToElliptical(&ref2Mars)
 	dt := time.Unix(0, 0)
-	o := *NewOrbitFromOE(Earth.Radius+191.34411, 1.2, 0, 0, 0, 90, Earth)
+	// Generate an evident hyperbolic orbit
+	o := Earth.HelioOrbit(dt)
+	o.ToXCentric(Earth, dt.Add(time.Duration(7*24)*time.Hour))
 	ctrl, cleared := wp.ThrustDirection(o, dt)
 	if cleared {
 		t.Fatal("cleared was true for hyperbolic orbit")
 	}
 	if ctrl.Type() != antiTangential {
 		t.Fatal("expected the control to be antiTangential")
-	}
-	o = *NewOrbitFromOE(Earth.Radius+191.34411, 1, 0, 0, 0, 90, Earth)
-	_, cleared = wp.ThrustDirection(o, dt)
-	if cleared {
-		t.Fatal("cleared was true for parabolic orbit")
 	}
 	o = *NewOrbitFromOE(Earth.Radius+191.34411, 0.2, 0, 0, 0, 90, Earth)
 	_, cleared = wp.ThrustDirection(o, dt)
@@ -181,8 +178,8 @@ func TestToElliptical(t *testing.T) {
 
 func TestToHyperbolic(t *testing.T) {
 	// Example action
-	ref2Mars := WaypointAction{Type: REFMARS, Cargo: nil}
-	wp := NewToHyperbolic(&ref2Mars)
+	ref2Sun := WaypointAction{Type: REFSUN, Cargo: nil}
+	wp := NewToHyperbolic(&ref2Sun)
 	dt := time.Unix(0, 0)
 	o := *NewOrbitFromOE(Earth.Radius+191.34411, 0.2, 0, 0, 0, 90, Earth)
 	ctrl, cleared := wp.ThrustDirection(o, dt)
@@ -192,12 +189,9 @@ func TestToHyperbolic(t *testing.T) {
 	if ctrl.Type() != tangential {
 		t.Fatal("expected the control to be antiTangential")
 	}
-	o = *NewOrbitFromOE(Earth.Radius+191.34411, 1, 0, 0, 0, 90, Earth)
-	_, cleared = wp.ThrustDirection(o, dt)
-	if cleared {
-		t.Fatal("cleared was true for parabolic orbit")
-	}
-	o = *NewOrbitFromOE(Earth.Radius+191.34411, 1.2, 0, 0, 0, 90, Earth)
+	// Generate an evident hyperbolic orbit
+	o = Earth.HelioOrbit(dt)
+	o.ToXCentric(Earth, dt.Add(time.Duration(7*24)*time.Hour))
 	_, cleared = wp.ThrustDirection(o, dt)
 	if !cleared {
 		t.Fatal("cleared was false for hyperbolic orbit")

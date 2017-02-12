@@ -491,5 +491,9 @@ func (cl *HohmannΔv) Control(o Orbit) []float64 {
 
 // NewHohmannΔv defines a new inversion control law.
 func NewHohmannΔv(target Orbit) HohmannΔv {
+	_, e, _, _, _, _, _, _, _ := target.Elements()
+	if !floats.EqualWithinAbs(e, 0, eccentricityε) {
+		panic(fmt.Errorf("cannot perform Hohmann to a non elliptical orbit"))
+	}
 	return HohmannΔv{target, hohmannCompute, 0, 0, 0, time.Duration(-1) * time.Second, newGenericCLFromCL(hohmann)}
 }

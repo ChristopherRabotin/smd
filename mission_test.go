@@ -69,7 +69,7 @@ func TestMissionNegTime(t *testing.T) {
 	}
 }
 
-func TestMissionGEOTt(t *testing.T) {
+func TestMissionGEO(t *testing.T) {
 	// Define an approximate GEO orbit.
 	a0 := Earth.Radius + 35786
 	e0 := 0.0
@@ -83,42 +83,42 @@ func TestMissionGEOTt(t *testing.T) {
 	} else {
 		finalν = 180.000
 	}
-	for _, meth := range []Propagator{Cartesian, GaussianVOP} {
-		t.Logf("PROP=%s", meth)
-		oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, finalν, Earth)
-		oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
-		ξ0 := oOsc.Energyξ()
-		// Define propagation parameters.
-		start := time.Now()
-		geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
-		if diff := geoDur - oTgt.Period(); diff > 100*time.Millisecond {
-			t.Fatalf("invalid period computed: %s", diff)
-		}
-		end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
-		astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, meth, Perturbations{}, ExportConfig{})
-		// Start propagation.
-		astro.Propagate()
-		// Must find a way to test the stop channel. via a long propagation and a select probably.
-		// Check the orbital elements.
-		if ok, err := oOsc.StrictlyEquals(*oTgt); !ok {
-			t.Logf("\noOsc: %s\noTgt: %s", oOsc, oTgt)
-			t.Fatalf("[%s] GEO 1.5 day propagation leads to incorrect orbit: %s", meth, err)
-		} else {
-			t.Logf("NO FAIL\noOsc: %s\noTgt: %s", oOsc, oTgt)
-		}
-		// Check that all angular orbital elements are within 2 pi.
-		_, _, i, Ω, ω, ν, λ, tildeω, u := oOsc.Elements()
-		for k, angle := range []float64{i, Ω, ω, ν, λ, tildeω, u} {
-			if !floats.EqualWithinAbs(angle, math.Mod(angle, 2*math.Pi), angleε) || angle < 0 {
-				t.Fatalf("angle in position %d was not 2*pi modulo: %f != %f rad", k, angle, math.Mod(angle, 2*math.Pi))
-			}
-		}
-		// Check specific energy remained constant.
-		// Cartesian propagator is not as precise when it comes to energy.
-		if ξ1 := oOsc.Energyξ(); !floats.EqualWithinAbs(ξ1, ξ0, 1e-12) {
-			t.Fatalf("specific energy changed during the orbit: %.12f -> %.12f", ξ0, ξ1)
+	meth := Cartesian
+	t.Logf("PROP=%s", meth)
+	oTgt := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, finalν, Earth)
+	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
+	ξ0 := oOsc.Energyξ()
+	// Define propagation parameters.
+	start := time.Now()
+	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
+	if diff := geoDur - oTgt.Period(); diff > 100*time.Millisecond {
+		t.Fatalf("invalid period computed: %s", diff)
+	}
+	end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
+	astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, meth, Perturbations{}, ExportConfig{})
+	// Start propagation.
+	astro.Propagate()
+	// Must find a way to test the stop channel. via a long propagation and a select probably.
+	// Check the orbital elements.
+	if ok, err := oOsc.StrictlyEquals(*oTgt); !ok {
+		t.Logf("\noOsc: %s\noTgt: %s", oOsc, oTgt)
+		t.Fatalf("[%s] GEO 1.5 day propagation leads to incorrect orbit: %s", meth, err)
+	} else {
+		t.Logf("NO FAIL\noOsc: %s\noTgt: %s", oOsc, oTgt)
+	}
+	// Check that all angular orbital elements are within 2 pi.
+	_, _, i, Ω, ω, ν, λ, tildeω, u := oOsc.Elements()
+	for k, angle := range []float64{i, Ω, ω, ν, λ, tildeω, u} {
+		if !floats.EqualWithinAbs(angle, math.Mod(angle, 2*math.Pi), angleε) || angle < 0 {
+			t.Fatalf("angle in position %d was not 2*pi modulo: %f != %f rad", k, angle, math.Mod(angle, 2*math.Pi))
 		}
 	}
+	// Check specific energy remained constant.
+	// Cartesian propagator is not as precise when it comes to energy.
+	if ξ1 := oOsc.Energyξ(); !floats.EqualWithinAbs(ξ1, ξ0, 1e-12) {
+		t.Fatalf("specific energy changed during the orbit: %.12f -> %.12f", ξ0, ξ1)
+	}
+
 }
 
 func TestMissionGEOJ4(t *testing.T) {

@@ -371,7 +371,7 @@ func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
 	}
 	p := a * (1 - e*e)
 	if floats.EqualWithinAbs(e, 1, eccentricityε) || e > 1 {
-		panic("initialize parabolic or hyperbolic orbits with R, V")
+		panic("[ERROR] should initialize parabolic or hyperbolic orbits with R, V")
 	}
 	μOp := math.Sqrt(c.μ / p)
 	sinν, cosν := math.Sincos(ν)
