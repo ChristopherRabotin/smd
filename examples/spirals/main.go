@@ -20,7 +20,7 @@ func sc() *smd.Spacecraft {
 	dryMass := 10000.0
 	fuelMass := 5000.0
 	return smd.NewSpacecraft("Spiral", dryMass, fuelMass, eps, thrusters, false, []*smd.Cargo{},
-		[]smd.Waypoint{smd.NewToHyperbolic(nil), smd.NewToElliptical(nil), smd.NewLoiter(time.Duration(32000)*time.Hour, nil)})
+		[]smd.Waypoint{smd.NewToHyperbolic(nil), smd.NewLoiter(time.Duration(24)*time.Hour, nil), smd.NewToElliptical(nil), smd.NewOrbitTarget(*initMarsOrbit(), nil, smd.Naasz)})
 }
 
 func initEarthOrbit() *smd.Orbit {
