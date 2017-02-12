@@ -202,11 +202,11 @@ func (a *Mission) SetState(t float64, s []float64) {
 		for i := 2; i <= 5; i++ {
 			s[i] = Rad2deg(s[i]) // Converting to degrees because of NewOrbitFromOE
 		}
-		a.Orbit = NewOrbitFromOE(s[0], math.Abs(s[1]), s[2], s[3], s[4], s[5], a.Orbit.Origin)
+		*a.Orbit = *NewOrbitFromOE(s[0], math.Abs(s[1]), s[2], s[3], s[4], s[5], a.Orbit.Origin)
 	case Cartesian:
 		R := []float64{s[0], s[1], s[2]}
 		V := []float64{s[3], s[4], s[5]}
-		a.Orbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
+		*a.Orbit = *NewOrbitFromRV(R, V, a.Orbit.Origin) // Deref is important (cd. TestMissionSpiral)
 	default:
 		panic("propagator not implemented")
 	}
