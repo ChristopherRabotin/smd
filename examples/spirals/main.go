@@ -20,7 +20,7 @@ func sc() *smd.Spacecraft {
 	dryMass := 10000.0
 	fuelMass := 5000.0
 	return smd.NewSpacecraft("Spiral", dryMass, fuelMass, eps, thrusters, false, []*smd.Cargo{},
-		[]smd.Waypoint{smd.NewToHyperbolic(nil), smd.NewLoiter(time.Duration(24)*time.Hour, nil), smd.NewToElliptical(nil), smd.NewOrbitTarget(*initMarsOrbit(), nil, smd.Naasz)})
+		[]smd.Waypoint{smd.NewToHyperbolic(nil), smd.NewLoiter(time.Duration(7*24)*time.Hour, nil), smd.NewToElliptical(nil), smd.NewOrbitTarget(*initMarsOrbit(), nil, smd.Naasz)})
 }
 
 func initEarthOrbit() *smd.Orbit {
@@ -46,7 +46,7 @@ func initMarsOrbit() *smd.Orbit {
 func main() {
 	//depart := time.Date(2015, 8, 30, 0, 0, 0, 0, time.UTC)
 	depart := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
-	endDT := depart.Add(-1)
+	endDT := time.Date(2020, 11, 8, 0, 0, 0, 0, time.UTC)
 	name := "spiral-mars"
 	astro := smd.NewMission(sc(), initMarsOrbit(), depart, endDT, smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: name, AsCSV: false, Cosmo: true, Timestamp: false})
 	astro.Propagate()

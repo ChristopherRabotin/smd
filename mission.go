@@ -101,7 +101,7 @@ func (a *Mission) LogStatus() {
 func (a *Mission) Propagate() {
 	// Add a ticker status report based on the duration of the simulation.
 	a.LogStatus()
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for _ = range ticker.C {
 			if a.done {
@@ -214,7 +214,7 @@ func (a *Mission) SetState(t float64, s []float64) {
 	// Orbit sanity checks and warnings.
 	if !a.collided && a.Orbit.RNorm() < a.Orbit.Origin.Radius {
 		a.collided = true
-		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "collided", a.Orbit.Origin.Name, "dt", a.CurrentDT)
+		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "collided", a.Orbit.Origin.Name, "dt", a.CurrentDT, "r", a.Orbit.RNorm(), "radius", a.Orbit.Origin.Radius)
 	} else if a.collided && a.Orbit.RNorm() > a.Orbit.Origin.Radius*1.1 {
 		// Now further from the 10% dead zone
 		a.collided = false
