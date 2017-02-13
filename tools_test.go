@@ -126,11 +126,11 @@ func TestLambertDavisMars2Jupiter(t *testing.T) {
 	VinfArr.SubVec(Vf, mat64.NewVector(3, vJupiter))
 	vInf := mat64.Norm(VinfArr, 2)
 	c3 := math.Pow(mat64.Norm(VinfDep, 2), 2)
-	if !floats.EqualWithinAbs(c3, 53.59, 1e-1) {
-		t.Fatalf("c3=%f expected ~53.59 km^2/s^2", c3)
+	if !floats.EqualWithinAbs(c3, 51.97, 1e-1) {
+		t.Fatalf("c3=%f expected ~51.97 km^2/s^2", c3)
 	}
-	if !floats.EqualWithinAbs(vInf, 4.500, 1e-2) {
-		t.Fatalf("vInf=%f expected ~4.5 km/s", vInf)
+	if !floats.EqualWithinAbs(vInf, 4.479, 1e-2) {
+		t.Fatalf("vInf=%f expected ~4.479 km/s", vInf)
 	}
 }
 
