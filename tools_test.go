@@ -133,3 +133,45 @@ func TestLambertDavisMars2Jupiter(t *testing.T) {
 		t.Fatalf("vInf=%f expected ~4.5 km/s", vInf)
 	}
 }
+
+func TestLambertDavisEarth2VenusT3(t *testing.T) {
+	// These tests are from Dr. Davis' ASEN 6008 IMD course at CU.
+	dtDep := julian.JDToTime(2460545)
+	dtArr := julian.JDToTime(2460919)
+	vEarth := Earth.HelioOrbit(dtDep).V()
+	vVenus := Venus.HelioOrbit(dtArr).V()
+	Ri := mat64.NewVector(3, []float64{130423562.1, -76679031.85, 3624.816561})
+	Rf := mat64.NewVector(3, []float64{19195371.67, 106029328.4, 348953.802})
+	rEarth := Earth.HelioOrbit(dtDep).R()
+	rVenus := Venus.HelioOrbit(dtArr).R()
+	t.Logf("\n%+v\n%+v\n\n%+v\n%+v\n", rEarth, Ri, rVenus, Rf)
+	Vi, Vf, ψ, err := Lambert(Ri, Rf, dtArr.Sub(dtDep), TType3, Sun)
+	if err != nil {
+		t.Fatalf("err = %s", err)
+	}
+	ViExp := mat64.NewVector(3, []float64{12.76771134, 22.79158874, 0.09033882633})
+	VfExp := mat64.NewVector(3, []float64{-37.30072389, -0.1768534469, -0.06669308258})
+	if !mat64.EqualApprox(Vi, ViExp, 1e-6) {
+		t.Logf("ψ=%f", ψ)
+		t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(Vi.T()), mat64.Formatted(ViExp.T()))
+		t.Fatalf("[%s] incorrect Vi computed", TType2)
+	}
+	if !mat64.EqualApprox(Vf, VfExp, 1e-6) {
+		t.Logf("ψ=%f", ψ)
+		t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(Vf.T()), mat64.Formatted(VfExp.T()))
+		t.Fatalf("[%s] incorrect Vf computed", TType2)
+	}
+
+	VinfDep := mat64.NewVector(3, nil)
+	VinfArr := mat64.NewVector(3, nil)
+	VinfDep.SubVec(Vi, mat64.NewVector(3, vEarth))
+	VinfArr.SubVec(Vf, mat64.NewVector(3, vVenus))
+	vInf := mat64.Norm(VinfArr, 2)
+	c3 := math.Pow(mat64.Norm(VinfDep, 2), 2)
+	if !floats.EqualWithinAbs(c3, 11.12, 1e-1) {
+		t.Fatalf("c3=%f expected ~11.12 km^2/s^2", c3)
+	}
+	if !floats.EqualWithinAbs(vInf, 7.14, 1e-2) {
+		t.Fatalf("vInf=%f expected ~7.14 km/s", vInf)
+	}
+}

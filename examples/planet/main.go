@@ -21,8 +21,11 @@ func main() {
 	ν := 20.5
 	oI := smd.NewOrbitFromOE(a, e, i, Ω, ω, ν, obj)*/
 	R, V := oI.RV()
+	// Correct axial tilt
+	R = smd.MxV33(smd.R1(smd.Deg2rad(-23.4)), R)
+	V = smd.MxV33(smd.R1(smd.Deg2rad(-23.4)), V)
 	oV := smd.NewOrbitFromRV(R, V, smd.Sun)
 	fmt.Printf("oI: %s\noV: %s\n", oI, oV)
-	mss := smd.NewMission(sc, &oI, start, end, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "Inc", AsCSV: true, Cosmo: true, Timestamp: false})
+	mss := smd.NewMission(sc, oV, start, end, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "Inc", AsCSV: true, Cosmo: true, Timestamp: false})
 	mss.Propagate()
 }

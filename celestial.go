@@ -101,9 +101,6 @@ func (c *CelestialObject) HelioOrbitAtJD(jde float64) Orbit {
 	for i := 0; i < 3; i++ {
 		V[i] = v * vDir[i] / norm(vDir)
 	}
-	// Correct axial tilt
-	/*R = MxV33(R1(Deg2rad(-c.tilt)), R)
-	V = MxV33(R1(Deg2rad(-c.tilt)), V)*/
 
 	// Correct ecliptic inclination
 	R = MxV33(R1(Deg2rad(c.incl)), R)
