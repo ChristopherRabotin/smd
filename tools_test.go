@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gonum/floats"
 	"github.com/gonum/matrix/mat64"
 	"github.com/soniakeys/meeus/julian"
 )
@@ -78,6 +79,7 @@ func TestLambertDavisEarth2Venus(t *testing.T) {
 	t.Logf("%s\t%s\t%s", dt, dtArr, Earth.HelioOrbit(dt))
 	rEarth, vEarth := Earth.HelioOrbit(dt).RV()
 	rVenus, vVenus := Venus.HelioOrbit(dtArr).RV()
+	t.Logf("===V===\n%+v\n%+v\n\n", vEarth, vVenus)
 	Ri := mat64.NewVector(3, []float64{147084764.9, -32521189.65, 467.1900914})
 	Rf := mat64.NewVector(3, []float64{-88002509.16, -62680223.13, 4220331.525})
 	t.Logf("\n%+v\n%+v\n%+v\n\n%+v\n%+v\n", rEarthJPL, rEarth, Ri, rVenus, Rf)
@@ -97,17 +99,14 @@ func TestLambertDavisMars2Jupiter(t *testing.T) {
 	// These tests are from Dr. Davis' ASEN 6008 IMD course at CU.
 	dtDep := julian.JDToTime(2456300)
 	dtArr := julian.JDToTime(2457500)
-	t.Logf("%s\t%s", dtDep, dtArr)
-	rMars, vMars := Mars.HelioOrbit(dtDep).RV()
-	rJupiter, vJupiter := Jupiter.HelioOrbit(dtArr).RV()
+	vMars := Mars.HelioOrbit(dtDep).V()
+	vJupiter := Jupiter.HelioOrbit(dtArr).V()
 	Ri := mat64.NewVector(3, []float64{170145121.3, -117637192.8, -6642044.272})
 	Rf := mat64.NewVector(3, []float64{-803451694.7, 121525767.1, 17465211.78})
-	t.Logf("\n%+v\n%+v\n\n%+v\n%+v\n\n", rMars, Ri, rJupiter, Rf)
 	Vi, Vf, ψ, err := Lambert(Ri, Rf, dtArr.Sub(dtDep), TTypeAuto, Sun)
 	if err != nil {
 		t.Fatalf("err = %s", err)
 	}
-	t.Logf("\nVi=%+v\nVf=%+v\nψ=%f", Vi, Vf, ψ)
 	ViExp := mat64.NewVector(3, []float64{13.74077736, 28.83099312, 0.691285008})
 	VfExp := mat64.NewVector(3, []float64{-0.883933069, -7.983627014, -0.2407705978})
 	if !mat64.EqualApprox(Vi, ViExp, 1e-6) {
@@ -124,8 +123,13 @@ func TestLambertDavisMars2Jupiter(t *testing.T) {
 	VinfDep := mat64.NewVector(3, nil)
 	VinfArr := mat64.NewVector(3, nil)
 	VinfDep.SubVec(Vi, mat64.NewVector(3, vMars))
-	VinfArr.SubVec(mat64.NewVector(3, vJupiter), Vf)
-	vInf := mat64.Norm(VinfDep, 2)
-	c3 := math.Pow(vInf, 2)
-	t.Logf("\nVinfDep=%+v\nVinArr=%+v\nvInf=%f\tc3=%f", mat64.Formatted(VinfDep), mat64.Formatted(VinfArr), vInf, c3)
+	VinfArr.SubVec(Vf, mat64.NewVector(3, vJupiter))
+	vInf := mat64.Norm(VinfArr, 2)
+	c3 := math.Pow(mat64.Norm(VinfDep, 2), 2)
+	if !floats.EqualWithinAbs(c3, 53.59, 1e-1) {
+		t.Fatalf("c3=%f expected ~53.59 km^2/s^2", c3)
+	}
+	if !floats.EqualWithinAbs(vInf, 4.500, 1e-2) {
+		t.Fatalf("vInf=%f expected ~4.5 km/s", vInf)
+	}
 }
