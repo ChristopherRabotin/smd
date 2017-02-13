@@ -1,6 +1,7 @@
 package smd
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -87,7 +88,44 @@ func TestLambertDavisEarth2Venus(t *testing.T) {
 	t.Logf("\nVi=%+v\nVf=%+v\nψ=%f", Vi, Vf, ψ)
 	VinfDep := mat64.NewVector(3, nil)
 	VinfArr := mat64.NewVector(3, nil)
-	VinfDep.SubVec(mat64.NewVector(3, vEarth), Vi)
-	VinfArr.SubVec(mat64.NewVector(3, vVenus), Vf)
+	VinfDep.SubVec(Vi, mat64.NewVector(3, vEarth))
+	VinfArr.SubVec(Vf, mat64.NewVector(3, vVenus))
 	t.Logf("\nVinfDep=%+v\nVinArr=%+v", mat64.Formatted(VinfDep), mat64.Formatted(VinfArr))
+}
+
+func TestLambertDavisMars2Jupiter(t *testing.T) {
+	// These tests are from Dr. Davis' ASEN 6008 IMD course at CU.
+	dtDep := julian.JDToTime(2456300)
+	dtArr := julian.JDToTime(2457500)
+	t.Logf("%s\t%s", dtDep, dtArr)
+	rMars, vMars := Mars.HelioOrbit(dtDep).RV()
+	rJupiter, vJupiter := Jupiter.HelioOrbit(dtArr).RV()
+	Ri := mat64.NewVector(3, []float64{170145121.3, -117637192.8, -6642044.272})
+	Rf := mat64.NewVector(3, []float64{-803451694.7, 121525767.1, 17465211.78})
+	t.Logf("\n%+v\n%+v\n\n%+v\n%+v\n\n", rMars, Ri, rJupiter, Rf)
+	Vi, Vf, ψ, err := Lambert(Ri, Rf, dtArr.Sub(dtDep), TTypeAuto, Sun)
+	if err != nil {
+		t.Fatalf("err = %s", err)
+	}
+	t.Logf("\nVi=%+v\nVf=%+v\nψ=%f", Vi, Vf, ψ)
+	ViExp := mat64.NewVector(3, []float64{13.74077736, 28.83099312, 0.691285008})
+	VfExp := mat64.NewVector(3, []float64{-0.883933069, -7.983627014, -0.2407705978})
+	if !mat64.EqualApprox(Vi, ViExp, 1e-6) {
+		t.Logf("ψ=%f", ψ)
+		t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(Vi.T()), mat64.Formatted(ViExp.T()))
+		t.Fatalf("[%s] incorrect Vi computed", TType2)
+	}
+	if !mat64.EqualApprox(Vf, VfExp, 1e-6) {
+		t.Logf("ψ=%f", ψ)
+		t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(Vf.T()), mat64.Formatted(VfExp.T()))
+		t.Fatalf("[%s] incorrect Vf computed", TType2)
+	}
+
+	VinfDep := mat64.NewVector(3, nil)
+	VinfArr := mat64.NewVector(3, nil)
+	VinfDep.SubVec(Vi, mat64.NewVector(3, vMars))
+	VinfArr.SubVec(mat64.NewVector(3, vJupiter), Vf)
+	vInf := mat64.Norm(VinfDep, 2)
+	c3 := math.Pow(vInf, 2)
+	t.Logf("\nVinfDep=%+v\nVinArr=%+v\nvInf=%f\tc3=%f", mat64.Formatted(VinfDep), mat64.Formatted(VinfArr), vInf, c3)
 }

@@ -34,7 +34,7 @@ func TestPanics(t *testing.T) {
 		fake.HelioOrbit(time.Now())
 	})
 	assertPanic(t, func() {
-		venus := CelestialObject{"Venus", -1, -1, -1, -1, -1, -1, -1, -1, -1, nil}
+		venus := CelestialObject{"Vesta", -1, -1, -1, -1, -1, -1, -1, -1, -1, nil}
 		venus.HelioOrbit(time.Now())
 	})
 }

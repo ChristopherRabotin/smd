@@ -708,7 +708,7 @@ func TestMissionSpiral(t *testing.T) {
 	if !floats.EqualWithinAbs(sc.FuelMass, 3882, 6) {
 		t.Fatalf("fuel = %f instead of ~3880", sc.FuelMass)
 	}
-	exp := NewOrbitFromOE(160836223.7, 0.0808, 23.394, 0.422, 92.712, 11.385, Sun)
+	exp := NewOrbitFromOE(160737235.3, 0.0807, 0.345, 75.248, 18.963, 10.284, Sun)
 	if ok, err := exp.StrictlyEquals(*astro.Orbit); !ok {
 		t.Fatalf("final orbit invalid (expected / got): %s\n%s\n%s", err, exp, astro.Orbit)
 	}
