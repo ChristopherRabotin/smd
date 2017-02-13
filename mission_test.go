@@ -700,7 +700,7 @@ func TestMissionSpiral(t *testing.T) {
 	name := "testSpiral"
 	//TODO: Fix bug where ref2Sun doesn't trigger if not the last waypoint
 	sc := NewSpacecraft(name, 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewOutwardSpiral(Earth, nil), NewLoiter(time.Duration(24)*time.Hour, ref2Sun)})
-	astro := NewMission(sc, osc, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: true, Timestamp: false})
+	astro := NewMission(sc, osc, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: false, Timestamp: false})
 	astro.Propagate()
 	if !astro.Orbit.Origin.Equals(Sun) {
 		t.Fatal("outward spiral with ref2sun did not transform this orbit to heliocentric")
@@ -708,7 +708,7 @@ func TestMissionSpiral(t *testing.T) {
 	if !floats.EqualWithinAbs(sc.FuelMass, 3882, 6) {
 		t.Fatalf("fuel = %f instead of ~3880", sc.FuelMass)
 	}
-	exp := NewOrbitFromOE(160737235.3, 0.0807, 0.345, 75.248, 18.963, 10.284, Sun)
+	exp := NewOrbitFromOE(160737235.8, 0.0807, 0.345, 75.240, 18.971, 10.284, Sun)
 	if ok, err := exp.StrictlyEquals(*astro.Orbit); !ok {
 		t.Fatalf("final orbit invalid (expected / got): %s\n%s\n%s", err, exp, astro.Orbit)
 	}

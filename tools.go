@@ -2,6 +2,7 @@ package smd
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
@@ -99,13 +100,13 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	var dm float64
 	switch ttype {
 	case TType1:
-		fallthrough
-	case TType3:
 		dm = 1
+	case TType3:
+		dm = 2
 	case TType2:
-		fallthrough
-	case TType4:
 		dm = -1
+	case TType4:
+		dm = -2
 	default:
 		if νF-νI < math.Pi {
 			dm = 1
@@ -136,11 +137,18 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 			return
 		}
 		iteration++
+		fmt.Printf("y=%f\tc2=%f\n", y, c2)
 		y = rI + rF + A*(ψ*c3-1)/math.Sqrt(c2)
-		if A > 0 && y < 0 {
-			// Well this is confusing... ψlow needs to be readjusted but it never is used.
-			ψlow = (0.8 / c3) * (1 - (math.Sqrt(c2)/A)*(rI+rF))
-			continue
+		//if A > 0 && y < 0 {
+		tmpIt := 0
+		for y < 0 {
+			ψ = (0.8/c3)*(1-(math.Sqrt(c2)/A)*(rI+rF)) + 0.2
+			y = rI + rF + A*(ψ*c3-1)/math.Sqrt(c2)
+			if tmpIt > 1000 {
+				err = errors.New("did not converge after 1000 tmpIt")
+				return
+			}
+			tmpIt++
 		}
 		χ := math.Sqrt(y / c2)
 		Δt = (math.Pow(χ, 3)*c3 + A*math.Sqrt(y)) / math.Sqrt(body.GM())
@@ -153,12 +161,14 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 		if ψ > lambertε {
 			sψ := math.Sqrt(ψ)
 			ssψ, csψ := math.Sincos(sψ)
-			c2 = (1 - csψ) / ψ
+			c2 = (1 - csψ) / ψ // BUG: c2 may go to 0
 			c3 = (sψ - ssψ) / math.Sqrt(math.Pow(ψ, 3))
+			fmt.Printf("[%f] ψ=%f\tψup=%f\tψlow=%f\tsψ=%f\tc2=%f\tc3=%f\n", Δt, ψ, ψup, ψlow, sψ, c2, c3)
 		} else if ψ < -lambertε {
 			sψ := math.Sqrt(-ψ)
 			c2 = (1 - math.Cosh(sψ)) / ψ
 			c3 = (math.Sinh(sψ) - sψ) / math.Sqrt(math.Pow(sψ, 3))
+			fmt.Printf("[%f] ψ=%f\tψup=%f\tψlow=%f\tsψ=%f\tc2=%f\tc3=%f\n", Δt, ψ, ψup, ψlow, sψ, c2, c3)
 		} else {
 			c2 = 1 / 2.
 			c3 = 1 / 6.

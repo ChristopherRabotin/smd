@@ -142,9 +142,6 @@ func TestLambertDavisEarth2VenusT3(t *testing.T) {
 	vVenus := Venus.HelioOrbit(dtArr).V()
 	Ri := mat64.NewVector(3, []float64{130423562.1, -76679031.85, 3624.816561})
 	Rf := mat64.NewVector(3, []float64{19195371.67, 106029328.4, 348953.802})
-	rEarth := Earth.HelioOrbit(dtDep).R()
-	rVenus := Venus.HelioOrbit(dtArr).R()
-	t.Logf("\n%+v\n%+v\n\n%+v\n%+v\n", rEarth, Ri, rVenus, Rf)
 	Vi, Vf, ψ, err := Lambert(Ri, Rf, dtArr.Sub(dtDep), TType3, Sun)
 	if err != nil {
 		t.Fatalf("err = %s", err)
