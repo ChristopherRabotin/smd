@@ -42,11 +42,20 @@ func dot(a, b []float64) float64 {
 	return mat64.Dot(mat64.NewVector(len(a), a), mat64.NewVector(len(b), b))
 }
 
-// cross performs the inner product.
+// cross performs the cross product.
 func cross(a, b []float64) []float64 {
 	return []float64{a[1]*b[2] - a[2]*b[1],
 		a[2]*b[0] - a[0]*b[2],
 		a[0]*b[1] - a[1]*b[0]} // Cross product R x V.
+}
+
+// cross performs the cross product from two mat64.Vectors.
+func crossVec(a, b *mat64.Vector) *mat64.Vector {
+	rslt := mat64.NewVector(3, nil) // only support dim 3 (cross only defined in dims 3 and 7)
+	rslt.SetVec(0, a.At(1, 0)*b.At(2, 0)-a.At(2, 0)*b.At(1, 0))
+	rslt.SetVec(1, a.At(2, 0)*b.At(0, 0)-a.At(0, 0)*b.At(2, 0))
+	rslt.SetVec(2, a.At(0, 0)*b.At(1, 0)-a.At(1, 0)*b.At(0, 0))
+	return rslt
 }
 
 // Spherical2Cartesian returns the provided spherical coordinates vector in Cartesian.
