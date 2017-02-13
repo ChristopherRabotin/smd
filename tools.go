@@ -20,6 +20,10 @@ func (t TransferType) String() string {
 		return "type-1"
 	case TType2:
 		return "type-2"
+	case TType3:
+		return "type-3"
+	case TType4:
+		return "type-4"
 	default:
 		panic("unknown transfer type")
 	}
@@ -28,10 +32,14 @@ func (t TransferType) String() string {
 const (
 	// TTypeAuto lets the Lambert solver determine the type
 	TTypeAuto TransferType = iota + 1
-	// TType1 is transfer of type 1 (single revolution, short way)
+	// TType1 is transfer of type 1 (zero revolution, short way)
 	TType1
-	// TType2 is transfer of type 2 (single revolution, long way)
+	// TType2 is transfer of type 2 (zero revolution, long way)
 	TType2
+	// TType3 is transfer of type 3 (one revolutions, short way)
+	TType3
+	// TType4 is transfer of type 4 (one revolutions, long way)
+	TType4
 	lambertε         = 1e-6                   // General epsilon
 	lambertTlambertε = 1e-6                   // Time epsilon (1e-6 seconds)
 	lambertνlambertε = (5e-5 / 180) * math.Pi // 0.00005 degrees
@@ -73,8 +81,12 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	var dm float64
 	switch ttype {
 	case TType1:
+		fallthrough
+	case TType3:
 		dm = 1
 	case TType2:
+		fallthrough
+	case TType4:
 		dm = -1
 	default:
 		if νF-νI < math.Pi {
@@ -91,6 +103,10 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	ψ = 0
 	ψup := 4 * math.Pow(math.Pi, 2)
 	ψlow := -4 * math.Pi
+	if ttype == TType3 || ttype == TType4 {
+		ψup *= 4
+		ψlow *= 1 // Kinda useless, but it's only to ensure that it's implemented.
+	}
 	// Initial guesses for c2 and c3
 	c2 := 1 / 2.
 	c3 := 1 / 6.

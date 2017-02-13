@@ -127,7 +127,7 @@ func (o Orbit) Period() time.Duration {
 }
 
 // RV helps with the cache.
-func (o *Orbit) RV() ([]float64, []float64) {
+func (o Orbit) RV() ([]float64, []float64) {
 	return o.rVec, o.vVec
 }
 

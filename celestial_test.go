@@ -9,7 +9,7 @@ import (
 )
 
 func TestCelestialObject(t *testing.T) {
-	for _, object := range []CelestialObject{Sun, Earth, Mars} {
+	for _, object := range []CelestialObject{Sun, Venus, Earth, Mars, Jupiter} {
 		object.HelioOrbit(time.Now().UTC())
 		var i uint8
 		for i = 1; i < 6; i++ {

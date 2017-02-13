@@ -71,16 +71,12 @@ func (c *CelestialObject) HelioOrbitAtJD(jde float64) Orbit {
 		switch c.Name {
 		case "Venus":
 			vsopPosition = 2
-			break
 		case "Earth":
 			vsopPosition = 3
-			break
 		case "Mars":
 			vsopPosition = 4
-			break
 		case "Jupiter":
 			vsopPosition = 5
-			break
 		default:
 			panic(fmt.Errorf("unknown object: %s", c.Name))
 		}
@@ -106,8 +102,8 @@ func (c *CelestialObject) HelioOrbitAtJD(jde float64) Orbit {
 		V[i] = v * vDir[i] / norm(vDir)
 	}
 	// Correct axial tilt
-	R = MxV33(R1(Deg2rad(-c.tilt)), R)
-	V = MxV33(R1(Deg2rad(-c.tilt)), V)
+	/*R = MxV33(R1(Deg2rad(-c.tilt)), R)
+	V = MxV33(R1(Deg2rad(-c.tilt)), V)*/
 
 	// Correct ecliptic inclination
 	R = MxV33(R1(Deg2rad(c.incl)), R)
@@ -127,6 +123,9 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 
 // Sun is our closest star.
 var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, 0.0, 0.0, -1, 0, 0, 0, nil}
+
+// Venus is poisonous.
+var Venus = CelestialObject{"Venus", 6052, 108208601, 3.257 * 1e5, 117.36, 3.39458, 0.616e6, 0.000027, 0, 0, nil}
 
 // Earth is home.
 var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23.4, 0.00005, 924645.0, 1082.6269e-6, -2.5324e-6, -1.6204e-6, nil}
