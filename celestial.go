@@ -60,10 +60,8 @@ func (c *CelestialObject) Equals(b CelestialObject) bool {
 	return c.Name == b.Name && c.Radius == b.Radius && c.a == b.a && c.μ == b.μ && c.SOI == b.SOI && c.J2 == b.J2
 }
 
-// HelioOrbit returns the heliocentric position and velocity of this planet at a given time in equatorial coordinates.
-// Note that the whole file is loaded. In fact, if we don't, then whoever is the first to call this function will
-// set the Epoch at which the ephemeris are available, and that sucks.
-func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
+// HelioOrbitAtJD is the same as HelioOrbit but the argument is the julian date.
+func (c *CelestialObject) HelioOrbitAtJD(jde float64) Orbit {
 	if c.Name == "Sun" {
 		return *NewOrbitFromRV([]float64{0, 0, 0}, []float64{0, 0, 0}, *c)
 	}
@@ -80,6 +78,9 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 		case "Mars":
 			vsopPosition = 4
 			break
+		case "Jupiter":
+			vsopPosition = 5
+			break
 		default:
 			panic(fmt.Errorf("unknown object: %s", c.Name))
 		}
@@ -89,7 +90,7 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 		}
 		c.PP = planet
 	}
-	l, b, r := c.PP.Position2000(julian.TimeToJD(dt))
+	l, b, r := c.PP.Position2000(jde)
 	r *= AU
 	v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
 	// Get the Cartesian coordinates from L,B,R.
@@ -115,6 +116,13 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 	return *NewOrbitFromRV(R, V, Sun)
 }
 
+// HelioOrbit returns the heliocentric position and velocity of this planet at a given time in equatorial coordinates.
+// Note that the whole file is loaded. In fact, if we don't, then whoever is the first to call this function will
+// set the Epoch at which the ephemeris are available, and that sucks.
+func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
+	return c.HelioOrbitAtJD(julian.TimeToJD(dt))
+}
+
 /* Definitions */
 
 // Sun is our closest star.
@@ -125,3 +133,6 @@ var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23
 
 // Mars is the vacation place.
 var Mars = CelestialObject{"Mars", 3397.2, 227939282.5616, 4.305 * 1e4, 25.19, 1.85, 576000, 1964e-6, 36e-6, -18e-6, nil}
+
+// Jupiter is big.
+var Jupiter = CelestialObject{"Jupiter", 71492.0, 778298361, 1.268 * 1e8, 3.13, 1.30326966, 48.2e6, 0.01475, 0, -0.00058, nil}
