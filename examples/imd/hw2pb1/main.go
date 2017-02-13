@@ -17,7 +17,7 @@ func main() {
 	arrivalEstDT := launchDT.Add(time.Duration(100*24) * time.Hour)
 	arrivalPlanet := smd.Mars
 	exportResults := false
-	window := 250 // in days
+	window := 1500 // in days
 	step := time.Duration(6) * time.Hour
 	/*** END CONFIG ****/
 	fmt.Printf("==== Lambert min solver ====\n%s -> %s\nLaunch:%s \tWindow: %d days\n\n", departurePlanet, arrivalPlanet, launchDT, window)
@@ -25,7 +25,7 @@ func main() {
 	departureOrbit := departurePlanet.HelioOrbit(launchDT)
 	Rdepart := mat64.NewVector(3, departureOrbit.R())
 	Vdepart := mat64.NewVector(3, departureOrbit.V())
-	for _, ttype := range []smd.TransferType{smd.TType1, smd.TType2} {
+	for _, ttype := range []smd.TransferType{smd.TType1, smd.TType2, smd.TType3, smd.TType4} {
 		// Initialize the CSV string
 		csvContent := fmt.Sprintf("# %s -> %s Lambert type %s\n#Launch: %s\n#Initial arrival:%s\ndays,c3,vInf,phi2\n", departurePlanet, arrivalPlanet, ttype, launchDT, arrivalEstDT)
 		minC3 := 10e4

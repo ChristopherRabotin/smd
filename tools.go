@@ -12,6 +12,24 @@ import (
 // TransferType defines the type of Lambert transfer
 type TransferType uint8
 
+// Revs returns the number of revolutions given the type.
+func (t TransferType) Revs() float64 {
+	switch t {
+	case TTypeAuto:
+		fallthrough // auto-revs is limited to zero revolutions
+	case TType1:
+		fallthrough
+	case TType2:
+		return 0
+	case TType3:
+		fallthrough
+	case TType4:
+		return 1
+	default:
+		panic("unknown transfer type")
+	}
+}
+
 func (t TransferType) String() string {
 	switch t {
 	case TTypeAuto:
@@ -101,11 +119,10 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 		return
 	}
 	ψ = 0
-	ψup := 4 * math.Pow(math.Pi, 2)
-	ψlow := 0.0
-	if ttype == TType3 || ttype == TType4 {
-		ψlow = ψup // Kinda useless for single revolution, but it's only to ensure that it's implemented.
-		ψup *= 4
+	ψup := 4 * math.Pow(math.Pi, 2) * math.Pow(ttype.Revs()+1, 2)
+	ψlow := -4 * math.Pi
+	if ttype.Revs() > 0 {
+		ψlow = -4 * math.Pow(math.Pi, 2) * math.Pow(ttype.Revs(), 2)
 	}
 	// Initial guesses for c2 and c3
 	c2 := 1 / 2.
@@ -121,10 +138,9 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 		iteration++
 		y = rI + rF + A*(ψ*c3-1)/math.Sqrt(c2)
 		if A > 0 && y < 0 {
-			panic("not yet implemented")
 			// Well this is confusing... ψlow needs to be readjusted but it never is used.
-			//ψlow = (0.8 / c3) * (1 - (math.Sqrt(c2)/A)*(rI+rF))
-			//continue
+			ψlow = (0.8 / c3) * (1 - (math.Sqrt(c2)/A)*(rI+rF))
+			continue
 		}
 		χ := math.Sqrt(y / c2)
 		Δt = (math.Pow(χ, 3)*c3 + A*math.Sqrt(y)) / math.Sqrt(body.GM())
