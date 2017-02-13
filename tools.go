@@ -102,10 +102,10 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	}
 	ψ = 0
 	ψup := 4 * math.Pow(math.Pi, 2)
-	ψlow := -4 * math.Pi
+	ψlow := 0.0
 	if ttype == TType3 || ttype == TType4 {
+		ψlow = ψup // Kinda useless for single revolution, but it's only to ensure that it's implemented.
 		ψup *= 4
-		ψlow *= 1 // Kinda useless, but it's only to ensure that it's implemented.
 	}
 	// Initial guesses for c2 and c3
 	c2 := 1 / 2.

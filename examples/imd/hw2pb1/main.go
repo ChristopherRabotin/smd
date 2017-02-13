@@ -12,10 +12,10 @@ import (
 
 func main() {
 	/***** CONFIG ******/
-	launchDT := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
-	departurePlanet := smd.Mars
+	launchDT := time.Date(2018, 5, 1, 0, 0, 0, 0, time.UTC)
+	departurePlanet := smd.Earth
 	arrivalEstDT := launchDT.Add(time.Duration(100*24) * time.Hour)
-	arrivalPlanet := smd.Earth
+	arrivalPlanet := smd.Mars
 	exportResults := false
 	window := 250 // in days
 	step := time.Duration(6) * time.Hour
