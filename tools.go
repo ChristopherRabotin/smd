@@ -97,6 +97,9 @@ func Hohmann(rI, vI, rF, vF float64, body CelestialObject) (vDeparture, vArrival
 // along with ψ which is the square of the difference in eccentric anomaly. Note that the direction of motion
 // is computed directly in this function to simplify the generation of Pork chop plots.
 func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body CelestialObject) (Vi, Vf *mat64.Vector, ψ float64, err error) {
+	if ttype.Revs() > 0 {
+		fmt.Println("============\nWARNING: Multi-rev Lambert is not successfully tested and *MAY* not work.\n============")
+	}
 	// Initialize return variables
 	Vi = mat64.NewVector(3, nil)
 	Vf = mat64.NewVector(3, nil)
@@ -149,21 +152,23 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 			return
 		}
 		iteration++
-		//fmt.Printf("y=%f\tc2=%f\n", y, c2)
+		//fmt.Printf("[%d] y=%f\tc2=%f\n", iteration, y, c2)
 		y = rI + rF + A*(ψ*c3-1)/math.Sqrt(c2)
-		//if A > 0 && y < 0 {
-		tmpIt := 0
-		for y < 0 {
-			ψ = (0.8/c3)*(1-(math.Sqrt(c2)/A)*(rI+rF)) + 0.1
-			y = rI + rF + A*(ψ*c3-1)/math.Sqrt(c2)
-			if tmpIt > 1000 {
-				err = errors.New("did not converge after 1000 tmpIt")
-				return
+		if A > 0 && y < 0 {
+			tmpIt := 0
+			for y < 0 {
+				ψ += 0.1
+				y = rI + rF + A*(ψ*c3-1)/math.Sqrt(c2)
+				if tmpIt > 1000 {
+					err = errors.New("did not converge after 1000 attempts to increase ψ")
+					return
+				}
+				tmpIt++
 			}
-			tmpIt++
 		}
+		//fmt.Printf("[%d] y=%f\tψ=%f\n", iteration, y, ψ)
 		χ := math.Sqrt(y / c2)
-		Δt = (math.Pow(χ, 3)*c3 + A*math.Sqrt(y)) / math.Sqrt(body.GM())
+		Δt = (math.Pow(χ, 3)*c3 + A*math.Sqrt(y)) / math.Sqrt(body.μ)
 		if Δt < Δt0Sec {
 			ψlow = ψ
 		} else {
@@ -175,12 +180,11 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 			ssψ, csψ := math.Sincos(sψ)
 			c2 = (1 - csψ) / ψ // BUG: c2 may go to 0
 			c3 = (sψ - ssψ) / math.Sqrt(math.Pow(ψ, 3))
-			//fmt.Printf("[%f] ψ=%f\tψup=%f\tψlow=%f\tsψ=%f\tc2=%f\tc3=%f\n", Δt, ψ, ψup, ψlow, sψ, c2, c3)
+			//fmt.Printf("[%d] [%f] ψ=%f\tψup=%f\tψlow=%f\tsψ=%f\tc2=%f\tc3=%f\tcsψ=%f\n", iteration, Δt, ψ, ψup, ψlow, sψ, c2, c3, csψ)
 		} else if ψ < -lambertε {
 			sψ := math.Sqrt(-ψ)
 			c2 = (1 - math.Cosh(sψ)) / ψ
 			c3 = (math.Sinh(sψ) - sψ) / math.Sqrt(math.Pow(sψ, 3))
-			//fmt.Printf("[%f] ψ=%f\tψup=%f\tψlow=%f\tsψ=%f\tc2=%f\tc3=%f\n", Δt, ψ, ψup, ψlow, sψ, c2, c3)
 		} else {
 			c2 = 1 / 2.
 			c3 = 1 / 6.
