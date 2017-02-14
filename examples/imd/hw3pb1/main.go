@@ -8,24 +8,37 @@ import (
 
 	"github.com/ChristopherRabotin/smd"
 	"github.com/gonum/matrix/mat64"
+	"github.com/soniakeys/meeus/julian"
 )
 
 func main() {
-	/***** CONFIG ******/
-	launchDT := time.Date(2018, 5, 1, 0, 0, 0, 0, time.UTC)
-	departurePlanet := smd.Earth
+	jde := 2454085.5
+	launchDT := julian.JDToTime(jde)
+	arrivalDT := launchDT.Add(time.Duration(830*24) * time.Hour)
+	marsOrbit := smd.Mars.HelioOrbit(launchDT)
+	marsR, marsV := marsOrbit.RV()
+	jupiterOrbit := smd.Jupiter.HelioOrbit(arrivalDT)
+	jupiterR, jupiterV := jupiterOrbit.RV()
+	fmt.Printf("==== Mars @%s ====\nR=%+v km\tV=%+v km/s\n", julian.JDToTime(jde), marsR, marsV)
+	fmt.Printf("==== Jupiter @%s ====\nR=%+v km\tV=%+v km/s\n", arrivalDT, jupiterR, jupiterV)
+	departurePlanet := smd.Mars
 	arrivalEstDT := launchDT.Add(time.Duration(100*24) * time.Hour)
-	arrivalPlanet := smd.Mars
+	arrivalPlanet := smd.Jupiter
 	exportResults := false
 	window := 1500 // in days
 	step := time.Duration(6) * time.Hour
 	/*** END CONFIG ****/
+	// The following is mostly copied from hw2pb1
 	fmt.Printf("==== Lambert min solver ====\n%s -> %s\nLaunch:%s \tWindow: %d days\n\n", departurePlanet, arrivalPlanet, launchDT, window)
-	// RV() is a pointer method (because of the cache update)
-	departureOrbit := departurePlanet.HelioOrbit(launchDT)
-	Rdepart := mat64.NewVector(3, departureOrbit.R())
-	Vdepart := mat64.NewVector(3, departureOrbit.V())
 	for _, ttype := range []smd.TransferType{smd.TType1, smd.TType2, smd.TType3, smd.TType4} {
+		rDep, vDep := departurePlanet.HelioOrbit(launchDT).RV()
+		if ttype.Revs() > 0 {
+			// Let's find the position and velocity the planet will have a bit later.
+			p := arrivalPlanet.HelioOrbit(launchDT).Period()
+			arrivalEstDT = arrivalEstDT.Add(p / 2)
+		}
+		Rdepart := mat64.NewVector(3, rDep)
+		Vdepart := mat64.NewVector(3, vDep)
 		// Initialize the CSV string
 		csvContent := fmt.Sprintf("# %s -> %s Lambert type %s\n#Launch: %s\n#Initial arrival:%s\ndays,c3,vInf,phi2\n", departurePlanet, arrivalPlanet, ttype, launchDT, arrivalEstDT)
 		minC3 := 10e4
@@ -36,11 +49,7 @@ func main() {
 		for ; arrivalDT.Before(maxDT); arrivalDT = arrivalDT.Add(step) {
 			duration := arrivalDT.Sub(launchDT)
 			Rmars := mat64.NewVector(3, arrivalPlanet.HelioOrbit(arrivalDT).R())
-			Vi, _, ψ, err := smd.Lambert(Rdepart, Rmars, duration, ttype, smd.Sun)
-			if err != nil {
-				fmt.Printf("[ERROR] %s: %s\n", duration, err)
-				continue
-			}
+			Vi, _, ψ, _ := smd.Lambert(Rdepart, Rmars, duration, ttype, smd.Sun)
 			// Compute the v_infinity
 			vInfVec := mat64.NewVector(3, nil)
 			vInfVec.SubVec(Vi, Vdepart)

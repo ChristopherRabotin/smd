@@ -1,7 +1,6 @@
 package smd
 
 import (
-	"math"
 	"testing"
 	"time"
 
@@ -68,33 +67,26 @@ func TestHohmannΔv(t *testing.T) {
 	postApoDT := initDT.Add(tofExp + StepSize)
 
 	assertPanic(t, func() {
-		target.e = 0.5
-		NewHohmannTransfer(target, nil)
+		tgt := *NewOrbitFromOE(Earth.Radius+35781.34857, 0.5, 0, 0, 0, 90, Earth)
+		NewHohmannTransfer(tgt, nil)
 	})
-	target.e = eccentricityε
 
 	wp := NewHohmannTransfer(target, nil)
 
 	assertPanic(t, func() {
-		oscul.ν = math.Pi
-		wp.ThrustDirection(oscul, initDT)
+		osc := *NewOrbitFromOE(Earth.Radius+191.34411, eccentricityε, 0, 0, 0, 180, Earth)
+		wp.ThrustDirection(osc, initDT)
 	})
-	// Reset true anomaly after panic test
-	oscul.ν = math.Pi / 2
 
 	assertPanic(t, func() {
-		oscul.e = 0.5
-		wp.ThrustDirection(oscul, initDT)
+		osc := *NewOrbitFromOE(Earth.Radius+191.34411, 0.5, 0, 0, 0, 90, Earth)
+		wp.ThrustDirection(osc, initDT)
 	})
-	// Reset true anomaly after panic test
-	oscul.e = eccentricityε
 
 	assertPanic(t, func() {
-		oscul.i = math.Pi / 4
-		wp.ThrustDirection(oscul, initDT)
+		osc := *NewOrbitFromOE(Earth.Radius+191.34411, eccentricityε, 45, 0, 0, 90, Earth)
+		wp.ThrustDirection(osc, initDT)
 	})
-	// Reset true anomaly after panic test
-	oscul.i = angleε
 
 	ctrl, cleared := wp.ThrustDirection(oscul, initDT)
 	if cleared {
@@ -159,5 +151,49 @@ func TestHohmannΔv(t *testing.T) {
 	Δv = ctrl.Control(oscul)
 	if !vectorsEqual(Δv, ΔvCoasting) {
 		t.Fatalf("expected Hohmann coasting, instead got: %+v", Δv)
+	}
+}
+
+func TestToElliptical(t *testing.T) {
+	// Example action
+	ref2Mars := WaypointAction{Type: REFMARS, Cargo: nil}
+	wp := NewToElliptical(&ref2Mars)
+	dt := time.Unix(0, 0)
+	// Generate an evident hyperbolic orbit
+	o := Earth.HelioOrbit(dt)
+	o.ToXCentric(Earth, dt.Add(time.Duration(7*24)*time.Hour))
+	ctrl, cleared := wp.ThrustDirection(o, dt)
+	if cleared {
+		t.Fatal("cleared was true for hyperbolic orbit")
+	}
+	if ctrl.Type() != antiTangential {
+		t.Fatal("expected the control to be antiTangential")
+	}
+	o = *NewOrbitFromOE(Earth.Radius+191.34411, 0.2, 0, 0, 0, 90, Earth)
+	_, cleared = wp.ThrustDirection(o, dt)
+	if !cleared {
+		t.Fatal("cleared was false for elliptical orbit")
+	}
+}
+
+func TestToHyperbolic(t *testing.T) {
+	// Example action
+	ref2Sun := WaypointAction{Type: REFSUN, Cargo: nil}
+	wp := NewToHyperbolic(&ref2Sun)
+	dt := time.Unix(0, 0)
+	o := *NewOrbitFromOE(Earth.Radius+191.34411, 0.2, 0, 0, 0, 90, Earth)
+	ctrl, cleared := wp.ThrustDirection(o, dt)
+	if cleared {
+		t.Fatal("cleared was true for elliptical orbit")
+	}
+	if ctrl.Type() != tangential {
+		t.Fatal("expected the control to be antiTangential")
+	}
+	// Generate an evident hyperbolic orbit
+	o = Earth.HelioOrbit(dt)
+	o.ToXCentric(Earth, dt.Add(time.Duration(7*24)*time.Hour))
+	_, cleared = wp.ThrustDirection(o, dt)
+	if !cleared {
+		t.Fatal("cleared was false for hyperbolic orbit")
 	}
 }

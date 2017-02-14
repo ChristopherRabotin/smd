@@ -46,13 +46,19 @@ type Mission struct {
 	CurrentDT      time.Time
 	propMethod     Propagator
 	perts          Perturbations
+	step           time.Duration // time step
 	stopChan       chan (bool)
 	histChan       chan<- (MissionState)
 	done, collided bool
 }
 
-// NewMission returns a new Mission instance from the position and velocity vectors.
+// NewMission is the same as NewPreciseMission with the default step size.
 func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, method Propagator, perts Perturbations, conf ExportConfig) *Mission {
+	return NewPreciseMission(s, o, start, end, method, perts, StepSize, conf)
+}
+
+// NewPreciseMission returns a new Mission instance with custom provided time step.
+func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, method Propagator, perts Perturbations, step time.Duration, conf ExportConfig) *Mission {
 	// If no filepath is provided, then no output will be written.
 	var histChan chan (MissionState)
 	if !conf.IsUseless() {
@@ -73,7 +79,7 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, method Propagator
 		end = end.UTC()
 	}
 
-	a := &Mission{s, o, start, end, start, method, perts, make(chan (bool), 1), histChan, false, false}
+	a := &Mission{s, o, start, end, start, method, perts, step, make(chan (bool), 1), histChan, false, false}
 	// Write the first data point.
 	if histChan != nil {
 		histChan <- MissionState{a.CurrentDT, *s, *o}
@@ -105,7 +111,7 @@ func (a *Mission) Propagate() {
 		}
 	}()
 	vInit := norm(a.Orbit.V())
-	ode.NewRK4(0, StepSize.Seconds(), a).Solve() // Blocking.
+	ode.NewRK4(0, a.step.Seconds(), a).Solve() // Blocking.
 	vFinal := norm(a.Orbit.V())
 	a.done = true
 	duration := a.CurrentDT.Sub(a.StartDT)
@@ -135,7 +141,7 @@ func (a *Mission) Stop(t float64) bool {
 		}
 		return true // Stop because there is a request to stop.
 	default:
-		a.CurrentDT = a.CurrentDT.Add(StepSize)
+		a.CurrentDT = a.CurrentDT.Add(a.step)
 		if a.EndDT.Before(a.StartDT) {
 			// Check if any waypoint still needs to be reached.
 			for _, wp := range a.Vehicle.WayPoints {
@@ -163,12 +169,13 @@ func (a *Mission) GetState() (s []float64) {
 	s = make([]float64, 7)
 	switch a.propMethod {
 	case GaussianVOP:
-		s[0] = a.Orbit.a
-		s[1] = a.Orbit.e
-		s[2] = a.Orbit.i
-		s[3] = a.Orbit.Ω
-		s[4] = a.Orbit.ω
-		s[5] = a.Orbit.ν
+		a, e, i, Ω, ω, ν, _, _, _ := a.Orbit.Elements()
+		s[0] = a
+		s[1] = e
+		s[2] = i
+		s[3] = Ω
+		s[4] = ω
+		s[5] = ν
 	case Cartesian:
 		R, V := a.Orbit.RV()
 		s[0] = R[0]
@@ -193,22 +200,13 @@ func (a *Mission) SetState(t float64, s []float64) {
 	switch a.propMethod {
 	case GaussianVOP:
 		for i := 2; i <= 5; i++ {
-			if s[i] < 0 {
-				s[i] += 2 * math.Pi
-			}
-			s[i] = math.Mod(s[i], 2*math.Pi)
+			s[i] = Rad2deg(s[i]) // Converting to degrees because of NewOrbitFromOE
 		}
-
-		a.Orbit.a = s[0]
-		a.Orbit.e = math.Abs(s[1]) // eccentricity is always a positive number
-		a.Orbit.i = s[2]
-		a.Orbit.Ω = s[3]
-		a.Orbit.ω = s[4]
-		a.Orbit.ν = s[5]
+		*a.Orbit = *NewOrbitFromOE(s[0], math.Abs(s[1]), s[2], s[3], s[4], s[5], a.Orbit.Origin)
 	case Cartesian:
 		R := []float64{s[0], s[1], s[2]}
 		V := []float64{s[3], s[4], s[5]}
-		*a.Orbit = *NewOrbitFromRV(R, V, a.Orbit.Origin)
+		*a.Orbit = *NewOrbitFromRV(R, V, a.Orbit.Origin) // Deref is important (cd. TestMissionSpiral)
 	default:
 		panic("propagator not implemented")
 	}
@@ -216,9 +214,9 @@ func (a *Mission) SetState(t float64, s []float64) {
 	// Orbit sanity checks and warnings.
 	if !a.collided && a.Orbit.RNorm() < a.Orbit.Origin.Radius {
 		a.collided = true
-		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "collided", a.Orbit.Origin.Name, "dt", a.CurrentDT)
-	} else if a.collided && a.Orbit.RNorm() > a.Orbit.Origin.Radius*1.01 {
-		// Now further from the 1% dead zone
+		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "collided", a.Orbit.Origin.Name, "dt", a.CurrentDT, "r", a.Orbit.RNorm(), "radius", a.Orbit.Origin.Radius)
+	} else if a.collided && a.Orbit.RNorm() > a.Orbit.Origin.Radius*1.1 {
+		// Now further from the 10% dead zone
 		a.collided = false
 		a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "revived", a.Orbit.Origin.Name, "dt", a.CurrentDT)
 	}
@@ -253,34 +251,35 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		// Instead the angles must be fixed and checked only at in SetState function.
 		// Note that we don't use Rad2deg because it forces the modulo on the angles, and we want to avoid this for now.
 		tmpOrbit = NewOrbitFromOE(f[0], f[1], f[2]/deg2rad, f[3]/deg2rad, f[4]/deg2rad, f[5]/deg2rad, a.Orbit.Origin)
+		a, e, i, _, ω, ν, _, _, _ := tmpOrbit.Elements()
 		h := tmpOrbit.HNorm()
-		if floats.EqualWithinAbs(tmpOrbit.e, 1, eccentricityε) {
-			if tmpOrbit.e > 1 {
-				tmpOrbit.e -= 2 * eccentricityε
+		if floats.EqualWithinAbs(e, 1, eccentricityε) {
+			if e > 1 {
+				e -= 2 * eccentricityε
 			} else {
-				tmpOrbit.e += 2 * eccentricityε
+				e += 2 * eccentricityε
 			}
 		}
 		p := tmpOrbit.SemiParameter()
 		r := tmpOrbit.RNorm()
-		sini, cosi := math.Sincos(tmpOrbit.i)
-		sinν, cosν := math.Sincos(tmpOrbit.ν)
-		sinζ, cosζ := math.Sincos(tmpOrbit.ω + tmpOrbit.ν)
+		sini, cosi := math.Sincos(i)
+		sinν, cosν := math.Sincos(ν)
+		sinζ, cosζ := math.Sincos(ω + ν)
 		fR := Δv[0]
 		fS := Δv[1]
 		fW := Δv[2]
 		// da/dt
-		fDot[0] = ((2 * math.Pow(tmpOrbit.a, 2)) / h) * (tmpOrbit.e*sinν*fR + (p/r)*fS)
+		fDot[0] = ((2 * math.Pow(a, 2)) / h) * (e*sinν*fR + (p/r)*fS)
 		// de/dt
-		fDot[1] = (p*sinν*fR + fS*((p+r)*cosν+r*tmpOrbit.e)) / h
+		fDot[1] = (p*sinν*fR + fS*((p+r)*cosν+r*e)) / h
 		// di/dt
 		fDot[2] = fW * r * cosζ / h
 		// dΩ/dt
 		fDot[3] = fW * r * sinζ / (h * sini)
 		// dω/dt
-		fDot[4] = (-p*cosν*fR+(p+r)*sinν*fS)/(h*tmpOrbit.e) - fDot[3]*cosi
+		fDot[4] = (-p*cosν*fR+(p+r)*sinν*fS)/(h*e) - fDot[3]*cosi
 		// dν/dt -- as per Vallado, page 636 (with errata of 4th edition.)
-		fDot[5] = h/(r*r) + ((p*cosν*fR)-(p+r)*sinν*fS)/(tmpOrbit.e*h)
+		fDot[5] = h/(r*r) + ((p*cosν*fR)-(p+r)*sinν*fS)/(e*h)
 		// d(fuel)/dt
 		fDot[6] = -usedFuel
 
@@ -290,7 +289,8 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		V := []float64{f[3], f[4], f[5]}
 		tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
 		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(r, 3)
-		Δv = Rot313Vec(-a.Orbit.ArgLatitudeU(), -a.Orbit.i, -a.Orbit.Ω, Δv)
+		_, _, i, Ω, _, _, _, _, u := tmpOrbit.Elements()
+		Δv = Rot313Vec(-u, -i, -Ω, Δv)
 		// d\vec{R}/dt
 		fDot[0] = f[3]
 		fDot[1] = f[4]
@@ -312,6 +312,9 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		fDot[i] += pert[i]
 		if math.IsNaN(fDot[i]) {
 			r, v := a.Orbit.RV()
+			if a.propMethod == GaussianVOP {
+				fmt.Println("\n\n=====\n/!\\ Use Cartesian propagator if going hyperbolic or circular\n=====")
+			}
 			panic(fmt.Errorf("fDot[%d]=NaN @ dt=%s\ncur:%s\tΔv=%+v\nR=%+v\tV=%+v", i, a.CurrentDT, a.Orbit, Δv, r, v))
 		}
 	}

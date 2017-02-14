@@ -248,3 +248,82 @@ func NewHohmannTransfer(target Orbit, action *WaypointAction) *HohmannTransfer {
 	epoch := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
 	return &HohmannTransfer{action, NewHohmannΔv(target), epoch, false}
 }
+
+// ToElliptical decelerates the vehicle until its orbit is elliptical.
+type ToElliptical struct {
+	action  *WaypointAction
+	cleared bool
+}
+
+// String implements the Waypoint interface.
+func (wp *ToElliptical) String() string {
+	return fmt.Sprintf("to elliptical")
+}
+
+// Cleared implements the Waypoint interface.
+func (wp *ToElliptical) Cleared() bool {
+	return wp.cleared
+}
+
+// Action implements the Waypoint interface.
+func (wp *ToElliptical) Action() *WaypointAction {
+	if wp.cleared {
+		return wp.action
+	}
+	return nil
+}
+
+// ThrustDirection implements the optimal orbit target.
+func (wp *ToElliptical) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
+	// We use an arbitrary 0.9 eccentricity because if we set it just under the eccentricityε
+	// threshold, rounding errors make it such that it's still computed as hyperbolic. Also,
+	// such a high eccentricity is still good enough.
+	_, e, _, _, _, _, _, _, _ := o.Elements()
+	if e < 0.9+eccentricityε {
+		wp.cleared = true
+	}
+	return AntiTangential{"toElliptical"}, wp.cleared
+}
+
+// NewToElliptical defines a ToElliptical waypoint.
+func NewToElliptical(action *WaypointAction) *ToElliptical {
+	return &ToElliptical{action, false}
+}
+
+// ToHyperbolic accelerates the vehicle until its orbit is elliptical.
+type ToHyperbolic struct {
+	action  *WaypointAction
+	cleared bool
+}
+
+// String implements the Waypoint interface.
+func (wp *ToHyperbolic) String() string {
+	return fmt.Sprintf("to hyperbolic")
+}
+
+// Cleared implements the Waypoint interface.
+func (wp *ToHyperbolic) Cleared() bool {
+	return wp.cleared
+}
+
+// Action implements the Waypoint interface.
+func (wp *ToHyperbolic) Action() *WaypointAction {
+	if wp.cleared {
+		return wp.action
+	}
+	return nil
+}
+
+// ThrustDirection implements the optimal orbit target.
+func (wp *ToHyperbolic) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
+	_, e, _, _, _, _, _, _, _ := o.Elements()
+	if e > 1.1 {
+		wp.cleared = true
+	}
+	return Tangential{"toHyperbolic"}, wp.cleared
+}
+
+// NewToHyperbolic defines a ToElliptical waypoint.
+func NewToHyperbolic(action *WaypointAction) *ToHyperbolic {
+	return &ToHyperbolic{action, false}
+}

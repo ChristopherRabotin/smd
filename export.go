@@ -28,16 +28,17 @@ func (c *CgCatalog) String() string {
 
 // CgItems definition.
 type CgItems struct {
-	Class          string            `json:"class"`
-	Name           string            `json:"name"`
-	StartTime      string            `json:"startTime"`
-	EndTime        string            `json:"endTime"`
-	Center         string            `json:"center"`
-	Trajectory     *CgTrajectory     `json:"trajectory,omitempty"`
-	Bodyframe      *CgBodyFrame      `json:"bodyFrame,omitempty"`
-	Geometry       *CgGeometry       `json:"geometry,omitempty"`
-	Label          *CgLabel          `json:"label,omitempty"`
-	TrajectoryPlot *CgTrajectoryPlot `json:"trajectoryPlot,omitempty"`
+	Class           string            `json:"class"`
+	Name            string            `json:"name"`
+	StartTime       string            `json:"startTime"`
+	EndTime         string            `json:"endTime"`
+	Center          string            `json:"center"`
+	TrajectoryFrame string            `json:"trajectoryFrame"`
+	Trajectory      *CgTrajectory     `json:"trajectory,omitempty"`
+	Bodyframe       *CgBodyFrame      `json:"bodyFrame,omitempty"`
+	Geometry        *CgGeometry       `json:"geometry,omitempty"`
+	Label           *CgLabel          `json:"label,omitempty"`
+	TrajectoryPlot  *CgTrajectoryPlot `json:"trajectoryPlot,omitempty"`
 }
 
 // CgTrajectory definition.
@@ -249,6 +250,11 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 					label := CgLabel{Color: color, FadeSize: 1000000, ShowText: true}
 					plot := CgTrajectoryPlot{Color: color, LineWidth: 1, Duration: "", Lead: "0 d", Fade: 0, SampleCount: 10}
 					curCgItem = &CgItems{Class: "spacecraft", Name: fmt.Sprintf("%s-%d", state.SC.Name, fileNo), StartTime: fmt.Sprintf("%s", state.DT.UTC()), EndTime: "", Center: state.Orbit.Origin.Name, Trajectory: &traj, Bodyframe: nil, Geometry: nil, Label: &label, TrajectoryPlot: &plot}
+					if state.Orbit.Origin.Equals(Sun) {
+						curCgItem.TrajectoryFrame = "EclipticJ2000"
+					} else {
+						curCgItem.TrajectoryFrame = "ICRF"
+					}
 				}
 				if conf.AsCSV {
 					fAsCSV = createAsCSVCSVFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf, state.DT)
@@ -301,7 +307,8 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 					}
 
 					if conf.AsCSV {
-						asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), state.Orbit.a, state.Orbit.e, Rad2deg(state.Orbit.i), Rad2deg(state.Orbit.Ω), Rad2deg(state.Orbit.ω), Rad2deg(state.Orbit.ν))
+						a, e, i, Ω, ω, ν, _, _, _ := state.Orbit.Elements()
+						asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), a, e, Rad2deg(i), Rad2deg(Ω), Rad2deg(ω), Rad2deg(ν))
 						if _, err := fAsCSV.WriteString("\n" + asTxt); err != nil {
 							panic(err)
 						}
@@ -321,7 +328,8 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 				}
 			}
 			if conf.AsCSV {
-				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), state.Orbit.a, state.Orbit.e, Rad2deg(state.Orbit.i), Rad2deg(state.Orbit.Ω), Rad2deg(state.Orbit.ω), Rad2deg(state.Orbit.ν))
+				a, e, i, Ω, ω, ν, _, _, _ := state.Orbit.Elements()
+				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), a, e, Rad2deg(i), Rad2deg(Ω), Rad2deg(ω), Rad2deg(ν))
 				if conf.CSVAppend != nil {
 					asTxt += "," + conf.CSVAppend(state)
 				}

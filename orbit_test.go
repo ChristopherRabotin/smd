@@ -8,6 +8,21 @@ import (
 	"github.com/gonum/floats"
 )
 
+func TestHyperbolicOrbitRV2COE(t *testing.T) {
+	// XXX: Check how correct this test data is. It came from the outbound hyperbola from Mars
+	// but hyperbolic orbits were very poorly supported before.
+	R := []float64{-268699.38507486845, 743304.5626288191, 406170.0480721434}
+	V := []float64{-0.905741305869758, 0.22523592084626393, 0.16127777856378084}
+	o := NewOrbitFromRV(R, V, Mars)
+	a, e, _, _, _, _, _, _, _ := o.Elements()
+	if e <= 1 {
+		t.Fatalf("e is not greater than 1: %f", e)
+	}
+	if a >= 0 {
+		t.Fatalf("a is positive or nil: %f", a)
+	}
+}
+
 func TestOrbitRV2COE(t *testing.T) {
 	R := []float64{6524.834, 6862.875, 6448.296}
 	V := []float64{4.901327, 5.533756, -1.976341}
@@ -89,12 +104,9 @@ func TestOrbitCOE2RV(t *testing.T) {
 	}
 
 	o1 := NewOrbitFromRV(R, V, Earth)
-	if ok, err := o0.Equals(*o1); !ok {
+	if ok, err := o0.StrictlyEquals(*o1); !ok {
 		t.Logf("\no0: %s\no1: %s", o0, o1)
 		t.Fatal(err)
-	}
-	if ok, err := anglesEqual(Deg2rad(ν0), o1.ν); !ok {
-		t.Fatalf("true anomaly invalid: %s", err)
 	}
 }
 
@@ -173,11 +185,31 @@ func TestOrbitEquality(t *testing.T) {
 	if ok, err := oInit.Equals(*oTest); !ok {
 		t.Fatalf("orbits not equal: %s", err)
 	}
-	oTest.ω += math.Pi / 6
+	oTest = NewOrbitFromOE(226090290.608, 0.088, 26.195, 3.516, 336.494, 278.358, Sun)
 	if ok, _ := oInit.Equals(*oTest); ok {
 		t.Fatalf("orbits of different ω are equal")
 	}
-	oTest.ω -= math.Pi / 6 // Reset
+	oTest = NewOrbitFromOE(226090350.608, 0.088, 26.195, 3.516, 326.494, 278.358, Sun)
+	if ok, _ := oInit.Equals(*oTest); ok {
+		t.Fatalf("orbits of different a are equal")
+	}
+	oTest = NewOrbitFromOE(226090290.608, 0.008, 26.195, 3.516, 326.494, 278.358, Sun)
+	if ok, _ := oInit.Equals(*oTest); ok {
+		t.Fatalf("orbits of different e are equal")
+	}
+	oTest = NewOrbitFromOE(226090290.608, 0.088, 25.195, 3.516, 326.494, 278.358, Sun)
+	if ok, _ := oInit.Equals(*oTest); ok {
+		t.Fatalf("orbits of different i are equal")
+	}
+	oTest = NewOrbitFromOE(226090290.608, 0.088, 26.195, 3.916, 326.494, 278.358, Sun)
+	if ok, _ := oInit.Equals(*oTest); ok {
+		t.Fatalf("orbits of different Ω are equal")
+	}
+	oTest = NewOrbitFromOE(226090290.608, 0.088, 26.195, 3.516, 336.494, 277.358, Sun)
+	if ok, _ := oInit.Equals(*oTest); ok {
+		t.Fatalf("orbits of different ν are equal")
+	}
+	oTest = NewOrbitFromOE(226090290.608, 0.088, 26.195, 3.516, 326.494, 278.358, Sun)
 	oTest.Origin = Earth
 	if ok, _ := oInit.Equals(*oTest); ok {
 		t.Fatalf("orbits of different origins are equal")
@@ -198,12 +230,12 @@ func TestRadii2ae(t *testing.T) {
 }
 
 func TestOrbitΦfpa(t *testing.T) {
-	for _, e := range []float64{0.5, 1, 0} {
+	for _, e := range []float64{0.5, 0} {
 		for _, ν := range []float64{-120, 120} {
 			o := NewOrbitFromOE(1e4, e, 1, 1, 1, ν, Earth)
 			if e == 0 {
 				// Let's force this to zero because NewOrbitFromOE does an approximation.
-				o.e = 0
+				o.cche = 0
 			}
 			Φ := math.Atan2(o.SinΦfpa(), o.CosΦfpa())
 			exp := (ν * e) / 2
@@ -229,18 +261,18 @@ func TestOrbitEccentricAnomaly(t *testing.T) {
 	for ν := 0.0; ν < 360.0; ν += 0.1 {
 		o1 := NewOrbitFromOE(1e5, 0.2, 1, 1, 1, 60, Earth)
 		sinE, cosE = o1.SinCosE()
-		sinν := sinE * math.Sqrt(1-math.Pow(o1.e, 2)) / (1 - o1.e*cosE)
-		cosν := (cosE - o1.e) / (1 - o1.e*cosE)
+		_, e, _, _, _, ν, _, _, _ := o1.Elements()
+		sinν := sinE * math.Sqrt(1-math.Pow(e, 2)) / (1 - e*cosE)
+		cosν := (cosE - e) / (1 - e*cosE)
 		ν0 := math.Acos(cosν)
 		ν1 := math.Asin(sinν)
 		ν2 := math.Atan2(sinν, cosν)
-		if !floats.EqualWithinAbs(ν2, ν0, angleε) || !floats.EqualWithinAbs(ν2, ν1, angleε) || !floats.EqualWithinAbs(ν2, o1.ν, angleε) {
+		if !floats.EqualWithinAbs(ν2, ν0, angleε) || !floats.EqualWithinAbs(ν2, ν1, angleε) || !floats.EqualWithinAbs(ν2, ν, angleε) {
 			t.Fatalf("computing E failed on ν=%f (cosE=%f\tsinE=%f\tν'=%f')", ν, cosE, sinE, ν0)
 		}
 	}
 }
 
-/*
 func TestOrbitSpeCircular(t *testing.T) {
 	for _, obj := range []CelestialObject{Earth, Sun, Mars} {
 		a := 1.5 * obj.Radius
@@ -250,7 +282,7 @@ func TestOrbitSpeCircular(t *testing.T) {
 		ω := 52.0
 		ν := 20.5
 		oI := NewOrbitFromOE(a, e, i, Ω, ω, ν, obj)
-		R, V := oI.GetRV()
+		R, V := oI.RV()
 		oV := NewOrbitFromRV(R, V, obj)
 		if ok, err := oI.StrictlyEquals(*oV); !ok {
 			t.Logf("\noI: %s\noV: %s", oI, oV)
@@ -258,6 +290,7 @@ func TestOrbitSpeCircular(t *testing.T) {
 		}
 	}
 }
+
 func TestOrbitSpeEquatorial(t *testing.T) {
 	for _, obj := range []CelestialObject{Earth, Sun, Mars} {
 		a := 1.5 * obj.Radius
@@ -267,7 +300,7 @@ func TestOrbitSpeEquatorial(t *testing.T) {
 		ω := 52.0
 		ν := 20.5
 		oI := NewOrbitFromOE(a, e, i, Ω, ω, ν, obj)
-		R, V := oI.GetRV()
+		R, V := oI.RV()
 		oV := NewOrbitFromRV(R, V, obj)
 		if ok, err := oI.StrictlyEquals(*oV); !ok {
 			t.Logf("\noI: %s\noV: %s", oI, oV)
@@ -275,6 +308,7 @@ func TestOrbitSpeEquatorial(t *testing.T) {
 		}
 	}
 }
+
 func TestOrbitSpeCircularEquatorial(t *testing.T) {
 	for _, obj := range []CelestialObject{Earth, Sun, Mars} {
 		a := 1.5 * obj.Radius
@@ -284,7 +318,7 @@ func TestOrbitSpeCircularEquatorial(t *testing.T) {
 		ω := 52.0
 		ν := 20.5
 		oI := NewOrbitFromOE(a, e, i, Ω, ω, ν, obj)
-		R, V := oI.GetRV()
+		R, V := oI.RV()
 		oV := NewOrbitFromRV(R, V, obj)
 		if ok, err := oI.StrictlyEquals(*oV); !ok {
 			t.Logf("\noI: %s\noV: %s", oI, oV)
@@ -292,4 +326,3 @@ func TestOrbitSpeCircularEquatorial(t *testing.T) {
 		}
 	}
 }
-*/

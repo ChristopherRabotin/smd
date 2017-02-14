@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gonum/floats"
+	"github.com/gonum/matrix/mat64"
 )
 
 func TestCross(t *testing.T) {
@@ -23,6 +24,31 @@ func TestCross(t *testing.T) {
 	// From Vallado
 	if !vectorsEqual(cross([]float64{6524.834, 6862.875, 6448.296}, []float64{4.901327, 5.533756, -1.976341}), []float64{-4.924667792015100e4, 4.450050424118601e4, 0.246964476137900e4}) {
 		t.Fatal("cross fail")
+	}
+}
+
+func TestCrossVec(t *testing.T) {
+	i := mat64.NewVector(3, []float64{1, 0, 0})
+	j := mat64.NewVector(3, []float64{0, 1, 0})
+	k := mat64.NewVector(3, []float64{0, 0, 1})
+	if !mat64.Equal(crossVec(i, j), k) {
+		t.Fatal("i x j != k")
+	}
+	if !mat64.Equal(crossVec(j, k), i) {
+		t.Fatal("j x k != i")
+	}
+	a := mat64.NewVector(3, []float64{2, 3, 4})
+	b := mat64.NewVector(3, []float64{5, 6, 7})
+	c := mat64.NewVector(3, []float64{-3, 6, -3})
+	if !mat64.Equal(crossVec(a, b), c) {
+		t.Fatal("cross fail")
+	}
+	// From Vallado
+	a = mat64.NewVector(3, []float64{6524.834, 6862.875, 6448.296})
+	b = mat64.NewVector(3, []float64{4.901327, 5.533756, -1.976341})
+	c = mat64.NewVector(3, []float64{-4.924667792015100e4, 4.450050424118601e4, 0.246964476137900e4})
+	if !mat64.EqualApprox(crossVec(a, b), c, 1e-12) {
+		t.Fatal("cross fail Vallado example")
 	}
 }
 
@@ -142,5 +168,9 @@ func TestMisc(t *testing.T) {
 		if uNilVec[i] != nilVec[i] {
 			t.Fatalf("%f != %f @ i=%d", uNilVec[i], nilVec[i], i)
 		}
+	}
+	uNilVecB := unitVec(mat64.NewVector(3, nil))
+	if uNilVecB.At(0, 0) != uNilVecB.At(1, 0) || uNilVecB.At(0, 0) != uNilVecB.At(2, 0) || uNilVecB.At(0, 0) != 0 {
+		t.Fatal("unitVec fails")
 	}
 }
