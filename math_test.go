@@ -169,4 +169,8 @@ func TestMisc(t *testing.T) {
 			t.Fatalf("%f != %f @ i=%d", uNilVec[i], nilVec[i], i)
 		}
 	}
+	uNilVecB := unitVec(mat64.NewVector(3, nil))
+	if uNilVecB.At(0, 0) != uNilVecB.At(1, 0) || uNilVecB.At(0, 0) != uNilVecB.At(2, 0) || uNilVecB.At(0, 0) != 0 {
+		t.Fatal("unitVec fails")
+	}
 }

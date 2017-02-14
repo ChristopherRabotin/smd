@@ -70,29 +70,47 @@ func TestLambertErrors(t *testing.T) {
 }
 
 func TestLambertDavisEarth2Venus(t *testing.T) {
-	t.Skip("XXX: The Lambert solver breaks on this case.")
 	// These tests are from Dr. Davis' ASEN 6008 IMD course at CU.
 	dt := julian.JDToTime(2455450)
 	dtArr := julian.JDToTime(2455610)
-	// 9.790329336673688E-01 -2.159606708797369E-01  1.964597339569911E-05
-	rEarthJPL := []float64{9.790329336673688E-01 * AU, -2.159606708797369E-01 * AU, 1.964597339569911E-05 * AU}
-	t.Logf("%s\t%s\t%s", dt, dtArr, Earth.HelioOrbit(dt))
 	rEarth, vEarth := Earth.HelioOrbit(dt).RV()
 	rVenus, vVenus := Venus.HelioOrbit(dtArr).RV()
-	t.Logf("===V===\n%+v\n%+v\n\n", vEarth, vVenus)
-	Ri := mat64.NewVector(3, []float64{147084764.9, -32521189.65, 467.1900914})
-	Rf := mat64.NewVector(3, []float64{-88002509.16, -62680223.13, 4220331.525})
-	t.Logf("\n%+v\n%+v\n%+v\n\n%+v\n%+v\n", rEarthJPL, rEarth, Ri, rVenus, Rf)
-	Vi, Vf, ψ, err := Lambert(Ri, Rf, dtArr.Sub(dt), TTypeAuto, Sun)
+	Ri := mat64.NewVector(3, rEarth)
+	Rf := mat64.NewVector(3, rVenus)
+	Vi, Vf, ψ, err := Lambert(Ri, Rf, dtArr.Sub(dt), TType2, Sun)
 	if err != nil {
 		t.Fatalf("err = %s", err)
 	}
-	t.Logf("\nVi=%+v\nVf=%+v\nψ=%f", Vi, Vf, ψ)
+	// The following expected values are the actual output from my Lambert solver, and are within 1e-2 of the
+	// values from the spreadcheet. I have updated them to the ones I found to detect any regression issue.
+	ViExp := mat64.NewVector(3, []float64{4.650884, 26.082007, -1.393243})
+	VfExp := mat64.NewVector(3, []float64{16.790445, -33.353309, 1.523397})
+	if !mat64.EqualApprox(Vi, ViExp, 1e-6) {
+		t.Logf("ψ=%f", ψ)
+		t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(Vi.T()), mat64.Formatted(ViExp.T()))
+		t.Fatalf("[%s] incorrect Vi computed", TType2)
+	}
+	if !mat64.EqualApprox(Vf, VfExp, 1e-6) {
+		t.Logf("ψ=%f", ψ)
+		t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(Vf.T()), mat64.Formatted(VfExp.T()))
+		t.Fatalf("[%s] incorrect Vf computed", TType2)
+	}
 	VinfDep := mat64.NewVector(3, nil)
 	VinfArr := mat64.NewVector(3, nil)
 	VinfDep.SubVec(Vi, mat64.NewVector(3, vEarth))
 	VinfArr.SubVec(Vf, mat64.NewVector(3, vVenus))
-	t.Logf("\nVinfDep=%+v\nVinArr=%+v", mat64.Formatted(VinfDep), mat64.Formatted(VinfArr))
+	VinfDepExp := mat64.NewVector(3, []float64{-1.734209, -2.798352, -1.393243})
+	VinfArrExp := mat64.NewVector(3, []float64{-3.540174, -4.804623, 1.523397})
+	if !mat64.EqualApprox(VinfDep, VinfDepExp, 1e-6) {
+		t.Logf("ψ=%f", ψ)
+		t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(VinfDep.T()), mat64.Formatted(VinfDepExp.T()))
+		t.Fatalf("[%s] incorrect VinfDep computed", TType2)
+	}
+	if !mat64.EqualApprox(VinfArr, VinfArrExp, 1e-6) {
+		t.Logf("ψ=%f", ψ)
+		t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(VinfArr.T()), mat64.Formatted(VinfArrExp.T()))
+		t.Fatalf("[%s] incorrect VinfArr computed", TType2)
+	}
 }
 
 func TestLambertDavisMars2Jupiter(t *testing.T) {
@@ -132,6 +150,7 @@ func TestLambertDavisMars2Jupiter(t *testing.T) {
 	if !floats.EqualWithinAbs(vInf, 4.479, 1e-2) {
 		t.Fatalf("vInf=%f expected ~4.479 km/s", vInf)
 	}
+	t.Logf("ψ=%f", ψ)
 }
 
 func TestLambertDavisEarth2VenusT3(t *testing.T) {
@@ -142,7 +161,8 @@ func TestLambertDavisEarth2VenusT3(t *testing.T) {
 	vVenus := Venus.HelioOrbit(dtArr).V()
 	Ri := mat64.NewVector(3, []float64{130423562.1, -76679031.85, 3624.816561})
 	Rf := mat64.NewVector(3, []float64{19195371.67, 106029328.4, 348953.802})
-	Vi, Vf, ψ, err := Lambert(Ri, Rf, dtArr.Sub(dtDep), TType3, Sun)
+	ttype := TType3
+	Vi, Vf, ψ, err := Lambert(Ri, Rf, dtArr.Sub(dtDep), ttype, Sun)
 	if err != nil {
 		t.Fatalf("err = %s", err)
 	}
@@ -151,12 +171,12 @@ func TestLambertDavisEarth2VenusT3(t *testing.T) {
 	if !mat64.EqualApprox(Vi, ViExp, 1e-6) {
 		t.Logf("ψ=%f", ψ)
 		t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(Vi.T()), mat64.Formatted(ViExp.T()))
-		t.Fatalf("[%s] incorrect Vi computed", TType2)
+		t.Fatalf("[%s] incorrect Vi computed", ttype)
 	}
 	if !mat64.EqualApprox(Vf, VfExp, 1e-6) {
 		t.Logf("ψ=%f", ψ)
 		t.Logf("\nGot %+v\nExp %+v\n", mat64.Formatted(Vf.T()), mat64.Formatted(VfExp.T()))
-		t.Fatalf("[%s] incorrect Vf computed", TType2)
+		t.Fatalf("[%s] incorrect Vf computed", ttype)
 	}
 
 	VinfDep := mat64.NewVector(3, nil)

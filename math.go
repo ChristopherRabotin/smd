@@ -29,6 +29,17 @@ func unit(a []float64) (b []float64) {
 	return
 }
 
+// unitVec returns the unit vector of a given mat64.Vector.
+func unitVec(a *mat64.Vector) (b *mat64.Vector) {
+	b = mat64.NewVector(a.Len(), nil)
+	n := mat64.Norm(a, 2)
+	if floats.EqualWithinAbs(n, 0, 1e-12) {
+		return // Nil vector
+	}
+	b.ScaleVec(1/n, a)
+	return
+}
+
 // sign returns the sign of a given number.
 func sign(v float64) float64 {
 	if floats.EqualWithinAbs(v, 0, 1e-12) {
