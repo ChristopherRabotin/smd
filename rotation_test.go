@@ -83,8 +83,8 @@ func TestPQW2ECI(t *testing.T) {
 }
 
 func TestGEO2ECEF(t *testing.T) {
-	latitude := 34.352496
-	longitude := 46.4464
+	latitude := 34.352496 * deg2rad
+	longitude := 46.4464 * deg2rad
 	r := GEO2ECEF(5085.22, latitude, longitude)
 	rExp := []float64{6520.963141870237, 6858.799558071129, 6468.573721101338}
 	if !vectorsEqual(r, rExp) {

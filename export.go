@@ -317,7 +317,7 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 				}
 			}
 			// Only write one datapoint per simulation minute.
-			if prevStatePtr != nil && state.DT.Sub(prevStatePtr.DT) <= time.Duration(1)*time.Minute {
+			if prevStatePtr != nil && state.DT.Sub(prevStatePtr.DT) < StepSize {
 				continue
 			}
 			prevStatePtr = &state

@@ -9,6 +9,7 @@ import (
 
 const (
 	deg2rad = math.Pi / 180
+	rad2deg = 1 / deg2rad
 )
 
 // norm returns the norm of a given vector which is supposed to be 3x1.

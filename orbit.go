@@ -211,7 +211,12 @@ func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
 	ν = math.Mod(ν, 2*math.Pi)
 	λ = math.Mod(ω+Ω+ν, 2*math.Pi)
 	tildeω = math.Mod(ω+Ω, 2*math.Pi)
-	u = math.Mod(ν+ω, 2*math.Pi)
+	if e < eccentricityε {
+		// Circular
+		u = math.Acos(dot(n, o.rVec) / (norm(n) * r))
+	} else {
+		u = math.Mod(ν+ω, 2*math.Pi)
+	}
 	// Cache values
 	o.ccha = a
 	o.cche = e
@@ -347,10 +352,11 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 // WARNING: Angles must be in degrees not radians.
 func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
 	// Convert angles to radians
-	i = Deg2rad(i)
-	Ω = Deg2rad(Ω)
-	ω = Deg2rad(ω)
-	ν = Deg2rad(ν)
+	i = i * deg2rad
+	Ω = Ω * deg2rad
+	ω = ω * deg2rad
+	ν = ν * deg2rad
+
 	// Algorithm from Vallado, 4th edition, page 118 (COE2RV).
 	if e < eccentricityε {
 		// Circular...
@@ -379,7 +385,7 @@ func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
 	vPQW := []float64{-μOp * sinν, μOp * (e + cosν), 0}
 	rIJK := Rot313Vec(-ω, -i, -Ω, rPQW)
 	vIJK := Rot313Vec(-ω, -i, -Ω, vPQW)
-	orbit := Orbit{rIJK, vIJK, c, a, e, Deg2rad(i), Deg2rad(Ω), Deg2rad(ω), Deg2rad(ν), 0, 0, 0, 0.0}
+	orbit := Orbit{rIJK, vIJK, c, a, e, i, Ω, ω, ν, 0, 0, 0, 0.0}
 	orbit.Elements()
 	return &orbit
 }

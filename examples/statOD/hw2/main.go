@@ -19,7 +19,7 @@ func main() {
 	startDT := time.Now()
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
 	// Define the orbits
-	leo := smd.NewOrbitFromOE(7000, 0.001, 30, 80, 40, 0, smd.Earth)
+	leo := smd.NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, smd.Earth)
 	geo := smd.NewOrbitFromOE(42163, 1e-5, 1, 70, 0, 180, smd.Earth)
 	R := []float64{-7737.559071593195, -43881.87809094457, 0.0}
 	V := []float64{3.347424567061589, 3.828541915617483, 0.0}
@@ -48,19 +48,19 @@ func main() {
 		}
 		export.CSVAppend = func(state smd.MissionState) string {
 			str := fmt.Sprintf("%f,", state.DT.Sub(startDT).Seconds())
+			θgst := state.DT.Sub(startDT).Seconds() * smd.EarthRotationRate
+			rECEF := smd.ECI2ECEF(state.Orbit.R(), θgst)
+			vECEF := smd.ECI2ECEF(state.Orbit.V(), θgst)
 			// Compute visibility for each station.
 			for _, st := range stations {
-				θgst := state.DT.Sub(startDT).Seconds() * smd.EarthRotationRate
-				rECEF := smd.ECI2ECEF(state.Orbit.R(), θgst)
-				vECEF := smd.ECI2ECEF(state.Orbit.V(), θgst)
 				ρECEF, ρ, el, _ := st.RangeElAz(rECEF)
-				ρDotECEF := make([]float64, 3)
-				for i := 0; i < 3; i++ {
-					ρDotECEF[i] = math.Abs(vECEF[i] - st.V[i])
-				}
 				if el >= 10 {
+					vDiffECEF := make([]float64, 3)
+					for i := 0; i < 3; i++ {
+						vDiffECEF[i] = (vECEF[i] - st.V[i]) / ρ
+					}
 					// SC is visible.
-					ρDot := mat64.Dot(mat64.NewVector(3, ρECEF), mat64.NewVector(3, ρDotECEF)) / mat64.Norm(mat64.NewVector(3, ρECEF), 2)
+					ρDot := mat64.Dot(mat64.NewVector(3, ρECEF), mat64.NewVector(3, vDiffECEF))
 					str += fmt.Sprintf("%f,%f,", ρ, ρDot)
 				} else {
 					str += ",,"

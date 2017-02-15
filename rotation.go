@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// EarthRotationRate is the average Earth rotation rate in degrees per second.
+	// EarthRotationRate is the average Earth rotation rate in radians per second.
 	EarthRotationRate = 7.2921158553e-5
 )
 
@@ -53,18 +53,18 @@ func MxV33(m *mat64.Dense, v []float64) (o []float64) {
 	return []float64{rVec.At(0, 0), rVec.At(1, 0), rVec.At(2, 0)}
 }
 
-// GEO2ECEF converts the provided parameters (in km and degrees) to the ECEF vector.
+// GEO2ECEF converts the provided parameters (in km and radians) to the ECEF vector.
 // Note that the first parameter is the altitude, not the radius from the center of the body!
 func GEO2ECEF(altitude, latitude, longitude float64) []float64 {
-	sLong, cLong := math.Sincos(Deg2rad(longitude))
-	sLat, cLat := math.Sincos(Deg2rad(latitude))
+	sLong, cLong := math.Sincos(longitude)
+	sLat, cLat := math.Sincos(latitude)
 	r := altitude + Earth.Radius
 	return []float64{r * cLat * cLong, r * cLat * sLong, r * sLat}
 }
 
 // ECI2ECEF converts the provided ECI vector to ECEF for the θgst given in degrees.
 func ECI2ECEF(R []float64, θgst float64) []float64 {
-	return MxV33(R3(Deg2rad(θgst)), R)
+	return MxV33(R3(θgst), R)
 }
 
 // ECEF2ECI converts the provided ECEF vector to ECI for the θgst given in degrees.
