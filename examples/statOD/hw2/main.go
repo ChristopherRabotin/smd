@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
 	"github.com/gonum/matrix/mat64"
+	"github.com/gonum/stat/distmv"
 )
 
 const (
@@ -34,6 +36,14 @@ func main() {
 	// Define the Doppler shift stuff.
 	celerity := 3e8 // km/s
 	fRef := 8.44e9  // Hz
+
+	// Noise generation
+	seed := rand.New(rand.NewSource(time.Now().UnixNano()))
+	σ := 0.5e-6 // mm/s , but all measurements in km/s.
+	noise, ok := distmv.NewNormal([]float64{0}, mat64.NewSymDense(1, []float64{σ}), seed)
+	if !ok {
+		panic("NOK in Gaussian")
+	}
 
 	// Run test cases.
 	for _, tcase := range []struct {
@@ -65,7 +75,7 @@ func main() {
 						vDiffECEF[i] = (vECEF[i] - st.V[i]) / ρ
 					}
 					// SC is visible.
-					ρDot := mat64.Dot(mat64.NewVector(3, ρECEF), mat64.NewVector(3, vDiffECEF))
+					ρDot := mat64.Dot(mat64.NewVector(3, ρECEF), mat64.NewVector(3, vDiffECEF)) + noise.Rand(nil)[0]
 					shift := -2 * ρDot * fRef / celerity
 					str += fmt.Sprintf("%f,%f,%f,", ρ, ρDot, shift)
 				} else {
