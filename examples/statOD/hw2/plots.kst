@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kst version="2.0">
+    <data>
+        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv">
+            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="4" fields="3" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-02-14T19:24:01Z" relativeOffset="0" nanValue="0" updateType="0"/>
+        </source>
+        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv">
+            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="4" fields="3" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-02-14T19:46:33Z" relativeOffset="0" nanValue="0" updateType="0"/>
+        </source>
+        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv">
+            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="4" fields="3" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-02-14T20:33:45Z" relativeOffset="0" nanValue="0" updateType="0"/>
+        </source>
+    </data>
+    <variables>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="1" initialXNum="1"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="2" initialXNum="13"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="st1RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="3" initialXNum="25"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="st2Range" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="4" initialXNum="37"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="st2RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="5" initialXNum="49"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="st3Range" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="6" initialXNum="61"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="st3RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="7" initialXNum="73"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" field="secondsSinceEpoch" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="8" initialXNum="85"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" field="secondsSinceEpoch" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="9" initialXNum="97"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" field="st1Range" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="10" initialXNum="109"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" field="st1RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="11" initialXNum="121"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" field="st2Range" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="12" initialXNum="133"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" field="st2RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="13" initialXNum="145"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" field="st3Range" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="14" initialXNum="157"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Leo-0.csv" field="st3RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="15" initialXNum="169"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="secondsSinceEpoch" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="16" initialXNum="181"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="secondsSinceEpoch" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="17" initialXNum="193"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="st1Range" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="18" initialXNum="205"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="st1RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="19" initialXNum="217"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="st2Range" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="20" initialXNum="229"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="st2RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="21" initialXNum="241"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="st3Range" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="22" initialXNum="253"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Geo-0.csv" field="st3RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="23" initialXNum="265"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" field="secondsSinceEpoch" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="24" initialXNum="277"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" field="secondsSinceEpoch" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="25" initialXNum="289"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" field="st1Range" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="26" initialXNum="301"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" field="st1RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="27" initialXNum="313"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" field="st2Range" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="28" initialXNum="325"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" field="st2RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="29" initialXNum="337"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" field="st3Range" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="30" initialXNum="349"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/outputdata/orbital-elements-Hyperbolic-0.csv" field="st3RangeRate" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="31" initialXNum="361"/>
+    </variables>
+    <objects/>
+    <relations>
+        <curve xvector="INDEX (V1)" yvector="INDEX (V2)" color="#008000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="-566984795" initialCNum="1"/>
+        <curve xvector="INDEX (V1)" yvector="st1RangeRate (V3)" color="#000000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="1" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="48127776" initialCNum="2"/>
+        <curve xvector="INDEX (V1)" yvector="st2Range (V4)" color="#ff00ff" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="2" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="513171868" initialCNum="3"/>
+        <curve xvector="INDEX (V1)" yvector="st2RangeRate (V5)" color="#4682b4" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="3" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="33" initialCNum="4"/>
+        <curve xvector="INDEX (V1)" yvector="st3Range (V6)" color="#501010" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="4" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="5"/>
+        <curve xvector="INDEX (V1)" yvector="st3RangeRate (V7)" color="#105010" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="5" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="6"/>
+        <curve xvector="secondsSinceEpoch (V8)" yvector="secondsSinceEpoch (V9)" color="#005500" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="-802835995" initialCNum="7"/>
+        <curve xvector="secondsSinceEpoch (V8)" yvector="st1Range (V10)" color="#008080" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="1" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="8"/>
+        <curve xvector="secondsSinceEpoch (V8)" yvector="st1RangeRate (V11)" color="#004040" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="2" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="9"/>
+        <curve xvector="secondsSinceEpoch (V8)" yvector="st2Range (V12)" color="#008000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="1" haspoints="false" pointtype="3" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="10"/>
+        <curve xvector="secondsSinceEpoch (V8)" yvector="st2RangeRate (V13)" color="#008000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="1" haspoints="false" pointtype="4" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="1" initialCNum="11"/>
+        <curve xvector="secondsSinceEpoch (V8)" yvector="st3Range (V14)" color="#ff8000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="3" haspoints="false" pointtype="5" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="12"/>
+        <curve xvector="secondsSinceEpoch (V8)" yvector="st3RangeRate (V15)" color="#ff8000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="3" haspoints="false" pointtype="6" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="13"/>
+        <curve xvector="secondsSinceEpoch (V16)" yvector="secondsSinceEpoch (V17)" color="#2e5778" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="289" initialCNum="14"/>
+        <curve xvector="secondsSinceEpoch (V16)" yvector="st1Range (V18)" color="#004040" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="1" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="15"/>
+        <curve xvector="secondsSinceEpoch (V16)" yvector="st1RangeRate (V19)" color="#004040" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="2" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="16"/>
+        <curve xvector="secondsSinceEpoch (V16)" yvector="st2Range (V20)" color="#008000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="1" haspoints="false" pointtype="3" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="17"/>
+        <curve xvector="secondsSinceEpoch (V16)" yvector="st2RangeRate (V21)" color="#004000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="1" haspoints="false" pointtype="4" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="18"/>
+        <curve xvector="secondsSinceEpoch (V16)" yvector="st3Range (V22)" color="#ff8000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="3" haspoints="false" pointtype="5" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="19"/>
+        <curve xvector="secondsSinceEpoch (V16)" yvector="st3RangeRate (V23)" color="#ff8000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="3" haspoints="false" pointtype="6" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="20"/>
+        <curve xvector="secondsSinceEpoch (V24)" yvector="secondsSinceEpoch (V25)" color="#000000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="7" initialCNum="21"/>
+        <curve xvector="secondsSinceEpoch (V24)" yvector="st1Range (V26)" color="#004040" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="1" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="22"/>
+        <curve xvector="secondsSinceEpoch (V24)" yvector="st1RangeRate (V27)" color="#004040" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="2" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="23"/>
+        <curve xvector="secondsSinceEpoch (V24)" yvector="st2Range (V28)" color="#004000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="1" haspoints="false" pointtype="3" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="24"/>
+        <curve xvector="secondsSinceEpoch (V24)" yvector="st2RangeRate (V29)" color="#004000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="1" haspoints="false" pointtype="4" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="25"/>
+        <curve xvector="secondsSinceEpoch (V24)" yvector="st3Range (V30)" color="#ff8000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="3" haspoints="false" pointtype="5" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="26"/>
+        <curve xvector="secondsSinceEpoch (V24)" yvector="st3RangeRate (V31)" color="#ff8000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="3" haspoints="false" pointtype="6" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="27"/>
+    </relations>
+    <graphics>
+        <view name="LEO" width="1357" height="588" color="#ffffff" style="1">
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Sans Serif,9,-1,5,50,0,0,0,0,0" globalfontscale="16" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="4" name="Plot">
+                <position x="2.98023426061493" y="2.82692307692308" z="500"/>
+                <rect x="0" y="0" width="1350.04612005857" height="290.701923076923"/>
+                <relativesize width="0.994875549048316" height="0.494391025641026" centerx="0.499633967789165" centery="0.252003205128205" posx="0.00219619326500732" posy="0.00480769230769231" leftx="0.00219619326500732" lefty="0.499198717948718" rightx="0.997071742313324" righty="0.499198717948718" fixaspect="false" lockpostodata="false"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="false" name="Legend">
+                    <position x="126.904728068443" y="42.7234114243807" z="500"/>
+                    <rect x="0" y="0" width="426" height="25"/>
+                    <relativesize width="0.342710819801673" height="0.118933260143635" centerx="0.20183664364294" centery="0.198492053800631" posx="0.0304812337421033" posy="0.139025423728814" leftx="0.0304812337421033" lefty="0.257958683872448" rightx="0.373192053543776" righty="0.257958683872448" fixaspect="false" lockpostodata="false"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="st1Range vs secondsSinceEpoch (C8)"/>
+                    <relation tag="st2Range vs secondsSinceEpoch (C10)"/>
+                    <relation tag="st3Range vs secondsSinceEpoch (C12)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="46770176"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="0" y="7584.0428531" width="86380" height="5663.1659658"/>
+            </plot>
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Sans Serif,12,-1,5,50,0,0,0,0,0" globalfontscale="16" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="3" name="Plot">
+                <position x="2.98023426061493" y="293.528846153846" z="500"/>
+                <rect x="0" y="0" width="1350.04612005857" height="290.701923076923"/>
+                <relativesize width="0.994875549048316" height="0.494391025641026" centerx="0.499633967789165" centery="0.746394230769231" posx="0.00219619326500732" posy="0.499198717948718" leftx="0.00219619326500732" lefty="0.993589743589744" rightx="0.997071742313324" righty="0.993589743589744" fixaspect="false" lockpostodata="false"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="false" name="Legend">
+                    <position x="126.904728068442" y="42.7234114243807" z="500"/>
+                    <rect x="0" y="0" width="519" height="25"/>
+                    <relativesize width="0.417527970603446" height="0.118933260143635" centerx="0.239245219043826" centery="0.198492053800631" posx="0.0304812337421032" posy="0.139025423728813" leftx="0.0304812337421032" lefty="0.257958683872448" rightx="0.44800920434555" righty="0.257958683872448" fixaspect="false" lockpostodata="false"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="st1RangeRate vs secondsSinceEpoch (C9)"/>
+                    <relation tag="st2RangeRate vs secondsSinceEpoch (C11)"/>
+                    <relation tag="st3RangeRate vs secondsSinceEpoch (C13)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="-1644311"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="secondsSinceEpoch" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="0" y="-1.693710325" width="86380" height="9.36744165"/>
+            </plot>
+        </view>
+        <view name="GEO" width="1357" height="588" color="#ffffff" style="1">
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Sans Serif,9,-1,5,50,0,0,0,0,0" globalfontscale="16" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="6" name="Plot">
+                <position x="3" y="3" z="500"/>
+                <rect x="0" y="0" width="1351" height="291"/>
+                <relativesize width="0.994845360824742" height="0.494057724957555" centerx="0.499631811487482" centery="0.252122241086587" posx="0.00220913107511046" posy="0.00509337860780985" leftx="0.00220913107511046" lefty="0.499151103565365" rightx="0.997054491899853" righty="0.499151103565365" fixaspect="false" lockpostodata="false"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="false" name="Legend">
+                    <position x="1110" y="72" z="500"/>
+                    <rect x="-213" y="-12.5" width="426" height="25"/>
+                    <relativesize width="0.342448031149909" height="0.119241183839" centerx="0.820737298247818" centery="0.275013602258882" posx="0.649513282672863" posy="0.215393010339383" leftx="0.649513282672863" lefty="0.334634194178382" rightx="0.991961313822772" righty="0.334634194178382" fixaspect="false" lockpostodata="false"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="st1Range vs secondsSinceEpoch (C15)"/>
+                    <relation tag="st2Range vs secondsSinceEpoch (C17)"/>
+                    <relation tag="st3Range vs secondsSinceEpoch (C19)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="-2070980851"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="0" y="37366.499764875" width="86380" height="10399.35322125"/>
+            </plot>
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Sans Serif,12,-1,5,50,0,0,0,0,0" globalfontscale="16" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="5" name="Plot">
+                <position x="3" y="294" z="500"/>
+                <rect x="0" y="0" width="1351" height="291"/>
+                <relativesize width="0.994845360824742" height="0.494057724957555" centerx="0.499631811487482" centery="0.746179966044143" posx="0.00220913107511046" posy="0.499151103565365" leftx="0.00220913107511046" lefty="0.99320882852292" rightx="0.997054491899853" righty="0.99320882852292" fixaspect="false" lockpostodata="false"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="false" name="Legend">
+                    <position x="1059" y="58" z="500"/>
+                    <rect x="-259.5" y="-12.5" width="519" height="25"/>
+                    <relativesize width="0.417207812598128" height="0.119241183839" centerx="0.779739998743955" centery="0.208238539309043" posx="0.571136092444891" posy="0.148617947389543" leftx="0.571136092444891" lefty="0.267859131228542" rightx="0.988343905043019" righty="0.267859131228542" fixaspect="false" lockpostodata="false"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="st1RangeRate vs secondsSinceEpoch (C16)"/>
+                    <relation tag="st2RangeRate vs secondsSinceEpoch (C18)"/>
+                    <relation tag="st3RangeRate vs secondsSinceEpoch (C20)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="32"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="secondsSinceEpoch" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="0" y="-0.09079505" width="86380" height="3.5935221"/>
+            </plot>
+        </view>
+        <view name="Hyperbolic" width="1357" height="588" color="#ffffff" style="1">
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Sans Serif,9,-1,5,50,0,0,0,0,0" globalfontscale="16" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="8" name="Plot">
+                <position x="3" y="3" z="500"/>
+                <rect x="0" y="0" width="1351" height="291"/>
+                <relativesize width="0.994845360824742" height="0.494057724957555" centerx="0.499631811487482" centery="0.252122241086587" posx="0.00220913107511046" posy="0.00509337860780985" leftx="0.00220913107511046" lefty="0.499151103565365" rightx="0.997054491899853" righty="0.499151103565365" fixaspect="false" lockpostodata="false"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="false" name="Legend">
+                    <position x="1080" y="54" z="500"/>
+                    <rect x="-213" y="-12.5" width="426" height="25"/>
+                    <relativesize width="0.342448031149909" height="0.118764845605701" centerx="0.796621239716134" centery="0.192399049881235" posx="0.625397224141179" posy="0.133016627078385" leftx="0.625397224141179" lefty="0.251781472684086" rightx="0.967845255291088" righty="0.251781472684086" fixaspect="false" lockpostodata="false"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="st1Range vs secondsSinceEpoch (C22)"/>
+                    <relation tag="st2Range vs secondsSinceEpoch (C24)"/>
+                    <relation tag="st3Range vs secondsSinceEpoch (C26)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="9754784"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="0" y="10447.18399505" width="86380" height="21667.7276739"/>
+            </plot>
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Sans Serif,12,-1,5,50,0,0,0,0,0" globalfontscale="16" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="7" name="Plot">
+                <position x="3" y="294" z="500"/>
+                <rect x="0" y="0" width="1351" height="291"/>
+                <relativesize width="0.994845360824742" height="0.494057724957555" centerx="0.499631811487482" centery="0.746179966044143" posx="0.00220913107511046" posy="0.499151103565365" leftx="0.00220913107511046" lefty="0.99320882852292" rightx="0.997054491899853" righty="0.99320882852292" fixaspect="false" lockpostodata="false"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="false" name="Legend">
+                    <position x="1058" y="54" z="500"/>
+                    <rect x="-259.5" y="-12.5" width="519" height="25"/>
+                    <relativesize width="0.417207812598128" height="0.118764845605701" centerx="0.778936130126233" centery="0.192399049881235" posx="0.570332223827168" posy="0.133016627078385" leftx="0.570332223827168" lefty="0.251781472684086" rightx="0.987540036425297" righty="0.251781472684086" fixaspect="false" lockpostodata="false"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="st1RangeRate vs secondsSinceEpoch (C23)"/>
+                    <relation tag="st2RangeRate vs secondsSinceEpoch (C25)"/>
+                    <relation tag="st3RangeRate vs secondsSinceEpoch (C27)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="177"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="secondsSinceEpoch" autolabel="true" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Sans Serif,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="0" y="-4.450142625" width="86380" height="11.81000625"/>
+            </plot>
+        </view>
+    </graphics>
+</kst>

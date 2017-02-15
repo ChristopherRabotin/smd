@@ -200,7 +200,7 @@ func createAsCSVCSVFile(filename string, conf ExportConfig, stateDT time.Time) *
 	f.WriteString(fmt.Sprintf(`# Creation date (UTC): %s
 # Records are a, e, i, Ω, ω, ν. All angles are in degrees.
 #   Simulation time start (UTC): %s
-time,a,e,i,Omega,omega,nu`, time.Now(), stateDT.UTC()))
+time,a,e,i,Omega,omega,nu,`, time.Now(), stateDT.UTC()))
 	if conf.CSVAppendHdr != nil {
 		// Append the headers for the appended columns.
 		f.WriteString(conf.CSVAppendHdr())
