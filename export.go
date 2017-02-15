@@ -200,7 +200,7 @@ func createAsCSVCSVFile(filename string, conf ExportConfig, stateDT time.Time) *
 	f.WriteString(fmt.Sprintf(`# Creation date (UTC): %s
 # Records are a, e, i, Ω, ω, ν. All angles are in degrees.
 #   Simulation time start (UTC): %s
-time,a,e,i,Omega,omega,nu`, time.Now(), stateDT.UTC()))
+time,a,e,i,Omega,omega,nu,`, time.Now(), stateDT.UTC()))
 	if conf.CSVAppendHdr != nil {
 		// Append the headers for the appended columns.
 		f.WriteString(conf.CSVAppendHdr())
@@ -317,7 +317,7 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 				}
 			}
 			// Only write one datapoint per simulation minute.
-			if prevStatePtr != nil && state.DT.Sub(prevStatePtr.DT) <= time.Duration(1)*time.Minute {
+			if prevStatePtr != nil && state.DT.Sub(prevStatePtr.DT) < StepSize {
 				continue
 			}
 			prevStatePtr = &state

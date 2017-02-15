@@ -3,6 +3,7 @@ package smd
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/gonum/matrix/mat64"
 )
@@ -78,5 +79,27 @@ func TestPQW2ECI(t *testing.T) {
 	Ve := []float64{4.902278620687254, 5.533139558121602, -1.9757104281719946}
 	if !vectorsEqual(Ve, Vp) {
 		t.Fatalf("V conversion failed:\n%+v\n%+v", Ve, Vp)
+	}
+}
+
+func TestGEO2ECEF(t *testing.T) {
+	latitude := 34.352496 * deg2rad
+	longitude := 46.4464 * deg2rad
+	r := GEO2ECEF(5085.22, latitude, longitude)
+	rExp := []float64{6520.963141870237, 6858.799558071129, 6468.573721101338}
+	if !vectorsEqual(r, rExp) {
+		t.Fatalf("Got: %+v", r)
+	}
+}
+
+func TestECInECEF(t *testing.T) {
+	// TODO: Improve this test.
+	r := []float64{6520.963141870237, 6858.799558071129, 6468.573721101338}
+	for _, dur := range []time.Duration{0, time.Hour} {
+		angle := EarthRotationRate * dur.Seconds()
+		rPrime := ECI2ECEF(ECEF2ECI(r, angle), angle)
+		if !vectorsEqual(r, rPrime) {
+			t.Fatal("not reversible")
+		}
 	}
 }
