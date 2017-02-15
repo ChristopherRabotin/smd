@@ -31,18 +31,23 @@ func main() {
 	st3 := NewStation("st3", 0, 35.247164, 243.205)
 	stations := []Station{st1, st2, st3}
 
+	// Define the Doppler shift stuff.
+	celerity := 3e8 // km/s
+	fRef := 8.44e9  // Hz
+
 	// Run test cases.
 	for _, tcase := range []struct {
 		name  string
 		orbit *smd.Orbit
 	}{{"Leo", leo}, {"Geo", geo}, {"Hyperbolic", hyp}} {
 		fmt.Printf("==== %s =====\n", tcase.name)
+
 		// Define the special export functions
 		export := smd.ExportConfig{Filename: tcase.name, Cosmo: false, AsCSV: true, Timestamp: false}
 		export.CSVAppendHdr = func() string {
 			hdr := "secondsSinceEpoch,"
 			for _, st := range stations {
-				hdr += fmt.Sprintf("%sRange,%sRangeRate,", st.name, st.name)
+				hdr += fmt.Sprintf("%sRange,%sRangeRate,%sDplr,", st.name, st.name, st.name)
 			}
 			return hdr[:len(hdr)-1] // Remove trailing comma
 		}
@@ -61,9 +66,10 @@ func main() {
 					}
 					// SC is visible.
 					ρDot := mat64.Dot(mat64.NewVector(3, ρECEF), mat64.NewVector(3, vDiffECEF))
-					str += fmt.Sprintf("%f,%f,", ρ, ρDot)
+					shift := -2 * ρDot * fRef / celerity
+					str += fmt.Sprintf("%f,%f,%f,", ρ, ρDot, shift)
 				} else {
-					str += ",,"
+					str += ",,,"
 				}
 			}
 			return str[:len(str)-1] // Remove trailing comma
