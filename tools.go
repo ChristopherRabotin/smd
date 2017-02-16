@@ -97,9 +97,6 @@ func Hohmann(rI, vI, rF, vF float64, body CelestialObject) (vDeparture, vArrival
 // along with ψ which is the square of the difference in eccentric anomaly. Note that the direction of motion
 // is computed directly in this function to simplify the generation of Pork chop plots.
 func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body CelestialObject) (Vi, Vf *mat64.Vector, ψ float64, err error) {
-	if ttype.Revs() > 0 {
-		fmt.Println("============\nWARNING: Multi-rev Lambert is not successfully tested and *MAY* not work.\n============")
-	}
 	// Initialize return variables
 	Vi = mat64.NewVector(3, nil)
 	Vf = mat64.NewVector(3, nil)
@@ -116,7 +113,8 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	// Compute the direction of motion
 	νI := math.Atan2(Ri.At(1, 0), Ri.At(0, 0))
 	νF := math.Atan2(Rf.At(1, 0), Rf.At(0, 0))
-	var dm float64
+	dm := 1.0
+	/*var dm float64
 	switch ttype {
 	case TType1:
 		dm = 1
@@ -128,8 +126,11 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 		} else {
 			dm = -1
 		}
-	}
+	}*/
 	A := dm * math.Sqrt(rI*rF*(1+cosΔν))
+	/*if true {
+		panic(fmt.Errorf("A=%f\trI=%f\trF=%f\tcos=%f\n", A, rI, rF, cosΔν))
+	}*/
 	if νF-νI < lambertνlambertε && floats.EqualWithinAbs(A, 0, lambertε) {
 		err = errors.New("Δν ~=0 and A ~=0, cannot compute trajectory")
 		return
@@ -138,7 +139,7 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	ψup := 4 * math.Pow(math.Pi, 2) * math.Pow(ttype.Revs()+1, 2)
 	ψlow := -4 * math.Pi
 	if ttype.Revs() > 0 {
-		ψlow = -4 * math.Pow(math.Pi, 2) * math.Pow(ttype.Revs(), 2)
+		ψlow = 4 * math.Pow(math.Pi, 2) * math.Pow(ttype.Revs(), 2)
 	}
 	// Initial guesses for c2 and c3
 	c2 := 1 / 2.
@@ -152,9 +153,9 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 			return
 		}
 		iteration++
-		//fmt.Printf("[%d] y=%f\tc2=%f\n", iteration, y, c2)
 		y = rI + rF + A*(ψ*c3-1)/math.Sqrt(c2)
 		if A > 0 && y < 0 {
+			//fmt.Printf("[%03d] y=%f\tA=%f\n", iteration, y, A)
 			tmpIt := 0
 			for y < 0 {
 				ψ += 0.1
@@ -166,8 +167,8 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 				tmpIt++
 			}
 		}
-		//fmt.Printf("[%d] y=%f\tψ=%f\n", iteration, y, ψ)
 		χ := math.Sqrt(y / c2)
+		//fmt.Printf("[%03d] y=%f\tχ=%f\n", iteration, y, χ)
 		Δt = (math.Pow(χ, 3)*c3 + A*math.Sqrt(y)) / math.Sqrt(body.μ)
 		if Δt < Δt0Sec {
 			ψlow = ψ
@@ -180,14 +181,16 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 			ssψ, csψ := math.Sincos(sψ)
 			c2 = (1 - csψ) / ψ // BUG: c2 may go to 0
 			c3 = (sψ - ssψ) / math.Sqrt(math.Pow(ψ, 3))
-			//fmt.Printf("[%d] [%f] ψ=%f\tψup=%f\tψlow=%f\tsψ=%f\tc2=%f\tc3=%f\tcsψ=%f\n", iteration, Δt, ψ, ψup, ψlow, sψ, c2, c3, csψ)
+			//fmt.Printf("[%03d] POS c2=%f\tc3=%f\tψ=%f\n", iteration, c2, c3, ψ)
 		} else if ψ < -lambertε {
 			sψ := math.Sqrt(-ψ)
 			c2 = (1 - math.Cosh(sψ)) / ψ
-			c3 = (math.Sinh(sψ) - sψ) / math.Sqrt(math.Pow(sψ, 3))
+			c3 = (math.Sinh(sψ) - sψ) / math.Sqrt(math.Pow(-ψ, 3))
+			//fmt.Printf("[%03d] NEG c2=%f\tc3=%f\tψ=%f\n", iteration, c2, c3, ψ)
 		} else {
 			c2 = 1 / 2.
 			c3 = 1 / 6.
+			//fmt.Printf("[%03d] ZER c2=%f\tc3=%f\tψ=%f\n", iteration, c2, c3, ψ)
 		}
 	}
 	f := 1 - y/rI
