@@ -8,6 +8,10 @@ For simplicity, this batch of the tools relies on [SpiceyPy](https://github.com/
 ## Installation
 In a new [virtual environment](docs.python-guide.org/en/latest/dev/virtualenvs/):
 - `pip install -r reqs.txt`
+- Download the following SPICE kernels [from here](https://naif.jpl.nasa.gov/pub/naif/generic_kernels/) and put them in the `spicekernels` folder:
+  - `de430.bsp`
+  - `naif0012.tls`
+  - `pck00010.tpc`
 
 ## Tools
 ### chgframe
