@@ -155,14 +155,15 @@ func (o Orbit) VNorm() float64 {
 
 // Elements returns the nine orbital elements in radians which work for circular and elliptical orbits
 func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
-	if o.hashValid() { // XXX: Data race!
-		return o.ccha, o.cche, o.cchi, o.cchΩ, o.cchω, o.cchν, o.cchλ, o.cchtildeω, o.cchu
-	}
+	//if o.hashValid() { // XXX: Data race!
+	//	return o.ccha, o.cche, o.cchi, o.cchΩ, o.cchω, o.cchν, o.cchλ, o.cchtildeω, o.cchu
+	//}
 	// Algorithm from Vallado, 4th edition, page 113 (RV2COE).
 	hVec := cross(o.rVec, o.vVec)
 	n := cross([]float64{0, 0, 1}, hVec)
-	v := norm(o.vVec)
 	r := norm(o.rVec)
+	v := norm(o.vVec)
+	//fmt.Printf("[e] r=%+v\tr=%.3f\n[e] v=%+v\tv=%.3f\n", o.rVec, r, o.vVec, v)
 	ξ := (v*v)/2 - o.Origin.μ/r
 	a = -o.Origin.μ / (2 * ξ)
 	eVec := make([]float64, 3, 3)
@@ -319,59 +320,54 @@ func (o Orbit) StrictlyEquals(o1 Orbit) (bool, error) {
 // Panics if the vehicle is not within the SOI of the object.
 // Panics if already in this frame.
 func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
-	if o.Origin.Name == b.Name {
+	if o.Origin.Equals(b) {
 		panic(fmt.Errorf("already in orbit around %s", b.Name))
 	}
-	// TODO: Both implementation fail. The initial one only fails on the eccentricity and the semi-major axis.
-	// The new one with the cross product fails on more levels. The conversion to Sun centric is also very wrong.
-	// *Maybe* should I be accounting for the tilt of the planet and tilt from the equator, since that was something
-	// which the initial HelioOrbit did (and incorrectly so).
-	// OUTPUT:
-	/*
-		// FIRST
-		[a] r=73136.1 a=684420.3 e=0.8932 i=0.175 Ω=0.033 ω=0.475 ν=2.831 λ=3.338 u=3.305
-		[b] r=149108789.9 a=-560.9 e=265849.8755 i=0.021 Ω=183.431 ω=1.275 ν=359.710 λ=184.416 u=0.985
-		[a] r=149108789.9 a=124101225.9 e=0.2016 i=0.021 Ω=183.431 ω=179.836 ν=181.150 λ=184.416 u=0.985
-		[b] r=73136.1 a=36568.2 e=1.0000 i=0.175 Ω=0.033 ω=183.305 ν=180.000 λ=3.338 u=3.305
 
-		// SECOND
-		[a] r=73136.1 a=684420.3 e=0.8932 i=0.175 Ω=0.033 ω=0.475 ν=2.831 λ=3.338 u=3.305
-		[b] r=149255036.3 a=-364.3 e=409679.1218 i=0.017 Ω=5.603 ω=358.579 ν=0.234 λ=4.415 u=358.812
-		[c] r=149255036.3 a=-364.3 e=409682.5316 i=0.005 Ω=94.415 ω=270.000 ν=0.000 λ=4.415 u=270.000
-		[a] r=149255036.3 a=193958682.1 e=0.2305 i=0.005 Ω=94.415 ω=270.000 ν=0.000 λ=4.415 u=270.000
-		[b] r=73136.1 a=36568.2 e=1.0000 i=0.010 Ω=274.410 ω=268.928 ν=180.000 λ=3.338 u=88.928
-		[c] r=73136.1 a=36568.2 e=1.0000 i=0.010 Ω=273.338 ω=270.000 ν=180.000 λ=3.338 u=90.000
-
-	*/
 	newImplt := true
 	if newImplt {
-		var rel Orbit
-		var factor float64
-		if b.SOI == -1 {
-			// Switch to heliocentric
-			rel = o.Origin.HelioOrbit(dt)
-			// TODO: Support increasing or decreasing velocities.
-			factor = -1
-		} else {
-			// Switch to planetary inertial.
-			rel = b.HelioOrbit(dt)
-			factor = 1
-		}
-		relR := rel.R()
-		relV := rel.V()
-		fmt.Printf("[a] %s\n", o.String())
-		// Update frame origin.
-		for i := 0; i < 3; i++ {
-			o.rVec[i] += factor * relR[i]
-			o.vVec[i] += factor * relV[i]
-		}
-		fmt.Printf("[b] %s\n", o.String())
+		r := norm(o.rVec)
 		v := norm(o.vVec)
-		vDir := unit(cross(o.rVec, []float64{0, 0, -1}))
-		for i := 0; i < 3; i++ {
-			o.vVec[i] = v * vDir[i]
+		if b.Equals(Sun) {
+			//fmt.Printf("[a] %s\n", o.String())
+			fmt.Printf("[a] r=%+v\tr=%.3f\n[a] v=%+v\tv=%.3f\n", o.rVec, r, o.vVec, v)
+			// Switching to heliocentric ecliptic J2000
+			bFrameOrbit := o.Origin.HelioOrbit(dt)
+			_, _, i, Ω, ω, _, _, _, _ := bFrameOrbit.Elements()
+			o.rVec = MxV33(R2(-o.Origin.incl*deg2rad), MxV33(R3R1R3(-ω, -i, -Ω), o.rVec))
+			o.vVec = MxV33(R2(-o.Origin.incl*deg2rad), MxV33(R3R1R3(-ω, -i, -Ω), o.vVec))
+			// Now perform offset.
+			bR, bV := bFrameOrbit.RV()
+			for i := 0; i < 3; i++ {
+				o.rVec[i] += bR[i]
+				o.vVec[i] += bV[i]
+			}
+			r = norm(o.rVec)
+			v = norm(o.vVec)
+			*o = *NewOrbitFromRV(o.rVec, o.vVec, o.Origin)
+			fmt.Printf("[b] %s\n", o.String())
+			fmt.Printf("[b] r=%+v\tr=%.3f\n[b] v=%+v\tv=%.3f\n", o.rVec, r, o.vVec, v)
+		} else {
+			// Switching to planet inertial frame
+			//fmt.Printf("[a] %s\n", o.String())
+			fmt.Printf("[a] r=%+v\tr=%.3f\n[a] v=%+v\tv=%.3f\n", o.rVec, r, o.vVec, v)
+			// Switching to heliocentric ecliptic J2000
+			nFrameOrbit := b.HelioOrbit(dt)
+			// Perform offset.
+			bR, bV := nFrameOrbit.RV()
+			for i := 0; i < 3; i++ {
+				o.rVec[i] -= bR[i]
+				o.vVec[i] -= bV[i]
+			}
+			_, _, i, Ω, ω, _, _, _, _ := nFrameOrbit.Elements()
+			o.rVec = MxV33(R3R1R3(Ω, i, ω), MxV33(R2(b.incl*deg2rad), o.rVec))
+			o.vVec = MxV33(R3R1R3(Ω, i, ω), MxV33(R2(b.incl*deg2rad), o.vVec))
+			r = norm(o.rVec)
+			v = norm(o.vVec)
+			*o = *NewOrbitFromRV(o.rVec, o.vVec, b)
+			fmt.Printf("[b] %s\n", o.String())
+			fmt.Printf("[b] r=%+v\tr=%.3f\n[b] v=%+v\tv=%.3f\n", o.rVec, r, o.vVec, v)
 		}
-		fmt.Printf("[c] %s\n", o.String())
 	} else {
 		if b.SOI == -1 {
 			// Switch to heliocentric
@@ -379,8 +375,11 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 			rel := o.Origin.HelioOrbit(dt)
 			relR := rel.R()
 			relV := rel.V()
-			// Switch frame origin.
 			fmt.Printf("[a] %s\n", o.String())
+			// Rotate by tilt
+			o.rVec = MxV33(R1(Deg2rad(-o.Origin.tilt)), o.rVec)
+			o.vVec = MxV33(R1(Deg2rad(-o.Origin.tilt)), o.vVec)
+			// Switch frame origin.
 			for i := 0; i < 3; i++ {
 				o.rVec[i] += relR[i]
 				o.vVec[i] += relV[i]
@@ -398,6 +397,8 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 				o.rVec[i] -= relR[i]
 				o.vVec[i] -= relV[i]
 			}
+			o.rVec = MxV33(R1(Deg2rad(o.Origin.tilt)), o.rVec)
+			o.vVec = MxV33(R1(Deg2rad(o.Origin.tilt)), o.vVec)
 			fmt.Printf("[b] %s\n", o.String())
 		}
 	}

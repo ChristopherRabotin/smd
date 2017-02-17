@@ -10,6 +10,13 @@ import (
 	"github.com/ChristopherRabotin/smd"
 )
 
+/*
+Using SpiceyPy I can get the vectors in J2000 ecliptic:
+State / my computation:
+[1.47374696e+08   2.44197837e+07    2.81290915e+03, -1.00716395e+00,   7.25603988e+00,   9.43856333e+00]
+[2.00905070e+08   -4.8025651e+07   -5.94657823e+06   5.932070217e+00   25.26068140e+00  -0.08168506e+00]
+*/
+
 const (
 	outbound = true // Set to False to simulate the inbound trajectory
 )

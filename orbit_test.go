@@ -1,6 +1,7 @@
 package smd
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -328,7 +329,6 @@ func TestOrbitSpeCircularEquatorial(t *testing.T) {
 }
 
 func TestOrbitRefHelioChange(t *testing.T) {
-	// TODO: Make this an actual test.
 	// TODO: Add mars test
 	/*rInit := []float64{10000, 0, 0}
 	vInit := []float64{0, 5, 0}
@@ -340,10 +340,29 @@ func TestOrbitRefHelioChange(t *testing.T) {
 	Ω0 := 0.032732
 	ν0 := 2.830590
 
-	o := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
-
+	o := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Jupiter)
+	var r1, v1, r2, v2 [3]float64
+	copy(r1[:], o.rVec)
+	copy(v1[:], o.vVec)
 	dt := time.Date(2016, 03, 24, 20, 41, 48, 0, time.UTC)
 
 	o.ToXCentric(Sun, dt)
+	fmt.Println("=====")
 	o.ToXCentric(Earth, dt)
+	copy(r2[:], o.rVec)
+	copy(v2[:], o.vVec)
+	for i := 0; i < 3; i++ {
+		r2[i] -= r1[i]
+		if !floats.EqualWithinAbs(r2[i], 0, 1e-8) {
+			t.Fatalf("element %d of r2 incorrect: %f", i, r2[i])
+		}
+		v2[i] -= v1[i]
+		if !floats.EqualWithinAbs(v2[i], 0, 1e-8) {
+			t.Fatalf("element %d of v2 incorrect: %f", i, v2[i])
+		}
+	}
+	oInit := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
+	if ok, err := oInit.StrictlyEquals(*o); !ok {
+		t.Logf("%s", err)
+	}
 }
