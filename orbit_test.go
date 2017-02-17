@@ -326,3 +326,24 @@ func TestOrbitSpeCircularEquatorial(t *testing.T) {
 		}
 	}
 }
+
+func TestOrbitRefHelioChange(t *testing.T) {
+	// TODO: Make this an actual test.
+	// TODO: Add mars test
+	/*rInit := []float64{10000, 0, 0}
+	vInit := []float64{0, 5, 0}
+	o := NewOrbitFromRV(rInit, vInit, Earth)*/
+	a0 := 684420.277672
+	e0 := 0.893203
+	i0 := 0.174533
+	ω0 := 0.474642
+	Ω0 := 0.032732
+	ν0 := 2.830590
+
+	o := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
+
+	dt := time.Date(2016, 03, 24, 20, 41, 48, 0, time.UTC)
+
+	o.ToXCentric(Sun, dt)
+	o.ToXCentric(Earth, dt)
+}

@@ -17,17 +17,15 @@ const (
 func main() {
 	if outbound {
 		baseDepart := time.Date(2018, 5, 1, 0, 0, 0, 0, time.UTC)
-		maxPropDT := time.Date(2022, 5, 1, 0, 0, 0, 0, time.UTC)
+		maxPropDT := time.Date(2021, 5, 1, 0, 0, 0, 0, time.UTC)
 		// The estimated arrival was computed from the minimum of a Lambert solver.
-		//estArrival := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
+		estArrival := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
 		//estArrival := time.Date(2019, 5, 20, 0, 0, 0, 0, time.UTC)
 		// Compute hyperbolic exit of Mars from TGO injection orbit
-		//inb := smd.NewMission(InboundSpacecraft("IM"), InitialMarsOrbit(), estArrival.Add(-70*24*time.Hour), estArrival.Add(-71*24*time.Hour), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
-		//inb.Propagate()
-		// This is the outbound hyperbolic orbit when running Spirals on Mars from the ExoMars TGO injection orbit.
-		// a=230257620.6 e=0.0343 i=24.645 Ω=1.087 ω=240.312 ν=214.318 λ=95.717 u=94.630
-		target := *smd.NewOrbitFromRV([]float64{-2.3170735800800942e+07, 2.1403532352397686e+08, 9.837920496548975e+07}, []float64{-23.18157341593323, -2.5740622275206446, -0.9789467049939157}, smd.Sun)
-		//target := *inb.Orbit
+		inb := smd.NewMission(InboundSpacecraft("IM"), InitialMarsOrbit(), estArrival.Add(-70*24*time.Hour), estArrival.Add(-71*24*time.Hour), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: "IM", AsCSV: false, Cosmo: false, Timestamp: false})
+		inb.Propagate()
+		//target := *smd.NewOrbitFromRV([]float64{-2.3170735800800942e+07, 2.1403532352397686e+08, 9.837920496548975e+07}, []float64{-23.18157341593323, -2.5740622275206446, -0.9789467049939157}, smd.Sun)
+		target := *inb.Orbit
 		name := "SC"
 		// Propagate until all waypoints are reached.
 		sc := OutboundSpacecraft(name, target)

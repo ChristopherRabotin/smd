@@ -169,11 +169,12 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 // ToXCentric switches the propagation from the current origin to a new one and logs the change.
 func (sc *Spacecraft) ToXCentric(body CelestialObject, dt time.Time, o *Orbit) func() {
 	return func() {
-		sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "fuel(kg)", sc.FuelMass, "orbit", o)
+		sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "orbit", o)
+		sc.logger.Log("level", "notice", "subsys", "astro", "R", fmt.Sprintf("%+v km", o.rVec), "V", fmt.Sprintf("%+v km/s", o.vVec), "|V|", fmt.Sprintf("%.2f km/s", norm(o.vVec)))
 		o.ToXCentric(body, dt)
 		sc.logger.Log("level", "notice", "subsys", "astro", "date", dt, "orbiting", body.Name)
-		sc.logger.Log("level", "notice", "subsys", "astro", "R", fmt.Sprintf("%+v km", o.rVec), "V", fmt.Sprintf("%+v km/s", o.vVec))
-		sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "fuel(kg)", sc.FuelMass, "orbit", o)
+		sc.logger.Log("level", "notice", "subsys", "astro", "R", fmt.Sprintf("%+v km", o.rVec), "V", fmt.Sprintf("%+v km/s", o.vVec), "|V|", fmt.Sprintf("%.2f km/s", norm(o.vVec)))
+		sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "orbit", o)
 		sc.LogInfo()
 	}
 }

@@ -17,7 +17,7 @@ const (
 	// Coarse ε (for interplanetary flight)
 	eccentricityLgε = 1e-2                         // 0.01
 	angleLgε        = (5e-1 / 360) * (2 * math.Pi) // 0.5 degrees
-	distanceLgε     = 5e2                          // 500 km
+	distanceLgε     = 5e3                          // 5000 km
 	// velocity ε for circular orbit equality and Hohmann
 	velocityε = 1e-4 // in km/s
 )
@@ -155,7 +155,7 @@ func (o Orbit) VNorm() float64 {
 
 // Elements returns the nine orbital elements in radians which work for circular and elliptical orbits
 func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
-	if o.hashValid() {
+	if o.hashValid() { // XXX: Data race!
 		return o.ccha, o.cche, o.cchi, o.cchΩ, o.cchω, o.cchν, o.cchλ, o.cchtildeω, o.cchu
 	}
 	// Algorithm from Vallado, 4th edition, page 113 (RV2COE).
@@ -322,27 +322,83 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 	if o.Origin.Name == b.Name {
 		panic(fmt.Errorf("already in orbit around %s", b.Name))
 	}
-	if b.SOI == -1 {
-		// Switch to heliocentric
-		// Get planet equatorial coordinates.
-		rel := o.Origin.HelioOrbit(dt)
-		relR := rel.R()
-		relV := rel.V()
-		// Switch frame origin.
-		for i := 0; i < 3; i++ {
-			o.rVec[i] += relR[i]
-			o.vVec[i] += relV[i]
+	// TODO: Both implementation fail. The initial one only fails on the eccentricity and the semi-major axis.
+	// The new one with the cross product fails on more levels. The conversion to Sun centric is also very wrong.
+	// *Maybe* should I be accounting for the tilt of the planet and tilt from the equator, since that was something
+	// which the initial HelioOrbit did (and incorrectly so).
+	// OUTPUT:
+	/*
+		// FIRST
+		[a] r=73136.1 a=684420.3 e=0.8932 i=0.175 Ω=0.033 ω=0.475 ν=2.831 λ=3.338 u=3.305
+		[b] r=149108789.9 a=-560.9 e=265849.8755 i=0.021 Ω=183.431 ω=1.275 ν=359.710 λ=184.416 u=0.985
+		[a] r=149108789.9 a=124101225.9 e=0.2016 i=0.021 Ω=183.431 ω=179.836 ν=181.150 λ=184.416 u=0.985
+		[b] r=73136.1 a=36568.2 e=1.0000 i=0.175 Ω=0.033 ω=183.305 ν=180.000 λ=3.338 u=3.305
+
+		// SECOND
+		[a] r=73136.1 a=684420.3 e=0.8932 i=0.175 Ω=0.033 ω=0.475 ν=2.831 λ=3.338 u=3.305
+		[b] r=149255036.3 a=-364.3 e=409679.1218 i=0.017 Ω=5.603 ω=358.579 ν=0.234 λ=4.415 u=358.812
+		[c] r=149255036.3 a=-364.3 e=409682.5316 i=0.005 Ω=94.415 ω=270.000 ν=0.000 λ=4.415 u=270.000
+		[a] r=149255036.3 a=193958682.1 e=0.2305 i=0.005 Ω=94.415 ω=270.000 ν=0.000 λ=4.415 u=270.000
+		[b] r=73136.1 a=36568.2 e=1.0000 i=0.010 Ω=274.410 ω=268.928 ν=180.000 λ=3.338 u=88.928
+		[c] r=73136.1 a=36568.2 e=1.0000 i=0.010 Ω=273.338 ω=270.000 ν=180.000 λ=3.338 u=90.000
+
+	*/
+	newImplt := true
+	if newImplt {
+		var rel Orbit
+		var factor float64
+		if b.SOI == -1 {
+			// Switch to heliocentric
+			rel = o.Origin.HelioOrbit(dt)
+			// TODO: Support increasing or decreasing velocities.
+			factor = -1
+		} else {
+			// Switch to planetary inertial.
+			rel = b.HelioOrbit(dt)
+			factor = 1
 		}
-	} else {
-		// Switch to planet centric
-		// Get planet ecliptic coordinates.
-		rel := b.HelioOrbit(dt)
 		relR := rel.R()
 		relV := rel.V()
+		fmt.Printf("[a] %s\n", o.String())
 		// Update frame origin.
 		for i := 0; i < 3; i++ {
-			o.rVec[i] -= relR[i]
-			o.vVec[i] -= relV[i]
+			o.rVec[i] += factor * relR[i]
+			o.vVec[i] += factor * relV[i]
+		}
+		fmt.Printf("[b] %s\n", o.String())
+		v := norm(o.vVec)
+		vDir := unit(cross(o.rVec, []float64{0, 0, -1}))
+		for i := 0; i < 3; i++ {
+			o.vVec[i] = v * vDir[i]
+		}
+		fmt.Printf("[c] %s\n", o.String())
+	} else {
+		if b.SOI == -1 {
+			// Switch to heliocentric
+			// Get planet equatorial coordinates.
+			rel := o.Origin.HelioOrbit(dt)
+			relR := rel.R()
+			relV := rel.V()
+			// Switch frame origin.
+			fmt.Printf("[a] %s\n", o.String())
+			for i := 0; i < 3; i++ {
+				o.rVec[i] += relR[i]
+				o.vVec[i] += relV[i]
+			}
+			fmt.Printf("[b] %s\n", o.String())
+		} else {
+			// Switch to planet centric
+			// Get planet ecliptic coordinates.
+			rel := b.HelioOrbit(dt)
+			relR := rel.R()
+			relV := rel.V()
+			fmt.Printf("[a] %s\n", o.String())
+			// Update frame origin.
+			for i := 0; i < 3; i++ {
+				o.rVec[i] -= relR[i]
+				o.vVec[i] -= relV[i]
+			}
+			fmt.Printf("[b] %s\n", o.String())
 		}
 	}
 	o.Origin = b // Don't forget to switch origin
