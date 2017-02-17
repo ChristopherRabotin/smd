@@ -9,11 +9,13 @@ def __load__kernels__():
     if __kernels_loaded__:
         return
     base_dir = os.path.dirname(os.path.abspath(__file__))
+    print(base_dir)
     krnls = ['de430.bsp', 'naif0012.tls', 'pck00010.tpc']
     for krnl in krnls:
         spice.furnsh(base_dir + '/spicekernels/' + krnl)
 
 def DCM(fromFrame, toFrame, dt):
+    __load__kernels__()
     return spice.sxform(fromFrame, toFrame, dt)
 
 def ChgFrame(state, fromFrame, toFrame, dt):
@@ -24,6 +26,9 @@ def ChgFrame(state, fromFrame, toFrame, dt):
     :param: dt: float representing the date and time in J2000.
     :return: a numpy array
     '''
+    __load__kernels__()
+    if isinstance(dt, str):
+        dt = spice.str2et(dt)
     stateRotd = DCM(fromFrame, toFrame, dt).dot(state)
     # Find the target body name
     if fromFrame.startswith('IAU_'):
