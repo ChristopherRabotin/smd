@@ -9,7 +9,6 @@ def __load__kernels__():
     if __kernels_loaded__:
         return
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    print(base_dir)
     krnls = ['de430.bsp', 'naif0012.tls', 'pck00010.tpc']
     for krnl in krnls:
         spice.furnsh(base_dir + '/spicekernels/' + krnl)
@@ -34,10 +33,16 @@ def ChgFrame(state, fromFrame, toFrame, dt):
     if fromFrame.startswith('IAU_'):
         target = fromFrame[4:]
         obs = 'Sun'
+        if target.lower() == 'mars':
+            # Switch to barycenter, as per https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/aareadme_de430-de431.txt
+            target = 'Mars_barycenter'
     elif fromFrame.endswith('J2000'):
         # Works for EclipJ2000 and J2000
         target = 'Sun'
         obs = toFrame[4:]
+        if obs.lower() == 'mars':
+            # Switch to barycenter, as per https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/aareadme_de430-de431.txt
+            obs = 'Mars_barycenter'
 
     origin = spice.spkezr(target, dt, toFrame, 'None', obs)[0]
     return stateRotd + origin

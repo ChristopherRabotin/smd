@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"os/exec"
@@ -13,6 +11,10 @@ import (
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
+)
+
+const (
+	debug = false
 )
 
 /*
@@ -29,12 +31,11 @@ func sc() *smd.Spacecraft {
 		[]smd.Waypoint{smd.NewToHyperbolic(nil)})
 }
 
-func initEarthOrbit() *smd.Orbit {
+func initEarthOrbit(ν float64) *smd.Orbit {
 	a, e := smd.Radii2ae(39300+smd.Earth.Radius, 290+smd.Earth.Radius)
 	i := 28.0
 	ω := 10.0
 	Ω := 5.0
-	ν := 0.0
 	return smd.NewOrbitFromOE(a, e, i, Ω, ω, ν, smd.Earth)
 }
 
@@ -52,23 +53,31 @@ func initMarsOrbit(ν float64) *smd.Orbit {
 func main() {
 	//name := "spiral-mars"
 	depart := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
-	chgframePath := "../../cmd/refframe/chgframe.py"
-	//maxV := 0.0
+	chgframePath := "../../cmd/refframes/chgframe.py"
+	maxV := -1e3
+	maxν := -1.
 	for ν := 0.0; ν < 360; ν++ {
-		initOrbit := initMarsOrbit(ν)
+		initOrbit := initEarthOrbit(ν)
 		astro := smd.NewMission(sc(), initOrbit, depart, depart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{ /*Filename: name, AsCSV: false, Cosmo: true, Timestamp: false*/ })
 		astro.Propagate()
+
+		// Run chgframe
 		// We're now done so let's convert the position and velocity to heliocentric and check the output.
 		R, V := initOrbit.RV()
 		state := fmt.Sprintf("[%f,%f,%f,%f,%f,%f]", R[0], R[1], R[2], V[0], V[1], V[2])
-		cmd := exec.Command(chgframePath, "-t", "J2000", "-f", "IAU_Mars", "-e", astro.CurrentDT.String(), "-s", state)
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		err := cmd.Run()
-		if err != nil {
-			log.Fatal(err)
+		if debug {
+			fmt.Printf("\n=== RUNNING CMD ===\npython %s -t J2000 -f IAU_Earth -e \"%s\" -s \"%s\"\n", chgframePath, astro.CurrentDT.Format(time.ANSIC), state)
 		}
-		newState := out.String()
+		cmd := exec.Command("python", chgframePath, "-t", "J2000", "-f", "IAU_Earth", "-e", astro.CurrentDT.Format(time.ANSIC), "-s", state)
+		cmdOut, err := cmd.Output()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "There was an error running git rev-parse command: ", err)
+			os.Exit(1)
+		}
+		out := string(cmdOut)
+
+		// Process output
+		newState := strings.TrimSpace(string(out))
 		// Cf. https://play.golang.org/p/g-a4idjhIb
 		newState = newState[1 : len(newState)-1]
 		components := strings.Split(newState, ",")
@@ -86,9 +95,15 @@ func main() {
 			}
 		}
 		vNorm := math.Sqrt(math.Pow(nV[0], 2) + math.Pow(nV[1], 2) + math.Pow(nV[2], 2))
-		fmt.Printf("ν=%f\t=>V=%+v\t|V|=%f", ν, nV, vNorm)
-		break
+		if vNorm > maxV {
+			maxV = vNorm
+			maxν = ν
+		}
+		if debug {
+			fmt.Printf("\nν=%f\t=>V=%+v\t|V|=%f\n", ν, nV, vNorm)
+		}
 	}
+	fmt.Printf("\n\n=== RESULT ===\n\nmaxν=%f degrees\tmaxV=%f km/s\n\n", maxν, maxV)
 }
 
 func init() {
