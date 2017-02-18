@@ -56,6 +56,8 @@ func main() {
 	chgframePath := "../../cmd/refframes/chgframe.py"
 	maxV := -1e3
 	maxν := -1.
+	minV := +1e3
+	minν := -1.
 	for ν := 0.0; ν < 360; ν++ {
 		initOrbit := initEarthOrbit(ν)
 		astro := smd.NewMission(sc(), initOrbit, depart, depart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{ /*Filename: name, AsCSV: false, Cosmo: true, Timestamp: false*/ })
@@ -98,12 +100,15 @@ func main() {
 		if vNorm > maxV {
 			maxV = vNorm
 			maxν = ν
+		} else if vNorm < minV {
+			minV = vNorm
+			minν = ν
 		}
 		if debug {
 			fmt.Printf("\nν=%f\t=>V=%+v\t|V|=%f\n", ν, nV, vNorm)
 		}
 	}
-	fmt.Printf("\n\n=== RESULT ===\n\nmaxν=%f degrees\tmaxV=%f km/s\n\n", maxν, maxV)
+	fmt.Printf("\n\n=== RESULT ===\n\nmaxν=%.1f degrees\tmaxV=%.3f km/s\nminν=%.1f degrees\tminV=%.3f km/s\n\n", maxν, maxV, minν, minV)
 }
 
 func init() {
