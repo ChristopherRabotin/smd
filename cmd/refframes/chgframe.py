@@ -5,8 +5,9 @@ from math import sqrt
 import numpy as np
 import spiceypy as spice
 
-__kernels_loaded__ = False
+AU = 149597870
 
+__kernels_loaded__ = False
 def __load__kernels__():
     if __kernels_loaded__:
         return
@@ -36,6 +37,7 @@ def ChgFrame(state, fromFrame, toFrame, dt):
     __load__kernels__()
     if isinstance(dt, str):
         dt = spice.str2et(dt)
+
     dcm = DCM(fromFrame, toFrame, dt)
     position = dcm.dot(state[:3])
     velocity = dcm.dot(state[3:])
@@ -44,20 +46,28 @@ def ChgFrame(state, fromFrame, toFrame, dt):
     if fromFrame.startswith('IAU_'):
         # From planetocentric to heliocentric
         target = fromFrame[4:]
-        obs = 'Sun'
+        origin = spice.spkezr(target, dt, toFrame, 'None', 'Sun')[0]
         if target.lower() == 'mars':
             # Switch to barycenter, as per https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/aareadme_de430-de431.txt
             target = 'Mars_barycenter'
     elif fromFrame.endswith('J2000'):
         # From heliocentric to planetocentric
         # Works for EclipJ2000 and J2000
-        target = 'Sun'
-        obs = toFrame[4:]
+        target = toFrame[4:]
+        origin = spice.spkezr(target, dt, fromFrame, 'None', 'Sun')[0]
+        position = position - dcm.dot(origin[:3])
+        velocity = velocity - dcm.dot(origin[3:])
+        return np.array(list(position) + list(velocity))
+        #j2k2earth.dot(Nvel) - j2k2earth.dot(EarthOffset[3:]) - earthVel
+        #Out[80]: array([ -1.66533454e-15,   5.55111512e-16,  -4.44089210e-16])
+        #
+        #In [81]: j2k2earth.dot(Npos) - j2k2earth.dot(EarthOffset[:3]) - earthPos
+        #Out[81]: array([  1.50175765e-08,   2.76486389e-10,  -4.03815648e-10])
+
         if obs.lower() == 'mars':
             # Switch to barycenter, as per https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/aareadme_de430-de431.txt
             obs = 'Mars_barycenter'
 
-    origin = spice.spkezr(target, dt, toFrame, 'None', obs)[0]
     return stateRotd + origin
 
 if __name__ == '__main__':
@@ -76,4 +86,7 @@ if __name__ == '__main__':
     if len(state) != 6:
         raise ValueError("state vector must have six components")
 
-    print([component for component in ChgFrame(state, args.fromF, args.to, args.epoch)])
+    nState = ChgFrame(state, args.fromF, args.to, args.epoch)
+    print([component for component in nState])
+#    exp = [-996776.1190926583,-39776.102324992695,25123.28168731782,-0.5114606889356655,-0.6914491357021403,-0.34254913653144525]
+#    print(nState-exp)
