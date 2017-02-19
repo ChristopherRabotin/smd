@@ -58,6 +58,7 @@ func main() {
 	maxν := -1.
 	minV := +1e3
 	minν := -1.
+	tsv := "nu (degrees)\tV(km/s)\n"
 	for ν := 0.0; ν < 360; ν++ {
 		initOrbit := initEarthOrbit(ν)
 		astro := smd.NewMission(sc(), initOrbit, depart, depart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{ /*Filename: name, AsCSV: false, Cosmo: true, Timestamp: false*/ })
@@ -97,6 +98,8 @@ func main() {
 			}
 		}
 		vNorm := math.Sqrt(math.Pow(nV[0], 2) + math.Pow(nV[1], 2) + math.Pow(nV[2], 2))
+		// Add to TSV file
+		tsv += fmt.Sprintf("%f,%f\n", ν, vNorm)
 		if vNorm > maxV {
 			maxV = vNorm
 			maxν = ν
@@ -109,6 +112,15 @@ func main() {
 		}
 	}
 	fmt.Printf("\n\n=== RESULT ===\n\nmaxν=%.1f degrees\tmaxV=%.3f km/s\nminν=%.1f degrees\tminV=%.3f km/s\n\n", maxν, maxV, minν, minV)
+	// Write CSV file.
+	f, err := os.Create("./nuVsVhelio.tsv")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(tsv); err != nil {
+		panic(err)
+	}
 }
 
 func init() {
