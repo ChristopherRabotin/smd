@@ -58,9 +58,9 @@ func main() {
 	maxν := -1.
 	minV := +1e3
 	minν := -1.
-	tsv := "nu (degrees)\tV(km/s)\n"
-	for ν := 0.0; ν < 360; ν++ {
-		initOrbit := initEarthOrbit(ν)
+	tsv := "nu (degrees),V(km/s)\n"
+	for ν := 0.0; ν < 360; ν += 5 {
+		initOrbit := initMarsOrbit(ν)
 		astro := smd.NewMission(sc(), initOrbit, depart, depart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{ /*Filename: name, AsCSV: false, Cosmo: true, Timestamp: false*/ })
 		astro.Propagate()
 
