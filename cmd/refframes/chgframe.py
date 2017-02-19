@@ -46,29 +46,24 @@ def ChgFrame(state, fromFrame, toFrame, dt):
     if fromFrame.startswith('IAU_'):
         # From planetocentric to heliocentric
         target = fromFrame[4:]
-        origin = spice.spkezr(target, dt, toFrame, 'None', 'Sun')[0]
         if target.lower() == 'mars':
             # Switch to barycenter, as per https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/aareadme_de430-de431.txt
             target = 'Mars_barycenter'
+        origin = spice.spkezr(target, dt, toFrame, 'None', 'Sun')[0]
+        return stateRotd + origin
+
     elif fromFrame.endswith('J2000'):
         # From heliocentric to planetocentric
         # Works for EclipJ2000 and J2000
         target = toFrame[4:]
+        if target.lower() == 'mars':
+            # Switch to barycenter, as per https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/aareadme_de430-de431.txt
+            target = 'Mars_barycenter'
         origin = spice.spkezr(target, dt, fromFrame, 'None', 'Sun')[0]
+        # Note that we perform the rotation because we asked for the origin in the *fromFrame* not in the *toFrame* like above.
         position = position - dcm.dot(origin[:3])
         velocity = velocity - dcm.dot(origin[3:])
         return np.array(list(position) + list(velocity))
-        #j2k2earth.dot(Nvel) - j2k2earth.dot(EarthOffset[3:]) - earthVel
-        #Out[80]: array([ -1.66533454e-15,   5.55111512e-16,  -4.44089210e-16])
-        #
-        #In [81]: j2k2earth.dot(Npos) - j2k2earth.dot(EarthOffset[:3]) - earthPos
-        #Out[81]: array([  1.50175765e-08,   2.76486389e-10,  -4.03815648e-10])
-
-        if obs.lower() == 'mars':
-            # Switch to barycenter, as per https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/aareadme_de430-de431.txt
-            obs = 'Mars_barycenter'
-
-    return stateRotd + origin
 
 if __name__ == '__main__':
     __load__kernels__()
