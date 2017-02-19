@@ -1,6 +1,8 @@
 import argparse
 import os
+from math import sqrt
 
+import numpy as np
 import spiceypy as spice
 
 __kernels_loaded__ = False
@@ -14,8 +16,14 @@ def __load__kernels__():
         spice.furnsh(base_dir + '/spicekernels/' + krnl)
 
 def DCM(fromFrame, toFrame, dt):
+    '''
+    :param: fromFrame: spice frame name, as string
+    :param: toFrame: spice frame name, as string
+    :param: dt: float representing the date and time in J2000.
+    :return: the Cartesian DCM as 3x3 np matrix
+    '''
     __load__kernels__()
-    return spice.sxform(fromFrame, toFrame, dt)
+    return spice.pxform(fromFrame, toFrame, dt)
 
 def ChgFrame(state, fromFrame, toFrame, dt):
     '''
@@ -28,15 +36,20 @@ def ChgFrame(state, fromFrame, toFrame, dt):
     __load__kernels__()
     if isinstance(dt, str):
         dt = spice.str2et(dt)
-    stateRotd = DCM(fromFrame, toFrame, dt).dot(state)
+    dcm = DCM(fromFrame, toFrame, dt)
+    position = dcm.dot(state[:3])
+    velocity = dcm.dot(state[3:])
+    stateRotd = np.array(list(position) + list(velocity))
     # Find the target body name
     if fromFrame.startswith('IAU_'):
+        # From planetocentric to heliocentric
         target = fromFrame[4:]
         obs = 'Sun'
         if target.lower() == 'mars':
             # Switch to barycenter, as per https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/aareadme_de430-de431.txt
             target = 'Mars_barycenter'
     elif fromFrame.endswith('J2000'):
+        # From heliocentric to planetocentric
         # Works for EclipJ2000 and J2000
         target = 'Sun'
         obs = toFrame[4:]
@@ -63,8 +76,4 @@ if __name__ == '__main__':
     if len(state) != 6:
         raise ValueError("state vector must have six components")
 
-    # Parse the epoch
-    epoch = spice.str2et(args.epoch)
-
-    new_state = ChgFrame(state, args.fromF, args.to, epoch)
-    print([component for component in new_state])
+    print([component for component in ChgFrame(state, args.fromF, args.to, args.epoch)])
