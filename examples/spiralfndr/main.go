@@ -71,7 +71,7 @@ func main() {
 		if debug {
 			fmt.Printf("\n=== RUNNING CMD ===\npython %s -t J2000 -f IAU_Earth -e \"%s\" -s \"%s\"\n", chgframePath, astro.CurrentDT.Format(time.ANSIC), state)
 		}
-		cmd := exec.Command("python", chgframePath, "-t", "J2000", "-f", "IAU_Earth", "-e", astro.CurrentDT.Format(time.ANSIC), "-s", state)
+		cmd := exec.Command("python", chgframePath, "-t", "J2000", "-f", "IAU_Mars", "-e", astro.CurrentDT.Format(time.ANSIC), "-s", state)
 		cmdOut, err := cmd.Output()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "There was an error running git rev-parse command: ", err)
