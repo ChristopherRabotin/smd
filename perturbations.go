@@ -46,27 +46,27 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, method Propagator) []float
 
 		case Cartesian:
 			R := o.R()
-			r := norm(R)
+			x := R[0]
+			y := R[1]
+			z := R[2]
 			z2 := math.Pow(R[2], 2)
-			acc := -(3 * o.Origin.μ * o.Origin.J(2) * math.Pow(o.Origin.Radius, 2)) / (2 * math.Pow(r, 5))
-			pert[3] = acc * R[0] * (1 - 5*z2/(r*r))
-			pert[4] = acc * R[1] * (1 - 5*z2/(r*r))
-			pert[5] = acc * R[2] * (3 - 5*z2/(r*r))
+			z3 := math.Pow(R[2], 3)
+			r2 := math.Pow(R[0], 2) + math.Pow(R[1], 2) + z2
+			r252 := math.Pow(r2, 5/2.)
+			r272 := math.Pow(r2, 7/2.)
+			// J2 (computed via SageMath: https://cloud.sagemath.com/projects/1fb6b227-1832-4f82-a05c-7e45614c00a2/files/j2perts.sagews)
+			accJ2 := (3 / 2.) * o.Origin.J(2) * math.Pow(o.Origin.Radius, 2) * o.Origin.μ
+			pert[3] += accJ2 * (5*x*z2/r272 - x/r252)
+			pert[4] += accJ2 * (5*y*z2/r272 - y/r252)
+			pert[5] += accJ2 * (5*z3/r272 - 3*z/r252)
 			if p.Jn >= 3 {
-				// Add J3 (computed via SageMath)
-				x := R[0]
-				y := R[1]
-				z := R[2]
-				r2 := math.Pow(R[0], 2) + math.Pow(R[1], 2) + z2
-				r52 := math.Pow(r2, 5/2.)
-				r72 := math.Pow(r2, 7/2.)
-				r92 := math.Pow(r2, 9/2.)
-				z3 := math.Pow(R[2], 3)
+				// J3 (computed via SageMath: https://cloud.sagemath.com/#projects/1fb6b227-1832-4f82-a05c-7e45614c00a2/files/j3perts.sagews)
+				r292 := math.Pow(r2, 9/2.)
 				z4 := math.Pow(R[2], 4)
 				accJ3 := o.Origin.J(3) * math.Pow(o.Origin.Radius, 3) * o.Origin.μ
-				pert[3] += (5 / 2.) * accJ3 * (7*x*z3/r92 - 3*x*z/r72)
-				pert[4] += (5 / 2.) * accJ3 * (7*y*z3/r92 - 3*y*z/r72)
-				pert[5] += 0.5 * accJ3 * (35*z4/r92 - 30*z2/r72 + 3/r52)
+				pert[3] += (5 / 2.) * accJ3 * (7*x*z3/r292 - 3*x*z/r272)
+				pert[4] += (5 / 2.) * accJ3 * (7*y*z3/r292 - 3*y*z/r272)
+				pert[5] += 0.5 * accJ3 * (35*z4/r292 - 30*z2/r272 + 3/r252)
 			}
 
 		default:
