@@ -4,14 +4,8 @@
         <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv">
             <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="2" fields="1" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-02-15T15:30:26Z" relativeOffset="0" nanValue="0" updateType="0"/>
         </source>
-        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv">
+        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv">
             <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="2" fields="1" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-02-15T15:46:59Z" relativeOffset="0" nanValue="0" updateType="0"/>
-        </source>
-        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-3.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-3.csv">
-            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="2" fields="1" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-02-15T15:52:29Z" relativeOffset="0" nanValue="0" updateType="0"/>
-        </source>
-        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-4.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-4.csv">
-            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="2" fields="1" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-02-15T15:53:32Z" relativeOffset="0" nanValue="0" updateType="0"/>
         </source>
     </data>
     <variables>
@@ -21,20 +15,12 @@
         <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" field="c3" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="4" initialXNum="37"/>
         <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" field="vInf" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="5" initialXNum="49"/>
         <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" field="phi2" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="6" initialXNum="61"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="7" initialXNum="73"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="8" initialXNum="85"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" field="days" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="9" initialXNum="97"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" field="c3" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="10" initialXNum="109"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" field="vInf" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="11" initialXNum="121"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-2.csv" field="phi2" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="12" initialXNum="133"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-3.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-3.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="13" initialXNum="145"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-3.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-3.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="14" initialXNum="157"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-3.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-3.csv" field="days" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="15" initialXNum="169"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-3.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-3.csv" field="phi2" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="16" initialXNum="181"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-4.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-4.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="17" initialXNum="193"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-4.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-4.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="18" initialXNum="205"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-4.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-4.csv" field="days" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="19" initialXNum="217"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-4.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1-type-4.csv" field="phi2" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="20" initialXNum="229"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="7" initialXNum="73"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="8" initialXNum="85"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" field="days" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="9" initialXNum="97"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" field="c3" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="10" initialXNum="109"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" field="vInf" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="11" initialXNum="121"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/imd/hw3pb1/pb1.csv" field="phi2" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="12" initialXNum="133"/>
     </variables>
     <objects/>
     <relations>
@@ -48,12 +34,6 @@
         <curve xvector="INDEX (V7)" yvector="c3 (V10)" color="#008000" alpha="255" headcolor="#008000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="2" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="-1447189" initialCNum="8"/>
         <curve xvector="INDEX (V7)" yvector="vInf (V11)" color="#000000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="3" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="842085682" initialCNum="9"/>
         <curve xvector="phi2 (V12)" yvector="days (V9)" color="#ff00ff" alpha="255" headcolor="#ff00ff" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="4" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="1" initialCNum="10"/>
-        <curve xvector="INDEX (V13)" yvector="INDEX (V14)" color="#aa0000" alpha="255" headcolor="#aa0000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="146561904" initialCNum="11"/>
-        <curve xvector="phi2 (V16)" yvector="days (V15)" color="#0000aa" alpha="255" headcolor="#0000aa" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="1" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="12"/>
-        <curve xvector="INDEX (V13)" yvector="phi2 (V16)" color="#005500" alpha="255" headcolor="#005500" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="2" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="49" initialCNum="13"/>
-        <curve xvector="INDEX (V17)" yvector="INDEX (V18)" color="#350a0a" alpha="255" headcolor="#350a0a" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="1632513102" initialCNum="14"/>
-        <curve xvector="phi2 (V20)" yvector="days (V19)" color="#0a350a" alpha="255" headcolor="#0a350a" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="1" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="-1" initialCNum="15"/>
-        <curve xvector="INDEX (V17)" yvector="phi2 (V20)" color="#ff0000" alpha="255" headcolor="#ff0000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="1" linestyle="0" haspoints="false" pointtype="2" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="741620022" initialCNum="16"/>
     </relations>
     <graphics>
         <view name="Type &amp;1" width="1365" height="623" color="#ffffff" style="1">
@@ -69,7 +49,7 @@
                 <legend auto="true" title="" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="false" name="Legend">
                     <position x="-536.816816278153" y="-235.107591136166" z="500"/>
                     <rect x="0" y="0" width="110" height="25"/>
-                    <relativesize width="0.0888371372184075" height="0.046597349691861" centerx="0.076632032072667" centery="0.134942213440901" posx="0.0322134634634633" posy="0.11164353859497" leftx="0.0322134634634633" lefty="0.158240888286831" rightx="0.121050600681871" righty="0.158240888286831" fixaspect="false" lockpostodata="false"/>
+                    <relativesize width="0.0888371372184075" height="0.046597349691861" centerx="0.0766320320726671" centery="0.134942213440901" posx="0.0322134634634634" posy="0.11164353859497" leftx="0.0322134634634634" lefty="0.158240888286831" rightx="0.121050600681871" righty="0.158240888286831" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                     <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                         <brush color="#000000" style="1"/>
@@ -80,16 +60,16 @@
                     <relation tag="days vs phi2 (C5)"/>
                     <arrow startarrowhead="false" endarrowhead="true" startarrowheadscale="12" endarrowheadscale="12" name="Arrow">
                         <position x="-544.925916418443" y="227.466926466717" z="500"/>
-                        <rect x="-16.5436309571343" y="-4.5" width="33.0872619142685" height="9"/>
-                        <relativesize width="0.0267264114215617" height="0.0168060196921735" centerx="0.0256644703554567" centery="0.97383340080639" posx="0.0392207872868892" posy="0.980353684990283" leftx="0.0387807257753974" lefty="0.963578445579792" rightx="0.0121081534240243" righty="0.967313116622497" fixaspect="false" lockpostodata="false"/>
-                        <transform m11="-0.997985548102984" m12="0.0634416722477114" m13="0" m21="-0.0634416722477114" m22="-0.997985548102984" m23="0" m31="0" m32="0" m33="1"/>
+                        <rect x="-16.5443764455847" y="-4.5" width="33.0887528911694" height="9"/>
+                        <relativesize width="0.026727733199169" height="0.0168060196921735" centerx="0.0256644703554567" centery="0.97383340080639" posx="0.0392207872868892" posy="0.980353684990283" leftx="0.0387807257753974" lefty="0.963578445579792" rightx="0.0121081534240243" righty="0.967313116622497" fixaspect="false" lockpostodata="false"/>
+                        <transform m11="-0.997936194312294" m12="0.0642133325836241" m13="0" m21="-0.0642133325836241" m22="-0.997936194312294" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                             <brush color="#000000" style="1"/>
                         </pen>
                         <brush color="#000000" style="1"/>
                     </arrow>
                     <label text="Hyperbolic" scale="12" color="#000000" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fixleft="true" name="Label">
-                        <position x="-523.40862745911" y="231.474312152171" z="500"/>
+                        <position x="-523.40862745911" y="231.474312152172" z="500"/>
                         <rect x="0" y="-23" width="92" height="23"/>
                         <relativesize width="0.0743598986765554" height="0.04294871699111" centerx="0.080222004710538" centery="0.959828384396246" posx="0.0430420553722603" posy="0.938354025900691" leftx="0.0430420553722603" lefty="0.981302742891801" rightx="0.117401954048816" righty="0.981302742891801" fixaspect="true" lockpostodata="false"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -100,9 +80,9 @@
                     </label>
                     <arrow startarrowhead="false" endarrowhead="true" startarrowheadscale="12" endarrowheadscale="12" name="Arrow">
                         <position x="-513.900988151498" y="135.297055701274" z="500"/>
-                        <rect x="-23.5171731033652" y="-4.5" width="47.0343462067304" height="9"/>
-                        <relativesize width="0.0394455555206317" height="0.0168060196921735" centerx="0.0507205231703827" centery="0.80203853284195" posx="0.0454869784174433" posy="0.759066546647255" leftx="0.0389806127906303" lefty="0.766582427139835" rightx="0.055954067923322" righty="0.845010519036645" fixaspect="false" lockpostodata="false"/>
-                        <transform m11="0.430300826256939" m12="0.902685548196378" m13="0" m21="-0.902685548196378" m22="0.430300826256939" m23="0" m31="0" m32="0" m33="1"/>
+                        <rect x="-23.7473252713393" y="-4.5" width="47.4946505426785" height="9"/>
+                        <relativesize width="0.0398385552076073" height="0.0168060196921735" centerx="0.0507205231703827" centery="0.80203853284195" posx="0.0454869784174433" posy="0.759066546647255" leftx="0.0389806127906303" lefty="0.766582427139835" rightx="0.055954067923322" righty="0.845010519036645" fixaspect="false" lockpostodata="false"/>
+                        <transform m11="0.42605599134405" m12="0.904696795749736" m13="0" m21="-0.904696795749736" m22="0.42605599134405" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                             <brush color="#000000" style="1"/>
                         </pen>
@@ -120,16 +100,16 @@
                     </label>
                     <arrow startarrowhead="false" endarrowhead="true" startarrowheadscale="12" endarrowheadscale="12" name="Arrow">
                         <position x="532.439737754683" y="-100.136853319152" z="500"/>
-                        <rect x="-22.0633314549136" y="-4.5" width="44.1266629098273" height="9"/>
-                        <relativesize width="0.0373375109899083" height="0.0168060196921735" centerx="0.895756110847978" centery="0.363214685324087" posx="0.891314433716276" posy="0.403914505772058" leftx="0.898581268443232" lefty="0.404677627815632" rightx="0.900197787979679" righty="0.322514864876117" fixaspect="false" lockpostodata="false"/>
-                        <transform m11="0.043294785688414" m12="-0.999062341164051" m13="0" m21="0.999062341164051" m22="0.043294785688414" m23="0" m31="0" m32="0" m33="1"/>
+                        <rect x="-22.3322477806273" y="-4.5" width="44.6644955612546" height="9"/>
+                        <relativesize width="0.0377926778721643" height="0.0168060196921735" centerx="0.895756110847978" centery="0.363214685324087" posx="0.891314433716276" posy="0.403914505772058" leftx="0.898581268443232" lefty="0.404677627815632" rightx="0.900197787979679" righty="0.322514864876117" fixaspect="false" lockpostodata="false"/>
+                        <transform m11="0.0427733526032429" m12="-0.999084801359263" m13="0" m21="0.999084801359263" m22="0.0427733526032429" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                             <brush color="#000000" style="1"/>
                         </pen>
                         <brush color="#000000" style="1"/>
                     </arrow>
                     <label text="Elliptical revs=1" scale="12" color="#000000" font="Sans Serif,9,-1,5,50,0,0,0,0,0" fixleft="true" name="Label">
-                        <position x="494.409180524233" y="-27.0020645596151" z="500"/>
+                        <position x="494.409180524233" y="-27.0020645596149" z="500"/>
                         <rect x="0" y="-23" width="136" height="23"/>
                         <relativesize width="0.109923328478386" height="0.04294871699111" centerx="0.920003903894681" centery="0.478055819887273" posx="0.865042239655487" posy="0.456581461391718" leftx="0.865042239655487" lefty="0.499530178382828" rightx="0.974965568133874" righty="0.499530178382828" fixaspect="true" lockpostodata="false"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>

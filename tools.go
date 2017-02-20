@@ -115,19 +115,9 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	νI := math.Atan2(Ri.At(1, 0), Ri.At(0, 0))
 	νF := math.Atan2(Rf.At(1, 0), Rf.At(0, 0))
 	dm := 1.0
-	/*var dm float64
-	switch ttype {
-	case TType1:
-		dm = 1
-	case TType2:
+	if ttype == TType2 {
 		dm = -1
-	default:
-		if νF-νI < math.Pi {
-			dm = 1
-		} else {
-			dm = -1
-		}
-	}*/
+	}
 
 	A := dm * math.Sqrt(rI*rF*(1+cosΔν))
 	if νF-νI < lambertνlambertε && floats.EqualWithinAbs(A, 0, lambertε) {
@@ -139,13 +129,6 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	// Generate a bunch of ψ
 	Δtmin := 4000 * 24 * 3600.0
 	ψBound := 0.0
-	/*
-
-		c2 = (1 - cos(sqrt(psivec)))./psivec;
-		c3 = (sqrt(psivec) - sin(sqrt(psivec)))./sqrt(psivec.^3);
-					y = r0mag + rfmag + A.*(psivec.*c3 - 1)./sqrt(c2);
-				X = sqrt(y./c2);
-				dt = (c3.*X.^3 + A*sqrt(y))/sqrt(muS);*/
 
 	for ψP := 15.; ψP < ψup; ψP += 0.1 {
 		//sψ := math.Sqrt(ψP)
@@ -161,10 +144,6 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 			ψBound = ψP
 		}
 	}
-	//ψ = 0
-	//if true {
-	//	panic("")
-	//}
 	ψlow := -4 * math.Pi
 	if ttype.Revs() > 0 {
 		// Determine whether we are going up or down bounds.
@@ -174,8 +153,6 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 		} else if ttype == TType4 {
 			ψlow = ψBound
 		}
-		//		ψlow = math.Pow(math.Pi, 2) * math.Pow(2*ttype.Revs(), 2)
-		//fmt.Printf("%s ψlow=%f ψup=%f\n", ttype, ψlow, ψup)
 	}
 	// Initial guesses for c2 and c3
 	c2 := 1 / 2.
