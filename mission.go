@@ -10,6 +10,15 @@ import (
 	"github.com/gonum/floats"
 )
 
+const (
+	// StepSize is the default step size when propagating an orbit.
+	StepSize = 10 * time.Second
+	// GaussianVOP propagator fails for circular, equatorial and hyperbolic orbits
+	GaussianVOP Propagator = iota + 1
+	// Cartesian propagator works in all cases
+	Cartesian
+)
+
 // Propagator defines the different propagation methods available.
 type Propagator uint8
 
@@ -23,15 +32,6 @@ func (p Propagator) String() string {
 		panic("unknown propagator")
 	}
 }
-
-const (
-	// StepSize is the default step size when propagating an orbit.
-	StepSize = 10 * time.Second
-	// GaussianVOP propagator fails for circular, equatorial and hyperbolic orbits
-	GaussianVOP Propagator = iota + 1
-	// Cartesian propagator works in all cases
-	Cartesian
-)
 
 var wg sync.WaitGroup
 
