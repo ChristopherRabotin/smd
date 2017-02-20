@@ -121,7 +121,7 @@ func TestLambertDavisMars2Jupiter(t *testing.T) {
 	vJupiter := Jupiter.HelioOrbit(dtArr).V()
 	Ri := mat64.NewVector(3, []float64{170145121.3, -117637192.8, -6642044.272})
 	Rf := mat64.NewVector(3, []float64{-803451694.7, 121525767.1, 17465211.78})
-	Vi, Vf, ψ, err := Lambert(Ri, Rf, dtArr.Sub(dtDep), TTypeAuto, Sun)
+	Vi, Vf, ψ, err := Lambert(Ri, Rf, dtArr.Sub(dtDep), TType2, Sun)
 	if err != nil {
 		t.Fatalf("err = %s", err)
 	}

@@ -49,7 +49,7 @@ func main() {
 			// Add to CSV
 			tof := arrivalDT.Sub(launchDT).Hours() / 24
 			if exportResults {
-				csvContent += fmt.Sprintf("%f,%f,%f,%f\n", tof, c3, vInf, math.Pow(ψ, 2))
+				csvContent += fmt.Sprintf("%f,%f,%f,%f\n", tof, c3, vInf, ψ)
 			}
 			// Check if min
 			if vInf < minVinf {
