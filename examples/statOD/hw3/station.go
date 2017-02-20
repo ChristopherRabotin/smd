@@ -5,9 +5,11 @@ WARNING: Until issue #67 is done, this is a copy from HW2.
 */
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/ChristopherRabotin/smd"
+	"github.com/gonum/matrix/mat64"
 )
 
 // Station defines a ground station.
@@ -37,6 +39,57 @@ func NewStation(name string, altitude, latΦ, longθ float64) Station {
 	R := smd.GEO2ECEF(altitude, latΦ*d2r, longθ*d2r)
 	V := cross([]float64{0, 0, smd.EarthRotationRate}, R)
 	return Station{name, R, V, latΦ * d2r, longθ * d2r, altitude}
+}
+
+// Measurement stores a measurement of a station.
+type Measurement struct {
+	ρ, ρDot float64 // Store the range and range rate
+	θgst    float64
+	State   smd.MissionState
+	Station Station
+}
+
+// StateVector returns the state vector as a mat64.Vector
+func (m Measurement) StateVector() *mat64.Vector {
+	return mat64.NewVector(2, []float64{m.ρ, m.ρDot})
+}
+
+// HTilde returns the H tilde matrix for this given measurement.
+func (m Measurement) HTilde() *mat64.Dense {
+	xS := m.Station.R[0]
+	yS := m.Station.R[1]
+	zS := m.Station.R[2]
+	xSDot := m.Station.V[0]
+	ySDot := m.Station.V[1]
+	zSDot := m.Station.V[2]
+	// Compute the R and V in ECEF
+	//R := smd.ECI2ECEF(m.State.Orbit.R(), m.θgst)
+	//V := smd.ECI2ECEF(m.State.Orbit.V(), m.θgst)
+	R := m.State.Orbit.R()
+	V := m.State.Orbit.V()
+	x := R[0]
+	y := R[1]
+	z := R[2]
+	xDot := V[0]
+	yDot := V[1]
+	zDot := V[2]
+	H := mat64.NewDense(2, 6, nil)
+	// \partial \rho / \partial {x,y,z}
+	H.Set(0, 0, (x-xS)/m.ρ)
+	H.Set(0, 1, (y-yS)/m.ρ)
+	H.Set(0, 2, (z-zS)/m.ρ)
+	// \partial \dot\rho / \partial {x,y,z}
+	H.Set(1, 0, (xDot-xSDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(x-xS))
+	H.Set(1, 1, (yDot-ySDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(y-yS))
+	H.Set(1, 2, (zDot-zSDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(z-zS))
+	H.Set(1, 3, (x-xS)/m.ρ)
+	H.Set(1, 4, (y-yS)/m.ρ)
+	H.Set(1, 5, (z-zS)/m.ρ)
+	return H
+}
+
+func (m Measurement) String() string {
+	return fmt.Sprintf("%s@%s", m.Station.name, m.State.DT)
 }
 
 // Unshamefully copied from smd/math.go

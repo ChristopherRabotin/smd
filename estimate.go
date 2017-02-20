@@ -23,7 +23,8 @@ type OrbitEstimate struct {
 
 // GetState gets the state.
 func (e *OrbitEstimate) GetState() []float64 {
-	s := make([]float64, 6)
+	rΦ, cΦ := e.Φ.Dims()
+	s := make([]float64, 6+rΦ*cΦ)
 	R, V := e.Orbit.RV()
 	s[0] = R[0]
 	s[1] = R[1]
@@ -33,7 +34,6 @@ func (e *OrbitEstimate) GetState() []float64 {
 	s[5] = V[2]
 	// Add the components of Φ
 	sIdx := 6
-	rΦ, cΦ := e.Φ.Dims()
 	for i := 0; i < rΦ; i++ {
 		for j := 0; j < cΦ; j++ {
 			s[sIdx] = e.Φ.At(i, j)
@@ -206,10 +206,5 @@ func NewOrbitEstimate(n string, o Orbit, p Perturbations, epoch time.Time, durat
 	klog := kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stdout))
 	klog = kitlog.NewContext(klog).With("estimate", n)
 	stopDT := epoch.Add(duration)
-	est := OrbitEstimate{gokalman.DenseIdentity(6), o, p, stopDT, epoch, step, klog}
-
-	if p.Jn > 2 {
-		est.logger.Log("severity", "warning", "msg", "only J2 supported")
-	}
-	return &est
+	return &OrbitEstimate{gokalman.DenseIdentity(6), o, p, stopDT, epoch, step, klog}
 }
