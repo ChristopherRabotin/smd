@@ -42,6 +42,9 @@ func main() {
 		panic("NOK in Gaussian")
 	}
 
+	// Vector of measurements
+	measurements := []smd.MissionState{}
+
 	// Define the special export functions
 	export := smd.ExportConfig{Filename: "LEO", Cosmo: false, AsCSV: true, Timestamp: false}
 	export.CSVAppendHdr = func() string {
@@ -61,6 +64,8 @@ func main() {
 		for _, st := range stations {
 			ρECEF, ρ, el, _ := st.RangeElAz(rECEF)
 			if el >= 10 {
+				// Add this to the list of measurements
+				measurements = append(measurements, state)
 				vDiffECEF := make([]float64, 3)
 				for i := 0; i < 3; i++ {
 					vDiffECEF[i] = (vECEF[i] - st.V[i]) / ρ
@@ -77,4 +82,7 @@ func main() {
 
 	// Generate the perturbed orbit
 	smd.NewMission(smd.NewEmptySC("LEO", 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, export).Propagate()
+
+	// Take care of the measurements:
+	fmt.Printf("Now have %d measurements\n", len(measurements))
 }
