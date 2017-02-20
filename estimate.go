@@ -153,6 +153,7 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 			j3fact2 := J3 / math.Pow(r, 6)
 			f7zr := 7 * math.Pow(z, 2) / math.Pow(r, 2)
 
+			// TODO: Use results from SageMath sheet
 			A30 += j3fact1*x*(5*x*z*(3-f7zr)) + j3fact2*(70*math.Pow(x, 2)*math.Pow(z, 3)/math.Pow(r, 3)+5*z*(3-f7zr))
 			A40 += j3fact1*x*(5*y*z*(3-f7zr)) + j3fact2*(70*x*y*math.Pow(z, 3)/math.Pow(r, 3)+5*z*(3-f7zr))
 			A50 += j3fact1*x*(3*math.Pow(z, 2)*(1+1/r)-3*math.Pow(r, 3)/5-f7zr*math.Pow(z, 2)) + j3fact2*x*(2*math.Pow(z, 2)*f7zr-6*math.Pow(z, 2)/math.Pow(r, 2)-9*math.Pow(r, 2)/5)
@@ -160,7 +161,7 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 			A31 += j3fact1*y*(5*x*z*(3-f7zr)) + j3fact2*(5*x*z*f7zr*2*y)
 			A41 += j3fact1*y*(5*y*z*(3-f7zr)) + j3fact2*(70*math.Pow(y, 2)*math.Pow(z, 3)/math.Pow(r, 3)+5*z*(3-f7zr))
 			A51 += j3fact1*y*(3*math.Pow(z, 2)*(1+1/r)-3*math.Pow(r, 3)/5-f7zr*math.Pow(z, 2)) + j3fact2*y*(2*math.Pow(z, 2)*f7zr-6*math.Pow(z, 2)/math.Pow(r, 2)-9*math.Pow(r, 2)/5)
-			// XXX: Doing
+
 			A32 += j3fact1*z*(5*x*z*(3-f7zr)) + j3fact2*(5*x*(3-f7zr)+70*x*math.Pow(z, 2)*rzr)
 			A42 += j3fact1*z*(5*y*z*(3-f7zr)) + j3fact2*(5*y*(3-f7zr)+70*y*math.Pow(z, 2)*rzr)
 			A52 += j3fact1*z*(3*math.Pow(z, 2)*(1+1/r)-3*math.Pow(r, 3)/5-f7zr*math.Pow(z, 2)) + j3fact2*(6*z+14*z*rzr+(6*z*r-3*math.Pow(z, 3))/math.Pow(r, 2))
