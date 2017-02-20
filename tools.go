@@ -76,7 +76,7 @@ const (
 	// TType4 is transfer of type 4 (one revolutions, long way)
 	TType4
 	lambertε         = 1e-4                   // General epsilon
-	lambertTlambertε = 1e-4                   // Time epsilon (1e-6 seconds)
+	lambertTlambertε = 1e-4                   // Time epsilon
 	lambertνlambertε = (5e-5 / 180) * math.Pi // 0.00005 degrees
 )
 
@@ -126,26 +126,25 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	}
 
 	ψup := 4 * math.Pow(math.Pi, 2) * math.Pow(ttype.Revs()+1, 2)
-	// Generate a bunch of ψ
-	Δtmin := 4000 * 24 * 3600.0
-	ψBound := 0.0
-
-	for ψP := 15.; ψP < ψup; ψP += 0.1 {
-		//sψ := math.Sqrt(ψP)
-		//ssψ, csψ := math.Sincos(sψ)
-		c2 := (1 - math.Cos(math.Sqrt(ψP))) / ψP
-		c3 := (math.Sqrt(ψP) - math.Sin(math.Sqrt(ψP))) / math.Sqrt(math.Pow(ψP, 3))
-		y := rI + rF + A*(ψP*c3-1)/math.Sqrt(c2)
-		χ := math.Sqrt(y / c2)
-		Δt := (math.Pow(χ, 3)*c3 + A*math.Sqrt(y)) / math.Sqrt(body.μ)
-		//fmt.Printf("%f\n", Δt)
-		if Δtmin > Δt {
-			Δtmin = Δt
-			ψBound = ψP
-		}
-	}
 	ψlow := -4 * math.Pi
+
 	if ttype.Revs() > 0 {
+		// Generate a bunch of ψ
+		Δtmin := 4000 * 24 * 3600.0
+		ψBound := 0.0
+
+		for ψP := 15.; ψP < ψup; ψP += 0.1 {
+			c2 := (1 - math.Cos(math.Sqrt(ψP))) / ψP
+			c3 := (math.Sqrt(ψP) - math.Sin(math.Sqrt(ψP))) / math.Sqrt(math.Pow(ψP, 3))
+			y := rI + rF + A*(ψP*c3-1)/math.Sqrt(c2)
+			χ := math.Sqrt(y / c2)
+			Δt := (math.Pow(χ, 3)*c3 + A*math.Sqrt(y)) / math.Sqrt(body.μ)
+			if Δtmin > Δt {
+				Δtmin = Δt
+				ψBound = ψP
+			}
+		}
+
 		// Determine whether we are going up or down bounds.
 		if ttype == TType3 {
 			ψlow = ψup
