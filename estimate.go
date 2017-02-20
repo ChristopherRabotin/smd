@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ChristopherRabotin/gokalman"
+	"github.com/ChristopherRabotin/ode"
 	kitlog "github.com/go-kit/kit/log"
 	"github.com/gonum/matrix/mat64"
 )
@@ -63,14 +64,20 @@ func (e *OrbitEstimate) SetState(t float64, s []float64) {
 
 // Stop returns whether we should stop the integration.
 func (e *OrbitEstimate) Stop(t float64) bool {
-	return true
+	return e.dt.After(e.StopDT)
+}
+
+// State returns the latest state
+func (e *OrbitEstimate) State() MissionState {
+	return MissionState{e.dt, Spacecraft{}, e.Orbit}
 }
 
 // Func does the math. Returns a new state.
 func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 	// XXX: Note that this function is very similar to Mission.Func for a Cartesian propagation.
 	// *BUT* we need to add in all the components of Φ, since they have to be integrated too.
-	fDot = make([]float64, 6) // init return vector
+	rΦ, cΦ := e.Φ.Dims()
+	fDot = make([]float64, 6+rΦ*cΦ) // init return vector
 	// Re-create the orbit from the state.
 	R := []float64{f[0], f[1], f[2]}
 	V := []float64{f[3], f[4], f[5]}
@@ -86,13 +93,12 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 	fDot[5] = bodyAcc * f[2]
 
 	pert := e.Perts.Perturb(*orbit, e.dt, Cartesian)
-	for i := 0; i < 7; i++ {
+	for i := 0; i < 6; i++ {
 		fDot[i] += pert[i]
 	}
 
 	// Extract the components of Φ
 	fIdx := 6
-	rΦ, cΦ := e.Φ.Dims()
 	Φ := mat64.NewDense(rΦ, cΦ, nil)
 	ΦDot := mat64.NewDense(rΦ, cΦ, nil)
 	for i := 0; i < rΦ; i++ {
@@ -197,6 +203,11 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 		}
 	}
 	return fDot
+}
+
+// Propagate starts the propagation.
+func (e *OrbitEstimate) Propagate() {
+	ode.NewRK4(0, e.step.Seconds(), e).Solve() // Blocking.
 }
 
 // NewOrbitEstimate returns a new Estimate of an orbit given the perturbations to be taken into account.

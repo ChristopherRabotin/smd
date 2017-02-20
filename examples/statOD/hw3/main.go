@@ -104,7 +104,6 @@ func main() {
 
 	// Take care of measurements.
 	var prevState smd.MissionState
-	var prevVEst gokalman.Estimate
 	var vanillaKF *gokalman.Vanilla
 	vanillaEstChan := make(chan (gokalman.Estimate), 1)
 	go processEst("vanilla", vanillaEstChan)
@@ -115,17 +114,27 @@ func main() {
 			continue
 		}
 		orbitEstimate := smd.NewOrbitEstimate(fmt.Sprintf("est-%d", i), prevState.Orbit, perts, prevState.DT, measurement.State.DT.Sub(prevState.DT), time.Second)
-		var P0 mat64.Symmetric
-		if prevVEst != nil {
-			// Initialize with the previous covariance
-			P0 = prevVEst.Covariance()
-		} else {
-			P0 = gokalman.Identity(6)
-		}
+		orbitEstimate.Propagate()
+		// Update the previous state
+		//prevState = orbitEstimate.State()
+		prevState = measurement.State
 		// Initialize the KF with the first measurement as the state.
 		// Let's re-create the state from the orbitEstimate, which also has Φ.
-		x0 := mat64.NewVector(6, orbitEstimate.GetState()[0:6])
+		x0 := mat64.NewVector(6, nil)
+		R, V := prevState.Orbit.RV()
+		for i := 0; i < 3; i++ {
+			x0.SetVec(i, R[i])
+			x0.SetVec(i+3, V[i])
+		}
 		if vanillaKF == nil {
+			// Pick some initial covariance.
+			P0 := mat64.NewSymDense(6, nil)
+			covarDistance := 10.
+			covarVelocity := 1.
+			for i := 0; i < 3; i++ {
+				P0.SetSym(i, i, covarDistance)
+				P0.SetSym(i+3, i+3, covarVelocity)
+			}
 			// Only start the KF once.
 			var err error
 			vanillaKF, _, err = gokalman.NewVanilla(x0, P0, orbitEstimate.Φ, mat64.NewDense(1, 1, nil), measurement.HTilde(), noiseKF)
@@ -143,7 +152,6 @@ func main() {
 			fmt.Printf("[ERROR] %s %s\n", measurement, err)
 			continue
 		}
-		prevVEst = vest
 		vanillaEstChan <- vest
 	}
 	close(vanillaEstChan)
