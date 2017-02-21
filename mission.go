@@ -285,10 +285,9 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 
 	case Cartesian:
 		R := []float64{f[0], f[1], f[2]}
-		r := norm(R)
 		V := []float64{f[3], f[4], f[5]}
 		tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
-		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(r, 3)
+		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
 		_, _, i, Ω, _, _, _, _, u := tmpOrbit.Elements()
 		Δv = Rot313Vec(-u, -i, -Ω, Δv)
 		// d\vec{R}/dt

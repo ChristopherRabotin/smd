@@ -110,9 +110,41 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 
 	// Compute the STM.
 	A := mat64.NewDense(6, 6, nil)
+	// Top right is Identity 3x3
 	A.Set(0, 3, 1)
 	A.Set(1, 4, 1)
 	A.Set(2, 5, 1)
+	// Bottom left is where the magix is.
+	x := R[0]
+	y := R[1]
+	z := R[2]
+	x2 := math.Pow(R[0], 2)
+	y2 := math.Pow(R[1], 2)
+	z2 := math.Pow(R[2], 2)
+	r2 := x2 + y2 + z2
+	r232 := math.Pow(r2, 3/2.)
+	r252 := math.Pow(r2, 5/2.)
+	// Add the body perturbations
+	dAxDx := 3*e.Orbit.Origin.μ*x2/r252 - e.Orbit.Origin.μ/r232
+	dAxDy := 3 * e.Orbit.Origin.μ * x * y / r252
+	dAxDz := 3 * e.Orbit.Origin.μ * x * z / r252
+	dAyDx := 3 * e.Orbit.Origin.μ * x * y / r252
+	dAyDy := 3*e.Orbit.Origin.μ*y2/r252 - e.Orbit.Origin.μ/r232
+	dAyDz := 3 * e.Orbit.Origin.μ * y * z / r252
+	dAzDx := 3 * e.Orbit.Origin.μ * x * z / r252
+	dAzDy := 3 * e.Orbit.Origin.μ * y * z / r252
+	dAzDz := 3*e.Orbit.Origin.μ*z2/r252 - e.Orbit.Origin.μ/r232
+
+	A.Set(3, 0, dAxDx)
+	A.Set(4, 0, dAyDx)
+	A.Set(5, 0, dAzDx)
+	A.Set(3, 1, dAxDy)
+	A.Set(4, 1, dAyDy)
+	A.Set(5, 1, dAzDy)
+	A.Set(3, 2, dAxDz)
+	A.Set(4, 2, dAyDz)
+	A.Set(5, 2, dAzDz)
+
 	// Jn perturbations:
 	if e.Perts.Jn > 1 {
 		// Ai0 = \frac{\partial a}{\partial x}
@@ -129,19 +161,11 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 		A52 := A.At(5, 2)
 
 		// Notation simplification
-		x := R[0]
-		y := R[1]
-		z := R[2]
-		x2 := math.Pow(R[0], 2)
-		y2 := math.Pow(R[1], 2)
-		z2 := math.Pow(R[2], 2)
 		z3 := math.Pow(R[2], 3)
 		z4 := math.Pow(R[2], 4)
-		r2 := x2 + y2 + z2
 		// Adding those fractions to avoid forgetting the trailing period which makes them floats.
 		f32 := 3 / 2.
 		f152 := 15 / 2.
-		r252 := math.Pow(r2, 5/2.)
 		r272 := math.Pow(r2, 7/2.)
 		r292 := math.Pow(r2, 9/2.)
 		// J2
@@ -190,7 +214,7 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 		A.Set(4, 2, A42)
 		A.Set(5, 2, A52)
 	}
-
+	//fmt.Printf("A=\n%+v\n", mat64.Formatted(A))
 	ΦDot.Mul(A, Φ)
 
 	// Store ΦDot in fDot
@@ -204,17 +228,20 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 	return fDot
 }
 
-// Propagate starts the propagation.
-func (e *OrbitEstimate) Propagate() {
+// PropagateUntil propagates until the given time is reached.
+func (e *OrbitEstimate) PropagateUntil(dt time.Time) {
+	e.StopDT = dt
 	ode.NewRK4(0, e.step.Seconds(), e).Solve() // Blocking.
 }
 
 // NewOrbitEstimate returns a new Estimate of an orbit given the perturbations to be taken into account.
-// The only supported state is [\vec{r} \vec{v}]^T (for now at least).
-func NewOrbitEstimate(n string, o Orbit, p Perturbations, epoch time.Time, duration, step time.Duration) *OrbitEstimate {
+// The only supported state is [\vec{r} \vec{v}]T (for now at least).
+func NewOrbitEstimate(n string, o Orbit, p Perturbations, epoch time.Time, step time.Duration) *OrbitEstimate {
 	// The initial previous STM is identity.
 	klog := kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stdout))
 	klog = kitlog.NewContext(klog).With("estimate", n)
-	stopDT := epoch.Add(duration)
-	return &OrbitEstimate{gokalman.DenseIdentity(6), o, p, stopDT, epoch, step, klog}
+	stopDT := epoch
+	// XXX: We add the step for consistency with Mission. Mission is broken: it skips the first step because the time addition
+	// happens in the Stop function instead of the SetState function, the former being called at the start of the integration.
+	return &OrbitEstimate{gokalman.DenseIdentity(6), o, p, stopDT, epoch.Add(step), step, klog}
 }

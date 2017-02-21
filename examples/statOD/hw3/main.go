@@ -95,6 +95,9 @@ func main() {
 
 	// Perturbations in the estimate
 	perts := smd.Perturbations{Jn: 2}
+	// Start estimate at an initial reference trajectory
+	leoEst := *smd.NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, smd.Earth)
+	orbitEstimate := smd.NewOrbitEstimate("estimator", leoEst, perts, startDT, time.Second)
 
 	// Initialize the KF
 	Q := mat64.NewSymDense(6, nil)
@@ -102,41 +105,40 @@ func main() {
 	noiseKF := gokalman.NewNoiseless(Q, R)
 
 	// Take care of measurements.
-	var prevState smd.MissionState
 	vanillaEstChan := make(chan (gokalman.Estimate), 1)
 	go processEst("vanilla", vanillaEstChan)
 
 	var prevX *mat64.Vector
 	var prevP *mat64.SymDense
-	//var prevΦ *mat64.Dense
 	prevΦ := gokalman.DenseIdentity(6)
 
 	for i, measurement := range measurements {
 		fmt.Printf("%d@%s\n", i, measurement.Station.name)
 		if i == 0 {
-			prevState = measurement.State
 			R, V := measurement.State.Orbit.RV()
 			prevX = mat64.NewVector(6, []float64{R[0], R[1], R[2], V[0], V[1], V[2]})
 			prevP = mat64.NewSymDense(6, nil)
-			covarDistance := 100.
-			covarVelocity := 10.
+			covarDistance := 1.
+			covarVelocity := 1.
 			for i := 0; i < 3; i++ {
 				prevP.SetSym(i, i, covarDistance)
 				prevP.SetSym(i+3, i+3, covarVelocity)
 			}
 			//continue
 		}
-		orbitEstimate := smd.NewOrbitEstimate(fmt.Sprintf("est-%d", i), prevState.Orbit, perts, prevState.DT, measurement.State.DT.Sub(prevState.DT), time.Second)
-		orbitEstimate.Propagate()
-		prevState = orbitEstimate.State()
+		// Propagate the reference trajectory until the next measurement time.
+		orbitEstimate.PropagateUntil(measurement.State.DT)
 		var prevΦInv mat64.Dense
 		if ierr := prevΦInv.Inverse(prevΦ); ierr != nil {
 			panic(fmt.Errorf("could not invert `prevΦ`: %s", ierr))
 		}
+		fmt.Printf("prevΦInv\n%+v\n", mat64.Formatted(&prevΦInv))
 		var ΦSt mat64.Dense
-		ΦSt.Mul(&prevΦInv, orbitEstimate.Φ)
+		ΦSt.Mul(orbitEstimate.Φ, &prevΦInv)
 		prevΦ = orbitEstimate.Φ
 		Φ := &ΦSt
+		fmt.Printf("Est Φ\n%+v\n", mat64.Formatted(orbitEstimate.Φ))
+		fmt.Printf("Φ\n%+v\n", mat64.Formatted(Φ))
 
 		xBar := mat64.NewVector(6, nil)
 		xBar.MulVec(Φ, prevX)
@@ -147,7 +149,12 @@ func main() {
 		PiBar := mat64.NewDense(rP, cP, nil)
 		PΦ.Mul(prevP, Φ.T())
 		PiBar.Mul(Φ, PΦ) // ΦPΦ
-		//fmt.Printf("%+v\n", mat64.Formatted(PiBar))
+		// DEBUG -- check that PiBar is invertible
+		fmt.Printf("PiBar\n%+v\n", mat64.Formatted(PiBar))
+		var PInv mat64.Dense
+		if ierr := PInv.Inverse(PiBar); ierr != nil {
+			panic(fmt.Errorf("could not invert `PiBar`: %s", ierr))
+		}
 
 		// Compute the gain.
 		var PHt, HPHt, Ki mat64.Dense
@@ -155,7 +162,7 @@ func main() {
 		PHt.Mul(PiBar, H.T())
 		HPHt.Mul(H, &PHt)
 		HPHt.Add(&HPHt, noiseKF.MeasurementMatrix())
-		fmt.Printf("%+v\n", mat64.Formatted(&HPHt))
+		fmt.Printf("HPHt\n%+v\n", mat64.Formatted(&HPHt))
 		if ierr := HPHt.Inverse(&HPHt); ierr != nil {
 			panic(fmt.Errorf("could not invert `H*P_kp1_minus*H' + R`: %s", ierr))
 		}
