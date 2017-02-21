@@ -129,12 +129,12 @@ func main() {
 		orbitEstimate := smd.NewOrbitEstimate(fmt.Sprintf("est-%d", i), prevState.Orbit, perts, prevState.DT, measurement.State.DT.Sub(prevState.DT), time.Second)
 		orbitEstimate.Propagate()
 		prevState = orbitEstimate.State()
-		var ΦInv mat64.Dense
-		if ierr := ΦInv.Inverse(orbitEstimate.Φ); ierr != nil {
-			panic(fmt.Errorf("could not invert `Φ`: %s", ierr))
+		var prevΦInv mat64.Dense
+		if ierr := prevΦInv.Inverse(prevΦ); ierr != nil {
+			panic(fmt.Errorf("could not invert `prevΦ`: %s", ierr))
 		}
 		var ΦSt mat64.Dense
-		ΦSt.Mul(prevΦ, orbitEstimate.Φ)
+		ΦSt.Mul(&prevΦInv, orbitEstimate.Φ)
 		prevΦ = orbitEstimate.Φ
 		Φ := &ΦSt
 
@@ -147,7 +147,7 @@ func main() {
 		PiBar := mat64.NewDense(rP, cP, nil)
 		PΦ.Mul(prevP, Φ.T())
 		PiBar.Mul(Φ, PΦ) // ΦPΦ
-		fmt.Printf("%+v\n", mat64.Formatted(PiBar))
+		//fmt.Printf("%+v\n", mat64.Formatted(PiBar))
 
 		// Compute the gain.
 		var PHt, HPHt, Ki mat64.Dense
@@ -155,7 +155,7 @@ func main() {
 		PHt.Mul(PiBar, H.T())
 		HPHt.Mul(H, &PHt)
 		HPHt.Add(&HPHt, noiseKF.MeasurementMatrix())
-		//fmt.Printf("%+v\n", mat64.Formatted(&HPHt))
+		fmt.Printf("%+v\n", mat64.Formatted(&HPHt))
 		if ierr := HPHt.Inverse(&HPHt); ierr != nil {
 			panic(fmt.Errorf("could not invert `H*P_kp1_minus*H' + R`: %s", ierr))
 		}
