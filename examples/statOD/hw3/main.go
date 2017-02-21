@@ -3,14 +3,12 @@ package main
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/ChristopherRabotin/gokalman"
 	"github.com/ChristopherRabotin/smd"
 	"github.com/gonum/matrix/mat64"
-	"github.com/gonum/stat/distmv"
 )
 
 const (
@@ -28,23 +26,12 @@ func main() {
 	leo := smd.NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, smd.Earth)
 
 	// Define the stations
-	st1 := NewStation("st1", 0, -35.398333, 148.981944)
-	st2 := NewStation("st2", 0, 40.427222, 355.749444)
-	st3 := NewStation("st3", 0, 35.247164, 243.205)
-	stations := []Station{st1, st2, st3}
-
-	// Noise generation
-	seed := rand.New(rand.NewSource(time.Now().UnixNano()))
-	σρ := 1e-3 // m , but all measurements in km.
-	ρNoise, ok := distmv.NewNormal([]float64{0}, mat64.NewSymDense(1, []float64{σρ}), seed)
-	if !ok {
-		panic("NOK in Gaussian")
-	}
+	σρ := 1e-3    // m , but all measurements in km.
 	σρDot := 1e-6 // mm/s , but all measurements in km/s.
-	ρDotNoise, ok := distmv.NewNormal([]float64{0}, mat64.NewSymDense(1, []float64{σρDot}), seed)
-	if !ok {
-		panic("NOK in Gaussian")
-	}
+	st1 := NewStation("st1", 0, -35.398333, 148.981944, σρ, σρDot)
+	st2 := NewStation("st2", 0, 40.427222, 355.749444, σρ, σρDot)
+	st3 := NewStation("st3", 0, 35.247164, 243.205, σρ, σρDot)
+	stations := []Station{st1, st2, st3}
 
 	// Vector of measurements
 	measurements := []Measurement{}
@@ -60,26 +47,15 @@ func main() {
 		return hdr[:len(hdr)-1] // Remove trailing comma
 	}
 	export.CSVAppend = func(state smd.MissionState) string {
-		str := fmt.Sprintf("%f,", state.DT.Sub(startDT).Seconds())
-		θgst := state.DT.Sub(startDT).Seconds() * smd.EarthRotationRate
-		// The station vectors are in ECEF, so let's convert the state to ECEF.
-		rECEF := smd.ECI2ECEF(state.Orbit.R(), θgst)
-		vECEF := smd.ECI2ECEF(state.Orbit.V(), θgst)
+		Δt := state.DT.Sub(startDT).Seconds()
+		str := fmt.Sprintf("%f,", Δt)
+		θgst := Δt * smd.EarthRotationRate
 		// Compute visibility for each station.
 		for _, st := range stations {
-			ρECEF, ρ, el, _ := st.RangeElAz(rECEF)
-			if el >= 10 {
-				vDiffECEF := make([]float64, 3)
-				for i := 0; i < 3; i++ {
-					vDiffECEF[i] = (vECEF[i] - st.V[i]) / ρ
-				}
-				// SC is visible.
-				ρDot := mat64.Dot(mat64.NewVector(3, ρECEF), mat64.NewVector(3, vDiffECEF))
-				ρNoisy := ρ + ρNoise.Rand(nil)[0]
-				ρDotNoisy := ρDot + ρDotNoise.Rand(nil)[0]
-				str += fmt.Sprintf("%f,%f,%f,%f,", ρ, ρDot, ρNoisy, ρDotNoisy)
-				// Add this to the list of measurements
-				measurements = append(measurements, Measurement{ρ, ρDot, θgst, state, st})
+			visible, measurement := st.PerformMeasurement(θgst, state)
+			if visible {
+				measurements = append(measurements, measurement)
+				str += measurement.CSV()
 			} else {
 				str += ",,,,"
 			}
@@ -94,10 +70,9 @@ func main() {
 	fmt.Printf("Now have %d measurements\n", len(measurements))
 
 	// Perturbations in the estimate
-	perts := smd.Perturbations{Jn: 2}
+	estPerts := smd.Perturbations{Jn: 2}
 	// Start estimate at an initial reference trajectory
-	leoEst := *smd.NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, smd.Earth)
-	orbitEstimate := smd.NewOrbitEstimate("estimator", leoEst, perts, startDT, time.Second)
+	var orbitEstimate *smd.OrbitEstimate
 
 	// Initialize the KF
 	Q := mat64.NewSymDense(6, nil)
@@ -110,6 +85,7 @@ func main() {
 
 	var prevX *mat64.Vector
 	var prevP *mat64.SymDense
+
 	prevΦ := gokalman.DenseIdentity(6)
 
 	for i, measurement := range measurements {
@@ -124,7 +100,9 @@ func main() {
 				prevP.SetSym(i, i, covarDistance)
 				prevP.SetSym(i+3, i+3, covarVelocity)
 			}
-			//continue
+			// Initialize the orbit estimate at this first measurement
+			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
+			continue
 		}
 		// Propagate the reference trajectory until the next measurement time.
 		orbitEstimate.PropagateUntil(measurement.State.DT)
@@ -132,13 +110,13 @@ func main() {
 		if ierr := prevΦInv.Inverse(prevΦ); ierr != nil {
 			panic(fmt.Errorf("could not invert `prevΦ`: %s", ierr))
 		}
-		fmt.Printf("prevΦInv\n%+v\n", mat64.Formatted(&prevΦInv))
+		//fmt.Printf("prevΦInv\n%+v\n", mat64.Formatted(&prevΦInv))
 		var ΦSt mat64.Dense
 		ΦSt.Mul(orbitEstimate.Φ, &prevΦInv)
 		prevΦ = orbitEstimate.Φ
 		Φ := &ΦSt
-		fmt.Printf("Est Φ\n%+v\n", mat64.Formatted(orbitEstimate.Φ))
-		fmt.Printf("Φ\n%+v\n", mat64.Formatted(Φ))
+		//fmt.Printf("Est Φ\n%+v\n", mat64.Formatted(orbitEstimate.Φ))
+		//fmt.Printf("Φ\n%+v\n", mat64.Formatted(Φ))
 
 		xBar := mat64.NewVector(6, nil)
 		xBar.MulVec(Φ, prevX)
@@ -150,11 +128,11 @@ func main() {
 		PΦ.Mul(prevP, Φ.T())
 		PiBar.Mul(Φ, PΦ) // ΦPΦ
 		// DEBUG -- check that PiBar is invertible
-		fmt.Printf("PiBar\n%+v\n", mat64.Formatted(PiBar))
+		/*fmt.Printf("PiBar\n%+v\n", mat64.Formatted(PiBar))
 		var PInv mat64.Dense
 		if ierr := PInv.Inverse(PiBar); ierr != nil {
 			panic(fmt.Errorf("could not invert `PiBar`: %s", ierr))
-		}
+		}*/
 
 		// Compute the gain.
 		var PHt, HPHt, Ki mat64.Dense
