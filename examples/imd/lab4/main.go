@@ -23,10 +23,8 @@ func main() {
 	if launchWindow != arrivalWindow {
 		panic("launch and arrival window must be of same length for now")
 	}
-
-	c3Vec := make([]float64, launchWindow+arrivalWindow)
-	vInfVec := make([]float64, launchWindow+arrivalWindow)
-	tofVec := make([]float64, launchWindow+arrivalWindow)
+	// Stores the content of the dat file.
+	dat := fmt.Sprintf("%% %s -> %s\n%%arrival departure c3 vInf tof\n", initPlanet, arrivalPlanet)
 
 	for launchDay := 0; launchDay < launchWindow; launchDay++ {
 		launchDT := initLaunch.Add(time.Duration(launchDay*24) * time.Hour)
@@ -40,13 +38,9 @@ func main() {
 			arrivalR := mat64.NewVector(3, arrivalOrbit.R())
 
 			tof := arrivalDT.Sub(launchDT)
-			tofVec[launchDay+arrivalDay] = tof.Hours() / 24
 			Vi, Vf, _, err := smd.Lambert(initR, arrivalR, tof, smd.TType2, smd.Sun)
 			if err != nil {
 				fmt.Println(err)
-				// Zero padding
-				c3Vec[launchDay+arrivalDay] = 0
-				vInfVec[launchDay+arrivalDay] = 0
 				break
 			}
 			// Compute the c3
@@ -56,43 +50,22 @@ func main() {
 			if math.IsNaN(c3) {
 				c3 = 0
 			}
-			c3Vec[launchDay+arrivalDay] = c3
 			// Compute the v_infinity at destination
 			VInfArrival := mat64.NewVector(3, nil)
 			VInfArrival.SubVec(VInfArrival, Vf)
 			vInfArrival := mat64.Norm(VInfArrival, 2)
-			vInfVec[launchDay+arrivalDay] = vInfArrival
+			dat += fmt.Sprintf("%d %d %f %f %f\n", launchDay, arrivalDay, c3, vInfArrival, tof.Hours()/24)
 		}
 	}
 
-	// Create matrix, which is fully sequential (i.e. one column).
-	// Vectors to create the .mat file, cf. https://kst-plot.kde.org/kst1/handbook/data-types.html#extract-mx .
-	for _, data := range []struct {
-		name string
-		vec  []float64
-	}{{"c3", c3Vec}, {"tof", tofVec}, {"vInf", vInfVec}} {
-		matContent := fmt.Sprintf("# %s -> %s\n", initPlanet, arrivalPlanet)
-		matContent += fmt.Sprintf("[MATRIX,%d,0,0,1,1]\n", launchWindow)
-		for launchDay := 0; launchDay < launchWindow; launchDay++ {
-			matContent += fmt.Sprintf("%d\n", launchDay)
-		}
-		for arrivalDay := 0; arrivalDay < arrivalWindow; arrivalDay++ {
-			matContent += fmt.Sprintf("%d\n", arrivalDay)
-		}
-
-		for i := 0; i < len(data.vec); i++ {
-			matContent += fmt.Sprintf("%f\n", data.vec[i])
-		}
-
-		// Write CSV file.
-		f, err := os.Create(fmt.Sprintf("./data-%s.dat", data.name))
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		if _, err := f.WriteString(matContent); err != nil {
-			panic(err)
-		}
+	// Write CSV file.
+	f, err := os.Create("./contour.dat")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(dat); err != nil {
+		panic(err)
 	}
 
 }
