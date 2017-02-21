@@ -85,6 +85,7 @@ func main() {
 
 	var prevX *mat64.Vector
 	var prevP *mat64.SymDense
+	var prevθ float64
 
 	prevΦ := gokalman.DenseIdentity(6)
 
@@ -94,12 +95,13 @@ func main() {
 			R, V := measurement.State.Orbit.RV()
 			prevX = mat64.NewVector(6, []float64{R[0], R[1], R[2], V[0], V[1], V[2]})
 			prevP = mat64.NewSymDense(6, nil)
-			covarDistance := 1.
-			covarVelocity := 1.
+			covarDistance := 100.
+			covarVelocity := 10.
 			for i := 0; i < 3; i++ {
 				prevP.SetSym(i, i, covarDistance)
 				prevP.SetSym(i+3, i+3, covarVelocity)
 			}
+			prevθ = measurement.θgst
 			// Initialize the orbit estimate at this first measurement
 			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
 			continue
@@ -126,13 +128,15 @@ func main() {
 		PΦ.Mul(prevP, Φ.T())
 		PiBar.Mul(Φ, PΦ) // ΦPΦ
 
+		θdot := measurement.θgst - prevθ
+
 		// Compute the gain.
 		var PHt, HPHt, Ki mat64.Dense
-		H := measurement.HTilde(orbitEstimate.State(), measurement.θgst)
+		H := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
 		PHt.Mul(PiBar, H.T())
 		HPHt.Mul(H, &PHt)
 		HPHt.Add(&HPHt, noiseKF.MeasurementMatrix())
-		fmt.Printf("H~\n%+v\n", mat64.Formatted(H))
+		fmt.Printf("Pibar\n%+v\n", mat64.Formatted(PiBar))
 		if ierr := HPHt.Inverse(&HPHt); ierr != nil {
 			panic(fmt.Errorf("could not invert `H*P_kp1_minus*H' + R`: %s", ierr))
 		}

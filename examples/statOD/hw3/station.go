@@ -92,10 +92,10 @@ func (m Measurement) StateVector() *mat64.Vector {
 }
 
 // HTilde returns the H tilde matrix for this given measurement.
-func (m Measurement) HTilde(state smd.MissionState, θgst float64) *mat64.Dense {
+func (m Measurement) HTilde(state smd.MissionState, θgst, θdot float64) *mat64.Dense {
 	withRotation := true
 	theta := θgst
-	thetadot := smd.EarthRotationRate
+	thetadot := θdot
 	xS := m.Station.R[0]
 	yS := m.Station.R[1]
 	zS := m.Station.R[2]
