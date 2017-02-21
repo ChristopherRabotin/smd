@@ -189,7 +189,6 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 		A.Set(3, 2, A32)
 		A.Set(4, 2, A42)
 		A.Set(5, 2, A52)
-
 	}
 
 	ΦDot.Mul(A, Φ)

@@ -62,9 +62,6 @@ func (m Measurement) HTilde() *mat64.Dense {
 	xSDot := m.Station.V[0]
 	ySDot := m.Station.V[1]
 	zSDot := m.Station.V[2]
-	// Compute the R and V in ECEF
-	//R := smd.ECI2ECEF(m.State.Orbit.R(), m.θgst)
-	//V := smd.ECI2ECEF(m.State.Orbit.V(), m.θgst)
 	R := m.State.Orbit.R()
 	V := m.State.Orbit.V()
 	x := R[0]
