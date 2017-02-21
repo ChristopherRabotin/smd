@@ -76,7 +76,7 @@ func main() {
 
 	// Initialize the KF
 	Q := mat64.NewSymDense(6, nil)
-	R := mat64.NewSymDense(2, nil)
+	R := mat64.NewSymDense(2, []float64{σρ, 0, σρDot, 0})
 	noiseKF := gokalman.NewNoiseless(Q, R)
 
 	// Take care of measurements.
@@ -115,8 +115,6 @@ func main() {
 		ΦSt.Mul(orbitEstimate.Φ, &prevΦInv)
 		prevΦ = orbitEstimate.Φ
 		Φ := &ΦSt
-		//fmt.Printf("Est Φ\n%+v\n", mat64.Formatted(orbitEstimate.Φ))
-		//fmt.Printf("Φ\n%+v\n", mat64.Formatted(Φ))
 
 		xBar := mat64.NewVector(6, nil)
 		xBar.MulVec(Φ, prevX)
@@ -127,40 +125,36 @@ func main() {
 		PiBar := mat64.NewDense(rP, cP, nil)
 		PΦ.Mul(prevP, Φ.T())
 		PiBar.Mul(Φ, PΦ) // ΦPΦ
-		// DEBUG -- check that PiBar is invertible
-		/*fmt.Printf("PiBar\n%+v\n", mat64.Formatted(PiBar))
-		var PInv mat64.Dense
-		if ierr := PInv.Inverse(PiBar); ierr != nil {
-			panic(fmt.Errorf("could not invert `PiBar`: %s", ierr))
-		}*/
 
 		// Compute the gain.
 		var PHt, HPHt, Ki mat64.Dense
-		H := measurement.HTilde()
+		H := measurement.HTilde(orbitEstimate.State(), measurement.θgst)
 		PHt.Mul(PiBar, H.T())
 		HPHt.Mul(H, &PHt)
 		HPHt.Add(&HPHt, noiseKF.MeasurementMatrix())
-		fmt.Printf("HPHt\n%+v\n", mat64.Formatted(&HPHt))
+		fmt.Printf("H~\n%+v\n", mat64.Formatted(H))
 		if ierr := HPHt.Inverse(&HPHt); ierr != nil {
 			panic(fmt.Errorf("could not invert `H*P_kp1_minus*H' + R`: %s", ierr))
 		}
 		Ki.Mul(&PHt, &HPHt)
 
 		// Measurement update
-		var innov, xHat, xHat1, xHat2 mat64.Vector
+		var y, xHat, xHat1, xHat2 mat64.Vector
 		xHat1.MulVec(H, xBar) // Predicted measurement
-		// Suppose y_i is nil for now...
-		//innov.SubVec(mat64.NewVector(2, nil), mat64.NewVector(2, nil)) // Innovation vector
-		innov.SubVec(mat64.NewVector(2, nil), &xHat1) // Innovation vector
-		//innov.SubVec(measurement.StateVector(), &xHat1) // Innovation vector
-		if rX, _ := innov.Dims(); rX == 1 {
+		vis, expMeas := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
+		if !vis {
+			panic(fmt.Errorf("station %s should see the SC but does not", measurement.Station.name))
+		}
+
+		y.SubVec(measurement.StateVector(), expMeas.StateVector()) // Innovation vector
+		if rX, _ := y.Dims(); rX == 1 {
 			// xHat1 is a scalar and mat64 won't be happy, so fiddle around to get a vector.
 			var sKi mat64.Dense
-			sKi.Scale(innov.At(0, 0), &Ki)
+			sKi.Scale(y.At(0, 0), &Ki)
 			rGain, _ := sKi.Dims()
 			xHat2.AddVec(sKi.ColView(0), mat64.NewVector(rGain, nil))
 		} else {
-			xHat2.MulVec(&Ki, &innov)
+			xHat2.MulVec(&Ki, &y)
 		}
 		xHat.AddVec(xBar, &xHat2)
 		xHat.AddVec(&xHat, noiseKF.Process(0))
@@ -186,7 +180,7 @@ func main() {
 		}
 		prevP = PiDenseSym
 
-		//vanillaEstChan <- gokalman.VanillaEstimate{state: prevX, meas: &ykHat, innovation: &innov, covar: prevP, predCovar: PiBarSym, gain: &Ki}
+		//vanillaEstChan <- gokalman.VanillaEstimate{state: prevX, meas: &ykHat, yation: &y, covar: prevP, predCovar: PiBarSym, gain: &Ki}
 
 	}
 	//close(vanillaEstChan)
