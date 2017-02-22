@@ -13,8 +13,8 @@ import (
 func main() {
 	/*** CONFIG ***/
 	initPlanet := smd.Earth
-	initLaunch := time.Date(2005, 6, 1, 0, 0, 0, 0, time.UTC)
 	arrivalPlanet := smd.Mars
+	initLaunch := time.Date(2005, 6, 1, 0, 0, 0, 0, time.UTC)
 	initArrival := time.Date(2005, 12, 1, 0, 0, 0, 0, time.UTC)
 	launchWindow := 180  //days
 	arrivalWindow := 450 //days
