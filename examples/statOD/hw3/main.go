@@ -83,8 +83,8 @@ func main() {
 
 	prevXHat := mat64.NewVector(6, nil)
 	prevP := mat64.NewSymDense(6, nil)
-	covarDistance := 100.
-	covarVelocity := 10.
+	covarDistance := 10000.
+	covarVelocity := 200.
 	for i := 0; i < 3; i++ {
 		prevP.SetSym(i, i, covarDistance)
 		prevP.SetSym(i+3, i+3, covarVelocity)
@@ -104,11 +104,6 @@ func main() {
 				prevXHat.SetVec(j, R[j])
 				prevXHat.SetVec(j+3, V[j])
 			}
-		} else {
-			R := []float64{prevXHat.At(0, 0), prevXHat.At(1, 0), prevXHat.At(2, 0)}
-			V := []float64{prevXHat.At(3, 0), prevXHat.At(4, 0), prevXHat.At(5, 0)}
-			orbit = *smd.NewOrbitFromRV(R, V, smd.Earth)
-			fmt.Printf("%s\n", orbit)
 		}
 		// Propagate the reference trajectory until the next measurement time.
 		orbitEstimate := smd.NewOrbitEstimate("estimator", orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
