@@ -126,17 +126,37 @@ func main() {
 			}
 			orbitEstimate = smd.NewOrbitEstimate("estimator", orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
 		}
-		prevΦ = orbitEstimate.Φ // Store the previous estimate of Phi before propagation. (which is Φ(t0, ti-1))
-		// Propagate the reference trajectory until the next measurement time.
-		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(t0, ti)
-
-		var invΦ mat64.Dense
-		if ierr := invΦ.Inverse(prevΦ); ierr != nil {
-			panic(fmt.Errorf("could not invert `est1.Φ`: %s", ierr))
-		}
-		// Now we have Φ(ti-1, t0)
 		var Φ mat64.Dense
-		Φ.Mul(orbitEstimate.Φ, &invΦ)
+		if useEKF {
+			// Only use actual EKF after a few iterations.
+			// Generate the new orbit estimate from the previous estimated state error.
+			if i > 1 {
+				// We just computed this for i==0.
+				// In the case of the EKF, the prevXHat is the difference between the reference trajectory and the real one.
+				// So let's recreate an orbit.
+				R, V := orbit.RV()
+				for k := 0; k < 3; k++ {
+					R[k] += prevXHat.At(k, 0)
+					V[k] += prevXHat.At(k+3, 0)
+				}
+				orbit = *smd.NewOrbitFromRV(R, V, smd.Earth)
+				orbitEstimate = smd.NewOrbitEstimate("estimator", orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
+				// Propagate the reference trajectory until the next measurement time.
+				orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti, ti-1) because we are restarting the integration.
+			}
+			Φ = *orbitEstimate.Φ
+		} else {
+			prevΦ = orbitEstimate.Φ // Store the previous estimate of Phi before propagation. (which is Φ(t0, ti-1))
+			// Propagate the reference trajectory until the next measurement time.
+			orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(t0, ti)
+
+			var invΦ mat64.Dense
+			if ierr := invΦ.Inverse(prevΦ); ierr != nil {
+				panic(fmt.Errorf("could not invert `est1.Φ`: %s", ierr))
+			}
+			// Now we have Φ(ti-1, t0)
+			Φ.Mul(orbitEstimate.Φ, &invΦ)
+		}
 		// Compute "real" measurement
 		vis, expMeas := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
 		if !vis {
@@ -160,7 +180,12 @@ func main() {
 
 		// Start the KF now
 		var kf gokalman.KalmanFilter
-		kf, _, _ = gokalman.NewVanilla(prevXHat, PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
+		if useEKF {
+			// the x0 in the extended KF is not used.
+			kf, _, _ = gokalman.NewExtended(mat64.NewVector(6, nil), PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
+		} else {
+			kf, _, _ = gokalman.NewVanilla(prevXHat, PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
+		}
 		est, err := kf.Update(&y, mat64.NewVector(2, nil))
 		if err != nil {
 			fmt.Printf("%s\n", err)
