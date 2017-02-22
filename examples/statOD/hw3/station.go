@@ -32,19 +32,19 @@ func (s Station) PerformMeasurement(θgst float64, state smd.MissionState) (bool
 	// Compute visibility for each station.
 
 	ρECEF, ρ, el, _ := s.RangeElAz(rECEF)
-	if el >= 10 {
-		vDiffECEF := make([]float64, 3)
-		for i := 0; i < 3; i++ {
-			vDiffECEF[i] = (vECEF[i] - s.V[i]) / ρ
-		}
-		// SC is visible.
-		ρDot := mat64.Dot(mat64.NewVector(3, ρECEF), mat64.NewVector(3, vDiffECEF))
-		ρNoisy := ρ + s.ρNoise.Rand(nil)[0]
-		ρDotNoisy := ρDot + s.ρDotNoise.Rand(nil)[0]
-		// Add this to the list of measurements
-		return true, Measurement{ρNoisy, ρDotNoisy, ρ, ρDot, θgst, state, s}
+	//XXX: Compute regardless of visibility for now..
+
+	vDiffECEF := make([]float64, 3)
+	for i := 0; i < 3; i++ {
+		vDiffECEF[i] = (vECEF[i] - s.V[i]) / ρ
 	}
-	return false, Measurement{}
+	// SC is visible.
+	ρDot := mat64.Dot(mat64.NewVector(3, ρECEF), mat64.NewVector(3, vDiffECEF))
+	ρNoisy := ρ + s.ρNoise.Rand(nil)[0]
+	ρDotNoisy := ρDot + s.ρDotNoise.Rand(nil)[0]
+	// Add this to the list of measurements
+	return el >= 10, Measurement{ρNoisy, ρDotNoisy, ρ, ρDot, θgst, state, s}
+
 }
 
 // RangeElAz returns the range (in the SEZ frame), elevation and azimuth (in degrees) of a given R vector in ECEF.

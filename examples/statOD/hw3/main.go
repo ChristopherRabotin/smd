@@ -81,7 +81,7 @@ func main() {
 	vanillaEstChan := make(chan (gokalman.Estimate), 1)
 	go processEst("vanilla", vanillaEstChan)
 
-	var prevXHat *mat64.Vector
+	prevXHat := mat64.NewVector(6, nil)
 	prevP := mat64.NewSymDense(6, nil)
 	covarDistance := 100.
 	covarVelocity := 10.
@@ -90,28 +90,40 @@ func main() {
 		prevP.SetSym(i+3, i+3, covarVelocity)
 	}
 	var prevθ float64
+	var orbit smd.Orbit
+
+	visibilityErrors := 0
 
 	for i, measurement := range measurements {
 		fmt.Printf("#%d (%s)\n", i, measurement.Station.name)
 
+		if i == 0 {
+			orbit = measurement.State.Orbit
+			R, V := orbit.RV()
+			for j := 0; j < 3; j++ {
+				prevXHat.SetVec(j, R[j])
+				prevXHat.SetVec(j+3, V[j])
+			}
+		} else {
+			R := []float64{prevXHat.At(0, 0), prevXHat.At(1, 0), prevXHat.At(2, 0)}
+			V := []float64{prevXHat.At(3, 0), prevXHat.At(4, 0), prevXHat.At(5, 0)}
+			orbit = *smd.NewOrbitFromRV(R, V, smd.Earth)
+			fmt.Printf("%s\n", orbit)
+		}
 		// Propagate the reference trajectory until the next measurement time.
-		// TODO: Change measurement.State.Orbit to the estimated orbit.
-		orbitEstimate := smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
+		orbitEstimate := smd.NewOrbitEstimate("estimator", orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
 		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti, ti-1)
-		// Compute innovation
+		// Compute "real" measurement
 		vis, expMeas := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
 		if !vis {
-			fmt.Printf("[error] station %s should see the SC but does not\n", measurement.Station.name)
+			fmt.Printf("[warning] station %s should see the SC but does not\n", measurement.Station.name)
+			visibilityErrors++
 		}
 		var y mat64.Vector
 		y.SubVec(measurement.StateVector(), expMeas.StateVector())
 		// Compute H tilde
 		θdot := measurement.θgst - prevθ
 		H := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
-		// DEBUG: prevXHat
-		//R, V := measurement.State.Orbit.RV()
-		//prevXHat = mat64.NewVector(6, []float64{R[0], R[1], R[2], V[0], V[1], V[2]})
-		prevXHat = mat64.NewVector(6, nil)
 		Φ := orbitEstimate.Φ
 
 		xBar := mat64.NewVector(6, nil)
@@ -129,12 +141,23 @@ func main() {
 		if err != nil {
 			fmt.Printf("%s\n", err)
 		}
+		prevXHat = vest.State()
+		// Compute residual
+		residual := mat64.NewVector(2, nil)
+		residual.MulVec(H, vest.State())
+		residual.AddScaledVec(residual, -1, &y)
+		residual.ScaleVec(-1, residual)
+		fmt.Printf("XHat = %+v\n", mat64.Formatted(prevXHat.T()))
+		fmt.Printf("residual = %+v\n", mat64.Formatted(residual.T()))
 
+		// Stream to CSV file
 		vanillaEstChan <- vest
 
 	}
 	close(vanillaEstChan)
 	wg.Wait()
+
+	fmt.Printf("\n%d visibility errors\n", visibilityErrors)
 
 }
 
@@ -144,7 +167,6 @@ func processEst(fn string, estChan chan (gokalman.Estimate)) {
 	for {
 		est, more := <-estChan
 		if !more {
-			//oe.Close()
 			ce.Close()
 			wg.Done()
 			break
