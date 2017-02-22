@@ -16,17 +16,39 @@ func main() {
 	initLaunch := time.Date(2005, 6, 1, 0, 0, 0, 0, time.UTC)
 	arrivalPlanet := smd.Mars
 	initArrival := time.Date(2005, 12, 1, 0, 0, 0, 0, time.UTC)
-	launchWindow := 500  //days
-	arrivalWindow := 500 //days
+	launchWindow := 180  //days
+	arrivalWindow := 450 //days
 	/*** END CONFIG ***/
 
-	if launchWindow != arrivalWindow {
-		panic("launch and arrival window must be of same length for now")
-	}
 	// Stores the content of the dat file.
-	dat := fmt.Sprintf("%% %s -> %s\n%%arrival departure c3 vInf tof\n", initPlanet, arrivalPlanet)
+	// No trailing new line because it's add in the for loop.
+	dat := fmt.Sprintf("%% %s -> %s\n%%arrival days as new lines, departure as new columns", initPlanet, arrivalPlanet)
+	hdls := make([]*os.File, 4)
+	for i, name := range []string{"c3", "tof", "vinf", "dates"} {
+		// Write CSV file.
+		f, err := os.Create(fmt.Sprintf("./contour-%s.dat", name))
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+		if _, err := f.WriteString(dat); err != nil {
+			panic(err)
+		}
+		hdls[i] = f
+	}
+
+	// Let's write the date information now and close that file.
+	hdls[3].WriteString(fmt.Sprintf("\n%%departure: \"%s\"\narrival: \"%s\"\n%d,%d\n%d,%d\n", initLaunch.Format("2006-Jan-02"), initArrival.Format("2006-Jan-02"), 1, launchWindow, 1, arrivalWindow))
+	hdls[3].Close()
 
 	for launchDay := 0; launchDay < launchWindow; launchDay++ {
+		// New line in files
+		for _, hdl := range hdls[:3] {
+			if _, err := hdl.WriteString("\n"); err != nil {
+				panic(err)
+			}
+		}
+
 		launchDT := initLaunch.Add(time.Duration(launchDay*24) * time.Hour)
 		fmt.Printf("Launch date %s\n", launchDT)
 		initOrbit := initPlanet.HelioOrbit(launchDT)
@@ -38,34 +60,29 @@ func main() {
 			arrivalR := mat64.NewVector(3, arrivalOrbit.R())
 
 			tof := arrivalDT.Sub(launchDT)
-			Vi, Vf, _, err := smd.Lambert(initR, arrivalR, tof, smd.TType2, smd.Sun)
+			Vi, Vf, _, err := smd.Lambert(initR, arrivalR, tof, smd.TTypeAuto, smd.Sun)
+			var c3, vInfArrival float64
 			if err != nil {
-				fmt.Println(err)
-				break
+				fmt.Printf("departure: %s\tarrival: %s\t\t%s\n", launchDT, arrivalDT, err)
+				c3 = math.NaN()
+				vInfArrival = math.NaN()
+			} else {
+				// Compute the c3
+				VInfInit := mat64.NewVector(3, nil)
+				VInfInit.SubVec(Vi, initV)
+				c3 = math.Pow(mat64.Norm(VInfInit, 2), 2)
+				if math.IsNaN(c3) {
+					c3 = 0
+				}
+				// Compute the v_infinity at destination
+				VInfArrival := mat64.NewVector(3, arrivalOrbit.V())
+				VInfArrival.SubVec(Vf, VInfArrival)
+				vInfArrival = mat64.Norm(VInfArrival, 2)
 			}
-			// Compute the c3
-			VInfInit := mat64.NewVector(3, nil)
-			VInfInit.SubVec(Vi, initV)
-			c3 := math.Pow(mat64.Norm(VInfInit, 2), 2)
-			if math.IsNaN(c3) {
-				c3 = 0
-			}
-			// Compute the v_infinity at destination
-			VInfArrival := mat64.NewVector(3, nil)
-			VInfArrival.SubVec(VInfArrival, Vf)
-			vInfArrival := mat64.Norm(VInfArrival, 2)
-			dat += fmt.Sprintf("%d %d %f %f %f\n", launchDay, arrivalDay, c3, vInfArrival, tof.Hours()/24)
+			// Store data
+			hdls[0].WriteString(fmt.Sprintf("%f,", c3))
+			hdls[1].WriteString(fmt.Sprintf("%f,", tof.Hours()/24))
+			hdls[2].WriteString(fmt.Sprintf("%f,", vInfArrival))
 		}
 	}
-
-	// Write CSV file.
-	f, err := os.Create("./contour.dat")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	if _, err := f.WriteString(dat); err != nil {
-		panic(err)
-	}
-
 }

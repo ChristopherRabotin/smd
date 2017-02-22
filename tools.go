@@ -94,9 +94,9 @@ func Hohmann(rI, vI, rF, vF float64, body CelestialObject) (vDeparture, vArrival
 
 // Lambert solves the Lambert boundary problem:
 // Given the initial and final radii and a central body, it returns the needed initial and final velocities
-// along with ψ which is the square of the difference in eccentric anomaly. Note that the direction of motion
+// along with φ which is the square of the difference in eccentric anomaly. Note that the direction of motion
 // is computed directly in this function to simplify the generation of Pork chop plots.
-func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body CelestialObject) (Vi, Vf *mat64.Vector, ψ float64, err error) {
+func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body CelestialObject) (Vi, Vf *mat64.Vector, φ float64, err error) {
 	// Initialize return variables
 	Vi = mat64.NewVector(3, nil)
 	Vf = mat64.NewVector(3, nil)
@@ -115,8 +115,16 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	νI := math.Atan2(Ri.At(1, 0), Ri.At(0, 0))
 	νF := math.Atan2(Rf.At(1, 0), Rf.At(0, 0))
 	dm := 1.0
-	if ttype == TType2 {
-		dm = -1
+	if ttype == TTypeAuto {
+		Δν := math.Atan2(Rf.At(1, 0), Rf.At(0, 0)) - math.Atan2(Ri.At(1, 0), Ri.At(0, 0))
+		if Δν > 2*math.Pi {
+			Δν -= 2 * math.Pi
+		} else if Δν < 0 {
+			Δν += 2 * math.Pi
+		}
+		if Δν > math.Pi {
+			dm = -1.0
+		} // We don't do the < math.Pi case because that's the initial value anyway.
 	}
 
 	A := dm * math.Sqrt(rI*rF*(1+cosΔν))
@@ -125,32 +133,32 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 		return
 	}
 
-	ψup := 4 * math.Pow(math.Pi, 2) * math.Pow(ttype.Revs()+1, 2)
-	ψlow := -4 * math.Pi
+	φup := 4 * math.Pow(math.Pi, 2) * math.Pow(ttype.Revs()+1, 2)
+	φlow := -4 * math.Pi
 
 	if ttype.Revs() > 0 {
-		// Generate a bunch of ψ
+		// Generate a bunch of φ
 		Δtmin := 4000 * 24 * 3600.0
-		ψBound := 0.0
+		φBound := 0.0
 
-		for ψP := 15.; ψP < ψup; ψP += 0.1 {
-			c2 := (1 - math.Cos(math.Sqrt(ψP))) / ψP
-			c3 := (math.Sqrt(ψP) - math.Sin(math.Sqrt(ψP))) / math.Sqrt(math.Pow(ψP, 3))
-			y := rI + rF + A*(ψP*c3-1)/math.Sqrt(c2)
+		for φP := 15.; φP < φup; φP += 0.1 {
+			c2 := (1 - math.Cos(math.Sqrt(φP))) / φP
+			c3 := (math.Sqrt(φP) - math.Sin(math.Sqrt(φP))) / math.Sqrt(math.Pow(φP, 3))
+			y := rI + rF + A*(φP*c3-1)/math.Sqrt(c2)
 			χ := math.Sqrt(y / c2)
 			Δt := (math.Pow(χ, 3)*c3 + A*math.Sqrt(y)) / math.Sqrt(body.μ)
 			if Δtmin > Δt {
 				Δtmin = Δt
-				ψBound = ψP
+				φBound = φP
 			}
 		}
 
 		// Determine whether we are going up or down bounds.
 		if ttype == TType3 {
-			ψlow = ψup
-			ψup = ψBound
+			φlow = φup
+			φup = φBound
 		} else if ttype == TType4 {
-			ψlow = ψBound
+			φlow = φBound
 		}
 	}
 	// Initial guesses for c2 and c3
@@ -164,14 +172,14 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 			return
 		}
 		iteration++
-		y = rI + rF + A*(ψ*c3-1)/math.Sqrt(c2)
+		y = rI + rF + A*(φ*c3-1)/math.Sqrt(c2)
 		if A > 0 && y < 0 {
 			tmpIt := 0
 			for y < 0 {
-				ψ += 0.1
-				y = rI + rF + A*(ψ*c3-1)/math.Sqrt(c2)
-				if tmpIt > 1000 {
-					err = errors.New("did not converge after 1000 attempts to increase ψ")
+				φ += 0.1
+				y = rI + rF + A*(φ*c3-1)/math.Sqrt(c2)
+				if tmpIt > 10000 {
+					err = errors.New("did not converge after 10000 attempts to increase φ")
 					return
 				}
 				tmpIt++
@@ -180,28 +188,28 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 		χ := math.Sqrt(y / c2)
 		Δt = (math.Pow(χ, 3)*c3 + A*math.Sqrt(y)) / math.Sqrt(body.μ)
 		if ttype != TType3 {
-			if Δt < Δt0Sec {
-				ψlow = ψ
+			if Δt <= Δt0Sec {
+				φlow = φ
 			} else {
-				ψup = ψ
+				φup = φ
 			}
 		} else {
 			if Δt >= Δt0Sec {
-				ψlow = ψ
+				φlow = φ
 			} else {
-				ψup = ψ
+				φup = φ
 			}
 		}
-		ψ = (ψup + ψlow) / 2
-		if ψ > lambertε {
-			sψ := math.Sqrt(ψ)
-			ssψ, csψ := math.Sincos(sψ)
-			c2 = (1 - csψ) / ψ
-			c3 = (sψ - ssψ) / math.Sqrt(math.Pow(ψ, 3))
-		} else if ψ < -lambertε {
-			sψ := math.Sqrt(-ψ)
-			c2 = (1 - math.Cosh(sψ)) / ψ
-			c3 = (math.Sinh(sψ) - sψ) / math.Sqrt(math.Pow(-ψ, 3))
+		φ = (φup + φlow) / 2
+		if φ > lambertε {
+			sφ := math.Sqrt(φ)
+			ssφ, csφ := math.Sincos(sφ)
+			c2 = (1 - csφ) / φ
+			c3 = (sφ - ssφ) / math.Sqrt(math.Pow(φ, 3))
+		} else if φ < -lambertε {
+			sφ := math.Sqrt(-φ)
+			c2 = (1 - math.Cosh(sφ)) / φ
+			c3 = (math.Sinh(sφ) - sφ) / math.Sqrt(math.Pow(-φ, 3))
 		} else {
 			c2 = 1 / 2.
 			c3 = 1 / 6.
@@ -209,7 +217,7 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	}
 	f := 1 - y/rI
 	gDot := 1 - y/rF
-	g := (A * math.Sqrt(y/body.GM()))
+	g := (A * math.Sqrt(y/body.μ))
 	// Compute velocities
 	Rf2 := mat64.NewVector(3, nil)
 	Vi.AddScaledVec(Rf, -f, Ri)
