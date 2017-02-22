@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"math"
+	"os"
 	"sync"
 	"time"
 
@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	r2d = 180 / math.Pi
-	d2r = 1 / r2d
+	useEKF = false
 )
 
 var wg sync.WaitGroup
@@ -71,6 +70,7 @@ func main() {
 	// Let's mark those as the truth so we can plot that.
 	stateTruth := make([]*mat64.Vector, len(measurements))
 	truthMeas := make([]*mat64.Vector, len(measurements))
+	residuals := make([]*mat64.Vector, len(measurements))
 	for i, measurement := range measurements {
 		orbit := make([]float64, 6)
 		R, V := measurement.State.Orbit.RV()
@@ -92,13 +92,17 @@ func main() {
 	noiseKF := gokalman.NewNoiseless(Q, R)
 
 	// Take care of measurements.
-	vanillaEstChan := make(chan (gokalman.Estimate), 1)
-	go processEst("vanilla", vanillaEstChan)
+	estChan := make(chan (gokalman.Estimate), 1)
+	if useEKF {
+		go processEst("extended", estChan)
+	} else {
+		go processEst("vanilla", estChan)
+	}
 
 	prevXHat := mat64.NewVector(6, nil)
 	prevP := mat64.NewSymDense(6, nil)
-	covarDistance := 1000.
-	covarVelocity := 200.
+	covarDistance := 10.
+	covarVelocity := 2.
 	for i := 0; i < 3; i++ {
 		prevP.SetSym(i, i, covarDistance)
 		prevP.SetSym(i+3, i+3, covarVelocity)
@@ -155,29 +159,42 @@ func main() {
 		PiBarSym, _ := gokalman.AsSymDense(PiBar)
 
 		// Start the KF now
-		vkf, _, _ := gokalman.NewVanilla(prevXHat, PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
-		vest, err := vkf.Update(&y, mat64.NewVector(2, nil))
+		var kf gokalman.KalmanFilter
+		kf, _, _ = gokalman.NewVanilla(prevXHat, PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
+		est, err := kf.Update(&y, mat64.NewVector(2, nil))
 		if err != nil {
 			fmt.Printf("%s\n", err)
 		}
-		prevXHat = vest.State()
-		prevP = vest.Covariance().(*mat64.SymDense)
+		prevXHat = est.State()
+		prevP = est.Covariance().(*mat64.SymDense)
 		// Compute residual
 		residual := mat64.NewVector(2, nil)
-		residual.MulVec(H, vest.State())
+		residual.MulVec(H, est.State())
 		residual.AddScaledVec(residual, -1, &y)
 		residual.ScaleVec(-1, residual)
-		fmt.Printf("residual = %+v\n", mat64.Formatted(residual.T()))
+		residuals[i] = residual
 
 		// Stream to CSV file
-		vanillaEstChan <- truth.Error(i, vest)
+		estChan <- truth.Error(i, est)
 
 	}
-	close(vanillaEstChan)
+	close(estChan)
 	wg.Wait()
 
 	fmt.Printf("\n%d visibility errors\n", visibilityErrors)
-
+	// Write the residuals to a CSV file
+	f, err := os.Create("./vkf-residuals.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	f.WriteString("rho,rhoDot\n")
+	for _, residual := range residuals {
+		csv := fmt.Sprintf("%f,%f\n", residual.At(0, 0), residual.At(1, 0))
+		if _, err := f.WriteString(csv); err != nil {
+			panic(err)
+		}
+	}
 }
 
 func processEst(fn string, estChan chan (gokalman.Estimate)) {

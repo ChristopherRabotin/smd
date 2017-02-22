@@ -15,6 +15,11 @@ import (
 	"github.com/gonum/stat/distmv"
 )
 
+const (
+	r2d = 180 / math.Pi
+	d2r = 1 / r2d
+)
+
 // Station defines a ground station.
 type Station struct {
 	name              string
