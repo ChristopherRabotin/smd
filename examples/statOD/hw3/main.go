@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	useEKF = false
+	useEKF = true
 )
 
 var wg sync.WaitGroup
@@ -130,16 +130,17 @@ func main() {
 		if useEKF {
 			// Only use actual EKF after a few iterations.
 			// Generate the new orbit estimate from the previous estimated state error.
-			if i > 1 {
+			if i > 10 {
 				// We just computed this for i==0.
 				// In the case of the EKF, the prevXHat is the difference between the reference trajectory and the real one.
 				// So let's recreate an orbit.
 				R, V := orbit.RV()
 				for k := 0; k < 3; k++ {
-					R[k] += prevXHat.At(k, 0)
-					V[k] += prevXHat.At(k+3, 0)
+					R[k] = prevXHat.At(k, 0)
+					V[k] = prevXHat.At(k+3, 0)
 				}
 				orbit = *smd.NewOrbitFromRV(R, V, smd.Earth)
+				fmt.Printf("%s\n", orbit)
 				orbitEstimate = smd.NewOrbitEstimate("estimator", orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
 				// Propagate the reference trajectory until the next measurement time.
 				orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti, ti-1) because we are restarting the integration.
@@ -208,7 +209,11 @@ func main() {
 
 	fmt.Printf("\n%d visibility errors\n", visibilityErrors)
 	// Write the residuals to a CSV file
-	f, err := os.Create("./vkf-residuals.csv")
+	fname := "ekf"
+	if !useEKF {
+		fname = "vkf"
+	}
+	f, err := os.Create(fmt.Sprintf("./%s-residuals.csv", fname))
 	if err != nil {
 		panic(err)
 	}
