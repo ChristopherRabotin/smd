@@ -71,8 +71,6 @@ func main() {
 
 	// Perturbations in the estimate
 	estPerts := smd.Perturbations{Jn: 2}
-	// Start estimate at an initial reference trajectory
-	var orbitEstimate *smd.OrbitEstimate
 
 	// Initialize the KF
 	Q := mat64.NewSymDense(6, nil)
@@ -84,107 +82,59 @@ func main() {
 	go processEst("vanilla", vanillaEstChan)
 
 	var prevXHat *mat64.Vector
-	var prevP *mat64.SymDense
+	prevP := mat64.NewSymDense(6, nil)
+	covarDistance := 100.
+	covarVelocity := 10.
+	for i := 0; i < 3; i++ {
+		prevP.SetSym(i, i, covarDistance)
+		prevP.SetSym(i+3, i+3, covarVelocity)
+	}
 	var prevθ float64
 
-	prevΦ := gokalman.DenseIdentity(6)
-
 	for i, measurement := range measurements {
-		fmt.Printf("%d@%s\n", i, measurement.Station.name)
-		if i == 0 {
-			R, V := measurement.State.Orbit.RV()
-			prevXHat = mat64.NewVector(6, []float64{R[0], R[1], R[2], V[0], V[1], V[2]})
-			//prevXHat = mat64.NewVector(6, nil)
-			prevP = mat64.NewSymDense(6, nil)
-			covarDistance := 100.
-			covarVelocity := 10.
-			for i := 0; i < 3; i++ {
-				prevP.SetSym(i, i, covarDistance)
-				prevP.SetSym(i+3, i+3, covarVelocity)
-			}
-			prevθ = measurement.θgst
-			// Initialize the orbit estimate at this first measurement
-			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
-			continue
-		}
-		// DEBUG
-		R, V := measurement.State.Orbit.RV()
-		prevXHat = mat64.NewVector(6, []float64{R[0], R[1], R[2], V[0], V[1], V[2]})
-		// END DEBUG
+		fmt.Printf("#%d (%s)\n", i, measurement.Station.name)
+
 		// Propagate the reference trajectory until the next measurement time.
-		orbitEstimate.PropagateUntil(measurement.State.DT)
-		var prevΦInv mat64.Dense
-		if ierr := prevΦInv.Inverse(prevΦ); ierr != nil {
-			panic(fmt.Errorf("could not invert `prevΦ`: %s", ierr))
+		// TODO: Change measurement.State.Orbit to the estimated orbit.
+		orbitEstimate := smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
+		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti, ti-1)
+		// Compute innovation
+		vis, expMeas := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
+		if !vis {
+			fmt.Printf("[error] station %s should see the SC but does not\n", measurement.Station.name)
 		}
-		//fmt.Printf("prevΦInv\n%+v\n", mat64.Formatted(&prevΦInv))
-		var ΦSt mat64.Dense
-		ΦSt.Mul(orbitEstimate.Φ, &prevΦInv)
-		prevΦ = orbitEstimate.Φ
-		Φ := &ΦSt
+		var y mat64.Vector
+		y.SubVec(measurement.StateVector(), expMeas.StateVector())
+		// Compute H tilde
+		θdot := measurement.θgst - prevθ
+		H := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
+		// DEBUG: prevXHat
+		//R, V := measurement.State.Orbit.RV()
+		//prevXHat = mat64.NewVector(6, []float64{R[0], R[1], R[2], V[0], V[1], V[2]})
+		prevXHat = mat64.NewVector(6, nil)
+		Φ := orbitEstimate.Φ
 
 		xBar := mat64.NewVector(6, nil)
 		xBar.MulVec(Φ, prevXHat)
 
-		rP, cP := prevP.Dims()
-		_, cΦ := Φ.Dims()
-		PΦ := mat64.NewDense(rP, cΦ, nil)
-		PiBar := mat64.NewDense(rP, cP, nil)
+		PΦ := mat64.NewDense(6, 6, nil)
+		PiBar := mat64.NewDense(6, 6, nil)
 		PΦ.Mul(prevP, Φ.T())
 		PiBar.Mul(Φ, PΦ) // ΦPΦ
+		PiBarSym, _ := gokalman.AsSymDense(PiBar)
 
-		// Compute innovation
-		vis, expMeas := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
-		if !vis {
-			panic(fmt.Errorf("station %s should see the SC but does not", measurement.Station.name))
-		}
-		var y mat64.Vector
-		y.SubVec(measurement.StateVector(), expMeas.StateVector())
-
-		// Compute H tilde
-		θdot := measurement.θgst - prevθ
-		H := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
-
-		// Compute the gain.
-		var PHt, HPHt, Ki mat64.Dense
-		PHt.Mul(PiBar, H.T())
-		HPHt.Mul(H, &PHt)
-		HPHt.Add(&HPHt, noiseKF.MeasurementMatrix())
-		fmt.Printf("Pibar\n%+v\n", mat64.Formatted(PiBar))
-		if ierr := HPHt.Inverse(&HPHt); ierr != nil {
-			panic(fmt.Errorf("could not invert `H*P_kp1_minus*H' + R`: %s", ierr))
-		}
-		Ki.Mul(&PHt, &HPHt)
-
-		// Measurement update
-		var xHat, xHat1, xHat2 mat64.Vector
-		xHat1.MulVec(H, xBar) // Predicted measurement
-		xHat1.SubVec(&y, &xHat1)
-		xHat2.MulVec(&Ki, &xHat1)
-		xHat.AddVec(xBar, &xHat2)
-		prevXHat = &xHat
-
-		var PiDense, KiH, KiR, KiRKi mat64.Dense
-		KiH.Mul(&Ki, H)
-		n, _ := KiH.Dims()
-		KiH.Sub(gokalman.Identity(n), &KiH)
-		PiDense.Mul(&KiH, PiBar)
-		//PiDense.Mul(&PiDense1, KiH.T())
-		KiR.Mul(&Ki, noiseKF.MeasurementMatrix())
-		KiRKi.Mul(&KiR, Ki.T())
-		PiDense.Add(&PiDense, &KiRKi)
-
-		PiDenseSym, err := gokalman.AsSymDense(&PiDense)
+		// Start the KF now
+		vkf, _, _ := gokalman.NewVanilla(prevXHat, PiBarSym, Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
+		vest, err := vkf.Update(&y, mat64.NewVector(2, nil))
 		if err != nil {
-			panic(err)
+			fmt.Printf("%s\n", err)
 		}
-		prevP = PiDenseSym
 
-		//vanillaEstChan <- gokalman.VanillaEstimate{state: prevXHat, meas: &ykHat, yation: &y, covar: prevP, predCovar: PiBarSym, gain: &Ki}
+		vanillaEstChan <- vest
 
 	}
-	//close(vanillaEstChan)
-	//wg.Wait()
+	close(vanillaEstChan)
+	wg.Wait()
 
 }
 
