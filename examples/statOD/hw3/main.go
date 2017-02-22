@@ -68,13 +68,27 @@ func main() {
 
 	// Take care of the measurements:
 	fmt.Printf("Now have %d measurements\n", len(measurements))
+	// Let's mark those as the truth so we can plot that.
+	stateTruth := make([]*mat64.Vector, len(measurements))
+	truthMeas := make([]*mat64.Vector, len(measurements))
+	for i, measurement := range measurements {
+		orbit := make([]float64, 6)
+		R, V := measurement.State.Orbit.RV()
+		for k := 0; k < 3; k++ {
+			orbit[k] = R[k]
+			orbit[k+3] = V[k]
+		}
+		stateTruth[i] = mat64.NewVector(6, orbit)
+		truthMeas[i] = measurement.StateVector()
+	}
+	truth := gokalman.NewBatchGroundTruth(stateTruth, truthMeas)
 
 	// Perturbations in the estimate
 	estPerts := smd.Perturbations{Jn: 2}
 
 	// Initialize the KF
 	Q := mat64.NewSymDense(6, nil)
-	R := mat64.NewSymDense(2, []float64{σρ, 0, σρDot, 0})
+	R := mat64.NewSymDense(2, []float64{σρ, 0, 0, σρDot})
 	noiseKF := gokalman.NewNoiseless(Q, R)
 
 	// Take care of measurements.
@@ -83,16 +97,18 @@ func main() {
 
 	prevXHat := mat64.NewVector(6, nil)
 	prevP := mat64.NewSymDense(6, nil)
-	covarDistance := 10000.
+	covarDistance := 1000.
 	covarVelocity := 200.
 	for i := 0; i < 3; i++ {
 		prevP.SetSym(i, i, covarDistance)
 		prevP.SetSym(i+3, i+3, covarVelocity)
 	}
 	var prevθ float64
+	var prevΦ *mat64.Dense
 	var orbit smd.Orbit
 
 	visibilityErrors := 0
+	var orbitEstimate *smd.OrbitEstimate
 
 	for i, measurement := range measurements {
 		fmt.Printf("#%d (%s)\n", i, measurement.Station.name)
@@ -104,10 +120,19 @@ func main() {
 				prevXHat.SetVec(j, R[j])
 				prevXHat.SetVec(j+3, V[j])
 			}
+			orbitEstimate = smd.NewOrbitEstimate("estimator", orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
 		}
+		prevΦ = orbitEstimate.Φ // Store the previous estimate of Phi before propagation. (which is Φ(t0, ti-1))
 		// Propagate the reference trajectory until the next measurement time.
-		orbitEstimate := smd.NewOrbitEstimate("estimator", orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
-		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti, ti-1)
+		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(t0, ti)
+
+		var invΦ mat64.Dense
+		if ierr := invΦ.Inverse(prevΦ); ierr != nil {
+			panic(fmt.Errorf("could not invert `est1.Φ`: %s", ierr))
+		}
+		// Now we have Φ(ti-1, t0)
+		var Φ mat64.Dense
+		Φ.Mul(orbitEstimate.Φ, &invΦ)
 		// Compute "real" measurement
 		vis, expMeas := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
 		if !vis {
@@ -119,34 +144,33 @@ func main() {
 		// Compute H tilde
 		θdot := measurement.θgst - prevθ
 		H := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
-		Φ := orbitEstimate.Φ
 
 		xBar := mat64.NewVector(6, nil)
-		xBar.MulVec(Φ, prevXHat)
+		xBar.MulVec(&Φ, prevXHat)
 
 		PΦ := mat64.NewDense(6, 6, nil)
 		PiBar := mat64.NewDense(6, 6, nil)
 		PΦ.Mul(prevP, Φ.T())
-		PiBar.Mul(Φ, PΦ) // ΦPΦ
+		PiBar.Mul(&Φ, PΦ) // ΦPΦ
 		PiBarSym, _ := gokalman.AsSymDense(PiBar)
 
 		// Start the KF now
-		vkf, _, _ := gokalman.NewVanilla(prevXHat, PiBarSym, Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
+		vkf, _, _ := gokalman.NewVanilla(prevXHat, PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
 		vest, err := vkf.Update(&y, mat64.NewVector(2, nil))
 		if err != nil {
 			fmt.Printf("%s\n", err)
 		}
 		prevXHat = vest.State()
+		prevP = vest.Covariance().(*mat64.SymDense)
 		// Compute residual
 		residual := mat64.NewVector(2, nil)
 		residual.MulVec(H, vest.State())
 		residual.AddScaledVec(residual, -1, &y)
 		residual.ScaleVec(-1, residual)
-		fmt.Printf("XHat = %+v\n", mat64.Formatted(prevXHat.T()))
 		fmt.Printf("residual = %+v\n", mat64.Formatted(residual.T()))
 
 		// Stream to CSV file
-		vanillaEstChan <- vest
+		vanillaEstChan <- truth.Error(i, vest)
 
 	}
 	close(vanillaEstChan)
@@ -158,7 +182,7 @@ func main() {
 
 func processEst(fn string, estChan chan (gokalman.Estimate)) {
 	wg.Add(1)
-	ce, _ := gokalman.NewCSVExporter([]string{"x", "y", "z", "xDot", "yDot", "zDot"}, ".", fn+".csv")
+	ce, _ := gokalman.NewCustomCSVExporter([]string{"x", "y", "z", "xDot", "yDot", "zDot"}, ".", fn+".csv", 3)
 	for {
 		est, more := <-estChan
 		if !more {
