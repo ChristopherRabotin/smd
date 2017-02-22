@@ -1,4 +1,4 @@
-format long % Yay Matlab...
+function [] = pcpplots(initLaunch, initArrival)
 % Load data file
 C3 = load('../contour-c3.dat');
 vinf = load('../contour-vinf.dat');
@@ -27,6 +27,7 @@ clabel(cs2,h2);
 clabel(cs3,h3);
 
 legend('C_3 km^2/s^2','V_{\infty} @ Mars, km/s','TOF, days')
-xlabel(['Departure days past ' dates(1, 1)])
-ylabel(['Arrival days past ' dates(2, 1)])
+xlabel(['Departure days past ' initLaunch])
+ylabel(['Arrival days past ' initArrival])
 
+end
