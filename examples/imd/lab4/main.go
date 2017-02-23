@@ -14,10 +14,12 @@ func main() {
 	/*** CONFIG ***/
 	initPlanet := smd.Earth
 	arrivalPlanet := smd.Mars
-	initLaunch := time.Date(2005, 6, 1, 0, 0, 0, 0, time.UTC)
-	initArrival := time.Date(2005, 12, 1, 0, 0, 0, 0, time.UTC)
-	launchWindow := 180  //days
-	arrivalWindow := 450 //days
+	initLaunch := time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)
+	initArrival := time.Date(2016, 04, 30, 0, 0, 0, 0, time.UTC)
+	maxLaunch := time.Date(2016, 6, 30, 0, 0, 0, 0, time.UTC)
+	maxArrival := time.Date(2017, 2, 5, 0, 0, 0, 0, time.UTC)
+	launchWindow := int(maxLaunch.Sub(initLaunch).Hours() / 24)    //days
+	arrivalWindow := int(maxArrival.Sub(initArrival).Hours() / 24) //days
 	/*** END CONFIG ***/
 
 	// Stores the content of the dat file.
@@ -38,7 +40,7 @@ func main() {
 	}
 
 	// Let's write the date information now and close that file.
-	hdls[3].WriteString(fmt.Sprintf("\n%%departure: \"%s\"\narrival: \"%s\"\n%d,%d\n%d,%d\n", initLaunch.Format("2006-Jan-02"), initArrival.Format("2006-Jan-02"), 1, launchWindow, 1, arrivalWindow))
+	hdls[3].WriteString(fmt.Sprintf("\n%%departure: \"%s\"\n%%arrival: \"%s\"\n%d,%d\n%d,%d\n", initLaunch.Format("2006-Jan-02"), initArrival.Format("2006-Jan-02"), 1, launchWindow, 1, arrivalWindow))
 	hdls[3].Close()
 
 	for launchDay := 0; launchDay < launchWindow; launchDay++ {
