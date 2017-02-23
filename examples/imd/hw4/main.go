@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"time"
 
 	"github.com/ChristopherRabotin/smd"
+	"github.com/gonum/matrix/mat64"
 )
 
 const (
@@ -33,7 +35,7 @@ func main() {
 		f1b := initCSV("turnangle1b")
 		f1b.WriteString("rVenus (km), rP (km), turning angle (degrees), energy (pre), energy (trailing), energy (leading)\n")
 		for rP := 0.; rP < 200000; rP++ {
-			ψ := smd.GATurnAngle(vInf, rP, smd.Venus) * r2d // in degrees
+			ψ := smd.GATurnAngle(vInf, rP, smd.Venus) // in radians
 			// Build vectors
 			vInfVecLeading := smd.MxV33(smd.R3(-ψ), vInfVec)
 			vInfVecTrailing := smd.MxV33(smd.R3(ψ), vInfVec)
@@ -45,7 +47,7 @@ func main() {
 			}
 			ξleading := smd.NewOrbitFromRV(rVenus, vVecLeading, smd.Sun).Energyξ()
 			ξtrailing := smd.NewOrbitFromRV(rVenus, vVecTrailing, smd.Sun).Energyξ()
-			f1b.WriteString(fmt.Sprintf("%.0f,%.0f,%.3f,%.6f,%.6f,%.6f,\n", smd.Venus.Radius, rP, ψ, ξpre, ξtrailing, ξleading))
+			f1b.WriteString(fmt.Sprintf("%.0f,%.0f,%.3f,%.6f,%.6f,%.6f,\n", smd.Venus.Radius, rP, ψ*r2d, ξpre, ξtrailing, ξleading))
 		}
 		f1b.Close()
 	} else if questionNumber == 2 {
@@ -54,7 +56,39 @@ func main() {
 		ψ, rP, bT, bR, B, θ := smd.GAFromVinf(vInfInVec, vInfOutVec, smd.Earth)
 		fmt.Printf("ψ=%.3f deg\trP=%.3f km\tbT=%.3f km\tbR=%.3f km\tB=%.3f km\tθ=%.3f deg\n", ψ*r2d, rP, bT, bR, B, θ*r2d)
 	} else {
-		fmt.Printf("TODO")
+		dtLaunch := time.Date(1989, 10, 8, 0, 0, 0, 0, time.UTC)
+		dtVenusFB := time.Date(1990, 2, 10, 0, 0, 0, 0, time.UTC)
+		dtEarthFB1 := time.Date(1990, 12, 10, 0, 0, 0, 0, time.UTC)
+		/*dtEarthFB2 := time.Date(1992, 12, 9, 0, 0, 0, 0, time.UTC)
+		dtJupiter := time.Date(1996, 3, 21, 0, 0, 0, 0, time.UTC)*/
+
+		launchR := mat64.NewVector(3, smd.Earth.HelioOrbit(dtLaunch).R()) // Position of Earth at Launch
+		venusRf, venusVf := smd.Venus.HelioOrbit(dtVenusFB).RV()          // Position of Venus at flyby
+		venusR := mat64.NewVector(3, venusRf)
+		venusV := mat64.NewVector(3, venusVf)
+		earthRFB1 := mat64.NewVector(3, smd.Earth.HelioOrbit(dtEarthFB1).R()) // Position of Earth at first flyby
+
+		_, VfEarth2Venus, _, err := smd.Lambert(launchR, venusR, dtVenusFB.Sub(dtLaunch), smd.TTypeAuto, smd.Sun)
+		if err != nil {
+			panic(err)
+		}
+		ViVenus2Earth, _, _, err := smd.Lambert(venusR, earthRFB1, dtEarthFB1.Sub(dtVenusFB), smd.TTypeAuto, smd.Sun)
+		if err != nil {
+			panic(err)
+		}
+		// Compute the v infinities
+		var vInfInVec, vInfOutVec mat64.Vector
+		vInfInVec.SubVec(venusV, VfEarth2Venus)
+		vInfOutVec.SubVec(venusV, ViVenus2Earth)
+		// Extract the data
+		vInfIn := make([]float64, 3)
+		vInfOut := make([]float64, 3)
+		for i := 0; i < 3; i++ {
+			vInfIn[i] = vInfInVec.At(i, 0)
+			vInfOut[i] = vInfOutVec.At(i, 0)
+		}
+		ψ, rP, bT, bR, B, θ := smd.GAFromVinf(vInfIn, vInfOut, smd.Venus)
+		fmt.Printf("ψ=%.3f deg\trP=%.3f km\tbT=%.3f km\tbR=%.3f km\tB=%.3f km\tθ=%.3f deg\n", ψ*r2d, rP, bT, bR, B, θ*r2d)
 	}
 }
 
