@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	questionNumber = 2
+	questionNumber = 3
 	r2d            = 180 / math.Pi
 	d2r            = 1 / r2d
 )
@@ -49,7 +49,10 @@ func main() {
 		}
 		f1b.Close()
 	} else if questionNumber == 2 {
-
+		vInfInVec := []float64{-5.19425, 5.19424, -5.19425}
+		vInfOutVec := []float64{-8.58481, 1.17067, -2.42304}
+		ψ, rP, bT, bR, B, θ := smd.GAFromVinf(vInfInVec, vInfOutVec, smd.Earth)
+		fmt.Printf("ψ=%.3f deg\trP=%.3f km\tbT=%.3f km\tbR=%.3f km\tB=%.3f km\tθ=%.3f deg\n", ψ*r2d, rP, bT, bR, B, θ*r2d)
 	} else {
 		fmt.Printf("TODO")
 	}
