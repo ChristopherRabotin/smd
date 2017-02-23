@@ -115,7 +115,9 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	νI := math.Atan2(Ri.At(1, 0), Ri.At(0, 0))
 	νF := math.Atan2(Rf.At(1, 0), Rf.At(0, 0))
 	dm := 1.0
-	if ttype == TTypeAuto {
+	if ttype == TType2 {
+		dm = -1.0
+	} else if ttype == TTypeAuto {
 		Δν := math.Atan2(Rf.At(1, 0), Rf.At(0, 0)) - math.Atan2(Ri.At(1, 0), Ri.At(0, 0))
 		if Δν > 2*math.Pi {
 			Δν -= 2 * math.Pi
