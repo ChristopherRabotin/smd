@@ -32,12 +32,7 @@ type Orbit struct {
 
 // Energyξ returns the specific mechanical energy ξ.
 func (o Orbit) Energyξ() float64 {
-	a, e, _, _, _, _, _, _, _ := o.Elements()
-	ξ := -o.Origin.μ / (2 * a)
-	if e > 1 {
-		ξ *= -1
-	}
-	return ξ
+	return math.Pow(o.VNorm(), 2)/2 - o.Origin.μ/o.RNorm()
 }
 
 // H returns the orbital angular momentum vector.
