@@ -58,9 +58,10 @@ func main() {
 	minV := +1e3
 	var maxOrbit smd.Orbit
 	var minOrbit smd.Orbit
-	tsv := "%i (degrees), raan (degrees), arg peri (degrees),nu (degrees),V(km/s)\n"
-	stepSize := 30.
-	for i := 0.0; i < 360; i += stepSize {
+	a, e, _, _, _, _, _, _, _ := initMarsOrbit(10, 10, 10, 10).Elements()
+	tsv := fmt.Sprintf("#a=%f km\te=%f\n#V(km/s), i (degrees), raan (degrees), arg peri (degrees),nu (degrees)\n", a, e)
+	stepSize := 5.
+	for i := 1.0; i < 90; i += stepSize {
 		for Ω := 0.0; Ω < 360; Ω += stepSize {
 			for ω := 0.0; ω < 360; ω += stepSize {
 				for ν := 0.0; ν < 360; ν += stepSize {
@@ -103,7 +104,7 @@ func main() {
 					}
 					vNorm := math.Sqrt(math.Pow(nV[0], 2) + math.Pow(nV[1], 2) + math.Pow(nV[2], 2))
 					// Add to TSV file
-					tsv += fmt.Sprintf("%f,%f,%f,%f,%f\n", i, Ω, ω, ν, vNorm)
+					tsv += fmt.Sprintf("%f,%f,%f,%f,%f\n", vNorm, i, Ω, ω, ν)
 					if vNorm > maxV {
 						maxV = vNorm
 						maxOrbit = *initMarsOrbit(i, Ω, ω, ν)
@@ -116,17 +117,17 @@ func main() {
 					}
 				}
 			}
-			fmt.Printf("\n\n=== RESULT ===\n\nmaxV=%.3f km/s\t%s\nminV=%.3f km/s\t%s\n\n", maxV, maxOrbit, minV, minOrbit)
-			// Write CSV file.
-			f, err := os.Create("./results.csv")
-			if err != nil {
-				panic(err)
-			}
-			defer f.Close()
-			if _, err := f.WriteString(tsv); err != nil {
-				panic(err)
-			}
 		}
+	}
+	fmt.Printf("\n\n=== RESULT ===\n\nmaxV=%.3f km/s\t%s\nminV=%.3f km/s\t%s\n\n", maxV, maxOrbit, minV, minOrbit)
+	// Write CSV file.
+	f, err := os.Create(fmt.Sprintf("./results-.csv"))
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(tsv); err != nil {
+		panic(err)
 	}
 }
 func init() {
