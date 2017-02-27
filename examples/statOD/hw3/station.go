@@ -32,37 +32,34 @@ type Station struct {
 // PerformMeasurement returns whether the SC is visible, and if so, the measurement.
 func (s Station) PerformMeasurement(θgst float64, state smd.MissionState) (bool, Measurement) {
 	// The station vectors are in ECEF, so let's convert the state to ECEF.
-	//rECEF := smd.ECI2ECEF(state.Orbit.R(), θgst)
-	//vECEF := smd.ECI2ECEF(state.Orbit.V(), θgst)
+	rECEF := smd.ECI2ECEF(state.Orbit.R(), θgst)
+	vECEF := smd.ECI2ECEF(state.Orbit.V(), θgst)
 	// Compute visibility for each station.
 
-	ρECI, ρ, el, _ := s.RangeElAz(state.Orbit.R(), θgst)
+	ρECEF, ρ, el, _ := s.RangeElAz(rECEF)
 	//XXX: Compute regardless of visibility for now..
 
-	vDiffECI := make([]float64, 3)
-	stationVECI := smd.ECI2ECEF(s.V, θgst)
-	vECI := state.Orbit.V()
+	vDiffECEF := make([]float64, 3)
 	for i := 0; i < 3; i++ {
-		vDiffECI[i] = (vECI[i] - stationVECI[i]) / ρ
+		vDiffECEF[i] = (vECEF[i] - s.V[i]) / ρ
 	}
 	// SC is visible.
-	ρDot := mat64.Dot(mat64.NewVector(3, ρECI), mat64.NewVector(3, vDiffECI))
+	ρDot := mat64.Dot(mat64.NewVector(3, ρECEF), mat64.NewVector(3, vDiffECEF))
 	ρNoisy := ρ + s.ρNoise.Rand(nil)[0]
 	ρDotNoisy := ρDot + s.ρDotNoise.Rand(nil)[0]
 	// Add this to the list of measurements
 	return el >= 10, Measurement{ρNoisy, ρDotNoisy, ρ, ρDot, θgst, state, s}
+
 }
 
 // RangeElAz returns the range (in the SEZ frame), elevation and azimuth (in degrees) of a given R vector in ECEF.
-func (s Station) RangeElAz(rECI []float64, θgst float64) (ρECI []float64, ρ, el, az float64) {
-	// Compute ECI position of the station
-	stationRECI := smd.ECEF2ECI(s.R, θgst)
-	ρECI = make([]float64, 3)
+func (s Station) RangeElAz(rECEF []float64) (ρECEF []float64, ρ, el, az float64) {
+	ρECEF = make([]float64, 3)
 	for i := 0; i < 3; i++ {
-		ρECI[i] = rECI[i] - stationRECI[i]
+		ρECEF[i] = rECEF[i] - s.R[i]
 	}
-	ρ = norm(ρECI)
-	rSEZ := smd.MxV33(smd.R3(s.longθ), ρECI)
+	ρ = norm(ρECEF)
+	rSEZ := smd.MxV33(smd.R3(s.longθ), ρECEF)
 	rSEZ = smd.MxV33(smd.R2(math.Pi/2-s.latΦ), rSEZ)
 	el = math.Asin(rSEZ[2]/ρ) * r2d
 	az = (2*math.Pi + math.Atan2(rSEZ[1], -rSEZ[0])) * r2d
