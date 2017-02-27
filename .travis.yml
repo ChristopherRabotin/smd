@@ -1,22 +1,13 @@
 language: go
 go:
   - 1.7
-addons:
-  apt:
-    sources:
-      - deadsnakes # source required so it finds the package definition below
-    packages:
-      - python3
 before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
   - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
-install:
-  - pip install -r ./cmd/refframes/reqs.txt
 script:
   - go test -v -timeout=30m -covermode=count -coverprofile=coverage.out
   - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci
-  - cd ./cmd/refframes/ && python -m test_chgframe
   #- $HOME/gopath/bin/goveralls -package github.com/ChristopherRabotin/smd -service=travis-ci
 env:
   -VSOP87=./data/vsop87
