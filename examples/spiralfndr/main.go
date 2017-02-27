@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math"
 	"os"
@@ -17,6 +18,23 @@ const (
 	debug = false
 )
 
+var (
+	cpus   int
+	planet string
+)
+
+func init() {
+	// Read flags
+	flag.IntVar(&cpus, "cpus", -1, "number of CPUs to use for this simulation (set to 0 for max CPUs)")
+	if cpus <= 0 {
+		cpus = runtime.NumCPU()
+	}
+	runtime.GOMAXPROCS(cpus)
+	fmt.Printf("Running on %d CPUs\n", cpus)
+	flag.StringVar(&planet, "planet", "undef", "departure planet to perform the spiral from")
+	planet = strings.ToLower(planet)
+}
+
 /*
  * This example shows how to find the greatest heliocentric velocity at the end of a spiral by iterating on the initial
  * true anomaly.
@@ -31,11 +49,8 @@ func sc() *smd.Spacecraft {
 		[]smd.Waypoint{smd.NewToHyperbolic(nil)})
 }
 
-func initEarthOrbit(ω, ν float64) *smd.Orbit {
+func initEarthOrbit(i, Ω, ω, ν float64) *smd.Orbit {
 	a, e := smd.Radii2ae(39300+smd.Earth.Radius, 290+smd.Earth.Radius)
-	i := 28.0
-	//ω := 10.0
-	Ω := 5.0
 	return smd.NewOrbitFromOE(a, e, i, Ω, ω, ν, smd.Earth)
 }
 
@@ -43,14 +58,24 @@ func initEarthOrbit(ω, ν float64) *smd.Orbit {
 func initMarsOrbit(i, Ω, ω, ν float64) *smd.Orbit {
 	// Exomars TGO.
 	a, e := smd.Radii2ae(44500+smd.Mars.Radius, 426+smd.Mars.Radius)
-	//i := 1.0
-	//ω := 1.0
-	//Ω := 1.0
-	//ν := 15.0
 	return smd.NewOrbitFromOE(a, e, i, Ω, ω, ν, smd.Mars)
 }
 
 func main() {
+	flag.Parse()
+	var orbitPtr func(i, Ω, ω, ν float64) *smd.Orbit
+
+	switch planet {
+	case "mars":
+		orbitPtr = initMarsOrbit
+	case "earth":
+		orbitPtr = initEarthOrbit
+	default:
+		panic(fmt.Errorf("unsupported planet %s", planet))
+	}
+
+	fmt.Printf("Finding spirals leaving from %s\n", planet)
+
 	//name := "spiral-mars"
 	depart := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
 	chgframePath := "../../cmd/refframes/chgframe.py"
@@ -58,13 +83,14 @@ func main() {
 	minV := +1e3
 	var maxOrbit smd.Orbit
 	var minOrbit smd.Orbit
-	tsv := "%i (degrees), raan (degrees), arg peri (degrees),nu (degrees),V(km/s)\n"
-	stepSize := 30.
-	for i := 0.0; i < 360; i += stepSize {
+	a, e, _, _, _, _, _, _, _ := initMarsOrbit(10, 10, 10, 10).Elements()
+	tsv := fmt.Sprintf("#a=%f km\te=%f\n#V(km/s), i (degrees), raan (degrees), arg peri (degrees),nu (degrees)\n", a, e)
+	stepSize := 5.
+	for i := 1.0; i < 90; i += stepSize {
 		for Ω := 0.0; Ω < 360; Ω += stepSize {
 			for ω := 0.0; ω < 360; ω += stepSize {
 				for ν := 0.0; ν < 360; ν += stepSize {
-					initOrbit := initMarsOrbit(i, Ω, ω, ν)
+					initOrbit := orbitPtr(i, Ω, ω, ν)
 					astro := smd.NewMission(sc(), initOrbit, depart, depart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{})
 					astro.Propagate()
 
@@ -103,7 +129,7 @@ func main() {
 					}
 					vNorm := math.Sqrt(math.Pow(nV[0], 2) + math.Pow(nV[1], 2) + math.Pow(nV[2], 2))
 					// Add to TSV file
-					tsv += fmt.Sprintf("%f,%f,%f,%f,%f\n", i, Ω, ω, ν, vNorm)
+					tsv += fmt.Sprintf("%f,%f,%f,%f,%f\n", vNorm, i, Ω, ω, ν)
 					if vNorm > maxV {
 						maxV = vNorm
 						maxOrbit = *initMarsOrbit(i, Ω, ω, ν)
@@ -116,19 +142,16 @@ func main() {
 					}
 				}
 			}
-			fmt.Printf("\n\n=== RESULT ===\n\nmaxV=%.3f km/s\t%s\nminV=%.3f km/s\t%s\n\n", maxV, maxOrbit, minV, minOrbit)
-			// Write CSV file.
-			f, err := os.Create("./results.csv")
-			if err != nil {
-				panic(err)
-			}
-			defer f.Close()
-			if _, err := f.WriteString(tsv); err != nil {
-				panic(err)
-			}
 		}
 	}
-}
-func init() {
-	runtime.GOMAXPROCS(3)
+	fmt.Printf("\n\n=== RESULT ===\n\nmaxV=%.3f km/s\t%s\nminV=%.3f km/s\t%s\n\n", maxV, maxOrbit, minV, minOrbit)
+	// Write CSV file.
+	f, err := os.Create(fmt.Sprintf("./results-.csv"))
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(tsv); err != nil {
+		panic(err)
+	}
 }
