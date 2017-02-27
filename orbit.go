@@ -106,10 +106,10 @@ func (o Orbit) SinCosE() (sinE, cosE float64) {
 	_, e, _, _, _, ν, _, _, _ := o.Elements()
 	sinν, cosν := math.Sincos(ν)
 	denom := 1 + e*cosν
-	if e > 1{
+	if e > 1 {
 		// Hyperbolic orbit
 		sinE = math.Sqrt(e*e-1) * sinν / denom
-	}else{
+	} else {
 		sinE = math.Sqrt(1-e*e) * sinν / denom
 	}
 	cosE = (e + cosν) / denom
@@ -232,11 +232,11 @@ func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
 }
 
 // MeanAnomaly returns the mean anomaly for hyperbolic orbits only.
-func (o Orbit) MeanAnomaly() float64{
-	_, e, _, _, _, _, _, _ , _:= o.Elements()
+func (o Orbit) MeanAnomaly() float64 {
+	_, e, _, _, _, _, _, _, _ := o.Elements()
 	sinH, cosH := o.SinCosE()
 	H := math.Atan2(sinH, cosH)
-	return e*math.Sinh(H)-H
+	return e*math.Sinh(H) - H
 }
 
 func (o *Orbit) computeHash() {
@@ -311,7 +311,7 @@ func (o Orbit) Equals(o1 Orbit) (bool, error) {
 func (o Orbit) StrictlyEquals(o1 Orbit) (bool, error) {
 	// Only check for non circular orbits
 	_, e, _, _, _, ν, _, _, _ := o.Elements()
-	_, e, _, _, _, ν1, _, _, _ := o1.Elements()
+	_, _, _, _, _, ν1, _, _, _ := o1.Elements()
 	if floats.EqualWithinAbs(e, 0, 2*eccentricityε) {
 		if floats.EqualApprox(o.rVec, o1.rVec, 1) && floats.EqualApprox(o.vVec, o1.vVec, velocityε) {
 			return true, nil

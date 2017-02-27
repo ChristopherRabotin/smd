@@ -50,7 +50,7 @@ type CgTrajectory struct {
 // Validate validates a CgTrajectory.
 func (t *CgTrajectory) Validate() error {
 	if t.Type != "InterpolatedStates" || !strings.HasSuffix(t.Source, "xyzv") {
-		return errors.New("Only InterpolatedStates are currently supported in Cosmographia trajectory types.")
+		return errors.New("only InterpolatedStates are currently supported in Cosmographia trajectory types")
 	}
 	return nil
 }
