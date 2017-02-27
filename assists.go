@@ -2,34 +2,129 @@ package smd
 
 import (
 	"errors"
+	"fmt"
 	"math"
+
+	"github.com/gonum/floats"
+	"github.com/gonum/matrix/mat64"
 )
 
 // BPlane stores B-plane parameters and allows for differential correction.
 type BPlane struct {
-	initOrbit                Orbit
+	Orbit                    Orbit
 	BR, BT, LTOF             float64
 	goalBT, goalBR, goalLTOF float64
 	tolBT, tolBR, tolLTOF    float64
 }
 
+// attemptWithinGoal returns whether the provided B-plane is equal within a given tolerance
+// to the receiver.
+func (b BPlane) attemptWithinGoal(attempt BPlane, tolerance float64) bool {
+	if !b.anyGoalSet() {
+		return false
+	}
+	ok := true
+	if !math.IsNaN(b.goalBR) && !floats.EqualWithinAbs(b.goalBR, attempt.goalBR, tolerance) {
+		ok = ok && false
+	}
+	if !math.IsNaN(b.goalBT) && !floats.EqualWithinAbs(b.goalBT, attempt.goalBT, tolerance) {
+		ok = ok && false
+	}
+	if !math.IsNaN(b.goalLTOF) && !floats.EqualWithinAbs(b.goalLTOF, attempt.goalLTOF, tolerance) {
+		ok = ok && false
+	}
+	return ok
+}
+
 // SetBTGoal sets to the B_T goal
-func (b BPlane) SetBTGoal(value, tolerance float64) {}
+func (b *BPlane) SetBTGoal(value, tolerance float64) {
+	b.goalBT = value
+	b.tolBR = tolerance
+}
 
 // SetBRGoal sets to the B_R goal
-func (b BPlane) SetBRGoal(value, tolerance float64) {}
+func (b *BPlane) SetBRGoal(value, tolerance float64) {
+	b.goalBR = value
+	b.tolBR = tolerance
+}
 
 // SetLTOFGoal sets to the LTOF goal
-func (b BPlane) SetLTOFGoal(value, tolerance float64) {}
+func (b *BPlane) SetLTOFGoal(value, tolerance float64) {
+	b.goalLTOF = value
+	b.tolLTOF = tolerance
+}
+
+func (b BPlane) anyGoalSet() bool {
+	return !(math.IsNaN(b.goalBR) && math.IsNaN(b.goalBT) && math.IsNaN(b.goalLTOF))
+}
 
 // AchieveGoals attempts to achieve the provided goals.
 // Returns an error if no goal is set or is no convergence after a certain number
 // of attempts. Otherwise, returns the Delta-V to apply.
-func (b BPlane) AchieveGoals() ([]float64, error) {
-	if math.IsNaN(b.goalBR) && math.IsNaN(b.goalBT) && math.IsNaN(b.goalLTOF) {
+func (b BPlane) AchieveGoals(components int) ([]float64, error) {
+	if components < 2 || components > 3 {
+		panic("components must be 2 or 3")
+	}
+	if !b.anyGoalSet() {
 		return nil, errors.New("no goal set")
 	}
-	return nil, nil
+	fmt.Printf("nominal:\n%s\n", b)
+	ΔB := mat64.NewVector(components, nil)
+	if !math.IsNaN(b.goalBR) {
+		ΔB.SetVec(0, b.goalBR-b.BR)
+	}
+	if !math.IsNaN(b.goalBT) {
+		ΔB.SetVec(1, b.goalBT-b.BT)
+	}
+	if components > 2 && !math.IsNaN(b.goalLTOF) {
+		ΔB.SetVec(2, b.goalLTOF-b.LTOF)
+	}
+	var converged = false
+	var R, V = b.Orbit.RV()
+	pert := math.Pow(10, -10)
+	for iter := 0; iter < 1000; iter++ {
+		// Vary velocity vector
+		jacob := mat64.NewDense(components, components, nil)
+		for i := 0; i < components; i++ { // Vx, Vy, Vz
+			vTmp := make([]float64, 3)
+			copy(vTmp, V)
+			vTmp[i] += pert
+			attempt := NewBPlane(*NewOrbitFromRV(R, vTmp, Earth))
+			// Compute Jacobian
+			// BT, BR, LTOF
+			jacob.Set(i, 0, (b.BR-attempt.BR)/pert)
+			jacob.Set(i, 1, (b.BT-attempt.BT)/pert)
+			if components > 2 {
+				jacob.Set(i, 2, (b.LTOF-attempt.LTOF)/pert)
+			}
+		}
+		// Invert Jacobian
+		var invJacob mat64.Dense
+		if err := invJacob.Inverse(jacob); err != nil {
+			fmt.Printf("%+v\n", mat64.Formatted(jacob))
+			panic("could not invert jacobian!")
+		}
+		var Δv mat64.Vector
+		Δv.MulVec(&invJacob, ΔB)
+		for i := 0; i < components; i++ {
+			V[i] += Δv.At(i, 0)
+		}
+		// Compute updated B plane
+		newOrbit := NewOrbitFromRV(R, V, Earth)
+		current := NewBPlane(*newOrbit)
+		converged = b.attemptWithinGoal(current, 1e-5)
+		if converged {
+			break
+		}
+	}
+	if !converged {
+		return nil, errors.New("did not converge after 1000 iterations")
+	}
+	return V, nil
+}
+
+func (b BPlane) String() string {
+	return fmt.Sprintf("BR=%.8f\tBT=%.8f", b.BR, b.BT)
 }
 
 // NewBPlane returns the B-plane of a given orbit.
@@ -73,7 +168,7 @@ func NewBPlane(o Orbit) BPlane {
 	fB := math.Asinh(sinνB*math.Sqrt(e*e-1)) / (1 + e*cosνB)
 	fR := math.Asinh(sinνR*math.Sqrt(e*e-1)) / (1 + e*cosνR)
 	ltof := ((e*math.Sinh(fB) - fB) - (e*math.Sinh(fR) - fR)) / o.MeanAnomaly()
-	return BPlane{initOrbit: o, BR: bR, BT: bT, LTOF: ltof, goalBT: math.NaN(), goalBR: math.NaN(), goalLTOF: math.NaN()}
+	return BPlane{Orbit: o, BR: bR, BT: bT, LTOF: ltof, goalBT: math.NaN(), goalBR: math.NaN(), goalLTOF: math.NaN()}
 }
 
 // GATurnAngle computes the turn angle about a given body based on the radius of periapsis.
