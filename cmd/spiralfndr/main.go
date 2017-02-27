@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
@@ -22,6 +23,7 @@ var (
 	cpus     int
 	planet   string
 	stepSize float64
+	wg       sync.WaitGroup
 )
 
 func init() {
@@ -96,8 +98,10 @@ func main() {
 	minV := +1e3
 	var maxOrbit smd.Orbit
 	var minOrbit smd.Orbit
-	a, e, _, _, _, _, _, _, _ := initMarsOrbit(10, 10, 10, 10).Elements()
-	tsv := fmt.Sprintf("#a=%f km\te=%f\n#V(km/s), i (degrees), raan (degrees), arg peri (degrees),nu (degrees)\n", a, e)
+	a, e, _, _, _, _, _, _, _ := orbitPtr(10, 10, 10, 10).Elements()
+	rslts := make(chan string, 10)
+	wg.Add(1)
+	go streamResults(a, e, fmt.Sprintf("%s-%.0fstep", planet, stepSize), rslts)
 	for i := 1.0; i < 90; i += stepSize {
 		for Ω := 0.0; Ω < 360; Ω += stepSize {
 			for ω := 0.0; ω < 360; ω += stepSize {
@@ -141,7 +145,7 @@ func main() {
 					}
 					vNorm := math.Sqrt(math.Pow(nV[0], 2) + math.Pow(nV[1], 2) + math.Pow(nV[2], 2))
 					// Add to TSV file
-					tsv += fmt.Sprintf("%f,%f,%f,%f,%f\n", vNorm, i, Ω, ω, ν)
+					rslts <- fmt.Sprintf("%f,%f,%f,%f,%f\n", vNorm, i, Ω, ω, ν)
 					if vNorm > maxV {
 						maxV = vNorm
 						maxOrbit = *initMarsOrbit(i, Ω, ω, ν)
@@ -157,13 +161,27 @@ func main() {
 		}
 	}
 	fmt.Printf("\n\n=== RESULT ===\n\nmaxV=%.3f km/s\t%s\nminV=%.3f km/s\t%s\n\n", maxV, maxOrbit, minV, minOrbit)
+}
+
+func streamResults(a, e float64, fn string, rslts <-chan string) {
 	// Write CSV file.
-	f, err := os.Create(fmt.Sprintf("./results-.csv"))
+	f, err := os.Create(fmt.Sprintf("./%s.csv", fn))
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
-	if _, err := f.WriteString(tsv); err != nil {
-		panic(err)
+	// Header
+	f.WriteString(fmt.Sprintf("#a=%f km\te=%f\n#V(km/s), i (degrees), raan (degrees), arg peri (degrees),nu (degrees)\n", a, e))
+	for {
+		rslt, more := <-rslts
+		if more {
+			if _, err := f.WriteString(rslt); err != nil {
+				panic(err)
+			}
+		} else {
+			break
+		}
 	}
+	f.Close()
+	wg.Done()
 }
