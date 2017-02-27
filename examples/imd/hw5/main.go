@@ -3,7 +3,7 @@ package main
 import (
         "fmt"
         "math"
-"os"
+        "os"
         "github.com/ChristopherRabotin/smd"
 )
 
@@ -11,7 +11,9 @@ func main(){
   rSOI := []float64{546507.344255845,-527978.380486028,531109.066836708}
   vSOI := []float64{-4.9220589268733 ,5.36316523097915 ,-5.22166308425181}
   // Compute nominal values
-  bRStar, bTStar, _:= smd.NewOrbitFromRV(rSOI, vSOI, smd.Earth).BPlane()
+  initBPlane := smd.NewBPlane(*smd.NewOrbitFromRV(rSOI, vSOI, smd.Earth))
+  bRStar := initBPlane.BR
+  bTStar := initBPlane.BT
   csv := fmt.Sprintf("perturbation\tdBt/dVx\tdBr/dVx\tdBt/dVy\tdBr/dVy\n")
   for pertExp := -15.; pertExp < 3; pertExp ++{
     for fact := 1.; fact < 10; fact += 0.05{
@@ -21,10 +23,9 @@ func main(){
         vSOItmp := make([]float64, 3)
         copy(vSOItmp, vSOI)
         vSOItmp[i] += Δv
-        orbit := smd.NewOrbitFromRV(rSOI, vSOItmp, smd.Earth)
-        bR, bT , _ := orbit.BPlane()
-        dbR := (bR-bRStar)/Δv
-        dbT := (bT-bTStar)/Δv
+        plane := smd.NewBPlane(*smd.NewOrbitFromRV(rSOI, vSOItmp, smd.Earth))
+        dbT := (plane.BT-bTStar)/Δv
+        dbR := (plane.BR-bRStar)/Δv
         csv += fmt.Sprintf("%.18f\t%.18f\t", dbT, dbR)
       }
       csv += fmt.Sprintf("\n")
