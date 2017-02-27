@@ -19,20 +19,16 @@ const (
 )
 
 var (
-	cpus   int
-	planet string
+	cpus     int
+	planet   string
+	stepSize float64
 )
 
 func init() {
 	// Read flags
 	flag.IntVar(&cpus, "cpus", -1, "number of CPUs to use for this simulation (set to 0 for max CPUs)")
-	if cpus <= 0 {
-		cpus = runtime.NumCPU()
-	}
-	runtime.GOMAXPROCS(cpus)
-	fmt.Printf("Running on %d CPUs\n", cpus)
 	flag.StringVar(&planet, "planet", "undef", "departure planet to perform the spiral from")
-	planet = strings.ToLower(planet)
+	flag.Float64Var(&stepSize, "step", 15, "step size (10 to 30 recommended)")
 }
 
 /*
@@ -63,15 +59,32 @@ func initMarsOrbit(i, Ω, ω, ν float64) *smd.Orbit {
 
 func main() {
 	flag.Parse()
-	var orbitPtr func(i, Ω, ω, ν float64) *smd.Orbit
+	availableCPUs := runtime.NumCPU()
+	if cpus <= 0 || cpus > availableCPUs {
+		cpus = availableCPUs
+	}
+	runtime.GOMAXPROCS(cpus)
+	fmt.Printf("running on %d CPUs\n", cpus)
 
+	if stepSize <= 0 {
+		fmt.Println("step size must be positive")
+		flag.Usage()
+		return
+	} else if stepSize <= 5 {
+		fmt.Println("[WARNING] A small step size will take several days to iterate over all possibilities")
+	}
+
+	var orbitPtr func(i, Ω, ω, ν float64) *smd.Orbit
+	planet = strings.ToLower(planet)
 	switch planet {
 	case "mars":
 		orbitPtr = initMarsOrbit
 	case "earth":
 		orbitPtr = initEarthOrbit
 	default:
-		panic(fmt.Errorf("unsupported planet %s", planet))
+		fmt.Printf("unsupported planet `%s`\n", planet)
+		flag.Usage()
+		return
 	}
 
 	fmt.Printf("Finding spirals leaving from %s\n", planet)
@@ -85,7 +98,6 @@ func main() {
 	var minOrbit smd.Orbit
 	a, e, _, _, _, _, _, _, _ := initMarsOrbit(10, 10, 10, 10).Elements()
 	tsv := fmt.Sprintf("#a=%f km\te=%f\n#V(km/s), i (degrees), raan (degrees), arg peri (degrees),nu (degrees)\n", a, e)
-	stepSize := 5.
 	for i := 1.0; i < 90; i += stepSize {
 		for Ω := 0.0; Ω < 360; Ω += stepSize {
 			for ω := 0.0; ω < 360; ω += stepSize {
