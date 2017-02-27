@@ -91,7 +91,7 @@ func main() {
 
 	//name := "spiral-mars"
 	depart := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
-	chgframePath := "../../cmd/refframes/chgframe.py"
+	chgframePath := "../refframes/chgframe.py"
 	maxV := -1e3
 	minV := +1e3
 	var maxOrbit smd.Orbit
