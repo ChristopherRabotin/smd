@@ -94,15 +94,14 @@ func (m Measurement) StateVector() *mat64.Vector {
 
 // HTilde returns the H tilde matrix for this given measurement.
 func (m Measurement) HTilde(state smd.MissionState, θgst, θdot float64) *mat64.Dense {
-	withRotation := false
-	theta := θgst
-	thetadot := θdot
-	xS := m.Station.R[0]
-	yS := m.Station.R[1]
-	zS := m.Station.R[2]
-	xSDot := m.Station.V[0]
-	ySDot := m.Station.V[1]
-	zSDot := m.Station.V[2]
+	stationR := smd.ECEF2ECI(m.Station.R, θgst)
+	stationV := smd.ECEF2ECI(m.Station.V, θgst)
+	xS := stationR[0]
+	yS := stationR[1]
+	zS := stationR[2]
+	xSDot := stationV[0]
+	ySDot := stationV[1]
+	zSDot := stationV[2]
 	R := state.Orbit.R()
 	V := state.Orbit.V()
 	x := R[0]
@@ -111,48 +110,18 @@ func (m Measurement) HTilde(state smd.MissionState, θgst, θdot float64) *mat64
 	xDot := V[0]
 	yDot := V[1]
 	zDot := V[2]
-	rho := m.ρ
-	rho2 := math.Pow(m.ρ, 2)
-	rhodot := m.ρDot
-
 	H := mat64.NewDense(2, 6, nil)
-	if withRotation {
-		//drho partials
-		drhoDx := (x - xS*math.Cos(theta) + yS*math.Sin(theta)) / rho
-		drhoDy := (y - yS*math.Cos(theta) - xS*math.Sin(theta)) / rho
-		drhoDz := (z - zS*math.Cos(theta)) / rho
-
-		//drhodot partials
-		drhodotDx := (xDot+xS*thetadot*math.Sin(theta)+yS*thetadot*math.Cos(theta))/rho - rhodot*(x-xS*math.Cos(theta)+yS*math.Sin(theta))/rho2
-		drhodotDy := (yDot+yS*thetadot*math.Sin(theta)-xS*thetadot*math.Cos(theta))/rho - rhodot*(y-yS*math.Cos(theta)-xS*math.Sin(theta))/rho2
-		drhodotDz := zDot/rho - rhodot*(z-zS)/rho2
-		drhodotDxdot := (x - xS*math.Cos(theta) - yS*math.Sin(theta)) / rho
-		drhodotDydot := (y - yS*math.Cos(theta) - xS*math.Sin(theta)) / rho
-		drhodotDzdot := (z - zS) / rho
-		// \partial \rho / \partial {x,y,z}
-		H.Set(0, 0, drhoDx)
-		H.Set(0, 1, drhoDy)
-		H.Set(0, 2, drhoDz)
-		// \partial \dot\rho / \partial {x,y,z}
-		H.Set(1, 0, drhodotDx)
-		H.Set(1, 1, drhodotDy)
-		H.Set(1, 2, drhodotDz)
-		H.Set(1, 3, drhodotDxdot)
-		H.Set(1, 4, drhodotDydot)
-		H.Set(1, 5, drhodotDzdot)
-	} else {
-		// \partial \rho / \partial {x,y,z}
-		H.Set(0, 0, (x-xS)/m.ρ)
-		H.Set(0, 1, (y-yS)/m.ρ)
-		H.Set(0, 2, (z-zS)/m.ρ)
-		// \partial \dot\rho / \partial {x,y,z}
-		H.Set(1, 0, (xDot-xSDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(x-xS))
-		H.Set(1, 1, (yDot-ySDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(y-yS))
-		H.Set(1, 2, (zDot-zSDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(z-zS))
-		H.Set(1, 3, (x-xS)/m.ρ)
-		H.Set(1, 4, (y-yS)/m.ρ)
-		H.Set(1, 5, (z-zS)/m.ρ)
-	}
+	// \partial \rho / \partial {x,y,z}
+	H.Set(0, 0, (x-xS)/m.ρ)
+	H.Set(0, 1, (y-yS)/m.ρ)
+	H.Set(0, 2, (z-zS)/m.ρ)
+	// \partial \dot\rho / \partial {x,y,z}
+	H.Set(1, 0, (xDot-xSDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(x-xS))
+	H.Set(1, 1, (yDot-ySDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(y-yS))
+	H.Set(1, 2, (zDot-zSDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(z-zS))
+	H.Set(1, 3, (x-xS)/m.ρ)
+	H.Set(1, 4, (y-yS)/m.ρ)
+	H.Set(1, 5, (z-zS)/m.ρ)
 	return H
 }
 

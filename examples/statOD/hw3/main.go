@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// Generate the perturbed orbit
-	smd.NewMission(smd.NewEmptySC("LEO", 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 2}, export).Propagate()
+	smd.NewMission(smd.NewEmptySC("LEO", 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, export).Propagate()
 
 	// Take care of the measurements:
 	fmt.Printf("Now have %d measurements\n", len(measurements))
@@ -94,8 +94,8 @@ func main() {
 
 	prevXHat := mat64.NewVector(6, nil)
 	prevP := mat64.NewSymDense(6, nil)
-	covarDistance := 1e-10
-	covarVelocity := 1e-7
+	var covarDistance float64 = 50
+	var covarVelocity float64 = 1
 	for i := 0; i < 3; i++ {
 		prevP.SetSym(i, i, covarDistance)
 		prevP.SetSym(i+3, i+3, covarVelocity)
@@ -107,9 +107,12 @@ func main() {
 	var orbitEstimate *smd.OrbitEstimate
 
 	var ckf *gokalman.HybridCKF
-
+	var prevStationName = ""
 	for i, measurement := range measurements {
-		fmt.Printf("#%d (%s)\n", i, measurement.Station.name)
+		if measurement.Station.name != prevStationName {
+			fmt.Printf("Now visible by %s (#%d)\n", measurement.Station.name, i)
+			prevStationName = measurement.Station.name
+		}
 
 		if i == 0 {
 			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
@@ -154,13 +157,6 @@ func main() {
 			stateEst.SetVec(x+3, V[x])
 		}
 		stateEst.AddVec(stateEst, est.State())
-		deltaState := mat64.NewVector(6, nil)
-		R, V = measurement.State.Orbit.RV()
-		for x := 0; x < 3; x++ {
-			deltaState.SetVec(x, R[x]-stateEst.At(x, 0))
-			deltaState.SetVec(x+3, V[x]-stateEst.At(x+3, 0))
-		}
-		fmt.Printf("delta = %v\n", mat64.Formatted(deltaState.T()))
 		// Compute residual
 		residual := mat64.NewVector(2, nil)
 		residual.MulVec(Htilde, est.State())
