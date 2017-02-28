@@ -5,6 +5,13 @@ from math import sqrt
 import numpy as np
 import spiceypy as spice
 
+# Suppress warnings on Python 2
+from sys import version as pyversion
+if pyversion == '2':
+    import warnings
+    warnings.filterwarnings("ignore")
+
+
 AU = 149597870
 
 __kernels_loaded__ = False

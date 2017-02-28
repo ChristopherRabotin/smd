@@ -32,12 +32,7 @@ type Orbit struct {
 
 // Energyξ returns the specific mechanical energy ξ.
 func (o Orbit) Energyξ() float64 {
-	a, e, _, _, _, _, _, _, _ := o.Elements()
-	ξ := -o.Origin.μ / (2 * a)
-	if e > 1 {
-		ξ *= -1
-	}
-	return ξ
+	return math.Pow(o.VNorm(), 2)/2 - o.Origin.μ/o.RNorm()
 }
 
 // H returns the orbital angular momentum vector.
@@ -111,7 +106,12 @@ func (o Orbit) SinCosE() (sinE, cosE float64) {
 	_, e, _, _, _, ν, _, _, _ := o.Elements()
 	sinν, cosν := math.Sincos(ν)
 	denom := 1 + e*cosν
-	sinE = math.Sqrt(1-e*e) * sinν / denom
+	if e > 1 {
+		// Hyperbolic orbit
+		sinE = math.Sqrt(e*e-1) * sinν / denom
+	} else {
+		sinE = math.Sqrt(1-e*e) * sinν / denom
+	}
 	cosE = (e + cosν) / denom
 	return
 }
@@ -231,6 +231,14 @@ func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
 	return
 }
 
+// MeanAnomaly returns the mean anomaly for hyperbolic orbits only.
+func (o Orbit) MeanAnomaly() float64 {
+	_, e, _, _, _, _, _, _, _ := o.Elements()
+	sinH, cosH := o.SinCosE()
+	H := math.Atan2(sinH, cosH)
+	return e*math.Sinh(H) - H
+}
+
 func (o *Orbit) computeHash() {
 	o.cacheHash = 0
 	for i := 0; i < 3; i++ {
@@ -303,7 +311,7 @@ func (o Orbit) Equals(o1 Orbit) (bool, error) {
 func (o Orbit) StrictlyEquals(o1 Orbit) (bool, error) {
 	// Only check for non circular orbits
 	_, e, _, _, _, ν, _, _, _ := o.Elements()
-	_, e, _, _, _, ν1, _, _, _ := o1.Elements()
+	_, _, _, _, _, ν1, _, _, _ := o1.Elements()
 	if floats.EqualWithinAbs(e, 0, 2*eccentricityε) {
 		if floats.EqualApprox(o.rVec, o1.rVec, 1) && floats.EqualApprox(o.vVec, o1.vVec, velocityε) {
 			return true, nil
