@@ -81,7 +81,7 @@ func main() {
 	truth := gokalman.NewBatchGroundTruth(stateTruth, truthMeas)
 
 	// Perturbations in the estimate
-	estPerts := smd.Perturbations{Jn: 3}
+	estPerts := smd.Perturbations{Jn: 2}
 
 	// Initialize the KF
 	Q := mat64.NewSymDense(6, nil)
@@ -112,7 +112,7 @@ func main() {
 		fmt.Printf("#%d (%s)\n", i, measurement.Station.name)
 
 		if i == 0 {
-			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
+			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
 			var err error
 			ckf, _, err = gokalman.NewHybridCKF(prevXHat, prevP, noiseKF, 2)
 			if err != nil {
