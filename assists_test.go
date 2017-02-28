@@ -21,4 +21,17 @@ func TestBPlane(t *testing.T) {
 	if !floats.EqualWithinAbs(initBPlane.BT, expBT, 1e-6) {
 		t.Fatalf("BT got: %f\nexp:%f", initBPlane.BT, expBT)
 	}
+	// Let's test the B-Plane correction too.
+	initBPlane.SetBRGoal(5022.26511510685, 1e-6)
+	initBPlane.SetBTGoal(13135.7982982557, 1e-6)
+	finalV, err := initBPlane.AchieveGoals(2)
+	if err != nil {
+		t.Fatalf("%s\n", err)
+	}
+	expV := []float64{-5.222055735935133, 5.221567577651425, -5.22166308425181}
+	for i := 0; i < 3; i++ {
+		if !floats.EqualWithinAbs(expV[i], finalV[i], 1e-8) {
+			t.Fatal("invalid TCM computed")
+		}
+	}
 }

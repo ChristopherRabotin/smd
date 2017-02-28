@@ -17,29 +17,28 @@ type BPlane struct {
 	tolBT, tolBR, tolLTOF    float64
 }
 
-// attemptWithinGoal returns whether the provided B-plane is equal within a given tolerance
-// to the receiver.
-func (b BPlane) attemptWithinGoal(attempt BPlane, tolerance float64) bool {
+// attemptWithinGoal returns whether the provided B-plane is equal within the tolerance
+// of the receiver.
+func (b BPlane) attemptWithinGoal(attempt BPlane) bool {
 	if !b.anyGoalSet() {
 		return false
 	}
-	ok := true
-	if !math.IsNaN(b.goalBR) && !floats.EqualWithinAbs(b.goalBR, attempt.goalBR, tolerance) {
-		ok = ok && false
+	if !math.IsNaN(b.goalBR) && !floats.EqualWithinAbs(b.goalBR, attempt.BR, b.tolBR) {
+		return false
 	}
-	if !math.IsNaN(b.goalBT) && !floats.EqualWithinAbs(b.goalBT, attempt.goalBT, tolerance) {
-		ok = ok && false
+	if !math.IsNaN(b.goalBT) && !floats.EqualWithinAbs(b.goalBT, attempt.BT, b.tolBT) {
+		return false
 	}
-	if !math.IsNaN(b.goalLTOF) && !floats.EqualWithinAbs(b.goalLTOF, attempt.goalLTOF, tolerance) {
-		ok = ok && false
+	if !math.IsNaN(b.goalLTOF) && !floats.EqualWithinAbs(b.goalLTOF, attempt.LTOF, b.tolLTOF) {
+		return false
 	}
-	return ok
+	return true
 }
 
 // SetBTGoal sets to the B_T goal
 func (b *BPlane) SetBTGoal(value, tolerance float64) {
 	b.goalBT = value
-	b.tolBR = tolerance
+	b.tolBT = tolerance
 }
 
 // SetBRGoal sets to the B_R goal
@@ -60,7 +59,7 @@ func (b BPlane) anyGoalSet() bool {
 
 // AchieveGoals attempts to achieve the provided goals.
 // Returns an error if no goal is set or is no convergence after a certain number
-// of attempts. Otherwise, returns the Delta-V to apply.
+// of attempts. Otherwise, returns the velocity vector needed to reach the goal.
 func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 	if components < 2 || components > 3 {
 		panic("components must be 2 or 3")
@@ -68,22 +67,18 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 	if !b.anyGoalSet() {
 		return nil, errors.New("no goal set")
 	}
-	fmt.Printf("nominal:\n%s\n", b)
-	ΔB := mat64.NewVector(components, nil)
-	if !math.IsNaN(b.goalBR) {
-		ΔB.SetVec(0, b.goalBR-b.BR)
-	}
-	if !math.IsNaN(b.goalBT) {
-		ΔB.SetVec(1, b.goalBT-b.BT)
-	}
-	if components > 2 && !math.IsNaN(b.goalLTOF) {
-		ΔB.SetVec(2, b.goalLTOF-b.LTOF)
-	}
 	var converged = false
 	var R, V = b.Orbit.RV()
 	pert := math.Pow(10, -10)
-	for iter := 0; iter < 1000; iter++ {
-		// Vary velocity vector
+	for iter := 0; iter < 100; iter++ {
+		// Compute updated B plane
+		nominal := NewBPlane(*NewOrbitFromRV(R, V, Earth))
+		// Update the nominal values
+		converged = b.attemptWithinGoal(nominal)
+		if converged {
+			break
+		}
+		// Vary velocity vector and build the Jacobian
 		jacob := mat64.NewDense(components, components, nil)
 		for i := 0; i < components; i++ { // Vx, Vy, Vz
 			vTmp := make([]float64, 3)
@@ -92,10 +87,10 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 			attempt := NewBPlane(*NewOrbitFromRV(R, vTmp, Earth))
 			// Compute Jacobian
 			// BT, BR, LTOF
-			jacob.Set(i, 0, (b.BR-attempt.BR)/pert)
-			jacob.Set(i, 1, (b.BT-attempt.BT)/pert)
+			jacob.Set(0, i, (attempt.BT-nominal.BT)/pert)
+			jacob.Set(1, i, (attempt.BR-nominal.BR)/pert)
 			if components > 2 {
-				jacob.Set(i, 2, (b.LTOF-attempt.LTOF)/pert)
+				jacob.Set(i, 2, (nominal.LTOF-attempt.LTOF)/pert)
 			}
 		}
 		// Invert Jacobian
@@ -104,21 +99,24 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 			fmt.Printf("%+v\n", mat64.Formatted(jacob))
 			panic("could not invert jacobian!")
 		}
+		ΔB := mat64.NewVector(components, nil)
+		if !math.IsNaN(b.goalBT) {
+			ΔB.SetVec(0, b.goalBT-nominal.BT)
+		}
+		if !math.IsNaN(b.goalBR) {
+			ΔB.SetVec(1, b.goalBR-nominal.BR)
+		}
+		if components > 2 && !math.IsNaN(b.goalLTOF) {
+			ΔB.SetVec(2, b.goalLTOF-nominal.LTOF)
+		}
 		var Δv mat64.Vector
 		Δv.MulVec(&invJacob, ΔB)
 		for i := 0; i < components; i++ {
 			V[i] += Δv.At(i, 0)
 		}
-		// Compute updated B plane
-		newOrbit := NewOrbitFromRV(R, V, Earth)
-		current := NewBPlane(*newOrbit)
-		converged = b.attemptWithinGoal(current, 1e-5)
-		if converged {
-			break
-		}
 	}
 	if !converged {
-		return nil, errors.New("did not converge after 1000 iterations")
+		return nil, errors.New("did not converge after 100 iterations")
 	}
 	return V, nil
 }
