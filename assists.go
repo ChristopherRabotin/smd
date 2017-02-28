@@ -17,19 +17,19 @@ type BPlane struct {
 	tolBT, tolBR, tolLTOF    float64
 }
 
-// attemptWithinGoal returns whether the provided B-plane is equal within a given tolerance
-// to the receiver.
-func (b BPlane) attemptWithinGoal(attempt BPlane, tolerance float64) bool {
+// attemptWithinGoal returns whether the provided B-plane is equal within the tolerance
+// of the receiver.
+func (b BPlane) attemptWithinGoal(attempt BPlane) bool {
 	if !b.anyGoalSet() {
 		return false
 	}
-	if !math.IsNaN(b.goalBR) && !floats.EqualWithinAbs(b.goalBR, attempt.BR, tolerance) {
+	if !math.IsNaN(b.goalBR) && !floats.EqualWithinAbs(b.goalBR, attempt.BR, b.tolBR) {
 		return false
 	}
-	if !math.IsNaN(b.goalBT) && !floats.EqualWithinAbs(b.goalBT, attempt.BT, tolerance) {
+	if !math.IsNaN(b.goalBT) && !floats.EqualWithinAbs(b.goalBT, attempt.BT, b.tolBT) {
 		return false
 	}
-	if !math.IsNaN(b.goalLTOF) && !floats.EqualWithinAbs(b.goalLTOF, attempt.LTOF, tolerance) {
+	if !math.IsNaN(b.goalLTOF) && !floats.EqualWithinAbs(b.goalLTOF, attempt.LTOF, b.tolLTOF) {
 		return false
 	}
 	return true
@@ -38,7 +38,7 @@ func (b BPlane) attemptWithinGoal(attempt BPlane, tolerance float64) bool {
 // SetBTGoal sets to the B_T goal
 func (b *BPlane) SetBTGoal(value, tolerance float64) {
 	b.goalBT = value
-	b.tolBR = tolerance
+	b.tolBT = tolerance
 }
 
 // SetBRGoal sets to the B_R goal
@@ -59,7 +59,7 @@ func (b BPlane) anyGoalSet() bool {
 
 // AchieveGoals attempts to achieve the provided goals.
 // Returns an error if no goal is set or is no convergence after a certain number
-// of attempts. Otherwise, returns the Delta-V to apply.
+// of attempts. Otherwise, returns the velocity vector needed to reach the goal.
 func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 	if components < 2 || components > 3 {
 		panic("components must be 2 or 3")
@@ -69,16 +69,13 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 	}
 	var converged = false
 	var R, V = b.Orbit.RV()
-	totalΔV := make([]float64, 3)
-	copy(totalΔV, V)
 	pert := math.Pow(10, -10)
-	for iter := 0; iter < 50; iter++ {
+	for iter := 0; iter < 100; iter++ {
 		// Compute updated B plane
 		nominal := NewBPlane(*NewOrbitFromRV(R, V, Earth))
 		// Update the nominal values
-		converged = b.attemptWithinGoal(nominal, 1e-5)
+		converged = b.attemptWithinGoal(nominal)
 		if converged {
-			fmt.Printf("converged in %d iterations\n", iter)
 			break
 		}
 		// Vary velocity vector and build the Jacobian
@@ -119,13 +116,9 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 		}
 	}
 	if !converged {
-		return nil, errors.New("did not converge after 1000 iterations")
+		return nil, errors.New("did not converge after 100 iterations")
 	}
-	// Compute the Delta-V.
-	for i := 0; i < 3; i++ {
-		totalΔV[i] -= V[i]
-	}
-	return totalΔV, nil
+	return V, nil
 }
 
 func (b BPlane) String() string {

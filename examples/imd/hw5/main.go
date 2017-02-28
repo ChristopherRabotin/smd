@@ -15,6 +15,9 @@ const (
 func main() {
 	rSOI := []float64{546507.344255845, -527978.380486028, 531109.066836708}
 	vSOI := []float64{-4.9220589268733, 5.36316523097915, -5.22166308425181}
+	// Make a copy because I'm using that slice in the orbit
+	vInit := make([]float64, 3)
+	copy(vInit, vSOI)
 	orbit := smd.NewOrbitFromRV(rSOI, vSOI, smd.Earth)
 	// Compute nominal values
 	initBPlane := smd.NewBPlane(*orbit)
@@ -55,6 +58,11 @@ func main() {
 		if err != nil {
 			fmt.Printf("[error] %s =(\n", err)
 		}
-		fmt.Printf("%+v\n", finalV)
+		fmt.Printf("V_{needed}=%+v \\unitfrac{km}{s}\n", finalV)
+		// Compute Δv
+		for i := 0; i < 3; i++ {
+			finalV[i] -= vInit[i]
+		}
+		fmt.Printf("\\Delta v_{needed}=%+v \\unitfrac{km}{s}\n", finalV)
 	}
 }
