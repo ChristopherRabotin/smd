@@ -81,7 +81,7 @@ func main() {
 	truth := gokalman.NewBatchGroundTruth(stateTruth, truthMeas)
 
 	// Perturbations in the estimate
-	estPerts := smd.Perturbations{Jn: 2}
+	estPerts := smd.Perturbations{Jn: 3}
 
 	// Initialize the KF
 	Q := mat64.NewSymDense(6, nil)
@@ -154,10 +154,16 @@ func main() {
 			stateEst.SetVec(x+3, V[x])
 		}
 		stateEst.AddVec(stateEst, est.State())
-		fmt.Printf("traj = %v\n", mat64.Formatted(stateEst.T()))
+		deltaState := mat64.NewVector(6, nil)
+		R, V = measurement.State.Orbit.RV()
+		for x := 0; x < 3; x++ {
+			deltaState.SetVec(x, R[x]-stateEst.At(x, 0))
+			deltaState.SetVec(x+3, V[x]-stateEst.At(x+3, 0))
+		}
+		fmt.Printf("delta = %v\n", mat64.Formatted(deltaState.T()))
 		// Compute residual
 		residual := mat64.NewVector(2, nil)
-		residual.MulVec(Htilde, stateEst)
+		residual.MulVec(Htilde, est.State())
 		residual.AddScaledVec(residual, -1, est.ObservationDev())
 		residual.ScaleVec(-1, residual)
 		residuals[i] = residual
