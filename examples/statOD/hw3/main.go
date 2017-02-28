@@ -11,11 +11,9 @@ import (
 	"github.com/gonum/matrix/mat64"
 )
 
-const (
-	useEKF = true
+var (
+	wg sync.WaitGroup
 )
-
-var wg sync.WaitGroup
 
 func main() {
 	// Define the times
@@ -42,7 +40,6 @@ func main() {
 		for _, st := range stations {
 			hdr += fmt.Sprintf("%sRange,%sRangeRate,%sNoisyRange,%sNoisyRangeRate,", st.name, st.name, st.name, st.name)
 		}
-		fmt.Println(hdr)
 		return hdr[:len(hdr)-1] // Remove trailing comma
 	}
 	export.CSVAppend = func(state smd.MissionState) string {
@@ -93,115 +90,80 @@ func main() {
 
 	// Take care of measurements.
 	estChan := make(chan (gokalman.Estimate), 1)
-	if useEKF {
-		go processEst("extended", estChan)
-	} else {
-		go processEst("vanilla", estChan)
-	}
+	go processEst("hybridckf", estChan)
 
 	prevXHat := mat64.NewVector(6, nil)
 	prevP := mat64.NewSymDense(6, nil)
-	covarDistance := 10.
-	covarVelocity := 2.
+	covarDistance := 1e-10
+	covarVelocity := 1e-7
 	for i := 0; i < 3; i++ {
 		prevP.SetSym(i, i, covarDistance)
 		prevP.SetSym(i+3, i+3, covarVelocity)
 	}
 	var prevθ float64
 	var prevΦ *mat64.Dense
-	var orbit smd.Orbit
 
 	visibilityErrors := 0
 	var orbitEstimate *smd.OrbitEstimate
+
+	var ckf *gokalman.HybridCKF
 
 	for i, measurement := range measurements {
 		fmt.Printf("#%d (%s)\n", i, measurement.Station.name)
 
 		if i == 0 {
-			orbit = measurement.State.Orbit
-			R, V := orbit.RV()
-			for j := 0; j < 3; j++ {
-				prevXHat.SetVec(j, R[j])
-				prevXHat.SetVec(j+3, V[j])
+			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
+			var err error
+			ckf, _, err = gokalman.NewHybridCKF(prevXHat, prevP, noiseKF, 2)
+			if err != nil {
+				panic(fmt.Errorf("%s", err))
 			}
-			orbitEstimate = smd.NewOrbitEstimate("estimator", orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
 		}
 		var Φ mat64.Dense
-		if useEKF {
-			// Only use actual EKF after a few iterations.
-			// Generate the new orbit estimate from the previous estimated state error.
-			if i > 10 {
-				// We just computed this for i==0.
-				// In the case of the EKF, the prevXHat is the difference between the reference trajectory and the real one.
-				// So let's recreate an orbit.
-				R, V := orbit.RV()
-				for k := 0; k < 3; k++ {
-					R[k] = prevXHat.At(k, 0)
-					V[k] = prevXHat.At(k+3, 0)
-				}
-				orbit = *smd.NewOrbitFromRV(R, V, smd.Earth)
-				fmt.Printf("%s\n", orbit)
-				orbitEstimate = smd.NewOrbitEstimate("estimator", orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
-				// Propagate the reference trajectory until the next measurement time.
-				orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti, ti-1) because we are restarting the integration.
-			}
-			Φ = *orbitEstimate.Φ
-		} else {
-			prevΦ = orbitEstimate.Φ // Store the previous estimate of Phi before propagation. (which is Φ(t0, ti-1))
-			// Propagate the reference trajectory until the next measurement time.
-			orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(t0, ti)
 
-			var invΦ mat64.Dense
-			if ierr := invΦ.Inverse(prevΦ); ierr != nil {
-				panic(fmt.Errorf("could not invert `est1.Φ`: %s", ierr))
-			}
-			// Now we have Φ(ti-1, t0)
-			Φ.Mul(orbitEstimate.Φ, &invΦ)
+		prevΦ = orbitEstimate.Φ // Store the previous estimate of Phi before propagation. (which is Φ(t0, ti-1))
+		// Propagate the reference trajectory until the next measurement time.
+		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(t0, ti)
+
+		var invΦ mat64.Dense
+		if ierr := invΦ.Inverse(prevΦ); ierr != nil {
+			panic(fmt.Errorf("could not invert `est1.Φ`: %s", ierr))
 		}
+		// Now we have Φ(ti-1, t0), so let's compute Φ(ti, ti-1)
+		Φ.Mul(orbitEstimate.Φ, &invΦ)
+
 		// Compute "real" measurement
-		vis, expMeas := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
+		vis, computedObservation := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
 		if !vis {
 			fmt.Printf("[warning] station %s should see the SC but does not\n", measurement.Station.name)
 			visibilityErrors++
 		}
-		var y mat64.Vector
-		y.SubVec(measurement.StateVector(), expMeas.StateVector())
-		// Compute H tilde
 		θdot := measurement.θgst - prevθ
-		H := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
-
-		xBar := mat64.NewVector(6, nil)
-		xBar.MulVec(&Φ, prevXHat)
-
-		PΦ := mat64.NewDense(6, 6, nil)
-		PiBar := mat64.NewDense(6, 6, nil)
-		PΦ.Mul(prevP, Φ.T())
-		PiBar.Mul(&Φ, PΦ) // ΦPΦ
-		PiBarSym, _ := gokalman.AsSymDense(PiBar)
-
-		// Start the KF now
-		var kf gokalman.KalmanFilter
-		if useEKF {
-			// the x0 in the extended KF is not used.
-			kf, _, _ = gokalman.NewExtended(mat64.NewVector(6, nil), PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
-		} else {
-			kf, _, _ = gokalman.NewVanilla(prevXHat, PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
-		}
-		est, err := kf.Update(&y, mat64.NewVector(2, nil))
+		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
+		ckf.Prepare(&Φ, Htilde)
+		est, err := ckf.Update(measurement.StateVector(), computedObservation.StateVector())
 		if err != nil {
-			fmt.Printf("%s\n", err)
+			panic(fmt.Errorf("[error] %s", err))
 		}
 		prevXHat = est.State()
 		prevP = est.Covariance().(*mat64.SymDense)
+		stateEst := mat64.NewVector(6, nil)
+		R, V := orbitEstimate.State().Orbit.RV()
+		for x := 0; x < 3; x++ {
+			stateEst.SetVec(x, R[x])
+			stateEst.SetVec(x+3, V[x])
+		}
+		stateEst.AddVec(stateEst, est.State())
+		fmt.Printf("traj = %v\n", mat64.Formatted(stateEst.T()))
 		// Compute residual
 		residual := mat64.NewVector(2, nil)
-		residual.MulVec(H, est.State())
-		residual.AddScaledVec(residual, -1, &y)
+		residual.MulVec(Htilde, stateEst)
+		residual.AddScaledVec(residual, -1, est.ObservationDev())
 		residual.ScaleVec(-1, residual)
 		residuals[i] = residual
 
 		// Stream to CSV file
-		estChan <- truth.Error(i, est)
+		estChan <- truth.ErrorWithOffset(i, est, stateEst)
 
 	}
 	close(estChan)
@@ -209,10 +171,7 @@ func main() {
 
 	fmt.Printf("\n%d visibility errors\n", visibilityErrors)
 	// Write the residuals to a CSV file
-	fname := "ekf"
-	if !useEKF {
-		fname = "vkf"
-	}
+	fname := "hckf"
 	f, err := os.Create(fmt.Sprintf("./%s-residuals.csv", fname))
 	if err != nil {
 		panic(err)
