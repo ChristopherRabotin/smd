@@ -11,6 +11,10 @@ import (
 	"github.com/gonum/matrix/mat64"
 )
 
+const (
+	ekfTrigger = 10 // Number of measurements prior to switching to EKF mode.
+)
+
 var (
 	wg sync.WaitGroup
 )
@@ -60,23 +64,24 @@ func main() {
 	}
 
 	// Generate the perturbed orbit
-	smd.NewMission(smd.NewEmptySC("LEO", 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 2}, export).Propagate()
+	scName := "LEO"
+	smd.NewMission(smd.NewEmptySC(scName, 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, export).Propagate()
 
 	// Take care of the measurements:
-	fmt.Printf("Now have %d measurements\n", len(measurements))
+	fmt.Printf("Generated %d measurements\n", len(measurements))
 	// Let's mark those as the truth so we can plot that.
 	stateTruth := make([]*mat64.Vector, len(measurements))
 	truthMeas := make([]*mat64.Vector, len(measurements))
 	residuals := make([]*mat64.Vector, len(measurements))
-	for i, measurement := range measurements {
+	for measNo, measurement := range measurements {
 		orbit := make([]float64, 6)
 		R, V := measurement.State.Orbit.RV()
-		for k := 0; k < 3; k++ {
-			orbit[k] = R[k]
-			orbit[k+3] = V[k]
+		for i := 0; i < 3; i++ {
+			orbit[i] = R[i]
+			orbit[i+3] = V[i]
 		}
-		stateTruth[i] = mat64.NewVector(6, orbit)
-		truthMeas[i] = measurement.StateVector()
+		stateTruth[measNo] = mat64.NewVector(6, orbit)
+		truthMeas[measNo] = measurement.StateVector()
 	}
 	truth := gokalman.NewBatchGroundTruth(stateTruth, truthMeas)
 
@@ -90,7 +95,7 @@ func main() {
 
 	// Take care of measurements.
 	estChan := make(chan (gokalman.Estimate), 1)
-	go processEst("hybridckf", estChan)
+	go processEst("hybridkf", estChan)
 
 	prevXHat := mat64.NewVector(6, nil)
 	prevP := mat64.NewSymDense(6, nil)
@@ -105,21 +110,32 @@ func main() {
 	visibilityErrors := 0
 	var orbitEstimate *smd.OrbitEstimate
 
-	var ckf *gokalman.HybridCKF
+	if ekfTrigger < 0 {
+		fmt.Println("[WARNING] EKF disabled")
+	} else if ekfTrigger < 10 {
+		fmt.Println("[WARNING] EKF may be turned on too early")
+	} else {
+		fmt.Printf("[INFO] EKF will turn on after %d measurements\n", ekfTrigger)
+	}
+
+	var kf *gokalman.HybridKF
 	var prevStationName = ""
-	for i, measurement := range measurements {
+	for measNo, measurement := range measurements {
 		if measurement.Station.name != prevStationName {
-			fmt.Printf("Now visible by %s (#%d)\n", measurement.Station.name, i)
+			fmt.Printf("%s in visibility of %s (measurement #%04d)\n", scName, measurement.Station.name, measNo)
 			prevStationName = measurement.Station.name
 		}
 
-		if i == 0 {
+		if measNo == 0 {
 			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
 			var err error
-			ckf, _, err = gokalman.NewHybridCKF(prevXHat, prevP, noiseKF, 2)
+			kf, _, err = gokalman.NewHybridKF(prevXHat, prevP, noiseKF, 2)
 			if err != nil {
 				panic(fmt.Errorf("%s", err))
 			}
+		} else if measNo == ekfTrigger {
+			// Switch KF to EKF mode
+			kf.EnableEKF()
 		}
 
 		// Propagate the reference trajectory until the next measurement time.
@@ -133,8 +149,8 @@ func main() {
 		}
 		θdot := measurement.θgst - prevθ
 		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
-		ckf.Prepare(orbitEstimate.Φ, Htilde)
-		est, err := ckf.Update(measurement.StateVector(), computedObservation.StateVector())
+		kf.Prepare(orbitEstimate.Φ, Htilde)
+		est, err := kf.Update(measurement.StateVector(), computedObservation.StateVector())
 		if err != nil {
 			panic(fmt.Errorf("[error] %s", err))
 		}
@@ -142,9 +158,9 @@ func main() {
 		prevP = est.Covariance().(*mat64.SymDense)
 		stateEst := mat64.NewVector(6, nil)
 		R, V := orbitEstimate.State().Orbit.RV()
-		for x := 0; x < 3; x++ {
-			stateEst.SetVec(x, R[x])
-			stateEst.SetVec(x+3, V[x])
+		for i := 0; i < 3; i++ {
+			stateEst.SetVec(i, R[i])
+			stateEst.SetVec(i+3, V[i])
 		}
 		stateEst.AddVec(stateEst, est.State())
 		// Compute residual
@@ -152,10 +168,22 @@ func main() {
 		residual.MulVec(Htilde, est.State())
 		residual.AddScaledVec(residual, -1, est.ObservationDev())
 		residual.ScaleVec(-1, residual)
-		residuals[i] = residual
+		residuals[measNo] = residual
 
 		// Stream to CSV file
-		estChan <- truth.ErrorWithOffset(i, est, stateEst)
+		estChan <- truth.ErrorWithOffset(measNo, est, stateEst)
+
+		// If in EKF, update the reference trajectory.
+		if kf.EKFEnabled() {
+			// Update the state from the error.
+			state := est.State()
+			R, V := orbitEstimate.Orbit.RV()
+			for i := 0; i < 3; i++ {
+				R[i] += state.At(i, 0)
+				V[i] += state.At(i+3, 0)
+			}
+			orbitEstimate = smd.NewOrbitEstimate("estimator", *smd.NewOrbitFromRV(R, V, smd.Earth), estPerts, measurement.State.DT, time.Second)
+		}
 
 	}
 	close(estChan)
@@ -163,7 +191,7 @@ func main() {
 
 	fmt.Printf("\n%d visibility errors\n", visibilityErrors)
 	// Write the residuals to a CSV file
-	fname := "hckf"
+	fname := "hkf"
 	f, err := os.Create(fmt.Sprintf("./%s-residuals.csv", fname))
 	if err != nil {
 		panic(err)
