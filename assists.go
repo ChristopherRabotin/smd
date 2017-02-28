@@ -24,12 +24,15 @@ func (b BPlane) attemptWithinGoal(attempt BPlane, tolerance float64) bool {
 		return false
 	}
 	if !math.IsNaN(b.goalBR) && !floats.EqualWithinAbs(b.goalBR, attempt.goalBR, tolerance) {
+		fmt.Println("br failed")
 		return false
 	}
 	if !math.IsNaN(b.goalBT) && !floats.EqualWithinAbs(b.goalBT, attempt.goalBT, tolerance) {
+		fmt.Println("bt failed")
 		return false
 	}
 	if !math.IsNaN(b.goalLTOF) && !floats.EqualWithinAbs(b.goalLTOF, attempt.goalLTOF, tolerance) {
+		fmt.Println("ltof failed")
 		return false
 	}
 	return true
@@ -70,26 +73,30 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 	fmt.Printf("nominal:\n%s\n", b)
 	var converged = false
 	var R, V = b.Orbit.RV()
-	pert := math.Pow(10, -10)
+	pert := math.Pow(10, -3)
 	BRStar := b.BR
 	BTStar := b.BT
 	LTOFStar := b.LTOF
+	fmt.Printf("ΔBR = %f\tΔBT = %f\n", math.Abs(b.goalBR-BRStar), math.Abs(b.goalBT-BTStar))
 	for iter := 0; iter < 1000; iter++ {
-		// Vary velocity vector
+		// Vary velocity vector and build the Jacobian
 		jacob := mat64.NewDense(components, components, nil)
+		fmt.Printf("%+v (init)\n", V)
 		for i := 0; i < components; i++ { // Vx, Vy, Vz
 			vTmp := make([]float64, 3)
 			copy(vTmp, V)
 			vTmp[i] += pert
+			fmt.Printf("%+v\n", vTmp)
 			attempt := NewBPlane(*NewOrbitFromRV(R, vTmp, Earth))
 			// Compute Jacobian
 			// BT, BR, LTOF
-			jacob.Set(i, 0, (BRStar-attempt.BR)/pert)
-			jacob.Set(i, 1, (BTStar-attempt.BT)/pert)
+			jacob.Set(0, i, (BTStar-attempt.BT)/pert)
+			jacob.Set(1, i, (BRStar-attempt.BR)/pert)
 			if components > 2 {
 				jacob.Set(i, 2, (LTOFStar-attempt.LTOF)/pert)
 			}
 		}
+		fmt.Println("")
 		// Invert Jacobian
 		var invJacob mat64.Dense
 		if err := invJacob.Inverse(jacob); err != nil {
@@ -97,16 +104,16 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 			panic("could not invert jacobian!")
 		}
 		ΔB := mat64.NewVector(components, nil)
-		if !math.IsNaN(b.goalBR) {
-			ΔB.SetVec(0, b.goalBR-BRStar)
-		}
 		if !math.IsNaN(b.goalBT) {
-			ΔB.SetVec(1, b.goalBT-BTStar)
+			ΔB.SetVec(0, b.goalBT-BTStar)
+		}
+		if !math.IsNaN(b.goalBR) {
+			ΔB.SetVec(1, b.goalBR-BRStar)
 		}
 		if components > 2 && !math.IsNaN(b.goalLTOF) {
 			ΔB.SetVec(2, b.goalLTOF-LTOFStar)
 		}
-		//fmt.Printf("[%02d] %+v\t%f\n", iter, mat64.Formatted(ΔB.T()), mat64.Norm(ΔB, 2))
+		fmt.Printf("[%02d] %+v\t%f\n", iter, mat64.Formatted(ΔB.T()), mat64.Norm(ΔB, 2))
 		var Δv mat64.Vector
 		Δv.MulVec(&invJacob, ΔB)
 		for i := 0; i < components; i++ {

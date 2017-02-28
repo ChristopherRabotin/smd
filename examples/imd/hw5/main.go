@@ -49,8 +49,8 @@ func main() {
 		}
 	} else {
 		// Targeting
-		initBPlane.SetBTGoal(13135.7982982557, 1e-6)
 		initBPlane.SetBRGoal(5022.26511510685, 1e-6)
+		initBPlane.SetBTGoal(13135.7982982557, 1e-6)
 		finalV, err := initBPlane.AchieveGoals(2)
 		if err != nil {
 			fmt.Printf("[error] %s =(\n", err)
