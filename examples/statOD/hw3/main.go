@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// Generate the perturbed orbit
-	smd.NewMission(smd.NewEmptySC("LEO", 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, export).Propagate()
+	smd.NewMission(smd.NewEmptySC("LEO", 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 2}, export).Propagate()
 
 	// Take care of the measurements:
 	fmt.Printf("Now have %d measurements\n", len(measurements))
@@ -101,7 +101,6 @@ func main() {
 		prevP.SetSym(i+3, i+3, covarVelocity)
 	}
 	var prevθ float64
-	var prevΦ *mat64.Dense
 
 	visibilityErrors := 0
 	var orbitEstimate *smd.OrbitEstimate
@@ -122,18 +121,9 @@ func main() {
 				panic(fmt.Errorf("%s", err))
 			}
 		}
-		var Φ mat64.Dense
 
-		prevΦ = orbitEstimate.Φ // Store the previous estimate of Phi before propagation. (which is Φ(t0, ti-1))
 		// Propagate the reference trajectory until the next measurement time.
 		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(t0, ti)
-
-		var invΦ mat64.Dense
-		if ierr := invΦ.Inverse(prevΦ); ierr != nil {
-			panic(fmt.Errorf("could not invert `est1.Φ`: %s", ierr))
-		}
-		// Now we have Φ(ti-1, t0), so let's compute Φ(ti, ti-1)
-		Φ.Mul(orbitEstimate.Φ, &invΦ)
 
 		// Compute "real" measurement
 		vis, computedObservation := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
@@ -143,7 +133,7 @@ func main() {
 		}
 		θdot := measurement.θgst - prevθ
 		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
-		ckf.Prepare(&Φ, Htilde)
+		ckf.Prepare(orbitEstimate.Φ, Htilde)
 		est, err := ckf.Update(measurement.StateVector(), computedObservation.StateVector())
 		if err != nil {
 			panic(fmt.Errorf("[error] %s", err))
