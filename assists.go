@@ -23,17 +23,16 @@ func (b BPlane) attemptWithinGoal(attempt BPlane, tolerance float64) bool {
 	if !b.anyGoalSet() {
 		return false
 	}
-	ok := true
 	if !math.IsNaN(b.goalBR) && !floats.EqualWithinAbs(b.goalBR, attempt.goalBR, tolerance) {
-		ok = ok && false
+		return false
 	}
 	if !math.IsNaN(b.goalBT) && !floats.EqualWithinAbs(b.goalBT, attempt.goalBT, tolerance) {
-		ok = ok && false
+		return false
 	}
 	if !math.IsNaN(b.goalLTOF) && !floats.EqualWithinAbs(b.goalLTOF, attempt.goalLTOF, tolerance) {
-		ok = ok && false
+		return false
 	}
-	return ok
+	return true
 }
 
 // SetBTGoal sets to the B_T goal
@@ -69,19 +68,12 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 		return nil, errors.New("no goal set")
 	}
 	fmt.Printf("nominal:\n%s\n", b)
-	ΔB := mat64.NewVector(components, nil)
-	if !math.IsNaN(b.goalBR) {
-		ΔB.SetVec(0, b.goalBR-b.BR)
-	}
-	if !math.IsNaN(b.goalBT) {
-		ΔB.SetVec(1, b.goalBT-b.BT)
-	}
-	if components > 2 && !math.IsNaN(b.goalLTOF) {
-		ΔB.SetVec(2, b.goalLTOF-b.LTOF)
-	}
 	var converged = false
 	var R, V = b.Orbit.RV()
 	pert := math.Pow(10, -10)
+	BRStar := b.BR
+	BTStar := b.BT
+	LTOFStar := b.LTOF
 	for iter := 0; iter < 1000; iter++ {
 		// Vary velocity vector
 		jacob := mat64.NewDense(components, components, nil)
@@ -92,10 +84,10 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 			attempt := NewBPlane(*NewOrbitFromRV(R, vTmp, Earth))
 			// Compute Jacobian
 			// BT, BR, LTOF
-			jacob.Set(i, 0, (b.BR-attempt.BR)/pert)
-			jacob.Set(i, 1, (b.BT-attempt.BT)/pert)
+			jacob.Set(i, 0, (BRStar-attempt.BR)/pert)
+			jacob.Set(i, 1, (BTStar-attempt.BT)/pert)
 			if components > 2 {
-				jacob.Set(i, 2, (b.LTOF-attempt.LTOF)/pert)
+				jacob.Set(i, 2, (LTOFStar-attempt.LTOF)/pert)
 			}
 		}
 		// Invert Jacobian
@@ -104,18 +96,33 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 			fmt.Printf("%+v\n", mat64.Formatted(jacob))
 			panic("could not invert jacobian!")
 		}
+		ΔB := mat64.NewVector(components, nil)
+		if !math.IsNaN(b.goalBR) {
+			ΔB.SetVec(0, b.goalBR-BRStar)
+		}
+		if !math.IsNaN(b.goalBT) {
+			ΔB.SetVec(1, b.goalBT-BTStar)
+		}
+		if components > 2 && !math.IsNaN(b.goalLTOF) {
+			ΔB.SetVec(2, b.goalLTOF-LTOFStar)
+		}
+		//fmt.Printf("[%02d] %+v\t%f\n", iter, mat64.Formatted(ΔB.T()), mat64.Norm(ΔB, 2))
 		var Δv mat64.Vector
 		Δv.MulVec(&invJacob, ΔB)
 		for i := 0; i < components; i++ {
 			V[i] += Δv.At(i, 0)
 		}
 		// Compute updated B plane
-		newOrbit := NewOrbitFromRV(R, V, Earth)
-		current := NewBPlane(*newOrbit)
+		current := NewBPlane(*NewOrbitFromRV(R, V, Earth))
+		// Update the nominal values
+		BRStar = current.BR
+		BTStar = current.BT
+		LTOFStar = current.LTOF
 		converged = b.attemptWithinGoal(current, 1e-5)
 		if converged {
 			break
 		}
+		fmt.Printf("ΔBR = %f\tΔBT = %f\n", math.Abs(b.goalBR-BRStar), math.Abs(b.goalBT-BTStar))
 	}
 	if !converged {
 		return nil, errors.New("did not converge after 1000 iterations")
