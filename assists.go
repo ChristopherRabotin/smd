@@ -23,16 +23,13 @@ func (b BPlane) attemptWithinGoal(attempt BPlane, tolerance float64) bool {
 	if !b.anyGoalSet() {
 		return false
 	}
-	if !math.IsNaN(b.goalBR) && !floats.EqualWithinAbs(b.goalBR, attempt.goalBR, tolerance) {
-		fmt.Println("br failed")
+	if !math.IsNaN(b.goalBR) && !floats.EqualWithinAbs(b.goalBR, attempt.BR, tolerance) {
 		return false
 	}
-	if !math.IsNaN(b.goalBT) && !floats.EqualWithinAbs(b.goalBT, attempt.goalBT, tolerance) {
-		fmt.Println("bt failed")
+	if !math.IsNaN(b.goalBT) && !floats.EqualWithinAbs(b.goalBT, attempt.BT, tolerance) {
 		return false
 	}
-	if !math.IsNaN(b.goalLTOF) && !floats.EqualWithinAbs(b.goalLTOF, attempt.goalLTOF, tolerance) {
-		fmt.Println("ltof failed")
+	if !math.IsNaN(b.goalLTOF) && !floats.EqualWithinAbs(b.goalLTOF, attempt.LTOF, tolerance) {
 		return false
 	}
 	return true
@@ -70,33 +67,35 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 	if !b.anyGoalSet() {
 		return nil, errors.New("no goal set")
 	}
-	fmt.Printf("nominal:\n%s\n", b)
 	var converged = false
 	var R, V = b.Orbit.RV()
-	pert := math.Pow(10, -3)
-	BRStar := b.BR
-	BTStar := b.BT
-	LTOFStar := b.LTOF
-	fmt.Printf("ΔBR = %f\tΔBT = %f\n", math.Abs(b.goalBR-BRStar), math.Abs(b.goalBT-BTStar))
-	for iter := 0; iter < 1000; iter++ {
+	totalΔV := make([]float64, 3)
+	copy(totalΔV, V)
+	pert := math.Pow(10, -10)
+	for iter := 0; iter < 50; iter++ {
+		// Compute updated B plane
+		nominal := NewBPlane(*NewOrbitFromRV(R, V, Earth))
+		// Update the nominal values
+		converged = b.attemptWithinGoal(nominal, 1e-5)
+		if converged {
+			fmt.Printf("converged in %d iterations\n", iter)
+			break
+		}
 		// Vary velocity vector and build the Jacobian
 		jacob := mat64.NewDense(components, components, nil)
-		fmt.Printf("%+v (init)\n", V)
 		for i := 0; i < components; i++ { // Vx, Vy, Vz
 			vTmp := make([]float64, 3)
 			copy(vTmp, V)
 			vTmp[i] += pert
-			fmt.Printf("%+v\n", vTmp)
 			attempt := NewBPlane(*NewOrbitFromRV(R, vTmp, Earth))
 			// Compute Jacobian
 			// BT, BR, LTOF
-			jacob.Set(0, i, (BTStar-attempt.BT)/pert)
-			jacob.Set(1, i, (BRStar-attempt.BR)/pert)
+			jacob.Set(0, i, (attempt.BT-nominal.BT)/pert)
+			jacob.Set(1, i, (attempt.BR-nominal.BR)/pert)
 			if components > 2 {
-				jacob.Set(i, 2, (LTOFStar-attempt.LTOF)/pert)
+				jacob.Set(i, 2, (nominal.LTOF-attempt.LTOF)/pert)
 			}
 		}
-		fmt.Println("")
 		// Invert Jacobian
 		var invJacob mat64.Dense
 		if err := invJacob.Inverse(jacob); err != nil {
@@ -105,36 +104,28 @@ func (b BPlane) AchieveGoals(components int) ([]float64, error) {
 		}
 		ΔB := mat64.NewVector(components, nil)
 		if !math.IsNaN(b.goalBT) {
-			ΔB.SetVec(0, b.goalBT-BTStar)
+			ΔB.SetVec(0, b.goalBT-nominal.BT)
 		}
 		if !math.IsNaN(b.goalBR) {
-			ΔB.SetVec(1, b.goalBR-BRStar)
+			ΔB.SetVec(1, b.goalBR-nominal.BR)
 		}
 		if components > 2 && !math.IsNaN(b.goalLTOF) {
-			ΔB.SetVec(2, b.goalLTOF-LTOFStar)
+			ΔB.SetVec(2, b.goalLTOF-nominal.LTOF)
 		}
-		fmt.Printf("[%02d] %+v\t%f\n", iter, mat64.Formatted(ΔB.T()), mat64.Norm(ΔB, 2))
 		var Δv mat64.Vector
 		Δv.MulVec(&invJacob, ΔB)
 		for i := 0; i < components; i++ {
 			V[i] += Δv.At(i, 0)
 		}
-		// Compute updated B plane
-		current := NewBPlane(*NewOrbitFromRV(R, V, Earth))
-		// Update the nominal values
-		BRStar = current.BR
-		BTStar = current.BT
-		LTOFStar = current.LTOF
-		converged = b.attemptWithinGoal(current, 1e-5)
-		if converged {
-			break
-		}
-		fmt.Printf("ΔBR = %f\tΔBT = %f\n", math.Abs(b.goalBR-BRStar), math.Abs(b.goalBT-BTStar))
 	}
 	if !converged {
 		return nil, errors.New("did not converge after 1000 iterations")
 	}
-	return V, nil
+	// Compute the Delta-V.
+	for i := 0; i < 3; i++ {
+		totalΔV[i] -= V[i]
+	}
+	return totalΔV, nil
 }
 
 func (b BPlane) String() string {
