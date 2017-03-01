@@ -24,7 +24,7 @@ func main() {
 	startDT := time.Now()
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
 	// Define the orbits
-	leo := smd.NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, smd.Earth)
+	leo := smd.NewOrbitFromOE(7000, 0.001, 30, 80, 40, 0, smd.Earth)
 
 	// Define the stations
 	σρ := 1e-3    // m , but all measurements in km.
@@ -65,10 +65,10 @@ func main() {
 
 	// Generate the perturbed orbit
 	scName := "LEO"
-	smd.NewMission(smd.NewEmptySC(scName, 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, export).Propagate()
+	smd.NewPreciseMission(smd.NewEmptySC(scName, 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, 2*time.Second, export).Propagate()
 
 	// Take care of the measurements:
-	fmt.Printf("Generated %d measurements\n", len(measurements))
+	fmt.Printf("\n[INFO] Generated %d measurements\n", len(measurements))
 	// Let's mark those as the truth so we can plot that.
 	stateTruth := make([]*mat64.Vector, len(measurements))
 	truthMeas := make([]*mat64.Vector, len(measurements))
@@ -122,7 +122,7 @@ func main() {
 	var prevStationName = ""
 	for measNo, measurement := range measurements {
 		if measurement.Station.name != prevStationName {
-			fmt.Printf("%s in visibility of %s (measurement #%04d)\n", scName, measurement.Station.name, measNo)
+			fmt.Printf("[INFO] #%04d %s in visibility of %s (T+%s)\n", measNo, scName, measurement.Station.name, measurement.State.DT.Sub(startDT))
 			prevStationName = measurement.Station.name
 		}
 
@@ -136,6 +136,7 @@ func main() {
 		} else if measNo == ekfTrigger {
 			// Switch KF to EKF mode
 			kf.EnableEKF()
+			fmt.Printf("[INFO] #%04d EKF now enabled\n", measNo)
 		}
 
 		// Propagate the reference trajectory until the next measurement time.
@@ -144,7 +145,7 @@ func main() {
 		// Compute "real" measurement
 		vis, computedObservation := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
 		if !vis {
-			fmt.Printf("[warning] station %s should see the SC but does not\n", measurement.Station.name)
+			fmt.Printf("[WARNING] station %s should see the SC but does not\n", measurement.Station.name)
 			visibilityErrors++
 		}
 		θdot := measurement.θgst - prevθ
@@ -189,7 +190,11 @@ func main() {
 	close(estChan)
 	wg.Wait()
 
-	fmt.Printf("\n%d visibility errors\n", visibilityErrors)
+	severity := "INFO"
+	if visibilityErrors > 0 {
+		severity = "WARNING"
+	}
+	fmt.Printf("[%s] %d visibility errors\n", severity, visibilityErrors)
 	// Write the residuals to a CSV file
 	fname := "hkf"
 	f, err := os.Create(fmt.Sprintf("./%s-residuals.csv", fname))
