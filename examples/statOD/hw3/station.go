@@ -45,7 +45,8 @@ func (s Station) PerformMeasurement(θgst float64, state smd.MissionState) (bool
 	ρNoisy := ρ + s.ρNoise.Rand(nil)[0]
 	ρDotNoisy := ρDot + s.ρDotNoise.Rand(nil)[0]
 	// Add this to the list of measurements
-	return el >= 10, Measurement{ρNoisy, ρDotNoisy, ρ, ρDot, θgst, state, s}
+	// TODO: Change signature
+	return el >= 10, Measurement{el >= 10, ρNoisy, ρDotNoisy, ρ, ρDot, θgst, state, s}
 }
 
 // RangeElAz returns the range (in the SEZ frame), elevation and azimuth (in degrees) of a given R vector in ECEF.
@@ -80,11 +81,17 @@ func NewStation(name string, altitude, latΦ, longθ, σρ, σρDot float64) Sta
 
 // Measurement stores a measurement of a station.
 type Measurement struct {
+	Visible         bool    // Stores whether or not the attempted measurement was visible from the station.
 	ρ, ρDot         float64 // Store the range and range rate
 	trueρ, trueρDot float64 // Store the true range and range rate
 	θgst            float64
 	State           smd.MissionState
 	Station         Station
+}
+
+// IsNil returns the state vector as a mat64.Vector
+func (m Measurement) IsNil() bool {
+	return m.ρ == m.ρDot && m.ρDot == 0
 }
 
 // StateVector returns the state vector as a mat64.Vector
@@ -93,7 +100,7 @@ func (m Measurement) StateVector() *mat64.Vector {
 }
 
 // HTilde returns the H tilde matrix for this given measurement.
-func (m Measurement) HTilde(state smd.MissionState, θgst, θdot float64) *mat64.Dense {
+func (m Measurement) HTilde(state smd.MissionState, θgst float64) *mat64.Dense {
 	stationR := smd.ECEF2ECI(m.Station.R, θgst)
 	stationV := smd.ECEF2ECI(m.Station.V, θgst)
 	xS := stationR[0]

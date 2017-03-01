@@ -38,6 +38,7 @@ func main() {
 
 	// Vector of measurements
 	measurements := []Measurement{}
+	encounteredMeasurement := false
 
 	// Define the special export functions
 	export := smd.ExportConfig{Filename: "LEO", Cosmo: false, AsCSV: true, Timestamp: false}
@@ -55,12 +56,16 @@ func main() {
 		// Compute visibility for each station.
 		for _, st := range stations {
 			visible, measurement := st.PerformMeasurement(θgst, state)
-			if visible {
+			if !encounteredMeasurement && visible {
+				encounteredMeasurement = true
+			}
+			if encounteredMeasurement {
 				measurements = append(measurements, measurement)
 				str += measurement.CSV()
-			} else {
-				str += ",,,,"
 			}
+			/*} else {
+				str += ",,,,"
+			}*/
 		}
 		return str[:len(str)-1] // Remove trailing comma
 	}
@@ -110,7 +115,6 @@ func main() {
 		prevP.SetSym(i, i, covarDistance)
 		prevP.SetSym(i+3, i+3, covarVelocity)
 	}
-	var prevθ float64
 
 	visibilityErrors := 0
 	var orbitEstimate *smd.OrbitEstimate
@@ -127,11 +131,6 @@ func main() {
 	var prevStationName = ""
 	var prevDT time.Time
 	for measNo, measurement := range measurements {
-		if measurement.Station.name != prevStationName {
-			fmt.Printf("[INFO] #%04d %s in visibility of %s (T+%s)\n", measNo, scName, measurement.Station.name, measurement.State.DT.Sub(startDT))
-			prevStationName = measurement.Station.name
-		}
-
 		if measNo == 0 {
 			prevDT = measurement.State.DT
 			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
@@ -145,8 +144,34 @@ func main() {
 			kf.EnableEKF()
 			fmt.Printf("[INFO] #%04d EKF now enabled\n", measNo)
 		}
+		Δt := measurement.State.DT.Sub(prevDT).Seconds() // Everything is in seconds.
 		// Propagate the reference trajectory until the next measurement time.
-		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(t0, ti)
+		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti+1, ti)
+
+		if !measurement.Visible {
+			// Only do a prediction.
+			kf.Prepare(orbitEstimate.Φ, nil)
+			est, perr := kf.Predict()
+			if perr != nil {
+				fmt.Printf("[error] #%04d %s (skipping)", measNo, perr)
+				continue
+			}
+			stateEst := mat64.NewVector(6, nil)
+			R, V := orbitEstimate.State().Orbit.RV()
+			for i := 0; i < 3; i++ {
+				stateEst.SetVec(i, R[i])
+				stateEst.SetVec(i+3, V[i])
+			}
+			fmt.Printf("%s\n\n", est)
+			//fmt.Printf("%+v\n", mat64.Formatted(stateEst.T()))
+			estChan <- truth.ErrorWithOffset(measNo, est, stateEst)
+			prevDT = measurement.State.DT
+			continue
+		}
+		if measurement.Station.name != prevStationName {
+			fmt.Printf("[INFO] #%04d %s in visibility of %s (T+%s)\n", measNo, scName, measurement.Station.name, measurement.State.DT.Sub(startDT))
+			prevStationName = measurement.Station.name
+		}
 
 		// Compute "real" measurement
 		vis, computedObservation := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
@@ -154,11 +179,9 @@ func main() {
 			fmt.Printf("[WARNING] station %s should see the SC but does not\n", measurement.Station.name)
 			visibilityErrors++
 		}
-		θdot := measurement.θgst - prevθ
-		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
+		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst)
 		kf.Prepare(orbitEstimate.Φ, Htilde)
 		if sncEnabled {
-			Δt := measurement.State.DT.Sub(prevDT).Seconds() // Everything is in seconds
 			if Δt < 20 {
 				// Only enable SNC for small time differences between measurements.
 				Γtop := gokalman.ScaledDenseIdentity(3, math.Pow(Δt, 2)/2)
