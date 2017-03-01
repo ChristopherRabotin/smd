@@ -86,7 +86,7 @@ func main() {
 	truth := gokalman.NewBatchGroundTruth(stateTruth, truthMeas)
 
 	// Perturbations in the estimate
-	estPerts := smd.Perturbations{Jn: 2}
+	estPerts := smd.Perturbations{Jn: 3}
 
 	// Initialize the KF
 	Q := mat64.NewSymDense(6, nil)
