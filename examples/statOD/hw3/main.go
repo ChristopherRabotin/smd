@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"sync"
 	"time"
@@ -12,7 +13,8 @@ import (
 )
 
 const (
-	ekfTrigger = 10 // Number of measurements prior to switching to EKF mode.
+	ekfTrigger = 15    // Number of measurements prior to switching to EKF mode.
+	sncEnabled = false // Set to false to disable SNC.
 )
 
 var (
@@ -88,8 +90,11 @@ func main() {
 	// Perturbations in the estimate
 	estPerts := smd.Perturbations{Jn: 3}
 
-	// Initialize the KF
-	Q := mat64.NewSymDense(6, nil)
+	// Initialize the KF noise
+	σx := math.Pow(1e-6, 2)
+	σy := math.Pow(1e-6, 2)
+	σz := math.Pow(1e-6, 2)
+	Q := mat64.NewSymDense(3, []float64{σx, 0, 0, 0, σy, 0, 0, 0, σz})
 	R := mat64.NewSymDense(2, []float64{σρ, 0, 0, σρDot})
 	noiseKF := gokalman.NewNoiseless(Q, R)
 
@@ -120,6 +125,7 @@ func main() {
 
 	var kf *gokalman.HybridKF
 	var prevStationName = ""
+	var prevDT time.Time
 	for measNo, measurement := range measurements {
 		if measurement.Station.name != prevStationName {
 			fmt.Printf("[INFO] #%04d %s in visibility of %s (T+%s)\n", measNo, scName, measurement.Station.name, measurement.State.DT.Sub(startDT))
@@ -127,6 +133,7 @@ func main() {
 		}
 
 		if measNo == 0 {
+			prevDT = measurement.State.DT
 			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
 			var err error
 			kf, _, err = gokalman.NewHybridKF(prevXHat, prevP, noiseKF, 2)
@@ -138,7 +145,6 @@ func main() {
 			kf.EnableEKF()
 			fmt.Printf("[INFO] #%04d EKF now enabled\n", measNo)
 		}
-
 		// Propagate the reference trajectory until the next measurement time.
 		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(t0, ti)
 
@@ -151,6 +157,17 @@ func main() {
 		θdot := measurement.θgst - prevθ
 		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
 		kf.Prepare(orbitEstimate.Φ, Htilde)
+		if sncEnabled {
+			Δt := measurement.State.DT.Sub(prevDT).Seconds() // Everything is in seconds
+			if Δt < 20 {
+				// Only enable SNC for small time differences between measurements.
+				Γtop := gokalman.ScaledDenseIdentity(3, math.Pow(Δt, 2)/2)
+				Γbot := gokalman.ScaledDenseIdentity(3, Δt)
+				Γ := mat64.NewDense(6, 3, nil)
+				Γ.Stack(Γtop, Γbot)
+				kf.PreparePNT(Γ)
+			}
+		}
 		est, err := kf.Update(measurement.StateVector(), computedObservation.StateVector())
 		if err != nil {
 			panic(fmt.Errorf("[error] %s", err))
@@ -173,6 +190,7 @@ func main() {
 
 		// Stream to CSV file
 		estChan <- truth.ErrorWithOffset(measNo, est, stateEst)
+		prevDT = measurement.State.DT
 
 		// If in EKF, update the reference trajectory.
 		if kf.EKFEnabled() {
