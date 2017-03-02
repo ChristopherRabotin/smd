@@ -31,7 +31,7 @@ func (c _smdconfig) ChgFrame(toFrame, fromFrame string, epoch time.Time, state [
 		stateStr += fmt.Sprintf("%f,", val)
 	}
 	stateStr = fmt.Sprintf("[%s]", stateStr[:len(stateStr)-1]) // Trim the last comma
-	cmd := exec.Command("python", conf.SPICEDir+"/chgframe.py", "-t", toFrame, "-f", fromFrame, "-e", epoch.Format(time.ANSIC), "-s", stateStr)
+	cmd := exec.Command("python3", conf.SPICEDir+"/chgframe.py", "-t", toFrame, "-f", fromFrame, "-e", epoch.Format(time.ANSIC), "-s", stateStr)
 	cmdOut, err := cmd.Output()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error running chgframe: %s ", err)
@@ -42,7 +42,7 @@ func (c _smdconfig) ChgFrame(toFrame, fromFrame string, epoch time.Time, state [
 
 func (c _smdconfig) HelioState(planet string, epoch time.Time) ([]float64, []float64) {
 	conf := smdConfig()
-	cmd := exec.Command("python", conf.SPICEDir+"/heliostate.py", "-p", planet, "-e", epoch.Format(time.ANSIC))
+	cmd := exec.Command("python3", conf.SPICEDir+"/heliostate.py", "-p", planet, "-e", epoch.Format(time.ANSIC))
 	cmdOut, err := cmd.Output()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error running chgframe: %s ", err)
