@@ -1,6 +1,10 @@
 language: go
 go:
   - 1.7
+addons:
+  apt:
+    packages:
+    - python3-pip
 before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
