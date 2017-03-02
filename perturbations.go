@@ -46,31 +46,27 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, method Propagator) []float
 
 		case Cartesian:
 			R := o.R()
-			r := norm(R)
+			x := R[0]
+			y := R[1]
+			z := R[2]
 			z2 := math.Pow(R[2], 2)
-			acc := -(3 * o.Origin.μ * o.Origin.J(2) * math.Pow(o.Origin.Radius, 2)) / (2 * math.Pow(r, 5))
-			pert[3] = acc * R[0] * (1 - 5*z2/(r*r))
-			pert[4] = acc * R[1] * (1 - 5*z2/(r*r))
-			pert[5] = acc * R[2] * (3 - 5*z2/(r*r))
+			z3 := math.Pow(R[2], 3)
+			r2 := math.Pow(R[0], 2) + math.Pow(R[1], 2) + z2
+			r252 := math.Pow(r2, 5/2.)
+			r272 := math.Pow(r2, 7/2.)
+			// J2 (computed via SageMath: https://cloud.sagemath.com/projects/1fb6b227-1832-4f82-a05c-7e45614c00a2/files/j2perts.sagews)
+			accJ2 := (3 / 2.) * o.Origin.J(2) * math.Pow(o.Origin.Radius, 2) * o.Origin.μ
+			pert[3] += accJ2 * (5*x*z2/r272 - x/r252)
+			pert[4] += accJ2 * (5*y*z2/r272 - y/r252)
+			pert[5] += accJ2 * (5*z3/r272 - 3*z/r252)
 			if p.Jn >= 3 {
-				// XXX: This is buggy!
-				// TODO: Check my derivations
-				/*
-									--- FAIL: TestMissionGEOJ4 (0.07s)
-					        mission_test.go:154:
-					                oOsc: [-26499.555355218436 106200.89557088474 320939.8641177445]        [-1.7914458230504229 2.2873105390211204 8.373767217824176]
-					                oTgt: [-42164.13611273549 -3.9738762194469346 0]        [0.00028978000140079556 -3.07466129972018 0]
-					        mission_test.go:155:
-					                oOsc: a=-5230.3 e=8.9668 i=71.420 Ω=23.732 ω=358.312 ν=88.564 λ=110.608 u=86.875
-					                oTgt: a=42164.1 e=0.0000 i=0.000 Ω=359.993 ω=0.007 ν=180.005 λ=180.005 u=180.012
-					        mission_test.go:156: [Cartesian] GEO 1.5 day propagation leads to incorrect orbit: true anomaly invalid
-									FAIL
-				*/
-				// Add J3
-				/*accJ3 := o.Origin.μ * math.Pow(o.Origin.Radius, 3) * o.Origin.J(3) / (2 * math.Pow(r, 6))
-				pert[3] += accJ3 * 5 * R[0] * R[2] * (3 - 7*z2/(r*r))
-				pert[4] += accJ3 * 5 * R[1] * R[2] * (3 - 7*z2/(r*r))
-				pert[5] += accJ3 * (3*z2 - 3*math.Pow(r, 3)/5 + 3*z2/r - 7*math.Pow(R[2], 4)/math.Pow(r, 2))*/
+				// J3 (computed via SageMath: https://cloud.sagemath.com/#projects/1fb6b227-1832-4f82-a05c-7e45614c00a2/files/j3perts.sagews)
+				r292 := math.Pow(r2, 9/2.)
+				z4 := math.Pow(R[2], 4)
+				accJ3 := o.Origin.J(3) * math.Pow(o.Origin.Radius, 3) * o.Origin.μ
+				pert[3] += (5 / 2.) * accJ3 * (7*x*z3/r292 - 3*x*z/r272)
+				pert[4] += (5 / 2.) * accJ3 * (7*y*z3/r292 - 3*y*z/r272)
+				pert[5] += 0.5 * accJ3 * (35*z4/r292 - 30*z2/r272 + 3/r252)
 			}
 
 		default:

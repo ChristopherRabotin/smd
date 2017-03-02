@@ -10,6 +10,15 @@ import (
 	"github.com/gonum/floats"
 )
 
+const (
+	// StepSize is the default step size when propagating an orbit.
+	StepSize = 10 * time.Second
+	// GaussianVOP propagator fails for circular, equatorial and hyperbolic orbits
+	GaussianVOP Propagator = iota + 1
+	// Cartesian propagator works in all cases
+	Cartesian
+)
+
 // Propagator defines the different propagation methods available.
 type Propagator uint8
 
@@ -23,15 +32,6 @@ func (p Propagator) String() string {
 		panic("unknown propagator")
 	}
 }
-
-const (
-	// StepSize is the default step size when propagating an orbit.
-	StepSize = 10 * time.Second
-	// GaussianVOP propagator fails for circular, equatorial and hyperbolic orbits
-	GaussianVOP Propagator = iota + 1
-	// Cartesian propagator works in all cases
-	Cartesian
-)
 
 var wg sync.WaitGroup
 
@@ -285,10 +285,9 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 
 	case Cartesian:
 		R := []float64{f[0], f[1], f[2]}
-		r := norm(R)
 		V := []float64{f[3], f[4], f[5]}
 		tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
-		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(r, 3)
+		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
 		_, _, i, Ω, _, _, _, _, u := tmpOrbit.Elements()
 		Δv = Rot313Vec(-u, -i, -Ω, Δv)
 		// d\vec{R}/dt

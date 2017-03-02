@@ -438,13 +438,13 @@ func (cl *HohmannΔv) Precompute(o Orbit) {
 	_, e, i, _, _, ν, _, _, _ := o.Elements()
 	_, _, iTgt, _, _, νTgt, _, _, _ := cl.target.Elements()
 	if !floats.EqualWithinAbs(νTgt, ν, angleε) && !floats.EqualWithinAbs(νTgt, ν+math.Pi, angleε) && !floats.EqualWithinAbs(νTgt, ν-math.Pi, angleε) {
-		panic(fmt.Errorf("cannot perform Hohmann between orbits with misaligned semi-major axes\nini: %s\ntgt: %s\n", o, cl.target))
+		panic(fmt.Errorf("cannot perform Hohmann between orbits with misaligned semi-major axes\nini: %s\ntgt: %s", o, cl.target))
 	}
 	if !floats.EqualWithinAbs(e, 0, eccentricityε) {
 		panic(fmt.Errorf("cannot perform Hohmann from a non elliptical orbit"))
 	}
 	if !floats.EqualWithinAbs(iTgt, i, angleε) {
-		panic(fmt.Errorf("cannot perform Hohmann between non co-planar orbits\nini: %s\ntgt: %s\n", o, cl.target))
+		panic(fmt.Errorf("cannot perform Hohmann between non co-planar orbits\nini: %s\ntgt: %s", o, cl.target))
 	}
 	if !floats.EqualWithinAbs(ν, 0, angleε) && !floats.EqualWithinAbs(ν, math.Pi, angleε) {
 		fmt.Printf("[WARNING] Hohmann transfer started neither at apoapsis nor at periapasis (inefficient)\n")
