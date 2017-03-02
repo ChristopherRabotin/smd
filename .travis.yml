@@ -9,7 +9,8 @@ before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
   - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
-  - pip3 install -r cmd/refframes/reqs.txt
+  - which pip
+  - pip install -r cmd/refframes/reqs.txt
   - wget -O cmd/refframes/spicekernels/de430.bsp https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp
 script:
   - python cmd/refframes/tests.py
