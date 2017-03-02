@@ -23,6 +23,7 @@ func sc2Mars(arrivalDT time.Time) *smd.Spacecraft {
 	return smd.NewSpacecraft("d2m", dryMass, fuelMass, eps, thrusters, false, []*smd.Cargo{},
 		[]smd.Waypoint{
 			smd.NewReachDistance(distance, true, ref2Mars),
+			smd.NewLoiter(time.Hour, nil),
 			smd.NewToElliptical(nil),
 			smd.NewOrbitTarget(*hyper, nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔiCL),
 			smd.NewLoiter(7*24*time.Hour, nil),
@@ -45,6 +46,7 @@ func sc2Earth(fuel float64, arrivalDT time.Time) *smd.Spacecraft {
 	return smd.NewSpacecraft("d2m", dryMass, fuelMass, eps, thrusters, false, []*smd.Cargo{},
 		[]smd.Waypoint{
 			smd.NewReachDistance(distance+smd.Earth.SOI, false, ref2Earth),
+			smd.NewLoiter(time.Hour, nil),
 			smd.NewToElliptical(nil),
 			smd.NewOrbitTarget(*hyper, nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔiCL),
 			smd.NewLoiter(7*24*time.Hour, nil),
@@ -52,11 +54,12 @@ func sc2Earth(fuel float64, arrivalDT time.Time) *smd.Spacecraft {
 }
 
 func main() {
-	depart := time.Date(2018, 5, 1, 0, 0, 0, 0, time.UTC)   // earth departure date
+	depart := time.Date(2018, 5, 1, 0, 0, 0, 0, time.UTC) // earth departure date
+	maxToMars := depart.Add(2 * 365 * 24 * time.Hour)
 	arrival := time.Date(2018, 14, 8, 0, 0, 0, 0, time.UTC) // mars arrival date
 	initOrbit := smd.Earth.HelioOrbit(depart)
 	vehicle := sc2Mars(arrival)
-	astro := smd.NewMission(vehicle, &initOrbit, depart, depart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: "d2m", AsCSV: false, Cosmo: true, Timestamp: false})
+	astro := smd.NewMission(vehicle, &initOrbit, depart, maxToMars, smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: "d2m", AsCSV: false, Cosmo: true, Timestamp: false})
 	astro.Propagate()
 	R, V := initOrbit.RV()
 	fmt.Printf("%+v\n%+v\n", R, V)

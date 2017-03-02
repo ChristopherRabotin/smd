@@ -289,9 +289,6 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
 		bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
 		_, _, i, Ω, _, _, _, _, u := tmpOrbit.Elements()
-		if Δv[0] == Δv[2] && Δv[0] == 0 && Δv[1] == -1. {
-			fmt.Printf("pre = %+v\n", Δv)
-		}
 		Δv = Rot313Vec(-u, -i, -Ω, Δv)
 		// d\vec{R}/dt
 		fDot[0] = f[3]
