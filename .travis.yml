@@ -5,13 +5,10 @@ before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
   - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
-  - pip install cmd/refframes/reqs.txt
+  - pip install -r cmd/refframes/reqs.txt
   - wget -O cmd/refframes/spicekernels/de430.bsp https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp
 script:
   - python cmd/refframes/tests.py
   - go test -v -timeout=30m -covermode=count -coverprofile=coverage.out
   #- $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci
   - $HOME/gopath/bin/goveralls -package github.com/ChristopherRabotin/smd -service=travis-ci
-env:
-  -VSOP87=./data/vsop87
-  -DATAOUT=./outputdata
