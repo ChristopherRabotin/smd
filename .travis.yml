@@ -2,12 +2,13 @@ language: go
 go:
   - 1.7
 python:
-  - "3.4"
+  - "3.4.5"
 before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
   - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
-  - which pip
+  - python -V
+  - pip install --upgrade pip
   - pip install -r cmd/refframes/reqs.txt
   - wget -O cmd/refframes/spicekernels/de430.bsp https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp
 script:
