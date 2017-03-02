@@ -1,0 +1,12 @@
+# smd TOML config file
+# If both VSOP87 and SPICE are enabled, smd will panic
+[general]
+output_path = "./" # Defines the output directory. Use "./" to output to current working directory.
+
+[VSOP87]
+enabled = false
+directory = "/home/chris/go/src/github.com/ChristopherRabotin/smd/data/vsop87"
+
+[SPICE]
+enabled = true
+directory = "/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/refframes"

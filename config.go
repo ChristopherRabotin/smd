@@ -34,7 +34,7 @@ func (c _smdconfig) ChgFrame(toFrame, fromFrame string, epoch time.Time, state [
 	cmd := exec.Command("python3", conf.SPICEDir+"/chgframe.py", "-t", toFrame, "-f", fromFrame, "-e", epoch.Format(time.ANSIC), "-s", stateStr)
 	cmdOut, err := cmd.Output()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error running chgframe: %s ", err)
+		fmt.Fprintf(os.Stderr, "Error running chgframe: %s \ncheck that you are in the Python virtual environment\n", err)
 		os.Exit(1)
 	}
 	return stateFromString(cmdOut)
@@ -45,7 +45,8 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) ([]float64, []flo
 	cmd := exec.Command("python3", conf.SPICEDir+"/heliostate.py", "-p", planet, "-e", epoch.Format(time.ANSIC))
 	cmdOut, err := cmd.Output()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error running chgframe: %s ", err)
+		fmt.Fprintf(os.Stderr, "command attempted:\npython3 %s/heliostate.py -p %s -e \"%s\"\n", conf.SPICEDir, planet, epoch.Format(time.ANSIC))
+		fmt.Fprintf(os.Stderr, "error running heliostate: %s \ncheck that you are in the Python virtual environment\n", err)
 		os.Exit(1)
 	}
 	return stateFromString(cmdOut)
@@ -98,5 +99,6 @@ func smdConfig() _smdconfig {
 		panic("both VSOP87 and SPICE are enabled, please make up your mind (SPICE is more precise)")
 	}
 	cfgLoaded = true
-	return _smdconfig{VSOP87: vsop87Enabled, VSOP87Dir: vsop87Dir, SPICE: spiceEnabled, SPICEDir: spiceDir, outputDir: outputDir}
+	config = _smdconfig{VSOP87: vsop87Enabled, VSOP87Dir: vsop87Dir, SPICE: spiceEnabled, SPICEDir: spiceDir, outputDir: outputDir}
+	return config
 }

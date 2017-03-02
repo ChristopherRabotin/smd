@@ -294,18 +294,21 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 					firstStatePtr = &state
 
 					if conf.Cosmo {
-						// Change the color
-						for i := 0; i < 3; i++ {
-							color[i] -= 0.2
-							if color[i] > 1 {
-								color[i]--
-							} else if color[i] < 0 {
-								color[i]++
+						// Only write one point every short while.
+						if state.DT.After(prevStatePtr.DT.Add(1 * time.Minute)) {
+							// Change the color
+							for i := 0; i < 3; i++ {
+								color[i] -= 0.2
+								if color[i] > 1 {
+									color[i]--
+								} else if color[i] < 0 {
+									color[i]++
+								}
 							}
-						}
-						asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.DT), Position: state.Orbit.R(), Velocity: state.Orbit.V()}
-						if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
-							panic(err)
+							asTxt := CgInterpolatedState{JD: julian.TimeToJD(state.DT), Position: state.Orbit.R(), Velocity: state.Orbit.V()}
+							if _, err := f.WriteString("\n" + asTxt.ToText()); err != nil {
+								panic(err)
+							}
 						}
 					}
 
