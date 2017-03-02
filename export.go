@@ -164,11 +164,12 @@ func ParseInterpolatedStates(s string) []*CgInterpolatedState {
 
 // createInterpolatedFile returns a file which requires a defer close statement!
 func createInterpolatedFile(filename string, stamped bool, stateDT time.Time) *os.File {
+	config := smdConfig()
 	if stamped {
 		t := time.Now()
-		filename = fmt.Sprintf("%s/prop-%s-%d-%02d-%02dT%02d.%02d.%02d.xyzv", os.Getenv("DATAOUT"), filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+		filename = fmt.Sprintf("%s/prop-%s-%d-%02d-%02dT%02d.%02d.%02d.xyzv", config.outputDir, filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 	} else {
-		filename = fmt.Sprintf("%s/prop-%s.xyzv", os.Getenv("DATAOUT"), filename)
+		filename = fmt.Sprintf("%s/prop-%s.xyzv", config.outputDir, filename)
 	}
 	f, err := os.Create(filename)
 	if err != nil {
@@ -186,11 +187,12 @@ func createInterpolatedFile(filename string, stamped bool, stateDT time.Time) *o
 
 // createAsCSVCSVFile returns a file which requires a defer close statement!
 func createAsCSVCSVFile(filename string, conf ExportConfig, stateDT time.Time) *os.File {
+	config := smdConfig()
 	if conf.Timestamp {
 		t := time.Now()
-		filename = fmt.Sprintf("%s/orbital-elements-%s-%d-%02d-%02dT%02d.%02d.%02d.csv", os.Getenv("DATAOUT"), filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+		filename = fmt.Sprintf("%s/orbital-elements-%s-%d-%02d-%02dT%02d.%02d.%02d.csv", config.outputDir, filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 	} else {
-		filename = fmt.Sprintf("%s/orbital-elements-%s.csv", os.Getenv("DATAOUT"), filename)
+		filename = fmt.Sprintf("%s/orbital-elements-%s.csv", config.outputDir, filename)
 	}
 	f, err := os.Create(filename)
 	if err != nil {
@@ -222,7 +224,8 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 			// Let's write the catalog.
 			c := CgCatalog{Version: "1.0", Name: prevStatePtr.SC.Name, Items: cgItems, Require: nil}
 			// Create JSON file.
-			fc, err := os.Create(fmt.Sprintf("%s/catalog-%s.json", os.Getenv("DATAOUT"), conf.Filename))
+
+			fc, err := os.Create(fmt.Sprintf("%s/catalog-%s.json", smdConfig().outputDir, conf.Filename))
 			if err != nil {
 				panic(err)
 			}
