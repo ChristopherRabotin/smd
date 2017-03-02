@@ -13,7 +13,7 @@ before_install:
   - go get github.com/mattn/goveralls
   - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
   - sudo pip install virtualenv
-  - virtualenv -p `which python3` .venv
+  - virtualenv -p `which python3.4` .venv
   - source .venv/bin/activate
   - python -V
   - pip -V
