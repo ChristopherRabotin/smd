@@ -20,10 +20,11 @@ const (
 )
 
 var (
-	cpus     int
-	planet   string
-	stepSize float64
-	wg       sync.WaitGroup
+	cpus       int
+	planet     string
+	stepSize   float64
+	stepThrust float64
+	wg         sync.WaitGroup
 )
 
 func init() {
@@ -31,6 +32,7 @@ func init() {
 	flag.IntVar(&cpus, "cpus", -1, "number of CPUs to use for this simulation (set to 0 for max CPUs)")
 	flag.StringVar(&planet, "planet", "undef", "departure planet to perform the spiral from")
 	flag.Float64Var(&stepSize, "step", 15, "step size (10 to 30 recommended)")
+	flag.Float64Var(&stepThrust, "thrust", 0.01, "thrust step size (0.01 to 0.5 recommended)")
 }
 
 /*
@@ -38,9 +40,9 @@ func init() {
  * true anomaly. The only thing that actually matters is the argument of periapsis.
  */
 
-func sc() *smd.Spacecraft {
+func sc(thrust float64) *smd.Spacecraft {
 	eps := smd.NewUnlimitedEPS()
-	thrusters := []smd.EPThruster{smd.NewGenericEP(5, 5000)} // VASIMR (approx.)
+	thrusters := []smd.EPThruster{smd.NewGenericEP(thrust, 5000)} // VASIMR (approx.)
 	dryMass := 10000.0
 	fuelMass := 5000.0
 	return smd.NewSpacecraft("Spiral", dryMass, fuelMass, eps, thrusters, false, []*smd.Cargo{},
@@ -82,6 +84,12 @@ func main() {
 		return
 	}
 
+	if stepThrust <= 0 {
+		fmt.Println("thrust step size must be positive")
+		flag.Usage()
+		return
+	}
+
 	var orbitPtr func(ω float64) *smd.Orbit
 	planet = strings.ToLower(planet)
 	switch planet {
@@ -114,53 +122,57 @@ func main() {
 	rslts := make(chan string, 10)
 	wg.Add(1)
 	go streamResults(a, e, fmt.Sprintf("%s-%.0fstep", planet, stepSize), rslts)
-	for ω := 0.0; ω < 360; ω += stepSize {
-		initOrbit := orbitPtr(ω)
-		astro := smd.NewMission(sc(), initOrbit, depart, depart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{})
-		astro.Propagate()
+	initThrust := 0.1 // PPS1350 is 89e-3
+	maxThrust := 5.0  // VASIMR 220 kW
+	for thrust := initThrust; thrust < maxThrust; thrust += stepThrust {
+		for ω := 0.0; ω < 360; ω += stepSize {
+			initOrbit := orbitPtr(ω)
+			astro := smd.NewMission(sc(thrust), initOrbit, depart, depart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{})
+			astro.Propagate()
 
-		// Run chgframe
-		// We're now done so let's convert the position and velocity to heliocentric and check the output.
-		R, V := initOrbit.RV()
-		state := fmt.Sprintf("[%f,%f,%f,%f,%f,%f]", R[0], R[1], R[2], V[0], V[1], V[2])
-		if debug {
-			fmt.Printf("\n=== RUNNING CMD ===\npython %s -t J2000 -f IAU_Earth -e \"%s\" -s \"%s\"\n", chgframePath, astro.CurrentDT.Format(time.ANSIC), state)
-		}
-		cmd := exec.Command("python", chgframePath, "-t", "J2000", "-f", "IAU_Mars", "-e", astro.CurrentDT.Format(time.ANSIC), "-s", state)
-		cmdOut, err := cmd.Output()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error converting orbit to helio ", err)
-			os.Exit(1)
-		}
-		out := string(cmdOut)
-
-		// Process output
-		newState := strings.TrimSpace(string(out))
-		// Cf. https://play.golang.org/p/g-a4idjhIb
-		newState = newState[1 : len(newState)-1]
-		components := strings.Split(newState, ",")
-		var nR = make([]float64, 3)
-		var nV = make([]float64, 3)
-		for i := 0; i < 6; i++ {
-			fl, err := strconv.ParseFloat(strings.TrimSpace(components[i]), 64)
+			// Run chgframe
+			// We're now done so let's convert the position and velocity to heliocentric and check the output.
+			R, V := initOrbit.RV()
+			state := fmt.Sprintf("[%f,%f,%f,%f,%f,%f]", R[0], R[1], R[2], V[0], V[1], V[2])
+			if debug {
+				fmt.Printf("\n=== RUNNING CMD ===\npython %s -t J2000 -f IAU_Earth -e \"%s\" -s \"%s\"\n", chgframePath, astro.CurrentDT.Format(time.ANSIC), state)
+			}
+			cmd := exec.Command("python", chgframePath, "-t", "J2000", "-f", "IAU_Mars", "-e", astro.CurrentDT.Format(time.ANSIC), "-s", state)
+			cmdOut, err := cmd.Output()
 			if err != nil {
-				panic(err)
+				fmt.Fprintln(os.Stderr, "Error converting orbit to helio ", err)
+				os.Exit(1)
 			}
-			if i < 3 {
-				nR[i] = fl
-			} else {
-				nV[i-3] = fl
+			out := string(cmdOut)
+
+			// Process output
+			newState := strings.TrimSpace(string(out))
+			// Cf. https://play.golang.org/p/g-a4idjhIb
+			newState = newState[1 : len(newState)-1]
+			components := strings.Split(newState, ",")
+			var nR = make([]float64, 3)
+			var nV = make([]float64, 3)
+			for i := 0; i < 6; i++ {
+				fl, err := strconv.ParseFloat(strings.TrimSpace(components[i]), 64)
+				if err != nil {
+					panic(err)
+				}
+				if i < 3 {
+					nR[i] = fl
+				} else {
+					nV[i-3] = fl
+				}
 			}
-		}
-		vNorm := math.Sqrt(math.Pow(nV[0], 2) + math.Pow(nV[1], 2) + math.Pow(nV[2], 2))
-		// Add to TSV file
-		rslts <- fmt.Sprintf("%f,%f\n", vNorm, ω)
-		if vNorm > maxV {
-			maxV = vNorm
-			maxOrbit = *initMarsOrbit(ω)
-		} else if vNorm < minV {
-			minV = vNorm
-			minOrbit = *initMarsOrbit(ω)
+			vNorm := math.Sqrt(math.Pow(nV[0], 2) + math.Pow(nV[1], 2) + math.Pow(nV[2], 2))
+			// Add to TSV file
+			rslts <- fmt.Sprintf("%f,%f,%f\n", vNorm, thrust, ω)
+			if vNorm > maxV {
+				maxV = vNorm
+				maxOrbit = *initMarsOrbit(ω)
+			} else if vNorm < minV {
+				minV = vNorm
+				minOrbit = *initMarsOrbit(ω)
+			}
 		}
 	}
 	fmt.Printf("\n\n=== RESULT ===\n\nmaxV=%.3f km/s\t%s\nminV=%.3f km/s\t%s\n\n", maxV, maxOrbit, minV, minOrbit)
@@ -174,7 +186,7 @@ func streamResults(a, e float64, fn string, rslts <-chan string) {
 	}
 	defer f.Close()
 	// Header
-	f.WriteString(fmt.Sprintf("#a=%f km\te=%f\n#V(km/s), i (degrees), raan (degrees), arg peri (degrees),nu (degrees)\n", a, e))
+	f.WriteString(fmt.Sprintf("#a=%f km\te=%f\n#V(km/s), thrust (Newton), arg peri (degrees)\n", a, e))
 	for {
 		rslt, more := <-rslts
 		if more {
