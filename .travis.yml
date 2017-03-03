@@ -8,7 +8,7 @@ addons:
       - deadsnakes # source required so it finds the package definition below
     packages:
       - python3.4
-      - python-devel
+      - python-dev
 before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
