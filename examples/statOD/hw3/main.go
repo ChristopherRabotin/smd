@@ -183,7 +183,7 @@ func main() {
 		var kf gokalman.KalmanFilter
 		if useEKF {
 			// the x0 in the extended KF is not used.
-			kf, _, _ = gokalman.NewExtended(mat64.NewVector(6, nil), PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
+			kf, _, _ = gokalman.NewVanilla(mat64.NewVector(6, nil), PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
 		} else {
 			kf, _, _ = gokalman.NewVanilla(prevXHat, PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
 		}
