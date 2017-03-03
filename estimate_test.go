@@ -110,10 +110,6 @@ func TestEstimateArbitraryPhi(t *testing.T) {
 }
 
 func TestEstimatePhi(t *testing.T) {
-
-}
-
-func TestEstimatePhi(t *testing.T) {
 	virtObj := CelestialObject{"normalized", 6378.145, 149598023, 1, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, nil}
 	orbit := NewOrbitFromRV([]float64{1, 0, 0}, []float64{0, 1, 0}, virtObj)
 	startDT := time.Now()
