@@ -65,7 +65,7 @@ func TestHelio(t *testing.T) {
 		{2460545, []float64{130423562.1, -76679031.85, 3624.816561}, []float64{14.61294123, 25.56747613, -0.0015034455}, Earth},
 		//{2460919, []float64{19195371.67, 106029328.4, 348953.802}, []float64{-34.57913611, 6.064190776, 2.078550651}, Venus}
 	} {
-		R, V := exp.body.HelioOrbitAtJD(exp.jde).RV()
+		R, V := exp.body.HelioOrbit(julian.JDToTime(exp.jde)).RV()
 		Rcomp := mat64.NewVector(3, R)
 		Vcomp := mat64.NewVector(3, V)
 		Rexp := mat64.NewVector(3, exp.R)

@@ -43,7 +43,7 @@ func TestEstimate(t *testing.T) {
 	t.Logf("\n%+v", mat64.Formatted(&id))
 }
 
-func TestEstimatePhi(t *testing.T) {
+func TestEstimateArbitraryPhi(t *testing.T) {
 	perts := Perturbations{Jn: 3}
 	startDT := time.Now().UTC()
 	duration0 := time.Duration(30) * time.Second
@@ -69,5 +69,9 @@ func TestEstimatePhi(t *testing.T) {
 		t.Logf("\n%+v", mat64.Formatted(&Φ2))
 		t.Fatal("did not get Φ2 correctly")
 	}
+
+}
+
+func TestEstimatePhi(t *testing.T) {
 
 }

@@ -2,7 +2,8 @@ import unittest
 
 import spiceypy as spice
 
-import chgframe
+from chgframe import ChgFrame
+from heliostate import PlanetState
 
 
 class TestChgFrame(unittest.TestCase):
@@ -22,15 +23,22 @@ class TestChgFrame(unittest.TestCase):
             [146717590.82034796, 24671383.129385762, -52708.613323677433, -6.003251556028836, 28.634454862602379, -0.09470460569670297],
         ]
         for tno, epoch in enumerate(self.epochs):
-            st = chgframe.ChgFrame(self.state, 'IAU_Earth', 'EclipJ2000', epoch)
+            st = ChgFrame(self.state, 'IAU_Earth', 'EclipJ2000', epoch)
             for i, component in enumerate(st):
                 eps = self.epsDecimalsR if i < 3 else self.epsDecimalsV
                 self.assertAlmostEqual(component, expectations[tno][i], eps, '{} {}[{}]'.format(epoch, 'R' if i < 3 else 'V', i))
             # Check reversiblity
-            revst = chgframe.ChgFrame(st, 'EclipJ2000', 'IAU_Earth', epoch)
+            revst = ChgFrame(st, 'EclipJ2000', 'IAU_Earth', epoch)
             for i, component in enumerate(revst):
                 eps = self.epsDecimalsR if i < 3 else self.epsDecimalsV
                 self.assertAlmostEqual(component, self.state[i], eps, '{} {}'.format(epoch, 'R (rev\'d)' if i < 3 else 'V (rev\'d)'))
+
+class TestPlanetState(unittest.TestCase):
+    def test_Mars(self):
+        # We test Mars specifically because the kernel uses a different name for this.
+        exp = [17278277.787544131, 232608811.57426503, 4449867.5818615705, -23.242444259084987, 3.8523561650721909, 0.65118719284938198]
+        got = PlanetState("mArS", "2015-06-20 00:00:00")
+        self.assertTrue(all([val == exp[i] for i, val in enumerate(got)]), 'incorrect Mars state returned')
 
 if __name__ == '__main__':
     unittest.main()
