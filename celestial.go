@@ -60,55 +60,54 @@ func (c *CelestialObject) Equals(b CelestialObject) bool {
 	return c.Name == b.Name && c.Radius == b.Radius && c.a == b.a && c.μ == b.μ && c.SOI == b.SOI && c.J2 == b.J2
 }
 
-// HelioOrbitAtJD is the same as HelioOrbit but the argument is the julian date.
-func (c *CelestialObject) HelioOrbitAtJD(jde float64) Orbit {
-	if c.Name == "Sun" {
-		return *NewOrbitFromRV([]float64{0, 0, 0}, []float64{0, 0, 0}, *c)
-	}
-	if c.PP == nil {
-		// Load the planet.
-		var vsopPosition int
-		switch c.Name {
-		case "Venus":
-			vsopPosition = 2
-		case "Earth":
-			vsopPosition = 3
-		case "Mars":
-			vsopPosition = 4
-		case "Jupiter":
-			vsopPosition = 5
-		default:
-			panic(fmt.Errorf("unknown object: %s", c.Name))
-		}
-		planet, err := planetposition.LoadPlanet(vsopPosition - 1)
-		if err != nil {
-			panic(fmt.Errorf("could not load planet number %d: %s", vsopPosition, err))
-		}
-		c.PP = planet
-	}
-	l, b, r := c.PP.Position2000(jde)
-	r *= AU
-	v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
-	// Get the Cartesian coordinates from L,B,R.
-	R, V := make([]float64, 3), make([]float64, 3)
-	sB, cB := math.Sincos(b.Rad())
-	sL, cL := math.Sincos(l.Rad())
-	R[0] = r * cB * cL
-	R[1] = r * cB * sL
-	R[2] = r * sB
-	// Let's find the direction of the velocity vector.
-	vDir := cross(R, []float64{0, 0, -1})
-	for i := 0; i < 3; i++ {
-		V[i] = v * vDir[i] / norm(vDir)
-	}
-	return *NewOrbitFromRV(R, V, Sun)
-}
-
 // HelioOrbit returns the heliocentric position and velocity of this planet at a given time in equatorial coordinates.
 // Note that the whole file is loaded. In fact, if we don't, then whoever is the first to call this function will
 // set the Epoch at which the ephemeris are available, and that sucks.
 func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
-	return c.HelioOrbitAtJD(julian.TimeToJD(dt))
+	if c.Name == "Sun" {
+		return *NewOrbitFromRV([]float64{0, 0, 0}, []float64{0, 0, 0}, *c)
+	}
+	if smdConfig().VSOP87 {
+		if c.PP == nil {
+			// Load the planet.
+			var vsopPosition int
+			switch c.Name {
+			case "Venus":
+				vsopPosition = 2
+			case "Earth":
+				vsopPosition = 3
+			case "Mars":
+				vsopPosition = 4
+			case "Jupiter":
+				vsopPosition = 5
+			default:
+				panic(fmt.Errorf("unknown object: %s", c.Name))
+			}
+			planet, err := planetposition.LoadPlanetPath(vsopPosition-1, "")
+			if err != nil {
+				panic(fmt.Errorf("could not load planet number %d: %s", vsopPosition, err))
+			}
+			c.PP = planet
+		}
+		l, b, r := c.PP.Position2000(julian.TimeToJD(dt))
+		r *= AU
+		v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
+		// Get the Cartesian coordinates from L,B,R.
+		R, V := make([]float64, 3), make([]float64, 3)
+		sB, cB := math.Sincos(b.Rad())
+		sL, cL := math.Sincos(l.Rad())
+		R[0] = r * cB * cL
+		R[1] = r * cB * sL
+		R[2] = r * sB
+		// Let's find the direction of the velocity vector.
+		vDir := cross(R, []float64{0, 0, -1})
+		for i := 0; i < 3; i++ {
+			V[i] = v * vDir[i] / norm(vDir)
+		}
+		return *NewOrbitFromRV(R, V, Sun)
+	}
+	R, V := config.HelioState(c.Name, dt)
+	return *NewOrbitFromRV(R, V, Sun)
 }
 
 /* Definitions */
