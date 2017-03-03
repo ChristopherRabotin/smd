@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	ekfTrigger = 15    // Number of measurements prior to switching to EKF mode.
-	sncEnabled = false // Set to false to disable SNC.
+	ekfTrigger   = 15    // Number of measurements prior to switching to EKF mode.
+	sncEnabled   = true  // Set to false to disable SNC.
+	timeBasePlot = false // Set to true to plot time, or false to plot on measurements.
 )
 
 var (
@@ -38,7 +39,6 @@ func main() {
 
 	// Vector of measurements
 	measurements := []Measurement{}
-	encounteredMeasurement := false
 
 	// Define the special export functions
 	export := smd.ExportConfig{Filename: "LEO", Cosmo: false, AsCSV: true, Timestamp: false}
@@ -55,17 +55,13 @@ func main() {
 		θgst := Δt * smd.EarthRotationRate
 		// Compute visibility for each station.
 		for _, st := range stations {
-			visible, measurement := st.PerformMeasurement(θgst, state)
-			if !encounteredMeasurement && visible {
-				encounteredMeasurement = true
-			}
-			if encounteredMeasurement {
+			_, measurement := st.PerformMeasurement(θgst, state)
+			if measurement.Visible {
 				measurements = append(measurements, measurement)
 				str += measurement.CSV()
-			}
-			/*} else {
+			} else {
 				str += ",,,,"
-			}*/
+			}
 		}
 		return str[:len(str)-1] // Remove trailing comma
 	}
@@ -149,23 +145,25 @@ func main() {
 		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti+1, ti)
 
 		if !measurement.Visible {
-			// Only do a prediction.
-			kf.Prepare(orbitEstimate.Φ, nil)
-			est, perr := kf.Predict()
-			if perr != nil {
-				fmt.Printf("[error] #%04d %s (skipping)", measNo, perr)
-				continue
+			if timeBasePlot {
+				// Only do a prediction.
+				kf.Prepare(orbitEstimate.Φ, nil)
+				est, perr := kf.Predict()
+				if perr != nil {
+					fmt.Printf("[error] #%04d %s (skipping)", measNo, perr)
+					continue
+				}
+				stateEst := mat64.NewVector(6, nil)
+				R, V := orbitEstimate.State().Orbit.RV()
+				for i := 0; i < 3; i++ {
+					stateEst.SetVec(i, R[i])
+					stateEst.SetVec(i+3, V[i])
+				}
+				fmt.Printf("%s\n\n", est)
+				//fmt.Printf("%+v\n", mat64.Formatted(stateEst.T()))
+				estChan <- truth.ErrorWithOffset(measNo, est, stateEst)
+				prevDT = measurement.State.DT
 			}
-			stateEst := mat64.NewVector(6, nil)
-			R, V := orbitEstimate.State().Orbit.RV()
-			for i := 0; i < 3; i++ {
-				stateEst.SetVec(i, R[i])
-				stateEst.SetVec(i+3, V[i])
-			}
-			fmt.Printf("%s\n\n", est)
-			//fmt.Printf("%+v\n", mat64.Formatted(stateEst.T()))
-			estChan <- truth.ErrorWithOffset(measNo, est, stateEst)
-			prevDT = measurement.State.DT
 			continue
 		}
 		if measurement.Station.name != prevStationName {
