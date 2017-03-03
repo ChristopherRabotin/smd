@@ -11,14 +11,7 @@ if pyversion == '2':
     import warnings
     warnings.filterwarnings("ignore")
 
-__kernels_loaded__ = False
-def __load__kernels__():
-    if __kernels_loaded__:
-        return
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    krnls = ['de430.bsp', 'naif0012.tls', 'pck00010.tpc']
-    for krnl in krnls:
-        spice.furnsh(base_dir + '/spicekernels/' + krnl)
+from utils import BARYCENTER_FRAMES, _load_kernels_
 
 def PlanetState(planet, epoch):
     '''
@@ -26,14 +19,14 @@ def PlanetState(planet, epoch):
     :param: epoch: float or a string representing the date and time in J2000.
     :return: a numpy array
     '''
-    __load__kernels__()
+    _load_kernels_()
     if isinstance(epoch, str):
         epoch = spice.str2et(epoch)
 
     # Parse the planet name.
-    if planet.lower() == 'mars':
+    if planet.lower() in BARYCENTER_FRAMES:
         # Switch to barycenter, as per https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/aareadme_de430-de431.txt
-        planet = 'Mars_barycenter'
+        planet += '_barycenter'
 
     return spice.spkezr(planet, epoch, 'ECLIPJ2000', 'None', 'Sun')[0]
 
@@ -44,5 +37,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print([component for component in PlanetState(args.planet, args.epoch)])
-#    exp = [-996776.1190926583,-39776.102324992695,25123.28168731782,-0.5114606889356655,-0.6914491357021403,-0.34254913653144525]
-#    print(nState-exp)

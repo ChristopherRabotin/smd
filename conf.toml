@@ -5,8 +5,8 @@ output_path = "./" # Defines the output directory. Use "./" to output to current
 
 [VSOP87]
 enabled = false
-directory = "/home/chris/go/src/github.com/ChristopherRabotin/smd/data/vsop87"
+directory = "./data/vsop87"
 
 [SPICE]
 enabled = true
-directory = "/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/refframes"
+directory = "./cmd/refframes"
