@@ -34,8 +34,8 @@ func (c _smdconfig) ChgFrame(toFrame, fromFrame string, epoch time.Time, state [
 	cmd := exec.Command("python3", conf.SPICEDir+"/chgframe.py", "-t", toFrame, "-f", fromFrame, "-e", epoch.Format(time.ANSIC), "-s", stateStr)
 	cmdOut, err := cmd.Output()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error running chgframe: %s \ncheck that you are in the Python virtual environment\n", err)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "command attempted:\npython3 %s/chgframe.py -t %s -f %s -e \"%s\" -s %s\n", conf.SPICEDir, toFrame, fromFrame, epoch.Format(time.ANSIC), stateStr)
+		panic(fmt.Errorf("error running chgframe: %s \ncheck that you are in the Python virtual environment", err))
 	}
 	return stateFromString(cmdOut)
 }
@@ -46,8 +46,7 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) ([]float64, []flo
 	cmdOut, err := cmd.Output()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "command attempted:\npython3 %s/heliostate.py -p %s -e \"%s\"\n", conf.SPICEDir, planet, epoch.Format(time.ANSIC))
-		fmt.Fprintf(os.Stderr, "error running heliostate: %s \ncheck that you are in the Python virtual environment\n", err)
-		os.Exit(1)
+		panic(fmt.Errorf("error running heliostate: %s \ncheck that you are in the Python virtual environment", err))
 	}
 	return stateFromString(cmdOut)
 }
