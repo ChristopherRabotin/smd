@@ -80,7 +80,7 @@ func TestEstimate1DayWithJ2(t *testing.T) {
 	}
 }
 
-func TestEstimatePhi(t *testing.T) {
+func TestEstimateArbitraryPhi(t *testing.T) {
 	perts := Perturbations{Jn: 3}
 	startDT := time.Now().UTC()
 	duration0 := time.Duration(30) * time.Second
@@ -107,4 +107,16 @@ func TestEstimatePhi(t *testing.T) {
 		t.Fatal("did not get Φ2 correctly")
 	}
 
+}
+
+func TestEstimatePhi(t *testing.T) {
+	virtObj := CelestialObject{"normalized", 6378.145, 149598023, 1, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, nil}
+	orbit := NewOrbitFromRV([]float64{1, 0, 0}, []float64{0, 1, 0}, virtObj)
+	startDT := time.Now()
+	orbitEstimate := NewOrbitEstimate("estimator", *orbit, Perturbations{}, startDT, time.Second)
+	t.Logf("t0\n%v", mat64.Formatted(orbitEstimate.Φ))
+	orbitEstimate.PropagateUntil(orbitEstimate.dt.Add(10 * time.Second))
+	t.Logf("t10\n%v", mat64.Formatted(orbitEstimate.Φ))
+	orbitEstimate.PropagateUntil(orbitEstimate.dt.Add(100 * time.Second))
+	t.Logf("t100\n%v", mat64.Formatted(orbitEstimate.Φ))
 }
