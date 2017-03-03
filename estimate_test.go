@@ -49,14 +49,16 @@ func TestEstimate1DayNoJ2(t *testing.T) {
 	orbit := NewOrbitFromRV([]float64{-2436.45, -2436.45, 6891.037}, []float64{5.088611, -5.088611, 0}, virtObj)
 	startDT := time.Now()
 	endDT := startDT.Add(24 * time.Hour)
-	NewPreciseMission(NewEmptySC("est", 0), orbit, startDT, endDT, Cartesian, Perturbations{}, time.Second, ExportConfig{}).Propagate()
+	orbitEstimate := NewOrbitEstimate("estimator", *orbit, Perturbations{}, startDT, time.Second)
+	orbitEstimate.PropagateUntil(endDT)
+	rVec, vVec := orbitEstimate.State().Orbit.RV()
 	expR := []float64{-5971.19544867343, 3945.58315019255, 2864.53021742433}
 	expV := []float64{0.049002818030, -4.185030861883, 5.848985672439}
-	if !floats.EqualApprox(orbit.rVec, expR, 1e-8) {
-		t.Fatalf("Incorrect R:\ngot: %+v\nexp: %+v", orbit.rVec, expR)
+	if !floats.EqualApprox(rVec, expR, 1e-8) {
+		t.Fatalf("Incorrect R:\ngot: %+v\nexp: %+v", rVec, expR)
 	}
-	if !floats.EqualApprox(orbit.vVec, expV, 1e-8) {
-		t.Fatalf("Incorrect R:\ngot: %+v\nexp: %+v", orbit.vVec, expV)
+	if !floats.EqualApprox(vVec, expV, 1e-8) {
+		t.Fatalf("Incorrect R:\ngot: %+v\nexp: %+v", vVec, expV)
 	}
 }
 
@@ -65,14 +67,16 @@ func TestEstimate1DayWithJ2(t *testing.T) {
 	orbit := NewOrbitFromRV([]float64{-2436.45, -2436.45, 6891.037}, []float64{5.088611, -5.088611, 0}, virtObj)
 	startDT := time.Now()
 	endDT := startDT.Add(24 * time.Hour)
-	NewPreciseMission(NewEmptySC("est", 0), orbit, startDT, endDT, Cartesian, Perturbations{Jn: 2}, time.Second, ExportConfig{}).Propagate()
+	orbitEstimate := NewOrbitEstimate("estimator", *orbit, Perturbations{Jn: 2}, startDT, time.Second)
+	orbitEstimate.PropagateUntil(endDT)
 	expR := []float64{-5751.49900721589, 4721.14371040552, 2046.03583664311}
 	expV := []float64{-0.797658631074, -3.656513108387, 6.139612016678}
-	if !floats.EqualApprox(orbit.rVec, expR, 1e-8) {
-		t.Fatalf("Incorrect R:\ngot: %+v\nexp: %+v", orbit.rVec, expR)
+	rVec, vVec := orbitEstimate.State().Orbit.RV()
+	if !floats.EqualApprox(rVec, expR, 1e-8) {
+		t.Fatalf("Incorrect R:\ngot: %+v\nexp: %+v", rVec, expR)
 	}
-	if !floats.EqualApprox(orbit.vVec, expV, 1e-8) {
-		t.Fatalf("Incorrect R:\ngot: %+v\nexp: %+v", orbit.vVec, expV)
+	if !floats.EqualApprox(vVec, expV, 1e-8) {
+		t.Fatalf("Incorrect R:\ngot: %+v\nexp: %+v", vVec, expV)
 	}
 }
 
