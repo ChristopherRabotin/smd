@@ -1,4 +1,3 @@
-sudo: required
 language: go
 go:
   - 1.7
@@ -8,12 +7,12 @@ addons:
       - deadsnakes # source required so it finds the package definition below
     packages:
       - python3.4
-      - python-dev
+      - python3.4-venv
+      - python3.4-dev
 before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
   - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
-  - sudo pip install virtualenv
   - virtualenv -p `which python3.4` .venv
   - source .venv/bin/activate
   - python -V
