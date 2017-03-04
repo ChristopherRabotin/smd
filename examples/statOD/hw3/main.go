@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math"
 	"os"
@@ -13,16 +14,25 @@ import (
 )
 
 const (
-	ekfTrigger    = 15    // Number of measurements prior to switching to EKF mode.
-	sncEnabled    = true  // Set to false to disable SNC.
-	timeBasedPlot = false // Set to true to plot time, or false to plot on measurements.
+	ekfTrigger     = 15      // Number of measurements prior to switching to EKF mode.
+	ekfDisableTime = -1200   // Seconds between measurements to switch back to CKF. Set as negative to ignore.
+	sncEnabled     = true    // Set to false to disable SNC.
+	sncDisableTime = 60 * 38 // Number of seconds between measurements to skip using SNC noise.
+	sncPQW         = false   // Set to true if the noise should be considered defined in PQW frame.
+	timeBasedPlot  = false   // Set to true to plot time, or false to plot on measurements.
 )
 
 var (
-	wg sync.WaitGroup
+	σQExponent float64
+	wg         sync.WaitGroup
 )
 
+func init() {
+	flag.Float64Var(&σQExponent, "sigmaExp", 6, "exponent for the Q sigma (default is 6, so sigma=1e-6).")
+}
+
 func main() {
+	flag.Parse()
 	// Define the times
 	startDT := time.Now()
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
@@ -92,8 +102,13 @@ func main() {
 	estPerts := smd.Perturbations{Jn: 3}
 
 	// Initialize the KF noise
-	σQ := math.Pow(1e-6, 2)
-	noiseQ := mat64.NewSymDense(3, []float64{σQ, 0, 0, 0, σQ, 0, 0, 0, σQ})
+	σQx := math.Pow(10, -2*σQExponent)
+	var σQy, σQz float64
+	if !sncPQW {
+		σQy = σQx
+		σQz = σQx
+	}
+	noiseQ := mat64.NewSymDense(3, []float64{σQx, 0, 0, 0, σQy, 0, 0, 0, σQz})
 	noiseR := mat64.NewSymDense(2, []float64{σρ, 0, 0, σρDot})
 	noiseKF := gokalman.NewNoiseless(noiseQ, noiseR)
 
@@ -124,10 +139,13 @@ func main() {
 	var kf *gokalman.HybridKF
 	var prevStationName = ""
 	var prevDT time.Time
+	var ckfMeasNo = 0
 	for measNo, measurement := range measurements {
 		if !measurement.Visible {
 			panic("why is there a non visible measurement?!")
 		}
+		ΔtDuration := measurement.State.DT.Sub(prevDT)
+		Δt := ΔtDuration.Seconds() // Everything is in seconds.
 		if measNo == 0 {
 			prevDT = measurement.State.DT
 			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
@@ -136,10 +154,16 @@ func main() {
 			if err != nil {
 				panic(fmt.Errorf("%s", err))
 			}
-		} else if measNo == ekfTrigger {
+		}
+		if !kf.EKFEnabled() && ckfMeasNo == ekfTrigger {
 			// Switch KF to EKF mode
 			kf.EnableEKF()
 			fmt.Printf("[INFO] #%04d EKF now enabled\n", measNo)
+		} else if kf.EKFEnabled() && ekfDisableTime > 0 && Δt > ekfDisableTime {
+			// Switch KF back to CKF mode
+			kf.DisableEKF()
+			ckfMeasNo = 0
+			fmt.Printf("[INFO] #%04d EKF now disabled (Δt=%s)\n", measNo, ΔtDuration)
 		}
 		if timeBasedPlot {
 			// Propagate and predict for each time step until next measurement.
@@ -165,11 +189,6 @@ func main() {
 			}
 			continue
 		}
-		ΔtDuration := measurement.State.DT.Sub(prevDT)
-		Δt := ΔtDuration.Seconds() // Everything is in seconds.
-		if Δt > 60 {
-			fmt.Printf("[INFO] #%04d occurred %s after #%04d\n", measNo, ΔtDuration, measNo-1)
-		}
 		// Propagate the reference trajectory until the next measurement time.
 		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti+1, ti)
 
@@ -187,7 +206,21 @@ func main() {
 		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst)
 		kf.Prepare(orbitEstimate.Φ, Htilde)
 		if sncEnabled {
-			if Δt < 60*38 {
+			if Δt < sncDisableTime {
+				if sncPQW {
+					_, _, i, Ω, ω, _, _, _, _ := orbitEstimate.Orbit.Elements()
+					// Update the Q matrix in the PQW
+					dcm := smd.R3R1R3(-ω, -i, -Ω)
+					var QECI, QECI0 mat64.Dense
+					QECI0.Mul(noiseQ, dcm.T())
+					QECI.Mul(dcm, &QECI0)
+					QECISym, err := gokalman.AsSymDense(&QECI)
+					if err != nil {
+						fmt.Printf("[error] QECI is not symmertric!")
+						panic(err)
+					}
+					kf.SetNoise(gokalman.NewNoiseless(QECISym, noiseR))
+				}
 				// Only enable SNC for small time differences between measurements.
 				Γtop := gokalman.ScaledDenseIdentity(3, math.Pow(Δt, 2)/2)
 				Γbot := gokalman.ScaledDenseIdentity(3, Δt)
@@ -231,7 +264,7 @@ func main() {
 			}
 			orbitEstimate = smd.NewOrbitEstimate("estimator", *smd.NewOrbitFromRV(R, V, smd.Earth), estPerts, measurement.State.DT, time.Second)
 		}
-
+		ckfMeasNo++
 	}
 	close(estChan)
 	wg.Wait()

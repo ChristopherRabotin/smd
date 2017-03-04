@@ -80,6 +80,14 @@ func TestPQW2ECI(t *testing.T) {
 	if !vectorsEqual(Ve, Vp) {
 		t.Fatalf("V conversion failed:\n%+v\n%+v", Ve, Vp)
 	}
+	// Test Matrix rotation.
+	vec := []float64{1e-12, 0, 0}
+	noiseQ := mat64.NewSymDense(3, []float64{vec[0], 0, 0, 0, vec[1], 0, 0, 0, vec[2]})
+	dcm := R3R1R3(-ω, -i, -Ω)
+	var QECI, QECI0 mat64.Dense
+	QECI0.Mul(noiseQ, dcm.T())
+	QECI.Mul(dcm, &QECI0)
+	t.Logf("\n%+v\n", mat64.Formatted(&QECI))
 }
 
 func TestGEO2ECEF(t *testing.T) {
