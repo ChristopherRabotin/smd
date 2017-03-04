@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	ekfTrigger   = 15    // Number of measurements prior to switching to EKF mode.
-	sncEnabled   = true  // Set to false to disable SNC.
-	timeBasePlot = false // Set to true to plot time, or false to plot on measurements.
+	ekfTrigger    = 15    // Number of measurements prior to switching to EKF mode.
+	sncEnabled    = true  // Set to false to disable SNC.
+	timeBasedPlot = false // Set to true to plot time, or false to plot on measurements.
 )
 
 var (
@@ -127,6 +127,9 @@ func main() {
 	var prevStationName = ""
 	var prevDT time.Time
 	for measNo, measurement := range measurements {
+		if !measurement.Visible {
+			panic("why is there a non visible measurement?!")
+		}
 		if measNo == 0 {
 			prevDT = measurement.State.DT
 			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
@@ -140,18 +143,16 @@ func main() {
 			kf.EnableEKF()
 			fmt.Printf("[INFO] #%04d EKF now enabled\n", measNo)
 		}
-		Δt := measurement.State.DT.Sub(prevDT).Seconds() // Everything is in seconds.
-		// Propagate the reference trajectory until the next measurement time.
-		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti+1, ti)
-
-		if !measurement.Visible {
-			if timeBasePlot {
+		if timeBasedPlot {
+			// Propagate and predict for each time step until next measurement.
+			for prevDT.Before(measurement.State.DT) {
+				nextDT := prevDT.Add(10 * time.Second)
+				orbitEstimate.PropagateUntil(nextDT) // This leads to Φ(ti+1, ti)
 				// Only do a prediction.
 				kf.Prepare(orbitEstimate.Φ, nil)
 				est, perr := kf.Predict()
 				if perr != nil {
-					fmt.Printf("[error] #%04d %s (skipping)", measNo, perr)
-					continue
+					panic(fmt.Errorf("[error] (#%04d)\n%s", measNo, perr))
 				}
 				stateEst := mat64.NewVector(6, nil)
 				R, V := orbitEstimate.State().Orbit.RV()
@@ -162,10 +163,18 @@ func main() {
 				fmt.Printf("%s\n\n", est)
 				//fmt.Printf("%+v\n", mat64.Formatted(stateEst.T()))
 				estChan <- truth.ErrorWithOffset(measNo, est, stateEst)
-				prevDT = measurement.State.DT
+				prevDT = nextDT
 			}
 			continue
 		}
+		ΔtDuration := measurement.State.DT.Sub(prevDT)
+		Δt := ΔtDuration.Seconds() // Everything is in seconds.
+		if Δt > 60 {
+			fmt.Printf("[INFO] #%04d occurred %s after #%04d\n", measNo, ΔtDuration, measNo-1)
+		}
+		// Propagate the reference trajectory until the next measurement time.
+		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti+1, ti)
+
 		if measurement.Station.name != prevStationName {
 			fmt.Printf("[INFO] #%04d %s in visibility of %s (T+%s)\n", measNo, scName, measurement.Station.name, measurement.State.DT.Sub(startDT))
 			prevStationName = measurement.Station.name
@@ -180,7 +189,7 @@ func main() {
 		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst)
 		kf.Prepare(orbitEstimate.Φ, Htilde)
 		if sncEnabled {
-			if Δt < 20 {
+			if Δt < 60*38 {
 				// Only enable SNC for small time differences between measurements.
 				Γtop := gokalman.ScaledDenseIdentity(3, math.Pow(Δt, 2)/2)
 				Γbot := gokalman.ScaledDenseIdentity(3, Δt)
