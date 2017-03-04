@@ -92,10 +92,8 @@ func main() {
 	estPerts := smd.Perturbations{Jn: 3}
 
 	// Initialize the KF noise
-	σx := math.Pow(1e-6, 2)
-	σy := math.Pow(1e-6, 2)
-	σz := math.Pow(1e-6, 2)
-	Q := mat64.NewSymDense(3, []float64{σx, 0, 0, 0, σy, 0, 0, 0, σz})
+	σQ := math.Pow(1e-6, 2)
+	Q := mat64.NewSymDense(3, []float64{σQ, 0, 0, 0, σQ, 0, 0, 0, σQ})
 	R := mat64.NewSymDense(2, []float64{σρ, 0, 0, σρDot})
 	noiseKF := gokalman.NewNoiseless(Q, R)
 
