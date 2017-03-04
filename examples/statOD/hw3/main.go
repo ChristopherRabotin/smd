@@ -30,8 +30,8 @@ func main() {
 	leo := smd.NewOrbitFromOE(7000, 0.001, 30, 80, 40, 0, smd.Earth)
 
 	// Define the stations
-	σρ := 1e-3    // m , but all measurements in km.
-	σρDot := 1e-6 // mm/s , but all measurements in km/s.
+	σρ := math.Pow(1e-3, 2)    // m , but all measurements in km.
+	σρDot := math.Pow(1e-3, 2) // m/s , but all measurements in km/s.
 	st1 := NewStation("st1", 0, -35.398333, 148.981944, σρ, σρDot)
 	st2 := NewStation("st2", 0, 40.427222, 355.749444, σρ, σρDot)
 	st3 := NewStation("st3", 0, 35.247164, 243.205, σρ, σρDot)
@@ -93,9 +93,9 @@ func main() {
 
 	// Initialize the KF noise
 	σQ := math.Pow(1e-6, 2)
-	Q := mat64.NewSymDense(3, []float64{σQ, 0, 0, 0, σQ, 0, 0, 0, σQ})
-	R := mat64.NewSymDense(2, []float64{σρ, 0, 0, σρDot})
-	noiseKF := gokalman.NewNoiseless(Q, R)
+	noiseQ := mat64.NewSymDense(3, []float64{σQ, 0, 0, 0, σQ, 0, 0, 0, σQ})
+	noiseR := mat64.NewSymDense(2, []float64{σρ, 0, 0, σρDot})
+	noiseKF := gokalman.NewNoiseless(noiseQ, noiseR)
 
 	// Take care of measurements.
 	estChan := make(chan (gokalman.Estimate), 1)
