@@ -35,3 +35,13 @@ func TestBPlane(t *testing.T) {
 		}
 	}
 }
+
+// Simply tests that GARPeriapsis and GATurnAngle are complementary
+func TestGARpAngle(t *testing.T) {
+	vInf := 8.970655
+	ψ := GATurnAngle(vInf, 300, Earth)
+	rP := GARPeriapsis(vInf, ψ, Earth)
+	if !floats.EqualWithinAbs(rP, 300, 1e-12) {
+		t.Fatalf("got %.12f km when expecting 300 km.", rP)
+	}
+}

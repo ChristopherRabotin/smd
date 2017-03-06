@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	hwQ = 2
+	hwQ = 1
 )
 
 var (
