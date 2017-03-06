@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"math"
 	"os"
 	"sync"
 	"time"
@@ -12,21 +14,34 @@ import (
 )
 
 const (
-	useEKF = true
+	ekfTrigger     = 15    // Number of measurements prior to switching to EKF mode.
+	ekfDisableTime = -1200 // Seconds between measurements to switch back to CKF. Set as negative to ignore.
+	sncEnabled     = true  // Set to false to disable SNC.
+	sncDisableTime = 1200  // Number of seconds between measurements to skip using SNC noise.
+	sncRIC         = true  // Set to true if the noise should be considered defined in PQW frame.
+	timeBasedPlot  = false // Set to true to plot time, or false to plot on measurements.
 )
 
-var wg sync.WaitGroup
+var (
+	σQExponent float64
+	wg         sync.WaitGroup
+)
+
+func init() {
+	flag.Float64Var(&σQExponent, "sigmaExp", 6, "exponent for the Q sigma (default is 6, so sigma=1e-6).")
+}
 
 func main() {
+	flag.Parse()
 	// Define the times
 	startDT := time.Now()
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
 	// Define the orbits
-	leo := smd.NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, smd.Earth)
+	leo := smd.NewOrbitFromOE(7000, 0.001, 30, 80, 40, 0, smd.Earth)
 
 	// Define the stations
-	σρ := 1e-3    // m , but all measurements in km.
-	σρDot := 1e-6 // mm/s , but all measurements in km/s.
+	σρ := math.Pow(1e-3, 2)    // m , but all measurements in km.
+	σρDot := math.Pow(1e-3, 2) // m/s , but all measurements in km/s.
 	st1 := NewStation("st1", 0, -35.398333, 148.981944, σρ, σρDot)
 	st2 := NewStation("st2", 0, 40.427222, 355.749444, σρ, σρDot)
 	st3 := NewStation("st3", 0, 35.247164, 243.205, σρ, σρDot)
@@ -42,7 +57,6 @@ func main() {
 		for _, st := range stations {
 			hdr += fmt.Sprintf("%sRange,%sRangeRate,%sNoisyRange,%sNoisyRangeRate,", st.name, st.name, st.name, st.name)
 		}
-		fmt.Println(hdr)
 		return hdr[:len(hdr)-1] // Remove trailing comma
 	}
 	export.CSVAppend = func(state smd.MissionState) string {
@@ -51,8 +65,8 @@ func main() {
 		θgst := Δt * smd.EarthRotationRate
 		// Compute visibility for each station.
 		for _, st := range stations {
-			visible, measurement := st.PerformMeasurement(θgst, state)
-			if visible {
+			_, measurement := st.PerformMeasurement(θgst, state)
+			if measurement.Visible {
 				measurements = append(measurements, measurement)
 				str += measurement.CSV()
 			} else {
@@ -63,156 +77,214 @@ func main() {
 	}
 
 	// Generate the perturbed orbit
-	smd.NewMission(smd.NewEmptySC("LEO", 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 2}, export).Propagate()
+	scName := "LEO"
+	smd.NewPreciseMission(smd.NewEmptySC(scName, 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, 2*time.Second, export).Propagate()
 
 	// Take care of the measurements:
-	fmt.Printf("Now have %d measurements\n", len(measurements))
+	fmt.Printf("\n[INFO] Generated %d measurements\n", len(measurements))
 	// Let's mark those as the truth so we can plot that.
 	stateTruth := make([]*mat64.Vector, len(measurements))
 	truthMeas := make([]*mat64.Vector, len(measurements))
 	residuals := make([]*mat64.Vector, len(measurements))
-	for i, measurement := range measurements {
+	for measNo, measurement := range measurements {
 		orbit := make([]float64, 6)
 		R, V := measurement.State.Orbit.RV()
-		for k := 0; k < 3; k++ {
-			orbit[k] = R[k]
-			orbit[k+3] = V[k]
+		for i := 0; i < 3; i++ {
+			orbit[i] = R[i]
+			orbit[i+3] = V[i]
 		}
-		stateTruth[i] = mat64.NewVector(6, orbit)
-		truthMeas[i] = measurement.StateVector()
+		stateTruth[measNo] = mat64.NewVector(6, orbit)
+		truthMeas[measNo] = measurement.StateVector()
 	}
 	truth := gokalman.NewBatchGroundTruth(stateTruth, truthMeas)
 
 	// Perturbations in the estimate
 	estPerts := smd.Perturbations{Jn: 2}
 
-	// Initialize the KF
-	Q := mat64.NewSymDense(6, nil)
-	R := mat64.NewSymDense(2, []float64{σρ, 0, 0, σρDot})
-	noiseKF := gokalman.NewNoiseless(Q, R)
+	// Initialize the KF noise
+	σQx := math.Pow(10, -2*σQExponent)
+	var σQy, σQz float64
+	if !sncRIC {
+		σQy = σQx
+		σQz = σQx
+	}
+	noiseQ := mat64.NewSymDense(3, []float64{σQx, 0, 0, 0, σQy, 0, 0, 0, σQz})
+	noiseR := mat64.NewSymDense(2, []float64{σρ, 0, 0, σρDot})
+	noiseKF := gokalman.NewNoiseless(noiseQ, noiseR)
 
 	// Take care of measurements.
 	estChan := make(chan (gokalman.Estimate), 1)
-	if useEKF {
-		go processEst("extended", estChan)
-	} else {
-		go processEst("vanilla", estChan)
-	}
+	go processEst("hybridkf", estChan)
 
 	prevXHat := mat64.NewVector(6, nil)
 	prevP := mat64.NewSymDense(6, nil)
-	covarDistance := 10.
-	covarVelocity := 2.
+	var covarDistance float64 = 50
+	var covarVelocity float64 = 1
 	for i := 0; i < 3; i++ {
 		prevP.SetSym(i, i, covarDistance)
 		prevP.SetSym(i+3, i+3, covarVelocity)
 	}
-	var prevθ float64
-	var prevΦ *mat64.Dense
-	var orbit smd.Orbit
 
 	visibilityErrors := 0
 	var orbitEstimate *smd.OrbitEstimate
 
-	for i, measurement := range measurements {
-		fmt.Printf("#%d (%s)\n", i, measurement.Station.name)
+	if ekfTrigger < 0 {
+		fmt.Println("[WARNING] EKF disabled")
+	} else if ekfTrigger < 10 {
+		fmt.Println("[WARNING] EKF may be turned on too early")
+	} else {
+		fmt.Printf("[INFO] EKF will turn on after %d measurements\n", ekfTrigger)
+	}
 
-		if i == 0 {
-			orbit = measurement.State.Orbit
-			R, V := orbit.RV()
-			for j := 0; j < 3; j++ {
-				prevXHat.SetVec(j, R[j])
-				prevXHat.SetVec(j+3, V[j])
-			}
-			orbitEstimate = smd.NewOrbitEstimate("estimator", orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
+	var kf *gokalman.HybridKF
+	var prevStationName = ""
+	var prevDT time.Time
+	var ckfMeasNo = 0
+	for measNo, measurement := range measurements {
+		if !measurement.Visible {
+			panic("why is there a non visible measurement?!")
 		}
-		var Φ mat64.Dense
-		if useEKF {
-			// Only use actual EKF after a few iterations.
-			// Generate the new orbit estimate from the previous estimated state error.
-			if i > 10 {
-				// We just computed this for i==0.
-				// In the case of the EKF, the prevXHat is the difference between the reference trajectory and the real one.
-				// So let's recreate an orbit.
-				R, V := orbit.RV()
-				for k := 0; k < 3; k++ {
-					R[k] = prevXHat.At(k, 0)
-					V[k] = prevXHat.At(k+3, 0)
+		ΔtDuration := measurement.State.DT.Sub(prevDT)
+		Δt := ΔtDuration.Seconds() // Everything is in seconds.
+		if measNo == 0 {
+			prevDT = measurement.State.DT
+			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
+			var err error
+			kf, _, err = gokalman.NewHybridKF(prevXHat, prevP, noiseKF, 2)
+			if err != nil {
+				panic(fmt.Errorf("%s", err))
+			}
+		}
+		if !kf.EKFEnabled() && ckfMeasNo == ekfTrigger {
+			// Switch KF to EKF mode
+			kf.EnableEKF()
+			fmt.Printf("[INFO] #%04d EKF now enabled\n", measNo)
+		} else if kf.EKFEnabled() && ekfDisableTime > 0 && Δt > ekfDisableTime {
+			// Switch KF back to CKF mode
+			kf.DisableEKF()
+			ckfMeasNo = 0
+			fmt.Printf("[INFO] #%04d EKF now disabled (Δt=%s)\n", measNo, ΔtDuration)
+		}
+		if timeBasedPlot {
+			// Propagate and predict for each time step until next measurement.
+			for prevDT.Before(measurement.State.DT) {
+				nextDT := prevDT.Add(10 * time.Second)
+				orbitEstimate.PropagateUntil(nextDT) // This leads to Φ(ti+1, ti)
+				// Only do a prediction.
+				kf.Prepare(orbitEstimate.Φ, nil)
+				est, perr := kf.Predict()
+				if perr != nil {
+					panic(fmt.Errorf("[error] (#%04d)\n%s", measNo, perr))
 				}
-				orbit = *smd.NewOrbitFromRV(R, V, smd.Earth)
-				fmt.Printf("%s\n", orbit)
-				orbitEstimate = smd.NewOrbitEstimate("estimator", orbit, estPerts, measurement.State.DT.Add(-time.Duration(10)*time.Second), time.Second)
-				// Propagate the reference trajectory until the next measurement time.
-				orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti, ti-1) because we are restarting the integration.
+				stateEst := mat64.NewVector(6, nil)
+				R, V := orbitEstimate.State().Orbit.RV()
+				for i := 0; i < 3; i++ {
+					stateEst.SetVec(i, R[i])
+					stateEst.SetVec(i+3, V[i])
+				}
+				fmt.Printf("%s\n\n", est)
+				//fmt.Printf("%+v\n", mat64.Formatted(stateEst.T()))
+				estChan <- truth.ErrorWithOffset(measNo, est, stateEst)
+				prevDT = nextDT
 			}
-			Φ = *orbitEstimate.Φ
-		} else {
-			prevΦ = orbitEstimate.Φ // Store the previous estimate of Phi before propagation. (which is Φ(t0, ti-1))
-			// Propagate the reference trajectory until the next measurement time.
-			orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(t0, ti)
-
-			var invΦ mat64.Dense
-			if ierr := invΦ.Inverse(prevΦ); ierr != nil {
-				panic(fmt.Errorf("could not invert `est1.Φ`: %s", ierr))
-			}
-			// Now we have Φ(ti-1, t0)
-			Φ.Mul(orbitEstimate.Φ, &invΦ)
+			continue
 		}
+		// Propagate the reference trajectory until the next measurement time.
+		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti+1, ti)
+
+		if measurement.Station.name != prevStationName {
+			fmt.Printf("[INFO] #%04d %s in visibility of %s (T+%s)\n", measNo, scName, measurement.Station.name, measurement.State.DT.Sub(startDT))
+			prevStationName = measurement.Station.name
+		}
+
 		// Compute "real" measurement
-		vis, expMeas := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
+		vis, computedObservation := measurement.Station.PerformMeasurement(measurement.θgst, orbitEstimate.State())
 		if !vis {
-			fmt.Printf("[warning] station %s should see the SC but does not\n", measurement.Station.name)
+			fmt.Printf("[WARNING] station %s should see the SC but does not\n", measurement.Station.name)
 			visibilityErrors++
 		}
-		var y mat64.Vector
-		y.SubVec(measurement.StateVector(), expMeas.StateVector())
-		// Compute H tilde
-		θdot := measurement.θgst - prevθ
-		H := measurement.HTilde(orbitEstimate.State(), measurement.θgst, θdot)
-
-		xBar := mat64.NewVector(6, nil)
-		xBar.MulVec(&Φ, prevXHat)
-
-		PΦ := mat64.NewDense(6, 6, nil)
-		PiBar := mat64.NewDense(6, 6, nil)
-		PΦ.Mul(prevP, Φ.T())
-		PiBar.Mul(&Φ, PΦ) // ΦPΦ
-		PiBarSym, _ := gokalman.AsSymDense(PiBar)
-
-		// Start the KF now
-		var kf gokalman.KalmanFilter
-		if useEKF {
-			// the x0 in the extended KF is not used.
-			kf, _, _ = gokalman.NewVanilla(mat64.NewVector(6, nil), PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
-		} else {
-			kf, _, _ = gokalman.NewVanilla(prevXHat, PiBarSym, &Φ, mat64.NewDense(2, 2, nil), H, noiseKF)
+		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst)
+		kf.Prepare(orbitEstimate.Φ, Htilde)
+		if sncEnabled {
+			if Δt < sncDisableTime {
+				if sncRIC {
+					// Build the RIC DCM
+					rUnit := unit(orbitEstimate.Orbit.R())
+					cUnit := unit(orbitEstimate.Orbit.H())
+					iUnit := unit(cross(rUnit, cUnit))
+					dcmVals := make([]float64, 9)
+					for i := 0; i < 3; i++ {
+						dcmVals[i] = rUnit[i]
+						dcmVals[i+3] = cUnit[i]
+						dcmVals[i+6] = iUnit[i]
+					}
+					// Update the Q matrix in the PQW
+					dcm := mat64.NewDense(3, 3, dcmVals)
+					var QECI, QECI0 mat64.Dense
+					QECI0.Mul(noiseQ, dcm.T())
+					QECI.Mul(dcm, &QECI0)
+					QECISym, err := gokalman.AsSymDense(&QECI)
+					if err != nil {
+						fmt.Printf("[error] QECI is not symmertric!")
+						panic(err)
+					}
+					kf.SetNoise(gokalman.NewNoiseless(QECISym, noiseR))
+				}
+				// Only enable SNC for small time differences between measurements.
+				Γtop := gokalman.ScaledDenseIdentity(3, math.Pow(Δt, 2)/2)
+				Γbot := gokalman.ScaledDenseIdentity(3, Δt)
+				Γ := mat64.NewDense(6, 3, nil)
+				Γ.Stack(Γtop, Γbot)
+				kf.PreparePNT(Γ)
+			}
 		}
-		est, err := kf.Update(&y, mat64.NewVector(2, nil))
+		est, err := kf.Update(measurement.StateVector(), computedObservation.StateVector())
 		if err != nil {
-			fmt.Printf("%s\n", err)
+			panic(fmt.Errorf("[error] %s", err))
 		}
 		prevXHat = est.State()
 		prevP = est.Covariance().(*mat64.SymDense)
+		stateEst := mat64.NewVector(6, nil)
+		R, V := orbitEstimate.State().Orbit.RV()
+		for i := 0; i < 3; i++ {
+			stateEst.SetVec(i, R[i])
+			stateEst.SetVec(i+3, V[i])
+		}
+		stateEst.AddVec(stateEst, est.State())
 		// Compute residual
 		residual := mat64.NewVector(2, nil)
-		residual.MulVec(H, est.State())
-		residual.AddScaledVec(residual, -1, &y)
+		residual.MulVec(Htilde, est.State())
+		residual.AddScaledVec(residual, -1, est.ObservationDev())
 		residual.ScaleVec(-1, residual)
-		residuals[i] = residual
+		residuals[measNo] = residual
 
 		// Stream to CSV file
-		estChan <- truth.Error(i, est)
+		estChan <- truth.ErrorWithOffset(measNo, est, stateEst)
+		prevDT = measurement.State.DT
 
+		// If in EKF, update the reference trajectory.
+		if kf.EKFEnabled() {
+			// Update the state from the error.
+			state := est.State()
+			R, V := orbitEstimate.Orbit.RV()
+			for i := 0; i < 3; i++ {
+				R[i] += state.At(i, 0)
+				V[i] += state.At(i+3, 0)
+			}
+			orbitEstimate = smd.NewOrbitEstimate("estimator", *smd.NewOrbitFromRV(R, V, smd.Earth), estPerts, measurement.State.DT, time.Second)
+		}
+		ckfMeasNo++
 	}
 	close(estChan)
 	wg.Wait()
 
-	fmt.Printf("\n%d visibility errors\n", visibilityErrors)
-	// Write the residuals to a CSV file
-	fname := "ekf"
-	if !useEKF {
-		fname = "vkf"
+	severity := "INFO"
+	if visibilityErrors > 0 {
+		severity = "WARNING"
 	}
+	fmt.Printf("[%s] %d visibility errors\n", severity, visibilityErrors)
+	// Write the residuals to a CSV file
+	fname := "hkf"
 	f, err := os.Create(fmt.Sprintf("./%s-residuals.csv", fname))
 	if err != nil {
 		panic(err)

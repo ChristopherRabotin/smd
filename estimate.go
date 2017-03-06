@@ -125,6 +125,7 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 	r232 := math.Pow(r2, 3/2.)
 	r252 := math.Pow(r2, 5/2.)
 	// Add the body perturbations
+
 	dAxDx := 3*e.Orbit.Origin.μ*x2/r252 - e.Orbit.Origin.μ/r232
 	dAxDy := 3 * e.Orbit.Origin.μ * x * y / r252
 	dAxDz := 3 * e.Orbit.Origin.μ * x * z / r252
@@ -214,7 +215,6 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 		A.Set(4, 2, A42)
 		A.Set(5, 2, A52)
 	}
-	//fmt.Printf("A=\n%+v\n", mat64.Formatted(A))
 	ΦDot.Mul(A, Φ)
 
 	// Store ΦDot in fDot

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
+	"github.com/gonum/floats"
 	"github.com/gonum/matrix/mat64"
 	"github.com/gonum/stat/distmv"
 )
@@ -35,21 +36,18 @@ func (s Station) PerformMeasurement(θgst float64, state smd.MissionState) (bool
 	rECEF := smd.ECI2ECEF(state.Orbit.R(), θgst)
 	vECEF := smd.ECI2ECEF(state.Orbit.V(), θgst)
 	// Compute visibility for each station.
-
 	ρECEF, ρ, el, _ := s.RangeElAz(rECEF)
-	//XXX: Compute regardless of visibility for now..
-
 	vDiffECEF := make([]float64, 3)
 	for i := 0; i < 3; i++ {
 		vDiffECEF[i] = (vECEF[i] - s.V[i]) / ρ
 	}
-	// SC is visible.
+	// Suppose SC is visible.
 	ρDot := mat64.Dot(mat64.NewVector(3, ρECEF), mat64.NewVector(3, vDiffECEF))
 	ρNoisy := ρ + s.ρNoise.Rand(nil)[0]
 	ρDotNoisy := ρDot + s.ρDotNoise.Rand(nil)[0]
 	// Add this to the list of measurements
-	return el >= 10, Measurement{ρNoisy, ρDotNoisy, ρ, ρDot, θgst, state, s}
-
+	// TODO: Change signature
+	return el >= 10, Measurement{el >= 10, ρNoisy, ρDotNoisy, ρ, ρDot, θgst, state, s}
 }
 
 // RangeElAz returns the range (in the SEZ frame), elevation and azimuth (in degrees) of a given R vector in ECEF.
@@ -84,11 +82,17 @@ func NewStation(name string, altitude, latΦ, longθ, σρ, σρDot float64) Sta
 
 // Measurement stores a measurement of a station.
 type Measurement struct {
+	Visible         bool    // Stores whether or not the attempted measurement was visible from the station.
 	ρ, ρDot         float64 // Store the range and range rate
 	trueρ, trueρDot float64 // Store the true range and range rate
 	θgst            float64
 	State           smd.MissionState
 	Station         Station
+}
+
+// IsNil returns the state vector as a mat64.Vector
+func (m Measurement) IsNil() bool {
+	return m.ρ == m.ρDot && m.ρDot == 0
 }
 
 // StateVector returns the state vector as a mat64.Vector
@@ -97,16 +101,15 @@ func (m Measurement) StateVector() *mat64.Vector {
 }
 
 // HTilde returns the H tilde matrix for this given measurement.
-func (m Measurement) HTilde(state smd.MissionState, θgst, θdot float64) *mat64.Dense {
-	withRotation := true
-	theta := θgst
-	thetadot := θdot
-	xS := m.Station.R[0]
-	yS := m.Station.R[1]
-	zS := m.Station.R[2]
-	xSDot := m.Station.V[0]
-	ySDot := m.Station.V[1]
-	zSDot := m.Station.V[2]
+func (m Measurement) HTilde(state smd.MissionState, θgst float64) *mat64.Dense {
+	stationR := smd.ECEF2ECI(m.Station.R, θgst)
+	stationV := smd.ECEF2ECI(m.Station.V, θgst)
+	xS := stationR[0]
+	yS := stationR[1]
+	zS := stationR[2]
+	xSDot := stationV[0]
+	ySDot := stationV[1]
+	zSDot := stationV[2]
 	R := state.Orbit.R()
 	V := state.Orbit.V()
 	x := R[0]
@@ -115,48 +118,18 @@ func (m Measurement) HTilde(state smd.MissionState, θgst, θdot float64) *mat64
 	xDot := V[0]
 	yDot := V[1]
 	zDot := V[2]
-	rho := m.ρ
-	rho2 := math.Pow(m.ρ, 2)
-	rhodot := m.ρDot
-
 	H := mat64.NewDense(2, 6, nil)
-	if withRotation {
-		//drho partials
-		drhoDx := (x - xS*math.Cos(theta) + yS*math.Sin(theta)) / rho
-		drhoDy := (y - yS*math.Cos(theta) - xS*math.Sin(theta)) / rho
-		drhoDz := (z - zS*math.Cos(theta)) / rho
-
-		//drhodot partials
-		drhodotDx := (xDot+xS*thetadot*math.Sin(theta)+yS*thetadot*math.Cos(theta))/rho - rhodot*(x-xS*math.Cos(theta)+yS*math.Sin(theta))/rho2
-		drhodotDy := (yDot+yS*thetadot*math.Sin(theta)-xS*thetadot*math.Cos(theta))/rho - rhodot*(y-yS*math.Cos(theta)-xS*math.Sin(theta))/rho2
-		drhodotDz := zDot/rho - rhodot*(z-zS)/rho2
-		drhodotDxdot := (x - xS*math.Cos(theta) - yS*math.Sin(theta)) / rho
-		drhodotDydot := (y - yS*math.Cos(theta) - xS*math.Sin(theta)) / rho
-		drhodotDzdot := (z - zS) / rho
-		// \partial \rho / \partial {x,y,z}
-		H.Set(0, 0, drhoDx)
-		H.Set(0, 1, drhoDy)
-		H.Set(0, 2, drhoDz)
-		// \partial \dot\rho / \partial {x,y,z}
-		H.Set(1, 0, drhodotDx)
-		H.Set(1, 1, drhodotDy)
-		H.Set(1, 2, drhodotDz)
-		H.Set(1, 3, drhodotDxdot)
-		H.Set(1, 4, drhodotDydot)
-		H.Set(1, 5, drhodotDzdot)
-	} else {
-		// \partial \rho / \partial {x,y,z}
-		H.Set(0, 0, (x-xS)/m.ρ)
-		H.Set(0, 1, (y-yS)/m.ρ)
-		H.Set(0, 2, (z-zS)/m.ρ)
-		// \partial \dot\rho / \partial {x,y,z}
-		H.Set(1, 0, (xDot-xSDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(x-xS))
-		H.Set(1, 1, (yDot-ySDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(y-yS))
-		H.Set(1, 2, (zDot-zSDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(z-zS))
-		H.Set(1, 3, (x-xS)/m.ρ)
-		H.Set(1, 4, (y-yS)/m.ρ)
-		H.Set(1, 5, (z-zS)/m.ρ)
-	}
+	// \partial \rho / \partial {x,y,z}
+	H.Set(0, 0, (x-xS)/m.ρ)
+	H.Set(0, 1, (y-yS)/m.ρ)
+	H.Set(0, 2, (z-zS)/m.ρ)
+	// \partial \dot\rho / \partial {x,y,z}
+	H.Set(1, 0, (xDot-xSDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(x-xS))
+	H.Set(1, 1, (yDot-ySDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(y-yS))
+	H.Set(1, 2, (zDot-zSDot)/m.ρ+(m.ρDot/math.Pow(m.ρ, 2))*(z-zS))
+	H.Set(1, 3, (x-xS)/m.ρ)
+	H.Set(1, 4, (y-yS)/m.ρ)
+	H.Set(1, 5, (z-zS)/m.ρ)
 	return H
 }
 
@@ -179,4 +152,17 @@ func cross(a, b []float64) []float64 {
 // norm returns the norm of a given vector which is supposed to be 3x1.
 func norm(v []float64) float64 {
 	return math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
+}
+
+// unit returns the unit vector of a given vector.
+func unit(a []float64) (b []float64) {
+	n := norm(a)
+	if floats.EqualWithinAbs(n, 0, 1e-12) {
+		return []float64{0, 0, 0}
+	}
+	b = make([]float64, len(a))
+	for i, val := range a {
+		b[i] = val / n
+	}
+	return
 }
