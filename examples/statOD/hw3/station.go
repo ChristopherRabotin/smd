@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
+	"github.com/gonum/floats"
 	"github.com/gonum/matrix/mat64"
 	"github.com/gonum/stat/distmv"
 )
@@ -151,4 +152,17 @@ func cross(a, b []float64) []float64 {
 // norm returns the norm of a given vector which is supposed to be 3x1.
 func norm(v []float64) float64 {
 	return math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
+}
+
+// unit returns the unit vector of a given vector.
+func unit(a []float64) (b []float64) {
+	n := norm(a)
+	if floats.EqualWithinAbs(n, 0, 1e-12) {
+		return []float64{0, 0, 0}
+	}
+	b = make([]float64, len(a))
+	for i, val := range a {
+		b[i] = val / n
+	}
+	return
 }

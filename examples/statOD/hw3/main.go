@@ -18,7 +18,7 @@ const (
 	ekfDisableTime = -1200 // Seconds between measurements to switch back to CKF. Set as negative to ignore.
 	sncEnabled     = true  // Set to false to disable SNC.
 	sncDisableTime = 1200  // Number of seconds between measurements to skip using SNC noise.
-	sncPQW         = true  // Set to true if the noise should be considered defined in PQW frame.
+	sncRIC         = true  // Set to true if the noise should be considered defined in PQW frame.
 	timeBasedPlot  = false // Set to true to plot time, or false to plot on measurements.
 )
 
@@ -99,12 +99,12 @@ func main() {
 	truth := gokalman.NewBatchGroundTruth(stateTruth, truthMeas)
 
 	// Perturbations in the estimate
-	estPerts := smd.Perturbations{Jn: 3}
+	estPerts := smd.Perturbations{Jn: 2}
 
 	// Initialize the KF noise
 	σQx := math.Pow(10, -2*σQExponent)
 	var σQy, σQz float64
-	if !sncPQW {
+	if !sncRIC {
 		σQy = σQx
 		σQz = σQx
 	}
@@ -207,10 +207,19 @@ func main() {
 		kf.Prepare(orbitEstimate.Φ, Htilde)
 		if sncEnabled {
 			if Δt < sncDisableTime {
-				if sncPQW {
-					_, _, i, Ω, ω, _, _, _, _ := orbitEstimate.Orbit.Elements()
+				if sncRIC {
+					// Build the RIC DCM
+					rUnit := unit(orbitEstimate.Orbit.R())
+					cUnit := unit(orbitEstimate.Orbit.H())
+					iUnit := unit(cross(rUnit, cUnit))
+					dcmVals := make([]float64, 9)
+					for i := 0; i < 3; i++ {
+						dcmVals[i] = rUnit[i]
+						dcmVals[i+3] = cUnit[i]
+						dcmVals[i+6] = iUnit[i]
+					}
 					// Update the Q matrix in the PQW
-					dcm := smd.R3R1R3(-ω, -i, -Ω)
+					dcm := mat64.NewDense(3, 3, dcmVals)
 					var QECI, QECI0 mat64.Dense
 					QECI0.Mul(noiseQ, dcm.T())
 					QECI.Mul(dcm, &QECI0)
