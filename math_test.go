@@ -111,7 +111,7 @@ func TestAngles(t *testing.T) {
 }
 
 func TestRad2Deg180(t *testing.T) {
-	for _, test := range []struct{ angl, exp float64 }{{math.Pi / 3, 60.}, {math.Pi + math.Pi/100, -178.2}, {-math.Pi - math.Pi/100, 178.2}} {
+	for _, test := range []struct{ angl, exp float64 }{{math.Pi / 3, 60.}, {math.Pi + math.Pi/100, -178.2}, {-math.Pi - math.Pi/100, 178.2}, {-2 * math.Pi, 0}, {0, 0}, {2 * math.Pi, 0}} {
 		if got := Rad2deg180(test.angl); !floats.EqualWithinAbs(test.exp, got, 1e-6) {
 			t.Fatalf("got: %f\nexp: %f", got, test.exp)
 		}

@@ -337,7 +337,9 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 			}
 			if conf.AsCSV {
 				a, e, i, Ω, ω, ν, _, _, _ := state.Orbit.Elements()
-				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), a, e, Rad2deg(i), Rad2deg(Ω), Rad2deg(ω), Rad2deg(ν))
+				deltaT := state.DT.Sub(firstStatePtr.DT)
+				days := deltaT.Hours() / 24
+				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), a, e, Rad2deg180(i), Rad2deg180(Ω), Rad2deg180(ω), Rad2deg180(ν), firstStatePtr.SC.FuelMass, deltaT.Hours(), days)
 				if conf.CSVAppend != nil {
 					asTxt += "," + conf.CSVAppend(state)
 				}
