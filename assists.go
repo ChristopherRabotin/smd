@@ -175,6 +175,12 @@ func GATurnAngle(vInf, rP float64, body CelestialObject) float64 {
 	return math.Pi - 2*ρ
 }
 
+// GARPeriapsis computes the radius of periapsis from the turn angle about a given body.
+func GARPeriapsis(vInf, ψ float64, body CelestialObject) float64 {
+	cosρ := math.Cos(0.5 * (math.Pi - ψ))
+	return (1/cosρ - 1) * body.μ / math.Pow(vInf, 2)
+}
+
 // GAFromVinf computes gravity assist parameters about a given body from the V infinity vectors.
 // All angles are in radians!
 func GAFromVinf(vInfInVec, vInfOutVec []float64, body CelestialObject) (ψ, rP, bT, bR, B, θ float64) {

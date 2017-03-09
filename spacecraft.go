@@ -27,7 +27,7 @@ type Spacecraft struct {
 // SCLogInit initializes the logger.
 func SCLogInit(name string) kitlog.Logger {
 	klog := kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stdout))
-	klog = kitlog.NewContext(klog).With("spacecraft", name)
+	klog = kitlog.With(klog, "spacecraft", name)
 	return klog
 }
 
