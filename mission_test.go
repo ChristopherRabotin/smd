@@ -598,7 +598,7 @@ func TestMultiCorrectOE(t *testing.T) {
 				fuel = 53
 			}
 			end := start.Add(time.Duration(days*24) * time.Hour)
-			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("ruggMulti-%s-%s", prop, meth), Cosmo: true, AsCSV: smdConfig().testExport})
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("ruggMulti-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			aOsc, eOsc, iOsc, _, _, _, _, _, _ := astro.Orbit.Elements()
 			if !floats.EqualWithinAbs(eOsc, eTgt, eccentricityε) || !floats.EqualWithinAbs(iOsc, iTgt, angleε) || !floats.EqualWithinAbs(aOsc, aTgt, distanceε) {
@@ -652,7 +652,7 @@ func TestPetropoulosCaseB(t *testing.T) {
 			start := time.Now()
 			// About three months is what is needed without the eccentricity change.
 			end := start.Add(time.Duration(90*24) * time.Hour)
-			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("petroB-%s-%s", prop, meth), Cosmo: true, AsCSV: smdConfig().testExport})
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("petroB-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			aOsc, _, iOsc, _, _, _, _, _, _ := astro.Orbit.Elements()
 			if !floats.EqualWithinAbs(aOsc, aTgt, distanceε) || !floats.EqualWithinAbs(iOsc, iTgt, angleε) /*|| !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε)*/ {
@@ -754,6 +754,6 @@ func TestMissionSpiral(t *testing.T) {
 		finalOrbit.ToXCentric(Earth, finalDT)
 		sc := NewSpacecraft("Spiral2GTO", 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*osc, nil, Naasz, OptiΔaCL, OptiΔeCL, OptiΔiCL), NewLoiter(time.Duration(24)*time.Hour, nil)})
 		name := "test-inspiral"
-		astro := NewMission(sc, finalOrbit, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: smdConfig().testExport, Cosmo: true, Timestamp: false})
+		astro := NewMission(sc, finalOrbit, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: smdConfig().testExport, Cosmo: smdConfig().testExport, Timestamp: false})
 		astro.Propagate()*/
 }
