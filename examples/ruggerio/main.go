@@ -27,7 +27,7 @@ func main() {
 				initOrbit := smd.NewOrbitFromOE(350+smd.Earth.Radius, 0.01, 46, Ω, ω, ν, smd.Earth)
 				targetOrbit := smd.NewOrbitFromOE(350+smd.Earth.Radius, 0.01, 51.6, Ω, ω, ν, smd.Earth)
 
-				waypoints := []smd.Waypoint{smd.NewOrbitTarget(*targetOrbit, nil, smd.Ruggerio, smd.OptiΔiCL)}
+				waypoints := []smd.Waypoint{smd.NewOrbitTarget(*targetOrbit, nil, smd.Ruggiero, smd.OptiΔiCL)}
 				sc := smd.NewSpacecraft("Rug", dryMass, fuelMass, eps, thrusters, false, []*smd.Cargo{}, waypoints)
 
 				sc.LogInfo()

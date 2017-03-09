@@ -219,14 +219,14 @@ func TestMissionFrameChg(t *testing.T) {
 	}
 }
 
-// Note: for the "CorrectOE" tests, the Ruggerio paper does not indicate the mass of the vehicle
+// Note: for the "CorrectOE" tests, the Ruggiero paper does not indicate the mass of the vehicle
 // nor the amount of fuel. So I have changed the values to those I find from the specified
 // spacecraft so as to detect any change while running the tests.
 
-// TestCorrectOEa runs the test case from the Ruggerio 2012 conference paper.
+// TestCorrectOEa runs the test case from the Ruggiero 2012 conference paper.
 func TestCorrectOEa(t *testing.T) {
 	for _, prop := range []Propagator{Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
 			// Actual final orbit
 			oTarget := NewOrbitFromOE(42164, 0.003, 0.005, 0.088, 5.352, 75.326, Earth)
@@ -253,10 +253,10 @@ func TestCorrectOEa(t *testing.T) {
 	}
 }
 
-// TestCorrectOEaNeg runs the test case from the Ruggerio 2012 conference paper.
+// TestCorrectOEaNeg runs the test case from the Ruggiero 2012 conference paper.
 func TestCorrectOEaNeg(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
 			oTarget := NewOrbitFromOE(24396, 0.001, 0.001, 1, 1, 1, Earth)
 			eps := NewUnlimitedEPS()
@@ -282,10 +282,10 @@ func TestCorrectOEaNeg(t *testing.T) {
 	}
 }
 
-// TestCorrectOEi runs the test case from the Ruggerio 2012 conference paper.
+// TestCorrectOEi runs the test case from the Ruggiero 2012 conference paper.
 func TestCorrectOEi(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
 			oTarget := NewOrbitFromOE(Earth.Radius+350, 0.001, 51.6, 1, 1, 1, Earth)
 			eps := NewUnlimitedEPS()
@@ -311,10 +311,10 @@ func TestCorrectOEi(t *testing.T) {
 	}
 }
 
-// TestCorrectOEiNeg runs the test case from the Ruggerio 2012 conference paper.
+// TestCorrectOEiNeg runs the test case from the Ruggiero 2012 conference paper.
 func TestCorrectOEiNeg(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(Earth.Radius+350, 0.001, 51.6, 1, 1, 1, Earth)
 			oTarget := NewOrbitFromOE(Earth.Radius+350, 0.001, 46, 1, 1, 1, Earth)
 			eps := NewUnlimitedEPS()
@@ -340,10 +340,10 @@ func TestCorrectOEiNeg(t *testing.T) {
 	}
 }
 
-// TestCorrectOEΩ runs the test case from the Ruggerio 2012 conference paper.
+// TestCorrectOEΩ runs the test case from the Ruggiero 2012 conference paper.
 func TestCorrectOEΩ(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 0, 1, 0, Earth)
 			oTarget := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 5, 1, 0, Earth)
 			eps := NewUnlimitedEPS()
@@ -369,10 +369,10 @@ func TestCorrectOEΩ(t *testing.T) {
 	}
 }
 
-// TestCorrectOEΩNeg runs the test case from the Ruggerio 2012 conference paper.
+// TestCorrectOEΩNeg runs the test case from the Ruggiero 2012 conference paper.
 func TestCorrectOEΩNeg(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 5, 1, 0, Earth)
 			oTarget := NewOrbitFromOE(Earth.Radius+798, 0.00125, 98.57, 0, 1, 0, Earth)
 			eps := NewUnlimitedEPS()
@@ -425,10 +425,10 @@ func TestCorrectOEΩShortWay(t *testing.T) {
 	}
 }
 
-// TestCorrectOEe runs the test case from the Ruggerio 2012 conference paper.
+// TestCorrectOEe runs the test case from the Ruggiero 2012 conference paper.
 func TestCorrectOEe(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(Earth.Radius+9000, 0.01, 98.7, 0, 1, 1, Earth)
 			oTarget := NewOrbitFromOE(Earth.Radius+9000, 0.15, 98.7, 0, 1, 1, Earth)
 			eps := NewUnlimitedEPS()
@@ -454,10 +454,10 @@ func TestCorrectOEe(t *testing.T) {
 	}
 }
 
-// TestCorrectOEe runs the test case from the Ruggerio 2012 conference paper.
+// TestCorrectOEe runs the test case from the Ruggiero 2012 conference paper.
 func TestCorrectOEeNeg(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(Earth.Radius+9000, 0.15, 98.7, 0, 1, 1, Earth)
 			oTarget := NewOrbitFromOE(Earth.Radius+9000, 0.01, 98.7, 0, 1, 1, Earth)
 			eps := NewUnlimitedEPS()
@@ -483,10 +483,10 @@ func TestCorrectOEeNeg(t *testing.T) {
 	}
 }
 
-// TestCorrectOEω runs the test case from the Ruggerio 2012 conference paper.
+// TestCorrectOEω runs the test case from the Ruggiero 2012 conference paper.
 func TestCorrectOEω(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 178, angleε, Earth)
 			oTarget := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 183, angleε, Earth)
 			eps := NewUnlimitedEPS()
@@ -516,10 +516,10 @@ func TestCorrectOEω(t *testing.T) {
 	}
 }
 
-// TestCorrectOEωNeg runs the test case from the Ruggerio 2012 conference paper.
+// TestCorrectOEωNeg runs the test case from the Ruggiero 2012 conference paper.
 func TestCorrectOEωNeg(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 183, angleε, Earth)
 			oTarget := NewOrbitFromOE(Earth.Radius+900, eccentricityε, angleε, angleε, 178, angleε, Earth)
 			eps := NewUnlimitedEPS()
@@ -575,10 +575,10 @@ func TestCorrectOEωShortWay(t *testing.T) {
 	}
 }
 
-// TestMultiCorrectOE runs the test case from the Ruggerio 2012 conference paper.
+// TestMultiCorrectOE runs the test case from the Ruggiero 2012 conference paper.
 func TestMultiCorrectOE(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(24396, 0.001, 7, 1, 1, 1, Earth)
 			oTarget := NewOrbitFromOE(42164, 0.7283, 0.001, 1, 1, 1, Earth)
 			aTgt, eTgt, iTgt, _, _, _, _, _, _ := oTarget.Elements()
@@ -590,7 +590,7 @@ func TestMultiCorrectOE(t *testing.T) {
 			start := time.Now()
 			var days int
 			var fuel float64
-			if meth == Ruggerio {
+			if meth == Ruggiero {
 				days = 113
 				fuel = 51
 			} else {
@@ -614,7 +614,7 @@ func TestMultiCorrectOE(t *testing.T) {
 }
 
 func TestPetropoulosCaseA(t *testing.T) {
-	t.Log("Case A fails with Ruggerio: stops although the eccenticity is not good)")
+	t.Log("Case A fails with Ruggiero: stops although the eccenticity is not good)")
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
 		for _, meth := range []ControlLawType{Naasz} {
 			oInit := NewOrbitFromOE(7000, 0.01, 0.05, 0, 0, 1, Earth)
@@ -640,7 +640,7 @@ func TestPetropoulosCaseA(t *testing.T) {
 
 func TestPetropoulosCaseB(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(24505.9, 0.725, 7.05, 0, 0, 1, Earth)
 			oTarget := NewOrbitFromOE(42165, 0.001, 0.05, 0, 1, 1, Earth)
 			aTgt, _, iTgt, _, _, _, _, _, _ := oTarget.Elements()
@@ -665,7 +665,7 @@ func TestPetropoulosCaseB(t *testing.T) {
 
 func TestPetropoulosCaseC(t *testing.T) {
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(9222.7, 0.2, 0.573, 0, 0, 1, Earth)
 			oTarget := NewOrbitFromOE(30000, 0.7, 0.573, 0, 1, 1, Earth)
 			eps := NewUnlimitedEPS()
@@ -691,7 +691,7 @@ func TestPetropoulosCaseE(t *testing.T) {
 		t.Skip("Case E Petro is too long")
 	}
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
-		for _, meth := range []ControlLawType{Ruggerio, Naasz} {
+		for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 			oInit := NewOrbitFromOE(24505.9, 0.725, 0.06, 0, 0, 1, Earth)
 			oTarget := NewOrbitFromOE(26500, 0.7, 116, 270, 180, 1, Earth)
 			eps := NewUnlimitedEPS()

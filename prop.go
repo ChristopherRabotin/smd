@@ -32,8 +32,8 @@ const (
 	OptiΔΩCL
 	// OptiΔωCL allows to optimize thrust for argument of perigee change
 	OptiΔωCL
-	// Ruggerio uses the eponym method of combining the control laws
-	Ruggerio ControlLawType = iota + 1
+	// Ruggiero uses the eponym method of combining the control laws
+	Ruggiero ControlLawType = iota + 1
 	// Naasz is another type of combination of control law
 	Naasz
 	hohmannCompute hohmannStatus = iota + 1
@@ -71,8 +71,8 @@ func (cl ControlLaw) String() string {
 
 func (meth ControlLawType) String() string {
 	switch meth {
-	case Ruggerio:
-		return "Ruggerio"
+	case Ruggiero:
+		return "Ruggiero"
 	case Naasz:
 		return "Naasz"
 	}
@@ -312,7 +312,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	cl.cleared = true // Will be set to false if not yet converged.
 	a, e, i, Ω, ω, _, _, _, _ := o.Elements()
 	switch cl.method {
-	case Ruggerio:
+	case Ruggiero:
 		factor := func(oscul, init, target, tol float64) float64 {
 			if floats.EqualWithinAbs(init, target, tol) || floats.EqualWithinAbs(oscul, target, tol) {
 				return 0 // Don't want no NaNs now.
