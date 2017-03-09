@@ -1,6 +1,7 @@
 package smd
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -562,11 +563,11 @@ func TestCorrectOEωShortWay(t *testing.T) {
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
 		start := time.Now()
-		end := start.Add(time.Duration(26) * time.Hour)
+		end := start.Add(time.Duration(27) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
 		astro.Propagate()
 		_, _, _, _, ω, _, _, _, _ := astro.Orbit.Elements()
-		if !floats.EqualWithinAbs(ω, Deg2rad(5.241), Deg2rad(0.32)) {
+		if !floats.EqualWithinAbs(ω, Deg2rad(5.241), Deg2rad(0.4)) {
 			t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 			t.Fatal("decreasing argument of periapsis short way failed")
@@ -597,7 +598,7 @@ func TestMultiCorrectOE(t *testing.T) {
 				fuel = 53
 			}
 			end := start.Add(time.Duration(days*24) * time.Hour)
-			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("ruggMulti-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			aOsc, eOsc, iOsc, _, _, _, _, _, _ := astro.Orbit.Elements()
 			if !floats.EqualWithinAbs(eOsc, eTgt, eccentricityε) || !floats.EqualWithinAbs(iOsc, iTgt, angleε) || !floats.EqualWithinAbs(aOsc, aTgt, distanceε) {
@@ -626,7 +627,7 @@ func TestPetropoulosCaseA(t *testing.T) {
 			start := time.Now()
 			// With eta=0.968, the duration is 152.389 days.
 			end := start.Add(time.Duration(153*24) * time.Hour)
-			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("petroA-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			aOsc, eOsc, _, _, _, _, _, _, _ := astro.Orbit.Elements()
 			if !floats.EqualWithinAbs(aOsc, 42000, distanceε) || !floats.EqualWithinAbs(eOsc, 0.01, eccentricityε) {
@@ -651,7 +652,7 @@ func TestPetropoulosCaseB(t *testing.T) {
 			start := time.Now()
 			// About three months is what is needed without the eccentricity change.
 			end := start.Add(time.Duration(90*24) * time.Hour)
-			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("petroB-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			aOsc, _, iOsc, _, _, _, _, _, _ := astro.Orbit.Elements()
 			if !floats.EqualWithinAbs(aOsc, aTgt, distanceε) || !floats.EqualWithinAbs(iOsc, iTgt, angleε) /*|| !floats.EqualWithinAbs(astro.Orbit.e, oTarget.e, eccentricityε)*/ {
@@ -674,7 +675,7 @@ func TestPetropoulosCaseC(t *testing.T) {
 			sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
 			start := time.Now()
 			end := start.Add(time.Duration(80*24) * time.Hour)
-			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("petroC-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			aOsc, eOsc, _, _, _, _, _, _, _ := astro.Orbit.Elements()
 			if !floats.EqualWithinAbs(aOsc, 30000, distanceε) || !floats.EqualWithinAbs(eOsc, 0.7, eccentricityε) {
@@ -701,7 +702,7 @@ func TestPetropoulosCaseE(t *testing.T) {
 			start := time.Now()
 			// There is no provided time, but the graph goes all the way to 240 days.
 			end := start.Add(time.Duration(190*24) * time.Hour)
-			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("petroE-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			if ok, err := astro.Orbit.Equals(*oTarget); !ok {
 				t.Logf("METHOD=%s\tPROP=%s", meth, prop)
@@ -732,7 +733,7 @@ func TestMissionSpiral(t *testing.T) {
 	name := "testSpiral"
 	//TODO: Fix bug where ref2Sun doesn't trigger if not the last waypoint
 	sc := NewSpacecraft(name, 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewOutwardSpiral(Earth, nil), NewLoiter(time.Duration(24)*time.Hour, ref2Sun)})
-	astro := NewMission(sc, osc, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: false, Timestamp: false})
+	astro := NewMission(sc, osc, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: smdConfig().testExport, Cosmo: smdConfig().testExport, Timestamp: false})
 	astro.Propagate()
 	if !astro.Orbit.Origin.Equals(Sun) {
 		t.Fatal("outward spiral with ref2sun did not transform this orbit to heliocentric")
@@ -753,6 +754,6 @@ func TestMissionSpiral(t *testing.T) {
 		finalOrbit.ToXCentric(Earth, finalDT)
 		sc := NewSpacecraft("Spiral2GTO", 10e3, 5e3, NewUnlimitedEPS(), thrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*osc, nil, Naasz, OptiΔaCL, OptiΔeCL, OptiΔiCL), NewLoiter(time.Duration(24)*time.Hour, nil)})
 		name := "test-inspiral"
-		astro := NewMission(sc, finalOrbit, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: false, Cosmo: true, Timestamp: false})
+		astro := NewMission(sc, finalOrbit, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: smdConfig().testExport, Cosmo: smdConfig().testExport, Timestamp: false})
 		astro.Propagate()*/
 }

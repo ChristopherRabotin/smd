@@ -22,6 +22,7 @@ type _smdconfig struct {
 	VSOP87Dir     string
 	SPICEDir      string
 	outputDir     string
+	testExport    bool
 }
 
 func (c _smdconfig) ChgFrame(toFrame, fromFrame string, epoch time.Time, state []float64) ([]float64, []float64) {
@@ -93,11 +94,12 @@ func smdConfig() _smdconfig {
 	vsop87Enabled := viper.GetBool("VSOP87.enabled")
 	vsop87Dir := viper.GetString("VSOP87.directory")
 	outputDir := viper.GetString("general.output_path")
+	testExport := viper.GetBool("general.test_export")
 
 	if vsop87Enabled && spiceEnabled {
 		panic("both VSOP87 and SPICE are enabled, please make up your mind (SPICE is more precise)")
 	}
 	cfgLoaded = true
-	config = _smdconfig{VSOP87: vsop87Enabled, VSOP87Dir: vsop87Dir, SPICE: spiceEnabled, SPICEDir: spiceDir, outputDir: outputDir}
+	config = _smdconfig{VSOP87: vsop87Enabled, VSOP87Dir: vsop87Dir, SPICE: spiceEnabled, SPICEDir: spiceDir, outputDir: outputDir, testExport: testExport}
 	return config
 }

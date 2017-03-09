@@ -202,7 +202,7 @@ func createAsCSVCSVFile(filename string, conf ExportConfig, stateDT time.Time) *
 	f.WriteString(fmt.Sprintf(`# Creation date (UTC): %s
 # Records are a, e, i, Ω, ω, ν. All angles are in degrees.
 #   Simulation time start (UTC): %s
-time,a,e,i,Omega,omega,nu,`, time.Now(), stateDT.UTC()))
+time,a,e,i,Omega,omega,nu,fuel,timeInHours,timeInDays,`, time.Now(), stateDT.UTC()))
 	if conf.CSVAppendHdr != nil {
 		// Append the headers for the appended columns.
 		f.WriteString(conf.CSVAppendHdr())
@@ -314,7 +314,9 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 
 					if conf.AsCSV {
 						a, e, i, Ω, ω, ν, _, _, _ := state.Orbit.Elements()
-						asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), a, e, Rad2deg(i), Rad2deg(Ω), Rad2deg(ω), Rad2deg(ν))
+						deltaT := state.DT.Sub(firstStatePtr.DT)
+						days := deltaT.Hours() / 24
+						asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), a, e, Rad2deg180(i), Rad2deg180(Ω), Rad2deg180(ω), Rad2deg180(ν), firstStatePtr.SC.FuelMass, deltaT.Hours(), days)
 						if _, err := fAsCSV.WriteString("\n" + asTxt); err != nil {
 							panic(err)
 						}
@@ -335,7 +337,9 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 			}
 			if conf.AsCSV {
 				a, e, i, Ω, ω, ν, _, _, _ := state.Orbit.Elements()
-				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), a, e, Rad2deg(i), Rad2deg(Ω), Rad2deg(ω), Rad2deg(ν))
+				deltaT := state.DT.Sub(firstStatePtr.DT)
+				days := deltaT.Hours() / 24
+				asTxt := fmt.Sprintf("%s,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", state.DT.UTC().Format("2006-01-02 15:04:05"), a, e, Rad2deg180(i), Rad2deg180(Ω), Rad2deg180(ω), Rad2deg180(ν), firstStatePtr.SC.FuelMass, deltaT.Hours(), days)
 				if conf.CSVAppend != nil {
 					asTxt += "," + conf.CSVAppend(state)
 				}

@@ -108,3 +108,13 @@ func Rad2deg(a float64) float64 {
 	}
 	return math.Mod(a/deg2rad, 360)
 }
+
+// Rad2deg180 converts radians to degrees, and enforce between +/-180.
+func Rad2deg180(a float64) float64 {
+	if a < -math.Pi {
+		a += 2 * math.Pi
+	} else if a > math.Pi {
+		a -= 2 * math.Pi
+	}
+	return math.Mod(a/deg2rad, 360)
+}

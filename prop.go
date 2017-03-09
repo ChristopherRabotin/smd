@@ -361,7 +361,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	case Naasz:
 		// Note that, as described in Hatten MSc. thesis, the summing method only
 		// works one way (because of the δO^2) per OE. So I added the sign function
-		// *every here and there* as needed that to fix it.
+		// to fix it.
 		dε, eε, aε := o.epsilons()
 		for _, ctrl := range cl.controls {
 			var weight, δO float64
@@ -370,25 +370,25 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			sinω, cosω := math.Sincos(ω)
 			switch ctrl.Type() {
 			case OptiΔaCL:
-				δO = a - cl.oTgta
+				δO = cl.oTgta - a
 				if math.Abs(δO) < dε {
 					δO = 0
 				}
-				weight = sign(-δO) * math.Pow(h, 2) / (4 * math.Pow(a, 4) * math.Pow(1+e, 2))
+				weight = sign(δO) * math.Pow(h, 2) / (4 * math.Pow(a, 4) * math.Pow(1+e, 2))
 			case OptiΔeCL:
-				δO = e - cl.oTgte
+				δO = cl.oTgte - e
 				if math.Abs(δO) < eε {
 					δO = 0
 				}
-				weight = sign(-δO) * math.Pow(h, 2) / (4 * math.Pow(p, 2))
+				weight = sign(δO) * math.Pow(h, 2) / (4 * math.Pow(p, 2))
 			case OptiΔiCL:
-				δO = i - cl.oTgti
+				δO = cl.oTgti - i
 				if math.Abs(δO) < aε {
 					δO = 0
 				}
-				weight = sign(-δO) * math.Pow((h+e*h*math.Cos(ω+math.Asin(e*sinω)))/(p*(math.Pow(e*sinω, 2)-1)), 2)
+				weight = sign(δO) * math.Pow((h+e*h*math.Cos(ω+math.Asin(e*sinω)))/(p*(math.Pow(e*sinω, 2)-1)), 2)
 			case OptiΔΩCL:
-				δO = Ω - cl.oTgtΩ
+				δO = cl.oTgtΩ - Ω
 				if δO > math.Pi {
 					// Enforce short path to correct angle.
 					δO *= -1
@@ -396,9 +396,9 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				if math.Abs(δO) < aε {
 					δO = 0
 				}
-				weight = sign(-δO) * math.Pow((h*math.Sin(i)*(e*math.Sin(ω+math.Asin(e*cosω))-1))/(p*(1-math.Pow(e*cosω, 2))), 2)
+				weight = sign(δO) * math.Pow((h*math.Sin(i)*(e*math.Sin(ω+math.Asin(e*cosω))-1))/(p*(1-math.Pow(e*cosω, 2))), 2)
 			case OptiΔωCL:
-				δO = ω - cl.oTgtω
+				δO = cl.oTgtω - ω
 				if δO > math.Pi {
 					// Enforce short path to correct angle.
 					δO *= -1
@@ -406,7 +406,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				if math.Abs(δO) < aε {
 					δO = 0
 				}
-				weight = sign(-δO) * (math.Pow(e*h, 2) / (4 * math.Pow(p, 2))) * (1 - math.Pow(e, 2)/4)
+				weight = sign(δO) * (math.Pow(e*h, 2) / (4 * math.Pow(p, 2))) * (1 - math.Pow(e, 2)/4)
 			}
 			if δO != 0 {
 				cl.cleared = false // We're not actually done.
