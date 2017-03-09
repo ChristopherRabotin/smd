@@ -17,11 +17,12 @@ const (
 )
 
 var (
-	launch = time.Date(1989, 10, 8, 0, 0, 0, 0, time.UTC)
-	vga1   = time.Date(1990, 2, 10, 0, 0, 0, 0, time.UTC)
-	ega1   = time.Date(1990, 12, 10, 0, 0, 0, 0, time.UTC)
-	ega2   = time.Date(1992, 12, 9, 12, 0, 0, 0, time.UTC)
-	joi    = time.Date(1996, 3, 21, 12, 0, 0, 0, time.UTC)
+	minRadius = 300 + smd.Earth.Radius // km
+	launch    = time.Date(1989, 10, 8, 0, 0, 0, 0, time.UTC)
+	vga1      = time.Date(1990, 2, 10, 0, 0, 0, 0, time.UTC)
+	ega1      = time.Date(1990, 12, 10, 0, 0, 0, 0, time.UTC)
+	ega2      = time.Date(1992, 12, 9, 12, 0, 0, 0, time.UTC)
+	joi       = time.Date(1996, 3, 21, 12, 0, 0, 0, time.UTC)
 )
 
 func main() {
@@ -73,6 +74,8 @@ func main() {
 	DCM := mat64.NewDense(3, 3, dcmVal)
 	data := "psi\trP1\trP2\n"
 	step := (2 * math.Pi) / 10000
+	// Print when both become higher than minRadius.
+	rpsOkay := false
 	for ψ := step; ψ < 2*math.Pi; ψ += step {
 		sψ, cψ := math.Sincos(ψ)
 		vInfOutGA1VNC := []float64{vInfOutGA1Norm * math.Cos(math.Pi-theta), vInfOutGA1Norm * math.Sin(math.Pi-theta) * cψ, -vInfOutGA1Norm * math.Sin(math.Pi-theta) * sψ}
@@ -85,6 +88,14 @@ func main() {
 		}
 		_, rP2, _, _, _, _ := smd.GAFromVinf(vInfOutGA1, vInfInGA2, smd.Earth)
 		data += fmt.Sprintf("%f\t%f\t%f\n", ψ*r2d, rP1, rP2)
+		if !rpsOkay && rP1 > minRadius && rP2 > minRadius {
+			rpsOkay = true
+			fmt.Printf("[OK ] ψ=%.6f\trP1=%.3f km\trP2=%.3f km\n", ψ*r2d, rP1, rP2)
+		}
+		if rpsOkay && (rP1 < minRadius || rP2 < minRadius) {
+			rpsOkay = false
+			fmt.Printf("[NOK] ψ=%.6f\trP1=%.3f km\trP2=%.3f km\n", ψ*r2d, rP1, rP2)
+		}
 	}
 	// Export data
 	f, err := os.Create("./q3.tsv")
