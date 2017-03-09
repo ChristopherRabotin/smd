@@ -239,7 +239,7 @@ func (e *OrbitEstimate) PropagateUntil(dt time.Time) {
 func NewOrbitEstimate(n string, o Orbit, p Perturbations, epoch time.Time, step time.Duration) *OrbitEstimate {
 	// The initial previous STM is identity.
 	klog := kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stdout))
-	klog = kitlog.NewContext(klog).With("estimate", n)
+	klog = kitlog.With(klog, "estimate", n)
 	stopDT := epoch
 	// XXX: We add the step for consistency with Mission. Mission is broken: it skips the first step because the time addition
 	// happens in the Stop function instead of the SetState function, the former being called at the start of the integration.
