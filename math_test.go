@@ -110,6 +110,14 @@ func TestAngles(t *testing.T) {
 	}
 }
 
+func TestRad2Deg180(t *testing.T) {
+	for _, test := range []struct{ angl, exp float64 }{{math.Pi / 3, 60.}, {math.Pi + math.Pi/100, -178.2}, {-math.Pi - math.Pi/100, 178.2}} {
+		if got := Rad2deg180(test.angl); !floats.EqualWithinAbs(test.exp, got, 1e-6) {
+			t.Fatalf("got: %f\nexp: %f", got, test.exp)
+		}
+	}
+}
+
 func TestSpherical2Cartisean(t *testing.T) {
 	a := make([]float64, 3)
 	incr := math.Pi / 10
