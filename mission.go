@@ -111,15 +111,16 @@ func (a *Mission) Propagate() {
 		}
 	}()
 	vInit := norm(a.Orbit.V())
+	initFuel := a.Vehicle.FuelMass
 	ode.NewRK4(0, a.step.Seconds(), a).Solve() // Blocking.
 	vFinal := norm(a.Orbit.V())
 	a.done = true
 	duration := a.CurrentDT.Sub(a.StartDT)
 	durStr := duration.String()
 	if duration.Hours() > 24 {
-		durStr += fmt.Sprintf(" (~%.1fd)", duration.Hours()/24)
+		durStr += fmt.Sprintf(" (~%.3fd)", duration.Hours()/24)
 	}
-	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "duration", durStr, "Δv(km/s)", math.Abs(vFinal-vInit))
+	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "duration", durStr, "Δv(km/s)", math.Abs(vFinal-vInit), "fuel(kg)", initFuel-a.Vehicle.FuelMass)
 	a.LogStatus()
 	if a.Vehicle.FuelMass < 0 {
 		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)

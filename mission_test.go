@@ -237,7 +237,7 @@ func TestCorrectOEa(t *testing.T) {
 			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
 			start := time.Now()
 			end := start.Add(time.Duration(45*24) * time.Hour)
-			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("ruggOEa-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			aOsc, _, _, _, _, _, _, _, _ := astro.Orbit.Elements()
 			if !floats.EqualWithinAbs(aOsc, 42164, distanceε) {
@@ -249,6 +249,7 @@ func TestCorrectOEa(t *testing.T) {
 				t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 				t.Fatalf("invalid fuel usage: %f kg instead of 21", fuelMass-astro.Vehicle.FuelMass)
 			}
+			t.Logf("METHOD=%s\tPROP=%s\nDuration: %s (~ %f days)\nFuel usage: %f kg", meth, prop, astro.CurrentDT.Sub(start), astro.CurrentDT.Sub(start).Hours()/24, fuelMass-sc.FuelMass)
 		}
 	}
 }
@@ -438,7 +439,7 @@ func TestCorrectOEe(t *testing.T) {
 			sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
 			start := time.Now()
 			end := start.Add(time.Duration(30*24) * time.Hour) // just after the expected time
-			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{})
+			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("ruggOEe-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			_, e, _, _, _, _, _, _, _ := astro.Orbit.Elements()
 			if !floats.EqualWithinAbs(e, 0.15, angleε) {
@@ -598,6 +599,8 @@ func TestMultiCorrectOE(t *testing.T) {
 				fuel = 53
 			}
 			end := start.Add(time.Duration(days*24) * time.Hour)
+			t.Logf("Would expect an end by %s", end)
+			end = start.Add(-1)
 			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("ruggMulti-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			aOsc, eOsc, iOsc, _, _, _, _, _, _ := astro.Orbit.Elements()
@@ -609,6 +612,7 @@ func TestMultiCorrectOE(t *testing.T) {
 				t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 				t.Fatalf("invalid fuel usage: %f kg instead of %f", fuelMass-astro.Vehicle.FuelMass, fuel)
 			}
+			t.Logf("METHOD=%s\tPROP=%s\nDuration: %s (~ %f days)\nFuel usage: %f kg", meth, prop, astro.CurrentDT.Sub(start), astro.CurrentDT.Sub(start).Hours()/24, fuelMass-sc.FuelMass)
 		}
 	}
 }
@@ -617,16 +621,17 @@ func TestPetropoulosCaseA(t *testing.T) {
 	t.Log("Case A fails with Ruggiero: stops although the eccenticity is not good)")
 	for _, prop := range []Propagator{GaussianVOP, Cartesian} {
 		for _, meth := range []ControlLawType{Naasz} {
-			oInit := NewOrbitFromOE(7000, 0.01, 0.05, 0, 0, 1, Earth)
-			oTarget := NewOrbitFromOE(42000, 0.01, 0.05, 0, 0, 1, Earth)
+			oInit := NewOrbitFromOE(Earth.Radius+1000, 0.01, 0.05, 0, 0, 1, Earth)
+			oTarget := NewOrbitFromOE(42164, 0.01, 0.05, 0, 0, 1, Earth)
 			eps := NewUnlimitedEPS()
 			EPThrusters := []EPThruster{NewGenericEP(1, 3100)}
 			dryMass := 1.0
 			fuelMass := 299.0
 			sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
 			start := time.Now()
-			// With eta=0.968, the duration is 152.389 days.
-			end := start.Add(time.Duration(153*24) * time.Hour)
+			// With eta=0, the duration is 14.600 days.
+			//end := start.Add(time.Duration(15*24) * time.Hour)
+			end := start.Add(-1)
 			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("petroA-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			aOsc, eOsc, _, _, _, _, _, _, _ := astro.Orbit.Elements()
@@ -701,9 +706,11 @@ func TestPetropoulosCaseE(t *testing.T) {
 			sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth)})
 			start := time.Now()
 			// There is no provided time, but the graph goes all the way to 240 days.
-			end := start.Add(time.Duration(190*24) * time.Hour)
+			//end := start.Add(time.Duration(190*24) * time.Hour)
+			end := start.Add(-1)
 			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("petroE-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
+			t.Logf("Duration: %s (~ %f days)\nFuel usage: %f kg", astro.CurrentDT.Sub(start), astro.CurrentDT.Sub(start).Hours()/24, fuelMass-sc.FuelMass)
 			if ok, err := astro.Orbit.Equals(*oTarget); !ok {
 				t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 				t.Fatalf("error: %s\ntarget orbit: %s\nfinal orbit:  %s", err, oTarget, astro.Orbit)
@@ -756,4 +763,58 @@ func TestMissionSpiral(t *testing.T) {
 		name := "test-inspiral"
 		astro := NewMission(sc, finalOrbit, depart, endDT, Cartesian, Perturbations{}, ExportConfig{Filename: name, AsCSV: smdConfig().testExport, Cosmo: smdConfig().testExport, Timestamp: false})
 		astro.Propagate()*/
+}
+
+func TestExoMarsTGO(t *testing.T) {
+	t.Skip("Not actually a test.")
+	aInj, eInj := Radii2ae(44500+Mars.Radius, 426+Mars.Radius)
+	aTgt, eTgt := Radii2ae(400+Mars.Radius, 400+Mars.Radius)
+	iInj := 10.0
+	iTgt := 74.0
+	ω := 1.0
+	Ω := 1.0
+	ν := 15.0
+	prop := Cartesian
+	for _, meth := range []ControlLawType{Ruggiero, Naasz} {
+		oInj := NewOrbitFromOE(aInj, eInj, iInj, Ω, ω, ν, Mars)
+		oTgt := NewOrbitFromOE(aTgt, eTgt, iTgt, Ω, ω, ν, Mars)
+		eps := NewUnlimitedEPS()
+		EPThrusters := []EPThruster{NewGenericEP(2, 2000)}
+		dryMass := 755.0
+		fuelMass := 3000.0
+		sc := NewSpacecraft("TGO", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTgt, nil, meth, OptiΔaCL, OptiΔeCL, OptiΔiCL)})
+		start := time.Now()
+		end := start.Add(-1)
+		astro := NewMission(sc, oInj, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("exoMars-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
+		astro.Propagate()
+		// No actual test because this is just to generate some plots for my thesis.
+	}
+}
+
+func TestGTO2GEO(t *testing.T) {
+	// This test is based on the first launch of Proton Briz-M Enhanced -- http://www.spacelaunchreport.com/proton.html
+	//t.Skip("Not actually a test.")
+	aInj, eInj := Radii2ae(35786+Earth.Radius, 2363+Earth.Radius)
+	aTgt := 42164.0
+	eTgt := 0.01
+	iInj := 30.4
+	iTgt := 0.03 // Used for colocation.
+	ω := 1.0
+	Ω := 1.0
+	ν := 15.0
+	prop := Cartesian
+	for _, meth := range []ControlLawType{Naasz, Ruggiero} {
+		oInj := NewOrbitFromOE(aInj, eInj, iInj, Ω, ω, ν, Earth)
+		oTgt := NewOrbitFromOE(aTgt, eTgt, iTgt, Ω, ω, ν, Earth)
+		eps := NewUnlimitedEPS()
+		EPThrusters := []EPThruster{new(PPS1350), new(PPS1350), new(PPS1350), new(PPS1350)}
+		dryMass := 755.0
+		fuelMass := 3000.0
+		sc := NewSpacecraft(fmt.Sprintf("BrizM-%s", meth), dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTgt, nil, meth, OptiΔaCL, OptiΔeCL, OptiΔiCL)})
+		start := time.Now()
+		end := start.Add(-1)
+		astro := NewMission(sc, oInj, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("ViaSat-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
+		astro.Propagate()
+		// No actual test because this is just to generate some plots for my thesis.
+	}
 }
