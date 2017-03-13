@@ -635,7 +635,7 @@ func TestPetropoulosCaseA(t *testing.T) {
 			astro := NewMission(sc, oInit, start, end, prop, Perturbations{}, ExportConfig{Filename: fmt.Sprintf("petroA-%s-%s", prop, meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 			astro.Propagate()
 			aOsc, eOsc, _, _, _, _, _, _, _ := astro.Orbit.Elements()
-			if !floats.EqualWithinAbs(aOsc, 42000, distanceε) || !floats.EqualWithinAbs(eOsc, 0.01, eccentricityε) {
+			if !floats.EqualWithinAbs(aOsc, 42164, distanceε) || !floats.EqualWithinAbs(eOsc, 0.01, eccentricityε) {
 				t.Logf("METHOD=%s\tPROP=%s", meth, prop)
 				t.Fatalf("\ntarget orbit: %s\nfinal orbit:  %s", oTarget, astro.Orbit)
 			}
