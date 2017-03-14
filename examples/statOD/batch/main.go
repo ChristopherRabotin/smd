@@ -4,16 +4,11 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/ChristopherRabotin/gokalman"
 	"github.com/ChristopherRabotin/smd"
 	"github.com/gonum/matrix/mat64"
-)
-
-var (
-	wg sync.WaitGroup
 )
 
 func main() {
