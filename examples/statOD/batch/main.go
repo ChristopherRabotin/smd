@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"os"
 	"sync"
 	"time"
 
@@ -38,9 +39,13 @@ func main() {
 
 	// Vector of measurements
 	measurements := []Measurement{}
+	// Vector of difference between truth and corrected orbits
+	Δstate := []*mat64.Vector{}
+	firstMeasEncountered := false
+	firstMeasDT := time.Now() // Temporary value
 
 	// Define the special export functions
-	export := smd.ExportConfig{Filename: "LEO", Cosmo: false, AsCSV: true, Timestamp: false}
+	export := smd.ExportConfig{Filename: "LEO", Cosmo: true, AsCSV: true, Timestamp: false}
 	export.CSVAppendHdr = func() string {
 		hdr := "secondsSinceEpoch,"
 		for _, st := range stations {
@@ -56,18 +61,34 @@ func main() {
 		for _, st := range stations {
 			_, measurement := st.PerformMeasurement(θgst, state)
 			if measurement.Visible {
+				if !firstMeasEncountered {
+					firstMeasEncountered = true
+					firstMeasDT = state.DT
+				}
 				measurements = append(measurements, measurement)
 				str += measurement.CSV()
 			} else {
 				str += ",,,,"
 			}
 		}
+		if firstMeasEncountered {
+			// Add this orbit state to the list of states.
+			R, V := state.Orbit.RV()
+			state := mat64.NewVector(6, nil)
+			for i := 0; i < 3; i++ {
+				state.SetVec(i, R[i])
+				state.SetVec(i+3, V[i])
+			}
+			Δstate = append(Δstate, state)
+		}
 		return str[:len(str)-1] // Remove trailing comma
 	}
 
+	timeStep := 2 * time.Second
+
 	// Generate the perturbed orbit
 	scName := "LEO"
-	smd.NewPreciseMission(smd.NewEmptySC(scName, 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, 2*time.Second, export).Propagate()
+	smd.NewPreciseMission(smd.NewEmptySC(scName, 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, timeStep, export).Propagate()
 
 	// Take care of the measurements:
 	fmt.Printf("\n[INFO] Generated %d measurements\n", len(measurements))
@@ -85,6 +106,7 @@ func main() {
 
 	kf := gokalman.NewBatchKF(len(measurements), noiseKF)
 	var prevStationName = ""
+	var prevΦ *mat64.Dense
 	for measNo, measurement := range measurements {
 		if !measurement.Visible {
 			panic("why is there a non visible measurement?!")
@@ -92,8 +114,17 @@ func main() {
 		if measNo == 0 {
 			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
 		}
+		prevΦ = orbitEstimate.Φ
 		// Propagate the reference trajectory until the next measurement time.
 		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti+1, ti)
+
+		// Compute Φ(ti+1, t0)
+		var prevΦinv mat64.Dense
+		if err := prevΦinv.Inverse(prevΦ); err != nil {
+			panic(fmt.Errorf("the following Φ is singular:\n%+v", mat64.Formatted(prevΦ)))
+		}
+		var Φtit0 mat64.Dense
+		Φtit0.Mul(orbitEstimate.Φ, &prevΦinv)
 
 		if measurement.Station.name != prevStationName {
 			fmt.Printf("[INFO] #%04d %s in visibility of %s (T+%s)\n", measNo, scName, measurement.Station.name, measurement.State.DT.Sub(startDT))
@@ -109,7 +140,7 @@ func main() {
 		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst)
 		// Compute H
 		var H mat64.Dense
-		H.Mul(Htilde, orbitEstimate.Φ)
+		H.Mul(Htilde, &Φtit0)
 		kf.SetNextMeasurement(measurement.Observation(), computed.Observation(), orbitEstimate.Φ, &H)
 	}
 	severity := "INFO"
@@ -118,21 +149,55 @@ func main() {
 	}
 	fmt.Printf("[%s] %d visibility errors\n", severity, visibilityErrors)
 	// Solve Batch
-	xHat0, P0, err := kf.Solve()
+	_, P0, err := kf.Solve()
 	if err != nil {
 		panic(fmt.Errorf("could not solve BatchKF: %s", err))
 	}
-	fmt.Printf("Batch P0:\n%+v", mat64.Formatted(P0))
+	fmt.Printf("Batch P0:\n%+v\n", mat64.Formatted(P0))
 	// Let's perform the correction on the reference trajectory, and propagate it.
-	stateVector.SubVec(stateVector, xHat0)
+	//stateVector.SubVec(stateVector, xHat0)
 	// Generate the new orbit via Mission.
 	correctedOrbit := smd.NewOrbitFromRV([]float64{stateVector.At(0, 0), stateVector.At(1, 0), stateVector.At(2, 0)}, []float64{stateVector.At(3, 0), stateVector.At(4, 0), stateVector.At(5, 0)}, smd.Earth)
 	// And propagate it to generate the state vectors, starting from the first measurement time.
-	startMeasDT := measurements[0].State.DT
-	endMeasDT := measurements[len(measurements)-1].State.DT
+	//startMeasDT := measurements[0].State.DT
+	//endMeasDT := measurements[len(measurements)-1].State.DT
 
-	// Generate the perturbed orbit
+	// Generate the perturbed orbit. We'll use the export functions just to store the corrected state so we can compute the difference.
 	scName = "CorrectedLEO"
-	correctedExport := smd.ExportConfig{Filename: scName, Cosmo: false, AsCSV: true, Timestamp: false}
-	smd.NewPreciseMission(smd.NewEmptySC(scName, 0), correctedOrbit, startMeasDT, endMeasDT, smd.Cartesian, smd.Perturbations{Jn: 3}, 1*time.Second, correctedExport).Propagate()
+	correctedExport := smd.ExportConfig{Filename: scName, Cosmo: true, AsCSV: true, Timestamp: false}
+	correctedExport.CSVAppendHdr = func() string {
+		return ""
+	}
+	exportIt := 0
+	correctedExport.CSVAppend = func(state smd.MissionState) string {
+		if !state.DT.Before(firstMeasDT) {
+			// time.After is strict, and we need equality.
+			R, V := state.Orbit.RV()
+			state := mat64.NewVector(6, nil)
+			for i := 0; i < 3; i++ {
+				state.SetVec(i, R[i])
+				state.SetVec(i+3, V[i])
+			}
+			initState := Δstate[exportIt]
+			initState.SubVec(initState, state)
+			Δstate[exportIt] = initState
+			exportIt++
+		}
+		return ""
+	}
+	smd.NewPreciseMission(smd.NewEmptySC(scName, 0), correctedOrbit, firstMeasDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, timeStep, correctedExport).Propagate()
+	fmt.Printf("computed it=%d\tlen=%d\n", exportIt, len(Δstate))
+	// Write the state errors to a file.
+	f, err := os.Create("./batch-state-errors.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	f.WriteString("\\Delta X,\\Delta Y,\\Delta Z,\\Delta X_{dot},\\Delta Y_{dot},\\Delta Z_{dot}\n")
+	for _, delta := range Δstate {
+		csv := fmt.Sprintf("%f,%f,%f,%f,%f,%f\n", delta.At(0, 0), delta.At(1, 0), delta.At(2, 0), delta.At(3, 0), delta.At(4, 0), delta.At(5, 0))
+		if _, err := f.WriteString(csv); err != nil {
+			panic(err)
+		}
+	}
 }
