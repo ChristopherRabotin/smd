@@ -22,12 +22,7 @@ func main() {
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
 	// Define the orbits
 	leo := smd.NewOrbitFromOE(7000, 0.001, 30, 80, 40, 0, smd.Earth)
-	initR, initV := leo.RV()
 	stateVector := mat64.NewVector(6, nil)
-	for i := 0; i < 3; i++ {
-		stateVector.SetVec(i, initR[i])
-		stateVector.SetVec(i+3, initV[i])
-	}
 
 	// Define the stations
 	σρ := math.Pow(1e-3, 2)    // m , but all measurements in km.
@@ -39,10 +34,6 @@ func main() {
 
 	// Vector of measurements
 	measurements := []Measurement{}
-	// Vector of difference between truth and corrected orbits
-	Δstate := []*mat64.Vector{}
-	firstMeasEncountered := false
-	firstMeasDT := time.Now() // Temporary value
 
 	// Define the special export functions
 	export := smd.ExportConfig{Filename: "LEO", Cosmo: true, AsCSV: true, Timestamp: false}
@@ -61,25 +52,11 @@ func main() {
 		for _, st := range stations {
 			_, measurement := st.PerformMeasurement(θgst, state)
 			if measurement.Visible {
-				if !firstMeasEncountered {
-					firstMeasEncountered = true
-					firstMeasDT = state.DT
-				}
 				measurements = append(measurements, measurement)
 				str += measurement.CSV()
 			} else {
 				str += ",,,,"
 			}
-		}
-		if firstMeasEncountered {
-			// Add this orbit state to the list of states.
-			R, V := state.Orbit.RV()
-			state := mat64.NewVector(6, nil)
-			for i := 0; i < 3; i++ {
-				state.SetVec(i, R[i])
-				state.SetVec(i+3, V[i])
-			}
-			Δstate = append(Δstate, state)
 		}
 		return str[:len(str)-1] // Remove trailing comma
 	}
@@ -113,6 +90,12 @@ func main() {
 		}
 		if measNo == 0 {
 			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
+			// Create the initial state vector to fix
+			initR, initV := measurement.State.Orbit.RV()
+			for i := 0; i < 3; i++ {
+				stateVector.SetVec(i, initR[i])
+				stateVector.SetVec(i+3, initV[i])
+			}
 		}
 		prevΦ = orbitEstimate.Φ
 		// Propagate the reference trajectory until the next measurement time.
@@ -137,10 +120,9 @@ func main() {
 			fmt.Printf("[WARNING] station %s should see the SC but does not\n", measurement.Station.name)
 			visibilityErrors++
 		}
-		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst)
 		// Compute H
 		var H mat64.Dense
-		H.Mul(Htilde, &Φtit0)
+		H.Mul(computed.HTilde(), &Φtit0)
 		kf.SetNextMeasurement(measurement.Observation(), computed.Observation(), orbitEstimate.Φ, &H)
 	}
 	severity := "INFO"
@@ -149,45 +131,45 @@ func main() {
 	}
 	fmt.Printf("[%s] %d visibility errors\n", severity, visibilityErrors)
 	// Solve Batch
-	_, P0, err := kf.Solve()
+	xHat0, P0, err := kf.Solve()
 	if err != nil {
 		panic(fmt.Errorf("could not solve BatchKF: %s", err))
 	}
 	fmt.Printf("Batch P0:\n%+v\n", mat64.Formatted(P0))
+	fmt.Printf("Batch xHat0:\n%+v\n", mat64.Formatted(xHat0))
 	// Let's perform the correction on the reference trajectory, and propagate it.
-	//stateVector.SubVec(stateVector, xHat0)
+	stateVector.SubVec(stateVector, xHat0)
 	// Generate the new orbit via Mission.
-	correctedOrbit := smd.NewOrbitFromRV([]float64{stateVector.At(0, 0), stateVector.At(1, 0), stateVector.At(2, 0)}, []float64{stateVector.At(3, 0), stateVector.At(4, 0), stateVector.At(5, 0)}, smd.Earth)
-	// And propagate it to generate the state vectors, starting from the first measurement time.
-	//startMeasDT := measurements[0].State.DT
-	//endMeasDT := measurements[len(measurements)-1].State.DT
+	correctedOrbit := *smd.NewOrbitFromRV([]float64{stateVector.At(0, 0), stateVector.At(1, 0), stateVector.At(2, 0)}, []float64{stateVector.At(3, 0), stateVector.At(4, 0), stateVector.At(5, 0)}, smd.Earth)
+	fmt.Printf("%s\n\n", correctedOrbit)
+	residuals := make([]*mat64.Vector, len(measurements))
+	Δstate := make([]*mat64.Vector, len(measurements))
 
-	// Generate the perturbed orbit. We'll use the export functions just to store the corrected state so we can compute the difference.
-	scName = "CorrectedLEO"
-	correctedExport := smd.ExportConfig{Filename: scName, Cosmo: true, AsCSV: true, Timestamp: false}
-	correctedExport.CSVAppendHdr = func() string {
-		return ""
-	}
-	exportIt := 0
-	correctedExport.CSVAppend = func(state smd.MissionState) string {
-		if !state.DT.Before(firstMeasDT) {
-			// time.After is strict, and we need equality.
-			R, V := state.Orbit.RV()
-			state := mat64.NewVector(6, nil)
-			for i := 0; i < 3; i++ {
-				state.SetVec(i, R[i])
-				state.SetVec(i+3, V[i])
-			}
-			initState := Δstate[exportIt]
-			initState.SubVec(initState, state)
-			Δstate[exportIt] = initState
-			exportIt++
+	for measNo, measurement := range measurements {
+		if measNo == 0 {
+			orbitEstimate = smd.NewOrbitEstimate("estimator", correctedOrbit, estPerts, measurement.State.DT, time.Second)
 		}
-		return ""
+		// Propagate the reference trajectory until the next measurement time.
+		orbitEstimate.PropagateUntil(measurement.State.DT) // This leads to Φ(ti+1, ti)
+
+		// Compute the residuals
+		stateError := mat64.NewVector(6, nil)
+		R, V := orbitEstimate.State().Orbit.RV()
+		iR, iV := measurement.State.Orbit.RV()
+		for i := 0; i < 3; i++ {
+			stateError.SetVec(i, R[i]-iR[i])
+			stateError.SetVec(i+3, V[i]-iV[i])
+		}
+		Δstate[measNo] = stateError
+		// Compute residual
+		residual := mat64.NewVector(2, nil)
+		residual.MulVec(measurement.HTilde(), stateError)
+		residual.AddScaledVec(residual, -1, kf.Measurements[measNo].ObservationDev)
+		residual.ScaleVec(-1, residual)
+		residuals[measNo] = residual
 	}
-	smd.NewPreciseMission(smd.NewEmptySC(scName, 0), correctedOrbit, firstMeasDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, timeStep, correctedExport).Propagate()
-	fmt.Printf("computed it=%d\tlen=%d\n", exportIt, len(Δstate))
-	// Write the state errors to a file.
+
+	// Export state error
 	f, err := os.Create("./batch-state-errors.csv")
 	if err != nil {
 		panic(err)
@@ -196,6 +178,19 @@ func main() {
 	f.WriteString("\\Delta X,\\Delta Y,\\Delta Z,\\Delta X_{dot},\\Delta Y_{dot},\\Delta Z_{dot}\n")
 	for _, delta := range Δstate {
 		csv := fmt.Sprintf("%f,%f,%f,%f,%f,%f\n", delta.At(0, 0), delta.At(1, 0), delta.At(2, 0), delta.At(3, 0), delta.At(4, 0), delta.At(5, 0))
+		if _, errF := f.WriteString(csv); err != nil {
+			panic(errF)
+		}
+	}
+	// Export residuals
+	f, err = os.Create("./batch-residuals.csv")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	f.WriteString("rho,rhoDot\n")
+	for _, residual := range residuals {
+		csv := fmt.Sprintf("%f,%f\n", residual.At(0, 0), residual.At(1, 0))
 		if _, err := f.WriteString(csv); err != nil {
 			panic(err)
 		}
