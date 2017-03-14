@@ -101,17 +101,17 @@ func (m Measurement) StateVector() *mat64.Vector {
 }
 
 // HTilde returns the H tilde matrix for this given measurement.
-func (m Measurement) HTilde(state smd.MissionState, θgst float64) *mat64.Dense {
-	stationR := smd.ECEF2ECI(m.Station.R, θgst)
-	stationV := smd.ECEF2ECI(m.Station.V, θgst)
+func (m Measurement) HTilde() *mat64.Dense {
+	stationR := smd.ECEF2ECI(m.Station.R, m.θgst)
+	stationV := smd.ECEF2ECI(m.Station.V, m.θgst)
 	xS := stationR[0]
 	yS := stationR[1]
 	zS := stationR[2]
 	xSDot := stationV[0]
 	ySDot := stationV[1]
 	zSDot := stationV[2]
-	R := state.Orbit.R()
-	V := state.Orbit.V()
+	R := m.State.Orbit.R()
+	V := m.State.Orbit.V()
 	x := R[0]
 	y := R[1]
 	z := R[2]

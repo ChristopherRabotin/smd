@@ -20,6 +20,7 @@ const (
 	sncDisableTime = 1200  // Number of seconds between measurements to skip using SNC noise.
 	sncRIC         = true  // Set to true if the noise should be considered defined in PQW frame.
 	timeBasedPlot  = false // Set to true to plot time, or false to plot on measurements.
+	smoothing      = false // Set to true to smooth the CKF.
 )
 
 var (
@@ -130,10 +131,15 @@ func main() {
 
 	if ekfTrigger < 0 {
 		fmt.Println("[WARNING] EKF disabled")
-	} else if ekfTrigger < 10 {
-		fmt.Println("[WARNING] EKF may be turned on too early")
 	} else {
-		fmt.Printf("[INFO] EKF will turn on after %d measurements\n", ekfTrigger)
+		if smoothing {
+			fmt.Println("[ERROR] Enabling smooth has NO effect because EKF is enabled.")
+		}
+		if ekfTrigger < 10 {
+			fmt.Println("[WARNING] EKF may be turned on too early")
+		} else {
+			fmt.Printf("[INFO] EKF will turn on after %d measurements\n", ekfTrigger)
+		}
 	}
 
 	var kf *gokalman.HybridKF
@@ -203,7 +209,7 @@ func main() {
 			fmt.Printf("[WARNING] station %s should see the SC but does not\n", measurement.Station.name)
 			visibilityErrors++
 		}
-		Htilde := measurement.HTilde(orbitEstimate.State(), measurement.θgst)
+		Htilde := computedObservation.HTilde()
 		kf.Prepare(orbitEstimate.Φ, Htilde)
 		if sncEnabled {
 			if Δt < sncDisableTime {
