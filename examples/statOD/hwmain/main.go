@@ -302,7 +302,6 @@ func main() {
 		}
 		// Replay forward
 		for estNo, estimate := range estHistory {
-			//fmt.Printf("%+v\n", mat64.Formatted(estimate.State().T()))
 			estChan <- truth.ErrorWithOffset(estNo, estimate, stateHistory[estNo])
 		}
 		fmt.Println("[INFO] Smoothing completed")
@@ -334,6 +333,10 @@ func main() {
 
 func processEst(fn string, estChan chan (gokalman.Estimate)) {
 	wg.Add(1)
+	// We also compute the RMS here.
+	numMeasurements := 0
+	rmsPosition := 0.0
+	rmsVelocity := 0.0
 	ce, _ := gokalman.NewCustomCSVExporter([]string{"x", "y", "z", "xDot", "yDot", "zDot"}, ".", fn+".csv", 3)
 	for {
 		est, more := <-estChan
@@ -342,6 +345,17 @@ func processEst(fn string, estChan chan (gokalman.Estimate)) {
 			wg.Done()
 			break
 		}
+		numMeasurements++
+		for i := 0; i < 3; i++ {
+			rmsPosition += math.Pow(est.State().At(i, 0), 2)
+			rmsVelocity += math.Pow(est.State().At(i+3, 0), 2)
+		}
 		ce.Write(est)
 	}
+	// Compute RMS.
+	rmsPosition /= float64(numMeasurements)
+	rmsVelocity /= float64(numMeasurements)
+	rmsPosition = math.Sqrt(rmsPosition)
+	rmsVelocity = math.Sqrt(rmsVelocity)
+	fmt.Printf("=== RMS ===\nPosition = %f\tVelocity = %f\n", rmsPosition, rmsVelocity)
 }
