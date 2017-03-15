@@ -13,29 +13,44 @@ import (
 
 func main() {
 	/*** CONFIG ***/
-	pcpName := "lab6pcp1"
-	initPlanet := smd.Earth
-	arrivalPlanet := smd.Jupiter
+	plotC3 := false // Set to false to plot the two vInfs at initial and arrival planets
+	pcpName := "lab6pcp2"
+	initPlanet := smd.Jupiter
+	arrivalPlanet := smd.Pluto
 	/*initLaunch := time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)
 	initArrival := time.Date(2016, 04, 30, 0, 0, 0, 0, time.UTC)
 	maxLaunch := time.Date(2016, 6, 30, 0, 0, 0, 0, time.UTC)
 	maxArrival := time.Date(2017, 2, 5, 0, 0, 0, 0, time.UTC)*/
 
+	/* // PCP #1 of lab 6
 	initLaunch := julian.JDToTime(2453714.5)
 	initArrival := julian.JDToTime(2454129.5)
 	maxLaunch := julian.JDToTime(2453794.5)
 	maxArrival := julian.JDToTime(2454239.5)
+	*/
+	//PCP #2 of lab 6
+	initLaunch := julian.JDToTime(2454129.5)
+	initArrival := julian.JDToTime(2456917.5)
+	maxLaunch := julian.JDToTime(2454239.5)
+	maxArrival := julian.JDToTime(2457517.5)
 
 	/*** END CONFIG ***/
 
 	launchWindow := int(maxLaunch.Sub(initLaunch).Hours() / 24)    //days
 	arrivalWindow := int(maxArrival.Sub(initArrival).Hours() / 24) //days
+	fmt.Printf("Launch window: %d days\nArrival window: %d days\n", launchWindow, arrivalWindow)
 
 	// Stores the content of the dat file.
 	// No trailing new line because it's add in the for loop.
 	dat := fmt.Sprintf("%% %s -> %s\n%%arrival days as new lines, departure as new columns", initPlanet, arrivalPlanet)
 	hdls := make([]*os.File, 4)
-	for i, name := range []string{"c3", "tof", "vinf", "dates"} {
+	var fNames []string
+	if plotC3 {
+		fNames = []string{"c3", "tof", "vinf", "dates"}
+	} else {
+		fNames = []string{"vinf-init", "tof", "vinf-arrival", "dates"}
+	}
+	for i, name := range fNames {
 		// Write CSV file.
 		f, err := os.Create(fmt.Sprintf("./contour-%s-%s.dat", pcpName, name))
 		if err != nil {
@@ -81,7 +96,12 @@ func main() {
 				// Compute the c3
 				VInfInit := mat64.NewVector(3, nil)
 				VInfInit.SubVec(Vi, initV)
-				c3 = math.Pow(mat64.Norm(VInfInit, 2), 2)
+				// WARNING: When *not* plotting the c3, we just store the V infinity at departure in the c3 variable!
+				if plotC3 {
+					c3 = math.Pow(mat64.Norm(VInfInit, 2), 2)
+				} else {
+					c3 = mat64.Norm(VInfInit, 2)
+				}
 				if math.IsNaN(c3) {
 					c3 = 0
 				}
@@ -97,5 +117,9 @@ func main() {
 		}
 	}
 	// Print the matlab command to help out
-	fmt.Printf("=== MatLab ===\npcpplots('%s', '%s', '%s', '%s')\n", pcpName, initLaunch.Format("2006-01-02"), initArrival.Format("2006-01-02"), arrivalPlanet.Name)
+	if plotC3 {
+		fmt.Printf("=== MatLab ===\npcpplots('%s', '%s', '%s', '%s')\n", pcpName, initLaunch.Format("2006-01-02"), initArrival.Format("2006-01-02"), arrivalPlanet.Name)
+	} else {
+		fmt.Printf("=== MatLab ===\npcpplotsVinfs('%s', '%s', '%s', '%s', '%s')\n", pcpName, initLaunch.Format("2006-01-02"), initArrival.Format("2006-01-02"), initPlanet.Name, arrivalPlanet.Name)
+	}
 }

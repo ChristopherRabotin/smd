@@ -7,6 +7,7 @@ import (
 
 	"github.com/soniakeys/meeus/julian"
 	"github.com/soniakeys/meeus/planetposition"
+	"github.com/soniakeys/meeus/pluto"
 )
 
 const (
@@ -68,6 +69,25 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 		return *NewOrbitFromRV([]float64{0, 0, 0}, []float64{0, 0, 0}, *c)
 	}
 	if smdConfig().VSOP87 {
+		if c.Name == "Pluto" {
+			// Special case in Sonia Keys' Meeus
+			l, b, r := pluto.Heliocentric(julian.TimeToJD(dt))
+			r *= AU
+			v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
+			// Get the Cartesian coordinates from L,B,R.
+			R, V := make([]float64, 3), make([]float64, 3)
+			sB, cB := math.Sincos(b.Rad())
+			sL, cL := math.Sincos(l.Rad())
+			R[0] = r * cB * cL
+			R[1] = r * cB * sL
+			R[2] = r * sB
+			// Let's find the direction of the velocity vector.
+			vDir := cross(R, []float64{0, 0, -1})
+			for i := 0; i < 3; i++ {
+				V[i] = v * vDir[i] / norm(vDir)
+			}
+			return *NewOrbitFromRV(R, V, Sun)
+		}
 		if c.PP == nil {
 			// Load the planet.
 			var vsopPosition int
@@ -129,4 +149,4 @@ var Jupiter = CelestialObject{"Jupiter", 71492.0, 778298361, 1.26686534 * 1e8, 3
 
 // Pluto is not a planet and had that down ranking coming. It should have stayed in its lane.
 // WARNING: Pluto SOI is not defined.
-var Pluto = CelestialObject{"Pluto", 1151.0, 591579900, 9. * 1e2, 118.0, 17.14216667, 1, 0, 0, 0, nil}
+var Pluto = CelestialObject{"Pluto", 1151.0, 5915799000, 9. * 1e2, 118.0, 17.14216667, 1, 0, 0, 0, nil}
