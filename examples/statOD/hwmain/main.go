@@ -20,7 +20,7 @@ const (
 	sncDisableTime = 1200  // Number of seconds between measurements to skip using SNC noise.
 	sncRIC         = true  // Set to true if the noise should be considered defined in PQW frame.
 	timeBasedPlot  = false // Set to true to plot time, or false to plot on measurements.
-	smoothing      = true  // Set to true to smooth the CKF.
+	smoothing      = false // Set to true to smooth the CKF.
 )
 
 var (
