@@ -83,7 +83,7 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 			default:
 				panic(fmt.Errorf("unknown object: %s", c.Name))
 			}
-			planet, err := planetposition.LoadPlanetPath(vsopPosition-1, "")
+			planet, err := planetposition.LoadPlanetPath(vsopPosition-1, smdConfig().VSOP87Dir)
 			if err != nil {
 				panic(fmt.Errorf("could not load planet number %d: %s", vsopPosition, err))
 			}
@@ -125,4 +125,8 @@ var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23
 var Mars = CelestialObject{"Mars", 3397.2, 227939282.5616, 4.305 * 1e4, 25.19, 1.85, 576000, 1964e-6, 36e-6, -18e-6, nil}
 
 // Jupiter is big.
-var Jupiter = CelestialObject{"Jupiter", 71492.0, 778298361, 1.268 * 1e8, 3.13, 1.30326966, 48.2e6, 0.01475, 0, -0.00058, nil}
+var Jupiter = CelestialObject{"Jupiter", 71492.0, 778298361, 1.26686534 * 1e8, 3.13, 1.30326966, 48.2e6, 0.01475, 0, -0.00058, nil}
+
+// Pluto is not a planet and had that down ranking coming. It should have stayed in its lane.
+// WARNING: Pluto SOI is not defined.
+var Pluto = CelestialObject{"Pluto", 1151.0, 591579900, 9. * 1e2, 118.0, 17.14216667, 1, 0, 0, 0, nil}

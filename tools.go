@@ -131,7 +131,7 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 
 	A := dm * math.Sqrt(rI*rF*(1+cosΔν))
 	if νF-νI < lambertνlambertε && floats.EqualWithinAbs(A, 0, lambertε) {
-		err = errors.New("Δν ~=0 and A ~=0, cannot compute trajectory")
+		err = errors.New("cannot compute trajectory: Δν ~=0 and A ~=0")
 		return
 	}
 
