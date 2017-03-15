@@ -54,7 +54,7 @@ func main() {
 	dla := smd.Rad2deg(math.Atan2(VInfInit.At(2, 0), mat64.Norm(VInfInit, 2)))
 	// Compute the v_infinity at destination
 	VInfInJGA := mat64.NewVector(3, nil)
-	VInfInJGA.SubVec(VfJGA, jupiterVVec)
+	VInfInJGA.SubVec(jupiterVVec, VfJGA)
 	vInfInJGA := mat64.Norm(VInfInJGA, 2)
 	fmt.Printf("c3: %f km^2/s^2\tRLA: %f deg\tDLA: %f deg\nV_inf@JGA: %f km/s\n", c3, rla, dla, vInfInJGA)
 
@@ -84,7 +84,8 @@ func main() {
 
 	fmt.Println("== QUESTION 3 ==\nManual")
 	fmt.Println("== QUESTION 4 ==")
-	smd.GAFromVinf([]float64{VInfInJGA.At(0, 0), VInfInJGA.At(1, 0), VInfInJGA.At(2, 0)}, []float64{VInfOutJGA.At(0, 0), VInfOutJGA.At(1, 0), VInfOutJGA.At(2, 0)}, smd.Jupiter)
+	ψ, rP, bT, bR, _, θ := smd.GAFromVinf([]float64{VInfInJGA.At(0, 0), VInfInJGA.At(1, 0), VInfInJGA.At(2, 0)}, []float64{VInfOutJGA.At(0, 0), VInfOutJGA.At(1, 0), VInfOutJGA.At(2, 0)}, smd.Jupiter)
+	fmt.Printf("rP = %f km (hP = %f km)\tBT = %f km\tBR = %f km\tψ = %f\tθ = %f\n", rP, rP-smd.Jupiter.Radius, bT, bR, smd.Rad2deg(ψ), smd.Rad2deg(θ))
 
 	fmt.Println("== QUESTION 5 ==")
 	ΔVhelio := mat64.NewVector(3, nil)
