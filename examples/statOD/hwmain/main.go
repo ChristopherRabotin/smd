@@ -14,13 +14,13 @@ import (
 )
 
 const (
-	ekfTrigger     = 15    // Number of measurements prior to switching to EKF mode.
-	ekfDisableTime = -1200 // Seconds between measurements to switch back to CKF. Set as negative to ignore.
-	sncEnabled     = true  // Set to false to disable SNC.
+	ekfTrigger     = -15   // Number of measurements prior to switching to EKF mode.
+	ekfDisableTime = 1200  // Seconds between measurements to switch back to CKF. Set as negative to ignore.
+	sncEnabled     = false // Set to false to disable SNC.
 	sncDisableTime = 1200  // Number of seconds between measurements to skip using SNC noise.
 	sncRIC         = true  // Set to true if the noise should be considered defined in PQW frame.
 	timeBasedPlot  = false // Set to true to plot time, or false to plot on measurements.
-	smoothing      = false // Set to true to smooth the CKF.
+	smoothing      = true  // Set to true to smooth the CKF.
 )
 
 var (
@@ -114,6 +114,8 @@ func main() {
 	noiseKF := gokalman.NewNoiseless(noiseQ, noiseR)
 
 	// Take care of measurements.
+	estHistory := make([]*gokalman.HybridKFEstimate, len(measurements))
+	stateHistory := make([]*mat64.Vector, len(measurements)) // Stores the histories of the orbit estimate (to post compute the truth)
 	estChan := make(chan (gokalman.Estimate), 1)
 	go processEst("hybridkf", estChan)
 
@@ -129,11 +131,15 @@ func main() {
 	visibilityErrors := 0
 	var orbitEstimate *smd.OrbitEstimate
 
+	if smoothing {
+		fmt.Println("[INFO] Smoothing enabled")
+	}
+
 	if ekfTrigger < 0 {
 		fmt.Println("[WARNING] EKF disabled")
 	} else {
 		if smoothing {
-			fmt.Println("[ERROR] Enabling smooth has NO effect because EKF is enabled.")
+			fmt.Println("[ERROR] Enabling smooth has NO effect because EKF is enabled")
 		}
 		if ekfTrigger < 10 {
 			fmt.Println("[WARNING] EKF may be turned on too early")
@@ -154,7 +160,7 @@ func main() {
 		Δt := ΔtDuration.Seconds() // Everything is in seconds.
 		if measNo == 0 {
 			prevDT = measurement.State.DT
-			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, time.Second)
+			orbitEstimate = smd.NewOrbitEstimate("estimator", measurement.State.Orbit, estPerts, measurement.State.DT, 10*time.Second)
 			var err error
 			kf, _, err = gokalman.NewHybridKF(prevXHat, prevP, noiseKF, 2)
 			if err != nil {
@@ -264,8 +270,14 @@ func main() {
 		residual.ScaleVec(-1, residual)
 		residuals[measNo] = residual
 
-		// Stream to CSV file
-		estChan <- truth.ErrorWithOffset(measNo, est, stateEst)
+		if smoothing {
+			// Save to history in order to perform smoothing.
+			estHistory[measNo] = est
+			stateHistory[measNo] = stateEst
+		} else {
+			// Stream to CSV file
+			estChan <- truth.ErrorWithOffset(measNo, est, stateEst)
+		}
 		prevDT = measurement.State.DT
 
 		// If in EKF, update the reference trajectory.
@@ -277,10 +289,25 @@ func main() {
 				R[i] += state.At(i, 0)
 				V[i] += state.At(i+3, 0)
 			}
-			orbitEstimate = smd.NewOrbitEstimate("estimator", *smd.NewOrbitFromRV(R, V, smd.Earth), estPerts, measurement.State.DT, time.Second)
+			orbitEstimate = smd.NewOrbitEstimate("estimator", *smd.NewOrbitFromRV(R, V, smd.Earth), estPerts, measurement.State.DT, 10*time.Second)
 		}
 		ckfMeasNo++
 	}
+
+	if smoothing {
+		fmt.Println("[INFO] Smoothing started")
+		// Perform the smoothing. First, play back all the estimates backward, and then replay the smoothed estimates forward to compute the difference.
+		if err := kf.SmoothAll(estHistory); err != nil {
+			panic(err)
+		}
+		// Replay forward
+		for estNo, estimate := range estHistory {
+			//fmt.Printf("%+v\n", mat64.Formatted(estimate.State().T()))
+			estChan <- truth.ErrorWithOffset(estNo, estimate, stateHistory[estNo])
+		}
+		fmt.Println("[INFO] Smoothing completed")
+	}
+
 	close(estChan)
 	wg.Wait()
 

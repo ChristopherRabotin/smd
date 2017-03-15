@@ -11,6 +11,10 @@ import (
 	"github.com/gonum/matrix/mat64"
 )
 
+const (
+	transitionPhiOnly = false
+)
+
 // OrbitEstimate is an ode.Integrable which allows to propagate an orbit via its initial estimate.
 type OrbitEstimate struct {
 	Φ      *mat64.Dense  // STM
@@ -52,11 +56,22 @@ func (e *OrbitEstimate) SetState(t float64, s []float64) {
 	// Extract the components of Φ
 	sIdx := 6
 	rΦ, cΦ := e.Φ.Dims()
+	Φk20 := mat64.NewDense(rΦ, cΦ, nil)
 	for i := 0; i < rΦ; i++ {
 		for j := 0; j < cΦ; j++ {
-			e.Φ.Set(i, j, s[sIdx])
+			Φk20.Set(i, j, s[sIdx])
 			sIdx++
 		}
+	}
+	if transitionPhiOnly {
+		// Compute the Φ for this transition
+		var Φinv mat64.Dense
+		if err := Φinv.Inverse(e.Φ); err != nil {
+			panic("could not invert e.Φ")
+		}
+		e.Φ.Mul(Φk20, &Φinv)
+	} else {
+		e.Φ = Φk20
 	}
 	// Increment the time.
 	e.dt = e.dt.Add(e.step)
