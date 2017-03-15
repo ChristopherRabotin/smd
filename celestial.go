@@ -83,7 +83,7 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 			default:
 				panic(fmt.Errorf("unknown object: %s", c.Name))
 			}
-			planet, err := planetposition.LoadPlanetPath(vsopPosition-1, "")
+			planet, err := planetposition.LoadPlanetPath(vsopPosition-1, smdConfig().VSOP87Dir)
 			if err != nil {
 				panic(fmt.Errorf("could not load planet number %d: %s", vsopPosition, err))
 			}
