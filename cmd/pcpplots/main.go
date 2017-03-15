@@ -8,20 +8,28 @@ import (
 
 	"github.com/ChristopherRabotin/smd"
 	"github.com/gonum/matrix/mat64"
+	"github.com/soniakeys/meeus/julian"
 )
 
 func main() {
 	/*** CONFIG ***/
-	pcpName := "lab4pcp2016"
+	pcpName := "lab6pcp1"
 	initPlanet := smd.Earth
-	arrivalPlanet := smd.Mars
-	initLaunch := time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)
+	arrivalPlanet := smd.Jupiter
+	/*initLaunch := time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)
 	initArrival := time.Date(2016, 04, 30, 0, 0, 0, 0, time.UTC)
 	maxLaunch := time.Date(2016, 6, 30, 0, 0, 0, 0, time.UTC)
-	maxArrival := time.Date(2017, 2, 5, 0, 0, 0, 0, time.UTC)
+	maxArrival := time.Date(2017, 2, 5, 0, 0, 0, 0, time.UTC)*/
+
+	initLaunch := julian.JDToTime(2453714.5)
+	initArrival := julian.JDToTime(2454129.5)
+	maxLaunch := julian.JDToTime(2453794.5)
+	maxArrival := julian.JDToTime(2454239.5)
+
+	/*** END CONFIG ***/
+
 	launchWindow := int(maxLaunch.Sub(initLaunch).Hours() / 24)    //days
 	arrivalWindow := int(maxArrival.Sub(initArrival).Hours() / 24) //days
-	/*** END CONFIG ***/
 
 	// Stores the content of the dat file.
 	// No trailing new line because it's add in the for loop.
@@ -89,5 +97,5 @@ func main() {
 		}
 	}
 	// Print the matlab command to help out
-	fmt.Printf("=== MatLab ===\npcpplots('%s', '%s', '%s')\n", pcpName, initLaunch.Format("2006-01-02"), initArrival.Format("2006-01-02"))
+	fmt.Printf("=== MatLab ===\npcpplots('%s', '%s', '%s', '%s')\n", pcpName, initLaunch.Format("2006-01-02"), initArrival.Format("2006-01-02"), arrivalPlanet.Name)
 }

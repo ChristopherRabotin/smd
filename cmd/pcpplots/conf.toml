@@ -6,8 +6,8 @@ test_export = false # Set to true to export the test cases.
 
 [VSOP87]
 enabled = true
-directory = "../../../data/vsop87"
+directory = "../../data/vsop87"
 
 [SPICE]
 enabled = false
-directory = "../../../cmd/refframes"
+directory = "../../cmd/refframes"

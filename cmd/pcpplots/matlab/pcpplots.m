@@ -1,4 +1,4 @@
-function [] = pcpplots(fname, initLaunch, initArrival)
+function [] = pcpplots(fname, initLaunch, initArrival, arrivalPlanet)
 % Load data file
 C3 = load(sprintf('../contour-%s-c3.dat', fname));
 vinf = load(sprintf('../contour-%s-vinf.dat', fname));
@@ -12,9 +12,8 @@ tof = tof';
 launch_days = 0:dates(1,1):dates(1,2) - 1;
 arrival_days = 0:dates(2,1):dates(2,2) - 1;
 
-TOF_contours = 0:100:400;
-vinf_contours = [1 2.5 3 4.5 5 7.5];
-C3_contours = [1 3 5 7 10 13 16 17 19 21 25 36 55 100];
+vinf_contours = round(min(min(vinf))):round((max(max(vinf))-min(min(vinf)))/15, 1):round(max(max(vinf)));
+C3_contours = round(min(min(C3))):round((max(max(C3))-min(min(C3)))/20, 1):round(max(max(C3)));
 
 figure(1)
 hold on
@@ -26,7 +25,7 @@ clabel(cs2,h2);
 [cs3,h3] = contour(launch_days, arrival_days, tof, 'k');
 clabel(cs3,h3);
 
-legend('C_3 km^2/s^2','V_{\infty} @ Mars, km/s','TOF, days')
+legend('C_3 km^2/s^2', sprintf('V_{\\infty} @ %s, km/s', arrivalPlanet),'TOF, days')
 xlabel(['Departure days past ' initLaunch])
 ylabel(['Arrival days past ' initArrival])
 
