@@ -12,6 +12,7 @@ import (
 
 func main() {
 	/*** CONFIG ***/
+	pcpName := "lab4pcp2016"
 	initPlanet := smd.Earth
 	arrivalPlanet := smd.Mars
 	initLaunch := time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -28,7 +29,7 @@ func main() {
 	hdls := make([]*os.File, 4)
 	for i, name := range []string{"c3", "tof", "vinf", "dates"} {
 		// Write CSV file.
-		f, err := os.Create(fmt.Sprintf("./contour-%s.dat", name))
+		f, err := os.Create(fmt.Sprintf("./contour-%s-%s.dat", pcpName, name))
 		if err != nil {
 			panic(err)
 		}
@@ -87,4 +88,6 @@ func main() {
 			hdls[2].WriteString(fmt.Sprintf("%f,", vInfArrival))
 		}
 	}
+	// Print the matlab command to help out
+	fmt.Printf("=== MatLab ===\npcpplots('%s', '%s', '%s')\n", pcpName, initLaunch.Format("2006-01-02"), initArrival.Format("2006-01-02"))
 }

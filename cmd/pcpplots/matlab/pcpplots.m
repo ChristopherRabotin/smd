@@ -1,9 +1,9 @@
-function [] = pcpplots(initLaunch, initArrival)
+function [] = pcpplots(fname, initLaunch, initArrival)
 % Load data file
-C3 = load('../contour-c3.dat');
-vinf = load('../contour-vinf.dat');
-tof = load('../contour-tof.dat');
-dates = load('../contour-dates.dat');
+C3 = load(sprintf('../contour-%s-c3.dat', fname));
+vinf = load(sprintf('../contour-%s-vinf.dat', fname));
+tof = load(sprintf('../contour-%s-tof.dat', fname));
+dates = load(sprintf('../contour-%s-dates.dat', fname));
 % Transpose data because it's written that way
 C3 = C3';
 vinf = vinf';
