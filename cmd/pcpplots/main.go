@@ -13,8 +13,6 @@ import (
 
 func main() {
 	/*** CONFIG ***/
-	plotC3 := true // Set to false to plot the two vInfs at initial and arrival planets
-	pcpName := "lab6pcp2"
 	/*initLaunch := time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)
 	initArrival := time.Date(2016, 04, 30, 0, 0, 0, 0, time.UTC)
 	maxLaunch := time.Date(2016, 6, 30, 0, 0, 0, 0, time.UTC)
@@ -23,24 +21,53 @@ func main() {
 	// PCP #1 of lab 6
 	initPlanet := smd.Earth
 	arrivalPlanet := smd.Jupiter
-	initLaunch := julian.JDToTime(2453714.5)
+	//initLaunch := julian.JDToTime(2453714.5)
+	initLaunch := time.Date(2006, 1, 6, 0, 0, 0, 0, time.UTC)
 	initArrival := julian.JDToTime(2454129.5)
-	maxLaunch := julian.JDToTime(2453794.5)
+	//maxLaunch := julian.JDToTime(2453794.5)
+	maxLaunch := time.Date(2006, 1, 7, 0, 0, 0, 0, time.UTC)
 	maxArrival := julian.JDToTime(2454239.5)
-	/*
-		//PCP #2 of lab 6
-		initPlanet := smd.Jupiter
-		arrivalPlanet := smd.Pluto
-		initLaunch := julian.JDToTime(2454129.5)
-		initArrival := julian.JDToTime(2456917.5)
-		maxLaunch := julian.JDToTime(2454239.5)
-		maxArrival := julian.JDToTime(2457517.5)
-	*/
+	c3MapPCP1, tofMapPCP1, vinfMapPCP1 := pcpGenerator(initPlanet, arrivalPlanet, initLaunch, maxLaunch, initArrival, maxArrival, 24*4, 1, true, "lab6pcp1", true)
+
+	//PCP #2 of lab 6
+	initPlanet = smd.Jupiter
+	arrivalPlanet = smd.Pluto
+	initLaunchJup := julian.JDToTime(2454129.5)
+	initArrival = julian.JDToTime(2456917.5)
+	maxLaunchJup = julian.JDToTime(2454239.5)
+	maxArrival = julian.JDToTime(2457517.5)
+
 	/*** END CONFIG ***/
-	pcpGenerator(initPlanet, arrivalPlanet, initLaunch, maxLaunch, initArrival, maxArrival, plotC3, pcpName, true)
+	/*vinfInitMapPCP2, tofMapPCP2, vinfArrMapPCP2 :=*/
+	pcpGenerator(initPlanet, arrivalPlanet, initLaunchJup, maxLaunchJup, initArrival, maxArrival, 1, 1, false, "lab6pcp2", true)
+
+	// Lab6 searching
+	earthDepart := time.Date(2006, 1, 9, 0, 0, 0, 0, time.UTC)
+	minC3 := 1e6 // Arbitrary large value
+	maxC3 := 180.
+	minDT := time.Now()
+	for launchDT, c3PerDay := range c3MapPCP1 {
+		for arrivalIdx, c3 := range c3PerDay {
+			if c3 > maxC3 {
+				continue // Cannot use this data point
+			}
+			if c3 < minC3 {
+				minDT = launchDT
+				minC3 = c3
+			}
+			// Check TOF
+			arrivalDT := tofMapPCP1[launchDT][arrivalIdx]
+			//if arrivalDT.After(max)
+		}
+	}
+	fmt.Printf("=== MIN ===\nDT: %s\tc3=%.3f km^2/s^2\n", minDT, minC3)
+	_, c3ok := c3MapPCP1[earthDepart]
+	_, vinfok := vinfMapPCP1[earthDepart]
+	_, tofok := tofMapPCP1[earthDepart]
+	fmt.Printf("PCP1 existance: %v %v %v\n", c3ok, vinfok, tofok)
 }
 
-func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, plotC3 bool, pcpName string, verbose bool) (c3Map, tofMap, vinfMap map[time.Time][]float64) {
+func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, plotC3 bool, pcpName string, verbose bool) (c3Map, tofMap, vinfMap map[time.Time][]float64) {
 	launchWindow := int(maxLaunch.Sub(initLaunch).Hours() / 24)    //days
 	arrivalWindow := int(maxArrival.Sub(initArrival).Hours() / 24) //days
 	// Create the output arrays
@@ -77,15 +104,14 @@ func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, max
 	hdls[3].WriteString(fmt.Sprintf("\n%%departure: \"%s\"\n%%arrival: \"%s\"\n%d,%d\n%d,%d\n", initLaunch.Format("2006-Jan-02"), initArrival.Format("2006-Jan-02"), 1, launchWindow, 1, arrivalWindow))
 	hdls[3].Close()
 
-	for launchDay := 0; launchDay < launchWindow; launchDay++ {
+	for launchDay := 0.; launchDay < float64(launchWindow); launchDay += 1 / ptsPerLaunchDay {
 		// New line in files
 		for _, hdl := range hdls[:3] {
 			if _, err := hdl.WriteString("\n"); err != nil {
 				panic(err)
 			}
 		}
-
-		launchDT := initLaunch.Add(time.Duration(launchDay*24) * time.Hour)
+		launchDT := initLaunch.Add(time.Duration(launchDay*24*3600) * time.Second)
 		if verbose {
 			fmt.Printf("Launch date %s\n", launchDT)
 		}
@@ -97,7 +123,8 @@ func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, max
 		initOrbit := initPlanet.HelioOrbit(launchDT)
 		initPlanetR := mat64.NewVector(3, initOrbit.R())
 		initPlanetV := mat64.NewVector(3, initOrbit.V())
-		for arrivalDay := 0; arrivalDay < arrivalWindow; arrivalDay++ {
+		arrivalIdx := 0
+		for arrivalDay := 0.; arrivalDay < float64(arrivalWindow); arrivalDay += 1 / ptsPerArrivalDay {
 			arrivalDT := initArrival.Add(time.Duration(arrivalDay*24) * time.Hour)
 			arrivalOrbit := arrivalPlanet.HelioOrbit(arrivalDT)
 			arrivalR := mat64.NewVector(3, arrivalOrbit.R())
@@ -135,9 +162,10 @@ func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, max
 			hdls[1].WriteString(fmt.Sprintf("%f,", tof.Hours()/24))
 			hdls[2].WriteString(fmt.Sprintf("%f,", vInfArrival))
 			// and in the arrays
-			c3Map[launchDT][arrivalDay] = c3
-			tofMap[launchDT][arrivalDay] = tof.Hours() / 24
-			vinfMap[launchDT][arrivalDay] = vInfArrival
+			c3Map[launchDT][arrivalIdx] = c3
+			tofMap[launchDT][arrivalIdx] = tof.Hours() / 24
+			vinfMap[launchDT][arrivalIdx] = vInfArrival
+			arrivalIdx++
 		}
 	}
 	if verbose {

@@ -5,9 +5,9 @@ output_path = "./" # Defines the output directory. Use "./" to output to current
 test_export = false # Set to true to export the test cases.
 
 [VSOP87]
-enabled = false
+enabled = true
 directory = "./data/vsop87"
 
 [SPICE]
-enabled = true
+enabled = false
 directory = "./cmd/refframes"
