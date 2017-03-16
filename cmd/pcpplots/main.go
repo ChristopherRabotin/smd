@@ -30,13 +30,13 @@ func main() {
 	initPlanet := smd.Earth
 	arrivalPlanet := smd.Jupiter
 	//initLaunch := julian.JDToTime(2453714.5)
-	initLaunch := time.Date(2006, 1, 6, 0, 0, 0, 0, time.UTC)
+	initLaunch := time.Date(2006, 1, 9, 0, 0, 0, 0, time.UTC)
 	initArrival := julian.JDToTime(2454129.5)
 	//maxLaunch := julian.JDToTime(2453794.5)
-	maxLaunch := time.Date(2006, 1, 7, 0, 0, 0, 0, time.UTC)
+	maxLaunch := time.Date(2006, 1, 10, 0, 0, 0, 0, time.UTC)
 	maxArrival := julian.JDToTime(2454239.5)
 
-	resolutionJupiter := 2.
+	resolutionJupiter := 4.
 	c3MapPCP1, tofMapPCP1, vinfMapPCP1, _, vinfMapVecsPCP1 := pcpGenerator(initPlanet, arrivalPlanet, initLaunch, maxLaunch, initArrival, maxArrival, 24*1, resolutionJupiter, true, "lab6pcp1", false)
 
 	//PCP #2 of lab 6
@@ -69,8 +69,8 @@ func main() {
 	mcPCE := time.Now()
 	mcVal = 1e20 // large
 	// With Rp at jupiter
-	minRp := -30 * smd.Jupiter.Radius // Set to a negative value to not take that into consideration.
-	safetycheck := make(map[string]bool)
+	minRp := 30 * smd.Jupiter.Radius // Set to a negative value to not take that into consideration.
+	maxRp := 0.0
 	for launchDT, c3PerDay := range c3MapPCP1 {
 		for arrivalIdx, c3 := range c3PerDay {
 			if c3 > maxC3 {
@@ -84,28 +84,24 @@ func main() {
 			vinfInJupiter := vinfMapPCP1[launchDT][arrivalIdx]
 			// All departure constraints seem to be met.
 			fmt.Printf("start %s\tend %s\n", arrivalDT, arrivalDT.Add(24*time.Hour))
-			key := fmt.Sprintf("%d%d", launchDT.Unix(), arrivalDT.Unix())
-			_, pres := safetycheck[key]
-			if pres {
-				fmt.Printf("found %s %s\n", launchDT, arrivalDT)
-				//panic("loop")
-				break
-			}
-			safetycheck[key] = true
 			vinfDepJMapPCP2, tofMapPCP2, vinfArrPMapPCP2, vinfMapVecsPCP2, _ := pcpGenerator(smd.Jupiter, smd.Pluto, arrivalDT, arrivalDT.Add(24*time.Hour), initArrivalPluto, maxArrivalPluto, resolutionJupiter, 1, false, "lab6pcp3tmp", false)
 			// Go through solutions and move on with values which are within the constraints.
 			for depJupDT, vInfDepPerDay := range vinfDepJMapPCP2 {
 				for arrPlutIdx, vInfDepJup := range vInfDepPerDay {
-					if minRp > 0 {
-						// Check if the rP is okay
-						vInfIn := []float64{vinfMapVecsPCP1[launchDT][arrivalIdx].At(0, 0), vinfMapVecsPCP1[launchDT][arrivalIdx].At(1, 0), vinfMapVecsPCP1[launchDT][arrivalIdx].At(2, 0)}
-						vInfOut := []float64{vinfMapVecsPCP2[depJupDT][arrPlutIdx].At(0, 0), vinfMapVecsPCP2[depJupDT][arrPlutIdx].At(1, 0), vinfMapVecsPCP2[depJupDT][arrPlutIdx].At(2, 0)}
-						_, rp, _, _, _, _ := smd.GAFromVinf(vInfIn, vInfOut, smd.Jupiter)
-						if rp < minRp {
-							continue
+					if math.Abs(vinfInJupiter-vInfDepJup) < 0.4 {
+						if minRp > 0 {
+							// Check if the rP is okay
+							vInfIn := []float64{vinfMapVecsPCP1[launchDT][arrivalIdx].At(0, 0), vinfMapVecsPCP1[launchDT][arrivalIdx].At(1, 0), vinfMapVecsPCP1[launchDT][arrivalIdx].At(2, 0)}
+							vInfOut := []float64{vinfMapVecsPCP2[depJupDT][arrPlutIdx].At(0, 0), vinfMapVecsPCP2[depJupDT][arrPlutIdx].At(1, 0), vinfMapVecsPCP2[depJupDT][arrPlutIdx].At(2, 0)}
+							_, rp, _, _, _, _ := smd.GAFromVinf(vInfIn, vInfOut, smd.Jupiter)
+							if rp > maxRp {
+								maxRp = rp
+							}
+							if rp < minRp {
+								//fmt.Printf("rP = %.2f * Jupiter radius (%.3f km)\t%+v\t%+v\n", rp/smd.Jupiter.Radius, rp, vInfIn, vInfOut)
+								continue
+							}
 						}
-					}
-					if math.Abs(vinfInJupiter-vInfDepJup) < 0.1 {
 						vinfArr := vinfArrPMapPCP2[depJupDT][arrPlutIdx]
 						if vinfArr < 14.5 {
 							if vinfArr < minVinfInPluto {
@@ -139,6 +135,7 @@ func main() {
 			}
 		}
 	}
+	fmt.Printf("maxRp = %f km (%f radii)\n", maxRp, maxRp/smd.Jupiter.Radius)
 	fmt.Printf("=== MIN ===\nDT: %s\tc3=%.3f km^2/s^2\n", minEarthLaunchDT, minC3)
 	fmt.Printf("min arrival at Pluto: %s\n", minPlutoArrivalDT)
 	fmt.Printf("min vInf at Pluto: %f km/s\n", minVinfInPluto)
@@ -228,7 +225,6 @@ func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, max
 				// Compute the c3
 				VInfInit := mat64.NewVector(3, nil)
 				VInfInit.SubVec(initPlanetV, Vi)
-				vInfInitVecs[launchDT][arrivalIdx] = *VInfInit
 				// WARNING: When *not* plotting the c3, we just store the V infinity at departure in the c3 variable!
 				if plotC3 {
 					c3 = math.Pow(mat64.Norm(VInfInit, 2), 2)
@@ -240,8 +236,9 @@ func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, max
 				}
 				// Compute the v_infinity at destination
 				VInfArrival := mat64.NewVector(3, nil)
-				VInfArrival.SubVec(Vf, arrivalV)
+				VInfArrival.SubVec(arrivalV, Vf)
 				vInfArrival = mat64.Norm(VInfArrival, 2)
+				vInfInitVecs[launchDT][arrivalIdx] = *VInfInit
 				vInfArriVecs[launchDT][arrivalIdx] = *VInfArrival
 			}
 			// Store data in the files
