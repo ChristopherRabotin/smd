@@ -13,11 +13,15 @@ import (
 
 func main() {
 	/*** CONFIG ***/
-	/*initLaunch := time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)
-	initArrival := time.Date(2016, 04, 30, 0, 0, 0, 0, time.UTC)
-	maxLaunch := time.Date(2016, 6, 30, 0, 0, 0, 0, time.UTC)
-	maxArrival := time.Date(2017, 2, 5, 0, 0, 0, 0, time.UTC)*/
-
+	/*
+		initPlanet := smd.Earth
+		arrivalPlanet := smd.Mars
+		initLaunch := time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)
+		initArrival := time.Date(2016, 04, 30, 0, 0, 0, 0, time.UTC)
+		maxLaunch := time.Date(2016, 6, 30, 0, 0, 0, 0, time.UTC)
+		maxArrival := time.Date(2017, 2, 5, 0, 0, 0, 0, time.UTC)
+		pcpGenerator(initPlanet, arrivalPlanet, initLaunch, maxLaunch, initArrival, maxArrival, 1, 1, true, "lab4pcp0", true)
+	*/
 	// PCP #1 of lab 6
 	initPlanet := smd.Earth
 	arrivalPlanet := smd.Jupiter
@@ -27,29 +31,35 @@ func main() {
 	//maxLaunch := julian.JDToTime(2453794.5)
 	maxLaunch := time.Date(2006, 1, 7, 0, 0, 0, 0, time.UTC)
 	maxArrival := julian.JDToTime(2454239.5)
-	c3MapPCP1, tofMapPCP1, vinfMapPCP1 := pcpGenerator(initPlanet, arrivalPlanet, initLaunch, maxLaunch, initArrival, maxArrival, 24*4, 1, true, "lab6pcp1", true)
+
+	resolutionJupiter := 24 * 1.0
+	c3MapPCP1, tofMapPCP1, vinfMapPCP1 := pcpGenerator(initPlanet, arrivalPlanet, initLaunch, maxLaunch, initArrival, maxArrival, 24*1, resolutionJupiter, true, "lab6pcp1", true)
 
 	//PCP #2 of lab 6
-	initPlanet = smd.Jupiter
-	arrivalPlanet = smd.Pluto
-	initLaunchJup := julian.JDToTime(2454129.5)
-	initArrival = julian.JDToTime(2456917.5)
+	/*initPlanet = smd.Jupiter
+	arrivalPlanet = smd.Pluto*/
+	//initLaunchJup := julian.JDToTime(2454129.5)
+	initArrivalPluto := julian.JDToTime(2456917.5)
 	maxLaunchJup := julian.JDToTime(2454239.5)
-	maxArrival = julian.JDToTime(2457517.5)
+	maxArrivalPluto := julian.JDToTime(2457517.5)
+	//pcpGenerator(smd.Jupiter, smd.Pluto, initLaunchJup, maxLaunchJup, initArrivalPluto, maxArrivalPluto, 24*1, 24*1, false, "lab6pcp2", true)
 
 	/*** END CONFIG ***/
-	/*vinfInitMapPCP2, tofMapPCP2, vinfArrMapPCP2 :=*/
-	pcpGenerator(initPlanet, arrivalPlanet, initLaunchJup, maxLaunchJup, initArrival, maxArrival, 1, 1, false, "lab6pcp2", true)
-
-	if true {
-		return
-	}
 
 	// Lab6 searching
-	earthDepart := time.Date(2006, 1, 9, 0, 0, 0, 0, time.UTC)
-	minC3 := 1e6 // Arbitrary large value
-	maxC3 := 180.
-	minDT := time.Now()
+	//earthDepart := time.Date(2006, 1, 9, 0, 0, 0, 0, time.UTC)
+	maxC3 := 180. // Fixed
+	minC3 := 1e6  // Arbitrary large value
+	minVinfInPluto := 1e6
+	minEarthLaunchDT := time.Now()
+	minPlutoArrivalDT := time.Now()
+	/* The c3 is the most important because the lower it is, the more science payload mass we can have.
+	So the forcing function here will simply be the sum of the c3 and the vInf at arrival. Some back of the enveloppe
+	shows that should be good stuff.
+	*/
+	var mcVal, mcC3, mcVinfJGA, mcVinfPluto float64
+	mcJGA := time.Now()
+	mcVal = 1e20 // large
 	for launchDT, c3PerDay := range c3MapPCP1 {
 		for arrivalIdx, c3 := range c3PerDay {
 			if c3 > maxC3 {
@@ -60,18 +70,48 @@ func main() {
 			if arrivalDT.After(maxArrival) {
 				continue
 			}
-			// All constraints are met
-			if c3 < minC3 {
-				minDT = launchDT
-				minC3 = c3
+			vinfInJupiter := vinfMapPCP1[launchDT][arrivalIdx]
+			// All departure constraints seem to be met.
+			vinfDepJMapPCP2, tofMapPCP2, vinfArrPMapPCP2 := pcpGenerator(smd.Jupiter, smd.Pluto, arrivalDT, maxLaunchJup, initArrivalPluto, maxArrivalPluto, resolutionJupiter, 24*1, false, "lab6pcp3tmp", true)
+			// Go through solutions and move on with values which are within the constraints.
+			for depJupDT, vInfDepPerDay := range vinfDepJMapPCP2 {
+				for arrPlutIdx, vInfDepJup := range vInfDepPerDay {
+					if math.Abs(vinfInJupiter-vInfDepJup) < 0.1 {
+						vinfArr := vinfArrPMapPCP2[depJupDT][arrPlutIdx]
+						if vinfArr < 14.5 {
+							if vinfArr < minVinfInPluto {
+								minVinfInPluto = vinfArr
+							}
+							// Yay! All conditions work
+							if c3 < minC3 {
+								minEarthLaunchDT = launchDT
+								minC3 = c3
+							}
+							//minPlutoArrivalDT
+							plutoTOF := tofMapPCP2[launchDT][arrivalIdx]
+							plutoArrivalDT := arrivalDT.Add(time.Duration(plutoTOF*24) * time.Hour)
+							if plutoArrivalDT.Before(minPlutoArrivalDT) {
+								minPlutoArrivalDT = plutoArrivalDT
+							}
+							// Apply my forcing function
+							val := c3 + vinfArr
+							if val < mcVal {
+								mcVal = val
+								mcJGA = arrivalDT
+								mcC3 = c3
+								mcVinfJGA = vInfDepJup
+								mcVinfPluto = vinfArr
+							}
+						}
+					}
+				}
 			}
 		}
 	}
-	fmt.Printf("=== MIN ===\nDT: %s\tc3=%.3f km^2/s^2\n", minDT, minC3)
-	_, c3ok := c3MapPCP1[earthDepart]
-	_, vinfok := vinfMapPCP1[earthDepart]
-	_, tofok := tofMapPCP1[earthDepart]
-	fmt.Printf("PCP1 existance: %v %v %v\n", c3ok, vinfok, tofok)
+	fmt.Printf("=== MIN ===\nDT: %s\tc3=%.3f km^2/s^2\n", minEarthLaunchDT, minC3)
+	fmt.Printf("min arrival at Pluto: %s\n", minPlutoArrivalDT)
+	fmt.Printf("min vInf at Pluto: %f km/s\n", minVinfInPluto)
+	fmt.Printf("=== SELECTION ===\nJGA: %s\tc3=%.3f km^2/s^2\nvInf@JGA: %.3f km/s\tvInf@PCE: %.3f\n", mcJGA, mcC3, mcVinfJGA, mcVinfPluto)
 }
 
 func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, plotC3 bool, pcpName string, verbose bool) (c3Map, tofMap, vinfMap map[time.Time][]float64) {
@@ -123,9 +163,9 @@ func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, max
 			fmt.Printf("Launch date %s\n", launchDT)
 		}
 		// Initialize the values
-		c3Map[launchDT] = make([]float64, arrivalWindow)
-		tofMap[launchDT] = make([]float64, arrivalWindow)
-		vinfMap[launchDT] = make([]float64, arrivalWindow)
+		c3Map[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
+		tofMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
+		vinfMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
 
 		initOrbit := initPlanet.HelioOrbit(launchDT)
 		initPlanetR := mat64.NewVector(3, initOrbit.R())

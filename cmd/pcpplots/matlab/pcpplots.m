@@ -12,8 +12,20 @@ tof = tof';
 launch_days = 0:dates(1,1):dates(1,2) - 1;
 arrival_days = 0:dates(2,1):dates(2,2) - 1;
 
-vinf_contours = round(min(min(vinf))):round((max(max(vinf))-min(min(vinf)))/15, 1):round(max(max(vinf)));
-C3_contours = round(min(min(C3))):round((max(max(C3))-min(min(C3)))/20, 1):round(max(max(C3)));
+maxVinf = max(max(vinf));
+ptsVinf = 15;
+if maxVinf == inf
+    maxVinf = 10;
+    ptsVinf = 6;
+end
+maxC3= max(max(C3));
+ptsC3 = 20;
+if maxC3 == inf
+    maxC3 = 100;
+    ptsC3 = 30;
+end
+vinf_contours = round(min(min(vinf))):round((maxVinf-min(min(vinf)))/ptsVinf, 1):round(maxVinf);
+C3_contours = round(min(min(C3))):round((maxC3-min(min(C3)))/ptsC3, 1):round(maxC3);
 
 figure(1)
 hold on

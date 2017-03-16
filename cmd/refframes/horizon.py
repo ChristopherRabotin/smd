@@ -35,6 +35,7 @@ if __name__ == '__main__':
     end_date = parsedt(args.end)
     if start_date.year != end_date.year:
         raise ValueError("must generate year by year")
+    end_date += timedelta(days=1)
 
     _load_kernels_()
     f = open('../../data/horizon/' + args.planet + '-' + str(start_date.year) + '.csv', 'w')
