@@ -11,6 +11,10 @@ import (
 	"github.com/soniakeys/meeus/julian"
 )
 
+const (
+	finder = true
+)
+
 func main() {
 	/*** CONFIG ***/
 	/*
@@ -32,18 +36,20 @@ func main() {
 	maxLaunch := time.Date(2006, 1, 7, 0, 0, 0, 0, time.UTC)
 	maxArrival := julian.JDToTime(2454239.5)
 
-	resolutionJupiter := 8.
-	c3MapPCP1, tofMapPCP1, vinfMapPCP1, _, vinfMapVecsPCP1 := pcpGenerator(initPlanet, arrivalPlanet, initLaunch, maxLaunch, initArrival, maxArrival, 24*1, resolutionJupiter, true, "lab6pcp1", true)
+	resolutionJupiter := 2.
+	c3MapPCP1, tofMapPCP1, vinfMapPCP1, _, vinfMapVecsPCP1 := pcpGenerator(initPlanet, arrivalPlanet, initLaunch, maxLaunch, initArrival, maxArrival, 24*1, resolutionJupiter, true, "lab6pcp1", false)
 
 	//PCP #2 of lab 6
 	/*initPlanet = smd.Jupiter
 	arrivalPlanet = smd.Pluto*/
 	//initLaunchJup := julian.JDToTime(2454129.5)
 	initArrivalPluto := julian.JDToTime(2456917.5)
-	maxLaunchJup := julian.JDToTime(2454239.5)
+	//maxLaunchJup := julian.JDToTime(2454239.5)
 	maxArrivalPluto := julian.JDToTime(2457517.5)
 	//pcpGenerator(smd.Jupiter, smd.Pluto, initLaunchJup, maxLaunchJup, initArrivalPluto, maxArrivalPluto, 24*1, 24*1, false, "lab6pcp2", true)
-
+	if !finder {
+		return
+	}
 	/*** END CONFIG ***/
 
 	// Lab6 searching
@@ -58,10 +64,13 @@ func main() {
 	shows that should be good stuff.
 	*/
 	var mcVal, mcC3, mcVinfJGA, mcVinfPluto float64
+	mcLaunch := time.Now()
 	mcJGA := time.Now()
+	mcPCE := time.Now()
 	mcVal = 1e20 // large
 	// With Rp at jupiter
-	minRp := 30 * smd.Jupiter.Radius // Set to a negative value to not take that into consideration.
+	minRp := -30 * smd.Jupiter.Radius // Set to a negative value to not take that into consideration.
+	safetycheck := make(map[string]bool)
 	for launchDT, c3PerDay := range c3MapPCP1 {
 		for arrivalIdx, c3 := range c3PerDay {
 			if c3 > maxC3 {
@@ -74,14 +83,23 @@ func main() {
 			}
 			vinfInJupiter := vinfMapPCP1[launchDT][arrivalIdx]
 			// All departure constraints seem to be met.
-			vinfDepJMapPCP2, tofMapPCP2, vinfArrPMapPCP2, vinfMapVecsPCP2, _ := pcpGenerator(smd.Jupiter, smd.Pluto, arrivalDT, maxLaunchJup, initArrivalPluto, maxArrivalPluto, resolutionJupiter, 1, false, "lab6pcp3tmp", true)
+			fmt.Printf("start %s\tend %s\n", arrivalDT, arrivalDT.Add(24*time.Hour))
+			key := fmt.Sprintf("%d%d", launchDT.Unix(), arrivalDT.Unix())
+			_, pres := safetycheck[key]
+			if pres {
+				fmt.Printf("found %s %s\n", launchDT, arrivalDT)
+				//panic("loop")
+				break
+			}
+			safetycheck[key] = true
+			vinfDepJMapPCP2, tofMapPCP2, vinfArrPMapPCP2, vinfMapVecsPCP2, _ := pcpGenerator(smd.Jupiter, smd.Pluto, arrivalDT, arrivalDT.Add(24*time.Hour), initArrivalPluto, maxArrivalPluto, resolutionJupiter, 1, false, "lab6pcp3tmp", false)
 			// Go through solutions and move on with values which are within the constraints.
 			for depJupDT, vInfDepPerDay := range vinfDepJMapPCP2 {
 				for arrPlutIdx, vInfDepJup := range vInfDepPerDay {
 					if minRp > 0 {
 						// Check if the rP is okay
 						vInfIn := []float64{vinfMapVecsPCP1[launchDT][arrivalIdx].At(0, 0), vinfMapVecsPCP1[launchDT][arrivalIdx].At(1, 0), vinfMapVecsPCP1[launchDT][arrivalIdx].At(2, 0)}
-						vInfOut := []float64{vinfMapVecsPCP2[depJupDT][arrivalIdx].At(0, 0), vinfMapVecsPCP2[depJupDT][arrivalIdx].At(1, 0), vinfMapVecsPCP2[depJupDT][arrivalIdx].At(2, 0)}
+						vInfOut := []float64{vinfMapVecsPCP2[depJupDT][arrPlutIdx].At(0, 0), vinfMapVecsPCP2[depJupDT][arrPlutIdx].At(1, 0), vinfMapVecsPCP2[depJupDT][arrPlutIdx].At(2, 0)}
 						_, rp, _, _, _, _ := smd.GAFromVinf(vInfIn, vInfOut, smd.Jupiter)
 						if rp < minRp {
 							continue
@@ -112,6 +130,8 @@ func main() {
 								mcC3 = c3
 								mcVinfJGA = vInfDepJup
 								mcVinfPluto = vinfArr
+								mcLaunch = launchDT
+								mcPCE = plutoArrivalDT
 							}
 						}
 					}
@@ -122,7 +142,7 @@ func main() {
 	fmt.Printf("=== MIN ===\nDT: %s\tc3=%.3f km^2/s^2\n", minEarthLaunchDT, minC3)
 	fmt.Printf("min arrival at Pluto: %s\n", minPlutoArrivalDT)
 	fmt.Printf("min vInf at Pluto: %f km/s\n", minVinfInPluto)
-	fmt.Printf("=== SELECTION ===\nJGA: %s\tc3=%.3f km^2/s^2\nvInf@JGA: %.3f km/s\tvInf@PCE: %.3f\n", mcJGA, mcC3, mcVinfJGA, mcVinfPluto)
+	fmt.Printf("=== SELECTION ===\nJGA: %s\tc3=%.3f km^2/s^2\nvInf@JGA: %.3f km/s\tvInf@PCE: %.3f\nLaunch: %s\tPluto arrival: %s\n", mcJGA, mcC3, mcVinfJGA, mcVinfPluto, mcLaunch, mcPCE)
 }
 
 func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, plotC3 bool, pcpName string, verbose bool) (c3Map, tofMap, vinfMap map[time.Time][]float64, vInfInitVecs, vInfArriVecs map[time.Time][]mat64.Vector) {
@@ -201,6 +221,9 @@ func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, max
 				}
 				c3 = math.NaN()
 				vInfArrival = math.NaN()
+				// Store a nil vector to not loose track of indexing
+				vInfInitVecs[launchDT][arrivalIdx] = *mat64.NewVector(3, nil)
+				vInfArriVecs[launchDT][arrivalIdx] = *mat64.NewVector(3, nil)
 			} else {
 				// Compute the c3
 				VInfInit := mat64.NewVector(3, nil)
