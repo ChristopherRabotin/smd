@@ -70,7 +70,7 @@ func TestHelio(t *testing.T) {
 		Vcomp := mat64.NewVector(3, V)
 		Rexp := mat64.NewVector(3, exp.R)
 		Vexp := mat64.NewVector(3, exp.V)
-		if !mat64.EqualApprox(Rcomp, Rexp, 1e-1) {
+		if !mat64.EqualApprox(Rcomp, Rexp, 1e0) {
 			t.Logf("\ngot %+v\nexp %+v", mat64.Formatted(Rcomp.T()), mat64.Formatted(Rexp.T()))
 			Rcomp.SubVec(Rcomp, Rexp)
 			t.Logf("%s @ %s (%f) (diff)\n%+v\n\n", exp.body, julian.JDToTime(exp.jde), exp.jde, Rcomp)
