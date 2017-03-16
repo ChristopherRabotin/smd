@@ -18,7 +18,7 @@ var (
 	cfgLoaded     = false
 	config        = _smdconfig{}
 	loadedCSVName = ""
-	loadedCSVdata = make(map[time.Time]planetstate)
+	loadedCSVdata = make(map[string]map[time.Time]planetstate)
 )
 
 type planetstate struct {
@@ -57,12 +57,12 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 	epoch = epoch.UTC()
 	conf := smdConfig()
 	if conf.spiceCSV {
-		filename := fmt.Sprintf("%s-%04d", planet, epoch.Year())
-		if filename != loadedCSVName {
-			loadedCSVdata = make(map[time.Time]planetstate) // Sheds almost a second when loading a 115 MB file
+		ephemeride := fmt.Sprintf("%s-%04d", planet, epoch.Year())
+		if _, found := loadedCSVdata[ephemeride]; !found {
+			loadedCSVdata[ephemeride] = make(map[time.Time]planetstate)
 			// Let's load a new file.
 			loadingProfileDT := time.Now()
-			file, err := os.Open(fmt.Sprintf("%s/%s.csv", conf.HorizonDir, filename))
+			file, err := os.Open(fmt.Sprintf("%s/%s.csv", conf.HorizonDir, ephemeride))
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -91,17 +91,16 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 					R[i] = tR
 					V[i] = tV
 				}
-				loadedCSVdata[dt] = planetstate{R, V}
+				loadedCSVdata[ephemeride][dt] = planetstate{R, V}
 			}
 
 			if err := scanner.Err(); err != nil {
 				panic(err)
 			}
-			loadedCSVName = filename
-			fmt.Printf("[smd:info] loaded %s in %s\n", filename, time.Now().Sub(loadingProfileDT))
+			fmt.Printf("[smd:info] loaded %s in %s\n", ephemeride, time.Now().Sub(loadingProfileDT))
 		}
 		// And now let's find the state.
-		state, found := loadedCSVdata[epoch.Truncate(conf.spiceTrunc)]
+		state, found := loadedCSVdata[ephemeride][epoch.Truncate(conf.spiceTrunc)]
 		if !found {
 			panic(fmt.Errorf("could not find date %s (%f) in data", epoch.Truncate(conf.spiceTrunc), julian.TimeToJD(epoch.Truncate(conf.spiceTrunc))))
 		}

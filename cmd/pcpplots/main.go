@@ -41,6 +41,10 @@ func main() {
 	/*vinfInitMapPCP2, tofMapPCP2, vinfArrMapPCP2 :=*/
 	pcpGenerator(initPlanet, arrivalPlanet, initLaunchJup, maxLaunchJup, initArrival, maxArrival, 1, 1, false, "lab6pcp2", true)
 
+	if true {
+		return
+	}
+
 	// Lab6 searching
 	earthDepart := time.Date(2006, 1, 9, 0, 0, 0, 0, time.UTC)
 	minC3 := 1e6 // Arbitrary large value
