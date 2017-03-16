@@ -59,6 +59,7 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 	if conf.spiceCSV {
 		filename := fmt.Sprintf("%s-%04d", planet, epoch.Year())
 		if filename != loadedCSVName {
+			loadedCSVdata = make(map[time.Time]planetstate) // Sheds almost a second when loading a 115 MB file
 			// Let's load a new file.
 			loadingProfileDT := time.Now()
 			file, err := os.Open(fmt.Sprintf("%s/%s.csv", conf.HorizonDir, filename))
@@ -97,7 +98,7 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 				panic(err)
 			}
 			loadedCSVName = filename
-			fmt.Printf("[info] loaded %s in %s\n", filename, time.Now().Sub(loadingProfileDT))
+			fmt.Printf("[smd:info] loaded %s in %s\n", filename, time.Now().Sub(loadingProfileDT))
 		}
 		// And now let's find the state.
 		state, found := loadedCSVdata[epoch.Truncate(conf.spiceTrunc)]

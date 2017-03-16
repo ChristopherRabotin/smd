@@ -34,7 +34,7 @@ func main() {
 	arrivalPlanet = smd.Pluto
 	initLaunchJup := julian.JDToTime(2454129.5)
 	initArrival = julian.JDToTime(2456917.5)
-	maxLaunchJup = julian.JDToTime(2454239.5)
+	maxLaunchJup := julian.JDToTime(2454239.5)
 	maxArrival = julian.JDToTime(2457517.5)
 
 	/*** END CONFIG ***/
@@ -51,13 +51,16 @@ func main() {
 			if c3 > maxC3 {
 				continue // Cannot use this data point
 			}
+			arrivalTOF := tofMapPCP1[launchDT][arrivalIdx]
+			arrivalDT := launchDT.Add(time.Duration(arrivalTOF*24) * time.Hour)
+			if arrivalDT.After(maxArrival) {
+				continue
+			}
+			// All constraints are met
 			if c3 < minC3 {
 				minDT = launchDT
 				minC3 = c3
 			}
-			// Check TOF
-			arrivalDT := tofMapPCP1[launchDT][arrivalIdx]
-			//if arrivalDT.After(max)
 		}
 	}
 	fmt.Printf("=== MIN ===\nDT: %s\tc3=%.3f km^2/s^2\n", minDT, minC3)

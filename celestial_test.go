@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gonum/matrix/mat64"
+	"github.com/gonum/floats"
 	"github.com/soniakeys/meeus/julian"
 )
 
@@ -66,20 +66,20 @@ func TestHelio(t *testing.T) {
 		{2460919, []float64{19195371.67, 106029328.4, 348953.802}, []float64{-34.57913611, 6.064190776, 2.078550651}, Venus},
 	} {
 		R, V := exp.body.HelioOrbit(julian.JDToTime(exp.jde)).RV()
-		Rcomp := mat64.NewVector(3, R)
-		Vcomp := mat64.NewVector(3, V)
-		Rexp := mat64.NewVector(3, exp.R)
-		Vexp := mat64.NewVector(3, exp.V)
-		if !mat64.EqualApprox(Rcomp, Rexp, 1e0) {
-			t.Logf("\ngot %+v\nexp %+v", mat64.Formatted(Rcomp.T()), mat64.Formatted(Rexp.T()))
-			Rcomp.SubVec(Rcomp, Rexp)
-			t.Logf("%s @ %s (%f) (diff)\n%+v\n\n", exp.body, julian.JDToTime(exp.jde), exp.jde, Rcomp)
-			t.Fatalf("%s in valid R", exp.body)
+		errDis := 3e3  // 3000 km
+		errVel := 1e-1 // 0.1 km/s
+		if smdConfig().VSOP87 {
+			errVel = 0.5 // 0.5 km/s for VSOP87
 		}
-		if !mat64.EqualApprox(Vcomp, Vexp, 1e-3) {
-			Vcomp.SubVec(Vcomp, Vexp)
-			t.Logf("%s @ %s (%f) (diff)\n%+v\n\n", exp.body, julian.JDToTime(exp.jde), exp.jde, Vcomp)
-			t.Fatalf("%s in valid V", exp.body)
+		for i := 0; i < 3; i++ {
+			if !floats.EqualWithinAbs(R[i], exp.R[i], errDis) {
+				t.Logf("delta[%d] = %f km", i, math.Abs(R[i]-exp.R[i]))
+				t.Fatalf("invalid R[%d] for %s @ %s (%f)\ngot %+v\nexp %+v", i, exp.body, julian.JDToTime(exp.jde), exp.jde, R, exp.R)
+			}
+			if !floats.EqualWithinAbs(V[i], exp.V[i], errVel) {
+				t.Logf("delta[%d] = %f km/s", i, math.Abs(V[i]-exp.V[i]))
+				t.Fatalf("invalid V[%d] for %s @ %s (%f)\ngot %+v\nexp %+v", i, exp.body, julian.JDToTime(exp.jde), exp.jde, V, exp.V)
+			}
 		}
 	}
 }
