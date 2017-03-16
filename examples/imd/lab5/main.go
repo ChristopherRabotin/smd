@@ -92,4 +92,11 @@ func main() {
 	ΔVhelio.SubVec(ViJupiter, VfJGA)
 	fmt.Printf("ΔVhelio = %+v km/s\t|ΔVhelio| = %f km/s\n", mat64.Formatted(ΔVhelio.T()), mat64.Norm(ΔVhelio, 2))
 
+	fmt.Println("==   PART 2   ==")
+	// The rest is done via the pcpplot command
+	fmt.Printf("=== TOF ===\nEarth -> Jupiter: %.2f days\nJupiter -> Pluto: %.2f days\n", jgaDT.Sub(launchDT).Hours()/24, pceDT.Sub(jgaDT).Hours()/24)
+	// Find the point to plot
+	pcp2InitLaunch := julian.JDToTime(2454129.5)
+	pcp2InitArrival := julian.JDToTime(2456917.5)
+	fmt.Printf("hold on; plot(%.3f, %.3f, 'g*', 'MarkerSize', 20)\n", jgaDT.Sub(pcp2InitLaunch).Hours()/24, pceDT.Sub(pcp2InitArrival).Hours()/24)
 }
