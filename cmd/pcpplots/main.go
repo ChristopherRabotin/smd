@@ -179,6 +179,8 @@ func pcpGenerator(initPlanet, arrivalPlanet smd.CelestialObject, initLaunch, max
 		c3Map[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
 		tofMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
 		vinfMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
+		vInfInitVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay))
+		vInfArriVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay))
 
 		initOrbit := initPlanet.HelioOrbit(launchDT)
 		initPlanetR := mat64.NewVector(3, initOrbit.R())
