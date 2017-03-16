@@ -18,7 +18,7 @@ var (
 	cfgLoaded     = false
 	config        = _smdconfig{}
 	loadedCSVName = ""
-	loadedCSVdata = make(map[float64]planetstate)
+	loadedCSVdata = make(map[time.Time]planetstate)
 )
 
 type planetstate struct {
@@ -54,12 +54,13 @@ func (c _smdconfig) ChgFrame(toFrame, fromFrame string, epoch time.Time, state [
 }
 
 func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
+	epoch = epoch.UTC()
 	conf := smdConfig()
 	if conf.spiceCSV {
 		filename := fmt.Sprintf("%s-%04d", planet, epoch.Year())
 		if filename != loadedCSVName {
 			// Let's load a new file.
-			fmt.Printf("[info] loading %s @ %s\n", filename, time.Now())
+			loadingProfileDT := time.Now()
 			file, err := os.Open(fmt.Sprintf("%s/%s.csv", conf.HorizonDir, filename))
 			if err != nil {
 				log.Fatal(err)
@@ -70,9 +71,9 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 			for scanner.Scan() {
 				entries := strings.Split(scanner.Text(), ",")
 				// Parse the data.
-				jde, err := strconv.ParseFloat(entries[0], 64)
+				dt, err := time.Parse("2006-1-2T15:4:5", entries[1])
 				if err != nil {
-					panic("could not parse JDE")
+					panic("could not parse date time")
 				}
 				// Drop the string of the date
 				R := make([]float64, 3)
@@ -89,16 +90,17 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 					R[i] = tR
 					V[i] = tV
 				}
-				loadedCSVdata[jde] = planetstate{R, V}
+				loadedCSVdata[dt] = planetstate{R, V}
 			}
 
 			if err := scanner.Err(); err != nil {
 				panic(err)
 			}
-			fmt.Printf("[info] loaded  %s @ %s\n", filename, time.Now())
+			loadedCSVName = filename
+			fmt.Printf("[info] loaded %s in %s\n", filename, time.Now().Sub(loadingProfileDT))
 		}
 		// And now let's find the state.
-		state, found := loadedCSVdata[julian.TimeToJD(epoch.Truncate(conf.spiceTrunc))]
+		state, found := loadedCSVdata[epoch.Truncate(conf.spiceTrunc)]
 		if !found {
 			panic(fmt.Errorf("could not find date %s (%f) in data", epoch.Truncate(conf.spiceTrunc), julian.TimeToJD(epoch.Truncate(conf.spiceTrunc))))
 		}
