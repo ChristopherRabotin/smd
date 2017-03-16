@@ -370,7 +370,9 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 		if o.Origin.Equals(Sun) {
 			fromFrame = "ECLIPJ2000"
 		}
-		o.rVec, o.vVec = config.ChgFrame(toFrame, fromFrame, dt, state)
+		pstate := config.ChgFrame(toFrame, fromFrame, dt, state)
+		o.rVec = pstate.R
+		o.vVec = pstate.V
 	}
 	o.Origin = b // Don't forget to switch origin
 }

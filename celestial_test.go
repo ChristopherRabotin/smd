@@ -70,12 +70,12 @@ func TestHelio(t *testing.T) {
 		Vcomp := mat64.NewVector(3, V)
 		Rexp := mat64.NewVector(3, exp.R)
 		Vexp := mat64.NewVector(3, exp.V)
-		if !mat64.EqualApprox(Rcomp, Rexp, 1e0) {
+		if !mat64.EqualApprox(Rcomp, Rexp, 1e-1) {
 			Rcomp.SubVec(Rcomp, Rexp)
 			t.Logf("%s @ %s (%f) (diff)\n%+v\n\n", exp.body, julian.JDToTime(exp.jde), exp.jde, Rcomp)
 			t.Fatalf("%s in valid R", exp.body)
 		}
-		if !mat64.EqualApprox(Vcomp, Vexp, 2e-1) {
+		if !mat64.EqualApprox(Vcomp, Vexp, 1e-3) {
 			Vcomp.SubVec(Vcomp, Vexp)
 			t.Logf("%s @ %s (%f) (diff)\n%+v\n\n", exp.body, julian.JDToTime(exp.jde), exp.jde, Vcomp)
 			t.Fatalf("%s in valid V", exp.body)

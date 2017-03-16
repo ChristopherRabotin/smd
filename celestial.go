@@ -126,7 +126,9 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 		}
 		return *NewOrbitFromRV(R, V, Sun)
 	}
-	R, V := config.HelioState(c.Name, dt)
+	pstate := config.HelioState(c.Name, dt)
+	R := pstate.R
+	V := pstate.V
 	return *NewOrbitFromRV(R, V, Sun)
 }
 
