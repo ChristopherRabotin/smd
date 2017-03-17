@@ -7,11 +7,12 @@ import (
 
 	"github.com/soniakeys/meeus/julian"
 	"github.com/soniakeys/meeus/planetposition"
+	"github.com/soniakeys/meeus/pluto"
 )
 
 const (
 	// AU is one astronomical unit in kilometers.
-	AU = 149597870
+	AU = 1.49597870700e8
 )
 
 // CelestialObject defines a celestial object.
@@ -68,6 +69,25 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 		return *NewOrbitFromRV([]float64{0, 0, 0}, []float64{0, 0, 0}, *c)
 	}
 	if smdConfig().VSOP87 {
+		if c.Name == "Pluto" {
+			// Special case in Sonia Keys' Meeus
+			l, b, r := pluto.Heliocentric(julian.TimeToJD(dt))
+			r *= AU
+			v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
+			// Get the Cartesian coordinates from L,B,R.
+			R, V := make([]float64, 3), make([]float64, 3)
+			sB, cB := math.Sincos(b.Rad())
+			sL, cL := math.Sincos(l.Rad())
+			R[0] = r * cB * cL
+			R[1] = r * cB * sL
+			R[2] = r * sB
+			// Let's find the direction of the velocity vector.
+			vDir := cross(R, []float64{0, 0, -1})
+			for i := 0; i < 3; i++ {
+				V[i] = v * vDir[i] / norm(vDir)
+			}
+			return *NewOrbitFromRV(R, V, Sun)
+		}
 		if c.PP == nil {
 			// Load the planet.
 			var vsopPosition int
@@ -83,7 +103,7 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 			default:
 				panic(fmt.Errorf("unknown object: %s", c.Name))
 			}
-			planet, err := planetposition.LoadPlanetPath(vsopPosition-1, "")
+			planet, err := planetposition.LoadPlanetPath(vsopPosition-1, smdConfig().VSOP87Dir)
 			if err != nil {
 				panic(fmt.Errorf("could not load planet number %d: %s", vsopPosition, err))
 			}
@@ -106,23 +126,29 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 		}
 		return *NewOrbitFromRV(R, V, Sun)
 	}
-	R, V := config.HelioState(c.Name, dt)
+	pstate := config.HelioState(c.Name, dt)
+	R := pstate.R
+	V := pstate.V
 	return *NewOrbitFromRV(R, V, Sun)
 }
 
 /* Definitions */
 
 // Sun is our closest star.
-var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018 * 1e11, 0.0, 0.0, -1, 0, 0, 0, nil}
+var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018e11, 0.0, 0.0, -1, 0, 0, 0, nil}
 
 // Venus is poisonous.
-var Venus = CelestialObject{"Venus", 6052, 108208601, 3.257 * 1e5, 117.36, 3.39458, 0.616e6, 0.000027, 0, 0, nil}
+var Venus = CelestialObject{"Venus", 6051.8, 108208601, 3.24858599e5, 117.36, 3.39458, 0.616e6, 0.000027, 0, 0, nil}
 
 // Earth is home.
-var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.986004415 * 1e5, 23.4, 0.00005, 924645.0, 1082.6269e-6, -2.5324e-6, -1.6204e-6, nil}
+var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.98600433e5, 23.4, 0.00005, 924645.0, 1082.6269e-6, -2.5324e-6, -1.6204e-6, nil}
 
 // Mars is the vacation place.
-var Mars = CelestialObject{"Mars", 3397.2, 227939282.5616, 4.305 * 1e4, 25.19, 1.85, 576000, 1964e-6, 36e-6, -18e-6, nil}
+var Mars = CelestialObject{"Mars", 3396.19, 227939282.5616, 4.28283100e4, 25.19, 1.85, 576000, 1964e-6, 36e-6, -18e-6, nil}
 
 // Jupiter is big.
-var Jupiter = CelestialObject{"Jupiter", 71492.0, 778298361, 1.268 * 1e8, 3.13, 1.30326966, 48.2e6, 0.01475, 0, -0.00058, nil}
+var Jupiter = CelestialObject{"Jupiter", 71492.0, 778298361, 1.266865361e8, 3.13, 1.30326966, 48.2e6, 0.01475, 0, -0.00058, nil}
+
+// Pluto is not a planet and had that down ranking coming. It should have stayed in its lane.
+// WARNING: Pluto SOI is not defined.
+var Pluto = CelestialObject{"Pluto", 1151.0, 5915799000, 9. * 1e2, 118.0, 17.14216667, 1, 0, 0, 0, nil}

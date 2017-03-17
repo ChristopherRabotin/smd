@@ -11,24 +11,7 @@ if pyversion == '2':
     import warnings
     warnings.filterwarnings("ignore")
 
-from utils import BARYCENTER_FRAMES, _load_kernels_
-
-def PlanetState(planet, epoch):
-    '''
-    :param: planet
-    :param: epoch: float or a string representing the date and time in J2000.
-    :return: a numpy array
-    '''
-    _load_kernels_()
-    if isinstance(epoch, str):
-        epoch = spice.str2et(epoch)
-
-    # Parse the planet name.
-    if planet.lower() in BARYCENTER_FRAMES:
-        # Switch to barycenter, as per https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/aareadme_de430-de431.txt
-        planet += '_barycenter'
-
-    return spice.spkezr(planet, epoch, 'ECLIPJ2000', 'None', 'Sun')[0]
+from utils import PlanetState
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
