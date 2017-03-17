@@ -73,11 +73,6 @@ func targeter(sc *smd.Spacecraft) {
 	// Grab the latest result
 	someResult := <-resultChan
 	launchDT := someResult.launchDT
-	if someResult.succeeded {
-		// Immediately stop everything and print the success
-		fmt.Printf("\n\n======\nSUCCESS!!\n\n%s\n\n======\n", someResult)
-		threadEnded = numCPUs
-	}
 	if someResult.status == leading {
 		// Decrease the launch date
 		launchDT = launchDT.Add(-launchTimeStep)
@@ -87,6 +82,7 @@ func targeter(sc *smd.Spacecraft) {
 	// Check if the launch date is still within the bounds
 	if launchDT.Before(minLaunch) || launchDT.After(maxLaunch) {
 		threadEnded++
+		<-cpuChan
 		return
 	}
 	launchOrbit := initPlanet.HelioOrbit(launchDT)
@@ -111,7 +107,14 @@ func targeter(sc *smd.Spacecraft) {
 	} else {
 		status = trailing
 	}
-	resultChan <- result{succeeded: success, status: status, launchDT: launchDT, arrivalDT: astro.CurrentDT}
+	if success {
+		// Immediately stop everything and print the success
+		fmt.Printf("\n\n======\nSUCCESS!!\n\n%s\n\n======\n", someResult)
+		threadEnded = numCPUs
+	}
+	rslt := result{succeeded: success, status: status, launchDT: launchDT, arrivalDT: astro.CurrentDT}
+	resultChan <- rslt
+	<-cpuChan
 }
 
 func sc2Mars(fuel float64) *smd.Spacecraft {
