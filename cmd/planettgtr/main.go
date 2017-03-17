@@ -31,14 +31,15 @@ var (
 /* ===  END  === */
 
 var (
-	cpuChan     chan (bool)
-	resultChan  chan (result)
-	streamChan  chan (string)
-	threadEnded = 0
-	minLaunch   = initLaunch.Add(-launchWindow)
-	maxLaunch   = initLaunch.Add(launchWindow)
-	attempts    map[time.Time]bool
-	wg          sync.WaitGroup
+	cpuChan       chan (bool)
+	resultChan    chan (result)
+	streamChan    chan (string)
+	threadEnded   = 0
+	minLaunch     = initLaunch.Add(-launchWindow)
+	maxLaunch     = initLaunch.Add(launchWindow)
+	attempts      map[time.Time]bool
+	wg            sync.WaitGroup
+	attemptsMutex = &sync.Mutex{}
 )
 
 func init() {
@@ -105,7 +106,9 @@ func targeter(sc *smd.Spacecraft) {
 		}
 	}
 	// Add this date to those checked
+	attemptsMutex.Lock()
 	attempts[launchDT] = true
+	attemptsMutex.Unlock()
 	launchOrbit := initPlanet.HelioOrbit(launchDT)
 	astro := smd.NewPreciseMission(sc, &launchOrbit, launchDT, launchDT.Add(-1), smd.Cartesian, smd.Perturbations{}, missionTimeStep, smd.ExportConfig{})
 	astro.Propagate()
