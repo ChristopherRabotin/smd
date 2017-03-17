@@ -15,12 +15,11 @@ import (
 
 /* === CONFIG === */
 var (
-	numCPUs    int
-	initPlanet = smd.Earth
-	destPlanet = smd.Mars
-	initLaunch = time.Date(2018, 5, 1, 0, 0, 0, 0, time.UTC)
-	//	launchWindow    = time.Duration(6*30.5*24) * time.Hour // Works both plus and negative
-	launchWindow    = time.Duration(2*24) * time.Hour
+	numCPUs         int
+	initPlanet      = smd.Earth
+	destPlanet      = smd.Mars
+	initLaunch      = time.Date(2018, 5, 1, 0, 0, 0, 0, time.UTC)
+	launchWindow    = time.Duration(6*30.5*24) * time.Hour // Works both plus and negative
 	launchTimeStep  = time.Duration(12) * time.Hour
 	withInjection   = false
 	missionTimeStep = time.Hour
