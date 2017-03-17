@@ -5,12 +5,12 @@ output_path = "./" # Defines the output directory. Use "./" to output to current
 test_export = false # Set to true to export the test cases.
 
 [VSOP87]
-enabled = true
+enabled = false
 directory = "./data/vsop87"
 
 [SPICE]
-enabled = false
+enabled = true
 directory = "./cmd/refframes"
 horizonDir = "./data/horizon" # Files *must* be named to answer to fmt.Sprintf("%s-%04d", planetName, year) // TODO: Switch to a month too
-horizonCSV = true # Set to False to compute each ephemeride separately
+horizonCSV = false # Set to False to compute each ephemeride separately
 truncation = "1m" # Set to a Duration that can be parsed. Correspond to the truncation to use.
