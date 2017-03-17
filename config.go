@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/soniakeys/meeus/julian"
@@ -19,6 +20,7 @@ var (
 	config        = _smdconfig{}
 	loadedCSVName = ""
 	loadedCSVdata = make(map[string]map[time.Time]planetstate)
+	spiceCSVMutex = &sync.Mutex{}
 )
 
 type planetstate struct {
@@ -57,6 +59,7 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 	epoch = epoch.UTC()
 	conf := smdConfig()
 	if conf.spiceCSV {
+		spiceCSVMutex.Lock() // Data race if a given thread tries to read from the map while it's loading and the data isn't fully loaded yet.
 		ephemeride := fmt.Sprintf("%s-%04d", planet, epoch.Year())
 		if _, found := loadedCSVdata[ephemeride]; !found {
 			loadedCSVdata[ephemeride] = make(map[time.Time]planetstate)
@@ -67,8 +70,8 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 				log.Fatal(err)
 			}
 			defer file.Close()
-
 			scanner := bufio.NewScanner(file)
+			scanner.Split(bufio.ScanLines)
 			for scanner.Scan() {
 				entries := strings.Split(scanner.Text(), ",")
 				// Parse the data.
@@ -97,13 +100,14 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 			if err := scanner.Err(); err != nil {
 				panic(err)
 			}
-			fmt.Printf("[smd:info] loaded %s in %s\n", ephemeride, time.Now().Sub(loadingProfileDT))
+			fmt.Printf("[smd:info] %s loaded in %s\n", ephemeride, time.Now().Sub(loadingProfileDT))
 		}
 		// And now let's find the state.
 		state, found := loadedCSVdata[ephemeride][epoch.Truncate(conf.spiceTrunc)]
 		if !found {
-			panic(fmt.Errorf("could not find date %s (%f) in data", epoch.Truncate(conf.spiceTrunc), julian.TimeToJD(epoch.Truncate(conf.spiceTrunc))))
+			log.Fatalf("state at date %s (%f) not found in %s.csv, try regenerating the set", epoch.Truncate(conf.spiceTrunc), julian.TimeToJD(epoch.Truncate(conf.spiceTrunc)), ephemeride)
 		}
+		spiceCSVMutex.Unlock()
 		return state
 	}
 	cmd := exec.Command("python3", conf.SPICEDir+"/heliostate.py", "-p", planet, "-e", epoch.Format(time.ANSIC))
