@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"math"
+	"os"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
@@ -18,8 +20,8 @@ var (
 	numCPUs         int
 	initPlanet      = smd.Earth
 	destPlanet      = smd.Mars
-	initLaunch      = time.Date(2018, 5, 1, 0, 0, 0, 0, time.UTC)
-	launchWindow    = time.Duration(6*30.5*24) * time.Hour // Works both plus and negative
+	initLaunch      = time.Date(2018, 3, 19, 0, 0, 0, 0, time.UTC)
+	launchWindow    = time.Duration(10*30.5*24) * time.Hour // Works both plus and negative
 	launchTimeStep  = time.Duration(12) * time.Hour
 	withInjection   = false
 	missionTimeStep = time.Hour
@@ -31,9 +33,12 @@ var (
 var (
 	cpuChan     chan (bool)
 	resultChan  chan (result)
+	streamChan  chan (string)
 	threadEnded = 0
 	minLaunch   = initLaunch.Add(-launchWindow)
 	maxLaunch   = initLaunch.Add(launchWindow)
+	attempts    map[time.Time]bool
+	wg          sync.WaitGroup
 )
 
 func init() {
@@ -52,6 +57,10 @@ func main() {
 
 	cpuChan = make(chan (bool), numCPUs)
 	resultChan = make(chan (result), numCPUs)
+	attempts = make(map[time.Time]bool)
+	streamChan = make(chan (string), 1)
+	wg.Add(1)
+	go streamResults(fmt.Sprintf("%s-to-%s-between-%s-and-%s", initPlanet.Name, destPlanet.Name, minLaunch.Format("2006-01-02_150405"), maxLaunch.Format("2006-01-02_030405")), streamChan)
 	// Populate the resultChan with initial guesses.
 	for i := 0; i < numCPUs; i++ {
 		resultChan <- result{false, leading, initLaunch.Add(time.Duration(i) * launchTimeStep), time.Now()}
@@ -72,18 +81,31 @@ func targeter(sc *smd.Spacecraft) {
 	// Grab the latest result
 	someResult := <-resultChan
 	launchDT := someResult.launchDT
-	if someResult.status == leading {
-		// Decrease the launch date
-		launchDT = launchDT.Add(-launchTimeStep)
-	} else {
-		launchDT = launchDT.Add(launchTimeStep)
+	isNewDate := false
+	dateIt := 0
+	for !isNewDate {
+		if someResult.status == leading {
+			// Decrease the launch date
+			launchDT = launchDT.Add(-launchTimeStep * time.Duration(dateIt))
+		} else {
+			launchDT = launchDT.Add(launchTimeStep * time.Duration(dateIt))
+		}
+		// Check if date is new
+		_, found := attempts[launchDT]
+		if found {
+			dateIt++
+		} else {
+			isNewDate = true
+		}
+		// Check if the launch date is still within the bounds
+		if launchDT.Before(minLaunch) || launchDT.After(maxLaunch) {
+			threadEnded++
+			<-cpuChan
+			return
+		}
 	}
-	// Check if the launch date is still within the bounds
-	if launchDT.Before(minLaunch) || launchDT.After(maxLaunch) {
-		threadEnded++
-		<-cpuChan
-		return
-	}
+	// Add this date to those checked
+	attempts[launchDT] = true
 	launchOrbit := initPlanet.HelioOrbit(launchDT)
 	astro := smd.NewPreciseMission(sc, &launchOrbit, launchDT, launchDT.Add(-1), smd.Cartesian, smd.Perturbations{}, missionTimeStep, smd.ExportConfig{})
 	astro.Propagate()
@@ -91,13 +113,16 @@ func targeter(sc *smd.Spacecraft) {
 	scR := astro.Orbit.R()
 	destOrbit := destPlanet.HelioOrbit(astro.CurrentDT)
 	destR := destOrbit.R()
-	deltaR := 0.
+	deltaVector := []float64{0, 0, 0}
 	for i := 0; i < 3; i++ {
-		deltaR += math.Pow(scR[i]-destR[i], 2)
+		deltaVector[i] = scR[i] - destR[i]
 	}
-	success := math.Sqrt(deltaR) < destPlanet.SOI
+	deltaR := norm(deltaVector)
+	success := deltaR < destPlanet.SOI
 	// Determine whether leading or trailing
 	tmpOrbit := smd.NewOrbitFromRV(scR, destOrbit.V(), smd.Sun)
+	fmt.Printf("%s\n%s\n", tmpOrbit, destOrbit)
+	fmt.Printf("delta = %f km (soi = %f)\n", deltaR, destPlanet.SOI)
 	_, _, _, _, _, νSC, _, _, _ := tmpOrbit.Elements()
 	_, _, _, _, _, νDest, _, _, _ := destOrbit.Elements()
 	var status positionsStatus
@@ -106,12 +131,13 @@ func targeter(sc *smd.Spacecraft) {
 	} else {
 		status = trailing
 	}
+	rslt := result{succeeded: success, status: status, launchDT: launchDT, arrivalDT: astro.CurrentDT}
 	if success {
 		// Immediately stop everything and print the success
-		fmt.Printf("\n\n======\nSUCCESS!!\n\n%s\n\n======\n", someResult)
+		fmt.Printf("\n\n======\nSUCCESS!!\n\n%s\n\n======\n", rslt)
 		threadEnded = numCPUs
 	}
-	rslt := result{succeeded: success, status: status, launchDT: launchDT, arrivalDT: astro.CurrentDT}
+	streamChan <- fmt.Sprintf("%v,%s,\"%s\",\"%s\"\n", success, status, launchDT, astro.CurrentDT)
 	resultChan <- rslt
 	<-cpuChan
 }
@@ -176,4 +202,32 @@ func sc2Earth(fuel float64) *smd.Spacecraft {
 			smd.NewReachDistance(distance+smd.Earth.SOI, false, ref2Earth),
 			smd.NewLoiter(time.Hour, nil),
 		})
+}
+
+// norm returns the norm of a given vector which is supposed to be 3x1.
+func norm(v []float64) float64 {
+	return math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
+}
+
+func streamResults(fn string, rslts <-chan string) {
+	// Write CSV file.
+	f, err := os.Create(fmt.Sprintf("./%s.csv", fn))
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	// Header
+	f.WriteString("success,status,launch,arrival\n")
+	for {
+		rslt, more := <-rslts
+		if more {
+			if _, err := f.WriteString(rslt); err != nil {
+				panic(err)
+			}
+		} else {
+			break
+		}
+	}
+	f.Close()
+	wg.Done()
 }

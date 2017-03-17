@@ -12,6 +12,15 @@ const (
 	trailing
 )
 
+func (p positionsStatus) String() string {
+	switch p {
+	case leading:
+		return "leading"
+	default:
+		return "trailing"
+	}
+}
+
 type result struct {
 	succeeded bool
 	status    positionsStatus
