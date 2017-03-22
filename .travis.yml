@@ -18,6 +18,7 @@ before_install:
   - python -V
   - pip -V
   - pip install six
+  - pip install packaging
   - pip install -r cmd/refframes/reqs.txt
   - wget -O cmd/refframes/spicekernels/de430.bsp https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp
 script:
