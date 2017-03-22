@@ -62,15 +62,24 @@ func main() {
 	joiR := mat64.NewVector(3, jupiterAtJOI.R())
 	ViGA2, VfJOI, _, _ := smd.Lambert(ega2R, joiR, joi.Sub(ega2), smd.TTypeAuto, smd.Sun)
 	scOrbitAtEGA2 := smd.NewOrbitFromRV(earthAtEGA2.R(), []float64{ViGA2.At(0, 0), ViGA2.At(1, 0), ViGA2.At(2, 0)}, smd.Sun)
-	scOrbitAtEGA2.ToXCentric(smd.Earth, ega2)
-	vInfOutGA2 := scOrbitAtEGA2.V()
-	vInfOutGA2Norm := scOrbitAtEGA2.VNorm()
-	scOrbitAtJOI := smd.NewOrbitFromRV(jupiterAtJOI.R(), []float64{VfJOI.At(0, 0), VfJOI.At(1, 0), VfJOI.At(2, 0)}, smd.Sun)
+	// Let's propagate this spacecraft until JOI time.
+	smd.NewPreciseMission(smd.NewEmptySC("galileo", 0), scOrbitAtEGA2, ega2, joi, smd.Cartesian, smd.Perturbations{}, time.Hour, smd.ExportConfig{}).Propagate()
+	// Check how big the difference is between the Lambert expected value and the true value.
+	vJOIExp := mat64.NewVector(3, []float64{VfJOI.At(0, 0), VfJOI.At(1, 0), VfJOI.At(2, 0)})
+	vJOIGot := mat64.NewVector(3, scOrbitAtEGA2.V())
+	vJOIGot.SubVec(vJOIGot, vJOIExp)
+	// Must print information now because Vector is updated with the slice.
+	fmt.Printf("\nDelta V @ JOI\n%+v\n", mat64.Formatted(vJOIGot))
+	// Convert to Jupiter centric orbit
+	scOrbitAtEGA2.ToXCentric(smd.Jupiter, joi)
+	jupiterAtJOIR := jupiterAtJOI.R()
+	jupiterAtJOIR[0] = scOrbitAtEGA2.VNorm()
+	scOrbitAtJOI := smd.NewOrbitFromRV(jupiterAtJOIR, scOrbitAtEGA2.V(), smd.Sun)
 	scOrbitAtJOI.ToXCentric(smd.Jupiter, joi)
 	Φfpa := math.Atan2(scOrbitAtJOI.SinΦfpa(), scOrbitAtJOI.CosΦfpa())
-	fmt.Printf("==== JUPITER INFO ====\nOrbit %s\nPeriod: %s (~%f days)\tEnergy: %f\tΦfpa=%f\napo=%f km\tperi=%f km\n\n", scOrbitAtJOI, scOrbitAtJOI.Period(), scOrbitAtJOI.Period().Hours()/24, scOrbitAtJOI.Energyξ(), Φfpa*r2d, scOrbitAtJOI.Apoapsis(), scOrbitAtJOI.Periapsis())
-
-	fmt.Printf("%+v\n%f km/s\n", vInfOutGA2, vInfOutGA2Norm)
+	ψJupiter := smd.GATurnAngle(scOrbitAtEGA2.VNorm(), 4*smd.Jupiter.Radius, smd.Jupiter)
+	fmt.Printf("==== JUPITER INFO ====\nWARNING: Probably incorrect\nOrbit %s\nPeriod: %s (~%f days)\tEnergy: %f\tΦfpa=%f\napo=%f km\tperi=%f km\nV=%f km\tψ=%f deg\n\n", scOrbitAtJOI, scOrbitAtJOI.Period(), scOrbitAtJOI.Period().Hours()/24, scOrbitAtJOI.Energyξ(), Φfpa*r2d, scOrbitAtJOI.Apoapsis(), scOrbitAtJOI.Periapsis(), scOrbitAtJOI.VNorm(), ψJupiter*r2d)
+	// Set the radius of periapsis at Jupiter to be 4*R_j (similar to that of the mission).
 
 	fmt.Println("==== Earth resonnance ====")
 	aResonance := math.Pow(smd.Sun.GM()*math.Pow(resonance*earthAtEGA1.Period().Seconds()/(2*math.Pi), 2), 1/3.)
@@ -90,7 +99,10 @@ func main() {
 	}
 	DCM := mat64.NewDense(3, 3, dcmVal)
 
-	ψ := 165.924 * d2r // My choice of Phi.
+	ψ := 165.924 * d2r // My choice of Phi for the resonance.
+	// Reset scOrbitAtEGA2 because we used that for the propagation.
+	scOrbitAtEGA2 = smd.NewOrbitFromRV(earthAtEGA2.R(), []float64{ViGA2.At(0, 0), ViGA2.At(1, 0), ViGA2.At(2, 0)}, smd.Sun)
+	scOrbitAtEGA2.ToXCentric(smd.Earth, ega2)
 
 	sψ, cψ := math.Sincos(ψ)
 	vInfOutGA1VNC := []float64{vInfOutGA1Norm * math.Cos(math.Pi-theta), vInfOutGA1Norm * math.Sin(math.Pi-theta) * cψ, -vInfOutGA1Norm * math.Sin(math.Pi-theta) * sψ}
