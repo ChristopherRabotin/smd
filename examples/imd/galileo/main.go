@@ -72,13 +72,11 @@ func main() {
 	fmt.Printf("\nDelta V @ JOI\n%+v\n", mat64.Formatted(vJOIGot))
 	// Convert to Jupiter centric orbit
 	scOrbitAtEGA2.ToXCentric(smd.Jupiter, joi)
-	jupiterAtJOIR := jupiterAtJOI.R()
-	jupiterAtJOIR[0] = scOrbitAtEGA2.VNorm()
-	scOrbitAtJOI := smd.NewOrbitFromRV(jupiterAtJOIR, scOrbitAtEGA2.V(), smd.Sun)
-	scOrbitAtJOI.ToXCentric(smd.Jupiter, joi)
+	jupiterAtJOIR := []float64{0, 0, 4 * smd.Jupiter.Radius}
+	scOrbitAtJOI := smd.NewOrbitFromRV(jupiterAtJOIR, scOrbitAtEGA2.V(), smd.Jupiter)
 	Φfpa := math.Atan2(scOrbitAtJOI.SinΦfpa(), scOrbitAtJOI.CosΦfpa())
 	ψJupiter := smd.GATurnAngle(scOrbitAtEGA2.VNorm(), 4*smd.Jupiter.Radius, smd.Jupiter)
-	fmt.Printf("==== JUPITER INFO ====\nWARNING: Probably incorrect\nOrbit %s\nPeriod: %s (~%f days)\tEnergy: %f\tΦfpa=%f\napo=%f km\tperi=%f km\nV=%f km\tψ=%f deg\n\n", scOrbitAtJOI, scOrbitAtJOI.Period(), scOrbitAtJOI.Period().Hours()/24, scOrbitAtJOI.Energyξ(), Φfpa*r2d, scOrbitAtJOI.Apoapsis(), scOrbitAtJOI.Periapsis(), scOrbitAtJOI.VNorm(), ψJupiter*r2d)
+	fmt.Printf("==== JUPITER INFO ====\nOrbit %s\nPeriod: %s (~%f days)\tEnergy: %f\tΦfpa=%f\napo=%f km\tperi=%f km\nV=%f km\tψ=%f deg\n\n", scOrbitAtJOI, scOrbitAtJOI.Period(), scOrbitAtJOI.Period().Hours()/24, scOrbitAtJOI.Energyξ(), Φfpa*r2d, scOrbitAtJOI.Apoapsis(), scOrbitAtJOI.Periapsis(), scOrbitAtJOI.VNorm(), ψJupiter*r2d)
 	// Set the radius of periapsis at Jupiter to be 4*R_j (similar to that of the mission).
 
 	fmt.Println("==== Earth resonnance ====")
