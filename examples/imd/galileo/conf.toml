@@ -1,0 +1,16 @@
+# smd TOML config file
+# If both VSOP87 and SPICE are enabled, smd will panic
+[general]
+output_path = "./"
+test_export = false
+
+[VSOP87]
+enabled = false
+directory = "../../../data/vsop87"
+
+[SPICE]
+enabled = true
+directory = "../../../cmd/refframes"
+horizonDir = "../../../data/horizon"
+horizonCSV = true
+truncation = "1m"
