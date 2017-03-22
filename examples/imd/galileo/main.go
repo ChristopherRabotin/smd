@@ -57,13 +57,19 @@ func main() {
 	fmt.Println("==== EGA2 -> JOI ====")
 	// hwQ 2
 	earthAtEGA2 := smd.Earth.HelioOrbit(ega2)
+	jupiterAtJOI := smd.Jupiter.HelioOrbit(joi)
 	ega2R := mat64.NewVector(3, earthAtEGA2.R())
-	joiR := mat64.NewVector(3, smd.Jupiter.HelioOrbit(joi).R())
-	ViGA2, _, _, _ := smd.Lambert(ega2R, joiR, joi.Sub(ega2), smd.TTypeAuto, smd.Sun)
+	joiR := mat64.NewVector(3, jupiterAtJOI.R())
+	ViGA2, VfJOI, _, _ := smd.Lambert(ega2R, joiR, joi.Sub(ega2), smd.TTypeAuto, smd.Sun)
 	scOrbitAtEGA2 := smd.NewOrbitFromRV(earthAtEGA2.R(), []float64{ViGA2.At(0, 0), ViGA2.At(1, 0), ViGA2.At(2, 0)}, smd.Sun)
 	scOrbitAtEGA2.ToXCentric(smd.Earth, ega2)
 	vInfOutGA2 := scOrbitAtEGA2.V()
 	vInfOutGA2Norm := scOrbitAtEGA2.VNorm()
+	scOrbitAtJOI := smd.NewOrbitFromRV(jupiterAtJOI.R(), []float64{VfJOI.At(0, 0), VfJOI.At(1, 0), VfJOI.At(2, 0)}, smd.Sun)
+	scOrbitAtJOI.ToXCentric(smd.Jupiter, joi)
+	Φfpa := math.Atan2(scOrbitAtJOI.SinΦfpa(), scOrbitAtJOI.CosΦfpa())
+	fmt.Printf("==== JUPITER INFO ====\nOrbit %s\nPeriod: %s (~%f days)\tEnergy: %f\tΦfpa=%f\napo=%f km\tperi=%f km\n\n", scOrbitAtJOI, scOrbitAtJOI.Period(), scOrbitAtJOI.Period().Hours()/24, scOrbitAtJOI.Energyξ(), Φfpa*r2d, scOrbitAtJOI.Apoapsis(), scOrbitAtJOI.Periapsis())
+
 	fmt.Printf("%+v\n%f km/s\n", vInfOutGA2, vInfOutGA2Norm)
 
 	fmt.Println("==== Earth resonnance ====")
@@ -83,9 +89,8 @@ func main() {
 		dcmVal[i+6] = C[i]
 	}
 	DCM := mat64.NewDense(3, 3, dcmVal)
-	// Print when both become higher than minRadius.
 
-	ψ := 165.924 * d2r
+	ψ := 165.924 * d2r // My choice of Phi.
 
 	sψ, cψ := math.Sincos(ψ)
 	vInfOutGA1VNC := []float64{vInfOutGA1Norm * math.Cos(math.Pi-theta), vInfOutGA1Norm * math.Sin(math.Pi-theta) * cψ, -vInfOutGA1Norm * math.Sin(math.Pi-theta) * sψ}
