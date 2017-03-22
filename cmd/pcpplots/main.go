@@ -52,6 +52,7 @@ func main() {
 		// Read general info
 		prefix := viper.GetString("General.fileprefix")
 		verbose := viper.GetBool("General.verbose")
+		c3plot := viper.GetBool("General.c3plot")
 		// Departure information
 		var initLaunch, initArrival, maxLaunch, maxArrival time.Time
 		var perr error
@@ -105,7 +106,7 @@ func main() {
 		if plerr != nil {
 			log.Fatal(plerr)
 		}
-		pcpGenerator(initPlanet, arrivalPlanet, initLaunch, maxLaunch, initArrival, maxArrival, resoInit, resoArr, true, prefix, verbose)
+		pcpGenerator(initPlanet, arrivalPlanet, initLaunch, maxLaunch, initArrival, maxArrival, resoInit, resoArr, c3plot, prefix, verbose)
 		return
 	}
 	/*** CONFIG ***/
