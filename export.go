@@ -239,7 +239,7 @@ func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
 		}
 	}()
 
-	color := []float64{0.6, 1, 1}
+	color := []float64{0.1, 0.1, 1}
 	for {
 		state, more := <-stateChan
 		if more {

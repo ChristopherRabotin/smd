@@ -19,8 +19,7 @@ from utils import PlanetState, _load_kernels_
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--planet', required=True, help='planet (e.g. Earth)', type=str, dest="planet")
-    parser.add_argument('-s', '--start', required=True, help='the start date time of transformation', type=str)
-    parser.add_argument('-e', '--end', required=True, help='the end date time of transformation', type=str)
+    parser.add_argument('-y', '--year', required=True, help='the year of ephemeride desired', type=str)
     parser.add_argument('-r', '--reso', required=True, help='the resolution transformation', type=str)
     args = parser.parse_args()
 
@@ -31,11 +30,10 @@ if __name__ == '__main__':
         raise ValueError("unknown unit " + unit)
     reso_num = int(args.reso[0]) # Let it raise.
     deltaargs = {resolution_units[unit]: reso_num}
-    start_date = parsedt(args.start)
-    end_date = parsedt(args.end)
-    if start_date.year != end_date.year:
-        raise ValueError("must generate year by year")
-    end_date += timedelta(days=1)
+    year = int(args.year) # Let is raise
+    print('Generating {} ephemeride for {}'.format(args.planet, year))
+    start_date = parsedt('{}-01-01'.format(year))
+    end_date = parsedt('{}-01-01'.format(year+1))
 
     _load_kernels_()
     f = open('../../data/horizon/' + args.planet + '-' + str(start_date.year) + '.csv', 'w')
