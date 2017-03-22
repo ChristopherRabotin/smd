@@ -29,9 +29,9 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="true" name="Legend">
-                    <position x="516.54855" y="-167.49915" z="500"/>
+                    <position x="516.548549999999" y="-167.49915" z="500"/>
                     <rect x="-56.5" y="-27" width="113" height="54"/>
-                    <relativesize width="0.0923480073363545" height="0.103546406910917" centerx="0.882339444714701" centery="0.240645397084172" posx="0.836165441046523" posy="0.188872193628713" leftx="0.836165441046523" lefty="0.29241860053963" rightx="0.928513448382878" righty="0.29241860053963" fixaspect="false" lockpostodata="false"/>
+                    <relativesize width="0.0923480073363545" height="0.103546406910917" centerx="0.8823394447147" centery="0.240645397084172" posx="0.836165441046523" posy="0.188872193628713" leftx="0.836165441046523" lefty="0.29241860053963" rightx="0.928513448382878" righty="0.29241860053963" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                     <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                         <brush color="#000000" style="1"/>
@@ -44,9 +44,9 @@
                     <relation tag="rP1 vs psi (C1)"/>
                     <relation tag="rP2 vs psi (C2)"/>
                     <box name="Box">
-                        <position x="14.4375497777332" y="-21.8019176468496" z="496"/>
-                        <rect x="-135.374829132493" y="-269.734720690422" width="282.171647523949" height="539.469441380844"/>
-                        <relativesize width="0.230601675890734" height="1.03444670913382" centerx="0.47666199906648" centery="0.520023636103316" posx="0.361361161121113" posy="0.00280028153640694" leftx="0.361361161121113" lefty="1.03724699067022" rightx="0.591962837011847" righty="1.03724699067022" fixaspect="false" lockpostodata="true" datarect_x="130.1" datarect_y="2.50111042987555e-12" datarect_width="83" datarect_height="36000"/>
+                        <position x="20.1485444072148" y="-21.8019234035353" z="496"/>
+                        <rect x="-141.085823761975" y="-269.734726436037" width="282.171647523949" height="539.469452872073"/>
+                        <relativesize width="0.230601675890734" height="1.03444673116855" centerx="0.47666199906648" centery="0.520023625064721" posx="0.361361161121113" posy="0.00280025948044674" leftx="0.361361161121113" lefty="1.03724699064899" rightx="0.591962837011847" righty="1.03724699064899" fixaspect="false" lockpostodata="true" datarect_x="130.1" datarect_y="8.18545231595635e-12" datarect_width="83" datarect_height="36000"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                             <brush color="#ffff00" style="1"/>
@@ -54,9 +54,9 @@
                         <brush color="#ffff00" style="1"/>
                     </box>
                     <line name="Line">
-                        <position x="48.705675" y="147.861221667426" z="500"/>
-                        <rect x="-612.459605968793" y="-4.5" width="1224.91921193759" height="9"/>
-                        <relativesize width="1.00105175549074" height="0.0172577344851529" centerx="0.5" centery="0.845357126125901" posx="-0.000525877745370553" posy="0.836728258883325" leftx="-0.000525877745370553" lefty="0.853985993368478" rightx="1.00052587774537" righty="0.853985993368478" fixaspect="false" lockpostodata="true" datarect_x="0" datarect_y="6678" datarect_width="360" datarect_height="0"/>
+                        <position x="48.705675" y="147.861219524732" z="500"/>
+                        <rect x="-612.436680652287" y="-4.5" width="1224.87336130457" height="9"/>
+                        <relativesize width="1.00101428456513" height="0.0172577344851529" centerx="0.5" centery="0.845357122017229" posx="-0.000507142282566451" posy="0.836728254774653" leftx="-0.000507142282566451" lefty="0.853985989259806" rightx="1.00050714228257" righty="0.853985989259806" fixaspect="false" lockpostodata="true" datarect_x="0" datarect_y="6678" datarect_width="360" datarect_height="0"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="2" width="1" miterlimit="2" cap="16" joinStyle="64">
                             <brush color="#ff0000" style="1"/>
@@ -75,7 +75,7 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="\Phi (degrees)" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0.036" y="1296.2404465" width="359.928" height="34801.212747"/>
+                <projectionrect x="0.036" y="1296.24041815" width="359.928" height="34801.2120057"/>
             </plot>
         </view>
     </graphics>
