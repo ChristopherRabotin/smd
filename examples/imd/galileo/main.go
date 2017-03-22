@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"math"
-	"os"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
@@ -28,34 +27,46 @@ var (
 func main() {
 	resonance := ega2.Sub(ega1).Hours() / (365.242189 * 24)
 	fmt.Printf("%s\t~%f orbits\n", ega2.Sub(ega1), resonance)
-	var ViGA2, VfGA1 *mat64.Vector
 
-	fmt.Println("==== QUESTION 1 ====")
+	fmt.Println("==== Launch -> VGA ====")
 	// hwQ 1
-	vga1R := mat64.NewVector(3, smd.Venus.HelioOrbit(vga1).R())
+	earthAtLaunch := smd.Earth.HelioOrbit(launch)
+	eLaunchR := mat64.NewVector(3, earthAtLaunch.R())
+	venusAtVGA := smd.Venus.HelioOrbit(vga1)
+	vga1R := mat64.NewVector(3, venusAtVGA.R())
+	_, VfVGA, _, _ := smd.Lambert(eLaunchR, vga1R, vga1.Sub(launch), smd.TTypeAuto, smd.Sun)
+	vfloatsVGA := []float64{VfVGA.At(0, 0), VfVGA.At(1, 0), VfVGA.At(2, 0)}
+	scOrbitAtVGAIn := smd.NewOrbitFromRV(venusAtVGA.R(), vfloatsVGA, smd.Sun)
+	scOrbitAtVGAIn.ToXCentric(smd.Venus, vga1)
+
+	fmt.Println("==== VGA -> EGA1 ====")
 	earthAtEGA1 := smd.Earth.HelioOrbit(ega1)
 	ega1R := mat64.NewVector(3, earthAtEGA1.R())
-	_, VfGA1, _, _ = smd.Lambert(vga1R, ega1R, ega1.Sub(vga1), smd.TTypeAuto, smd.Sun)
-	vfloats1 := []float64{VfGA1.At(0, 0), VfGA1.At(1, 0), VfGA1.At(2, 0)}
-	ega1Orbit := smd.NewOrbitFromRV(earthAtEGA1.R(), vfloats1, smd.Sun)
-	ega1Orbit.ToXCentric(smd.Earth, ega1)
-	vInfInGA1 := ega1Orbit.V()
-	vInfOutGA1Norm := ega1Orbit.VNorm() // Called OutGA1 because we suppose there was no maneuver during the flyby
-	fmt.Printf("%+v\n%f km/s\n", vInfInGA1, vInfOutGA1Norm)
-	fmt.Println("==== QUESTION 2 ====")
+	ViVGA, VfGA1, _, _ := smd.Lambert(vga1R, ega1R, ega1.Sub(vga1), smd.TTypeAuto, smd.Sun)
+	scOrbitAtVGAOut := smd.NewOrbitFromRV(venusAtVGA.R(), []float64{ViVGA.At(0, 0), ViVGA.At(1, 0), ViVGA.At(2, 0)}, smd.Sun)
+	scOrbitAtVGAOut.ToXCentric(smd.Venus, vga1)
+	// Okay, we have all the info for Venus, let's compute stuff.
+	_, rPVenus, bTVenus, bRVenus, _, _ := smd.GAFromVinf(scOrbitAtVGAIn.V(), scOrbitAtVGAOut.V(), smd.Venus)
+	fmt.Printf("==== VENUS INFO ====\nrP=%f km\tBt=%f km\tBr=%f\nVin=%f\tVout=%f\nDelta=%f\n\n", rPVenus, bTVenus, bRVenus, scOrbitAtVGAIn.VNorm(), scOrbitAtVGAOut.VNorm(), scOrbitAtVGAOut.VNorm()-scOrbitAtVGAIn.VNorm())
+
+	scOrbitAtEGA1 := smd.NewOrbitFromRV(earthAtEGA1.R(), []float64{VfGA1.At(0, 0), VfGA1.At(1, 0), VfGA1.At(2, 0)}, smd.Sun)
+	scOrbitAtEGA1.ToXCentric(smd.Earth, ega1)
+	vInfInGA1 := scOrbitAtEGA1.V()
+	vInfOutGA1Norm := scOrbitAtEGA1.VNorm() // Called OutGA1 because we suppose there was no maneuver during the flyby
+
+	fmt.Println("==== EGA2 -> JOI ====")
 	// hwQ 2
 	earthAtEGA2 := smd.Earth.HelioOrbit(ega2)
 	ega2R := mat64.NewVector(3, earthAtEGA2.R())
 	joiR := mat64.NewVector(3, smd.Jupiter.HelioOrbit(joi).R())
-	ViGA2, _, _, _ = smd.Lambert(ega2R, joiR, joi.Sub(ega2), smd.TTypeAuto, smd.Sun)
-	vfloats2 := []float64{ViGA2.At(0, 0), ViGA2.At(1, 0), ViGA2.At(2, 0)}
-	ega2Orbit := smd.NewOrbitFromRV(earthAtEGA2.R(), vfloats2, smd.Sun)
-	ega2Orbit.ToXCentric(smd.Earth, ega2)
-	vInfOutGA2 := ega2Orbit.V()
-	vInfOutGA2Norm := ega2Orbit.VNorm()
+	ViGA2, _, _, _ := smd.Lambert(ega2R, joiR, joi.Sub(ega2), smd.TTypeAuto, smd.Sun)
+	scOrbitAtEGA2 := smd.NewOrbitFromRV(earthAtEGA2.R(), []float64{ViGA2.At(0, 0), ViGA2.At(1, 0), ViGA2.At(2, 0)}, smd.Sun)
+	scOrbitAtEGA2.ToXCentric(smd.Earth, ega2)
+	vInfOutGA2 := scOrbitAtEGA2.V()
+	vInfOutGA2Norm := scOrbitAtEGA2.VNorm()
 	fmt.Printf("%+v\n%f km/s\n", vInfOutGA2, vInfOutGA2Norm)
 
-	fmt.Println("==== QUESTION 3 ====")
+	fmt.Println("==== Earth resonnance ====")
 	aResonance := math.Pow(smd.Sun.GM()*math.Pow(resonance*earthAtEGA1.Period().Seconds()/(2*math.Pi), 2), 1/3.)
 	VScSunNorm := math.Sqrt(smd.Sun.GM() * ((2 / earthAtEGA1.RNorm()) - 1/aResonance))
 	// Compute angle theta for EGA1
@@ -72,38 +83,23 @@ func main() {
 		dcmVal[i+6] = C[i]
 	}
 	DCM := mat64.NewDense(3, 3, dcmVal)
-	data := "psi\trP1\trP2\n"
-	step := (2 * math.Pi) / 10000
 	// Print when both become higher than minRadius.
-	rpsOkay := false
-	for ψ := step; ψ < 2*math.Pi; ψ += step {
-		sψ, cψ := math.Sincos(ψ)
-		vInfOutGA1VNC := []float64{vInfOutGA1Norm * math.Cos(math.Pi-theta), vInfOutGA1Norm * math.Sin(math.Pi-theta) * cψ, -vInfOutGA1Norm * math.Sin(math.Pi-theta) * sψ}
-		vInfOutGA1 := MxV33(DCM, vInfOutGA1VNC)
-		_, rP1, _, _, _, _ := smd.GAFromVinf(vInfInGA1, vInfOutGA1, smd.Earth)
 
-		vInfInGA2 := make([]float64, 3)
-		for i := 0; i < 3; i++ {
-			vInfInGA2[i] = vInfOutGA1[i] + ega1Orbit.V()[i] - ega2Orbit.V()[i]
-		}
-		_, rP2, _, _, _, _ := smd.GAFromVinf(vInfOutGA1, vInfInGA2, smd.Earth)
-		data += fmt.Sprintf("%f\t%f\t%f\n", ψ*r2d, rP1, rP2)
-		if !rpsOkay && rP1 > minRadius && rP2 > minRadius {
-			rpsOkay = true
-			fmt.Printf("[OK ] ψ=%.6f\trP1=%.3f km\trP2=%.3f km\n", ψ*r2d, rP1, rP2)
-		}
-		if rpsOkay && (rP1 < minRadius || rP2 < minRadius) {
-			rpsOkay = false
-			fmt.Printf("[NOK] ψ=%.6f\trP1=%.3f km\trP2=%.3f km\n", ψ*r2d, rP1, rP2)
-		}
+	ψ := 165.924 * d2r
+
+	sψ, cψ := math.Sincos(ψ)
+	vInfOutGA1VNC := []float64{vInfOutGA1Norm * math.Cos(math.Pi-theta), vInfOutGA1Norm * math.Sin(math.Pi-theta) * cψ, -vInfOutGA1Norm * math.Sin(math.Pi-theta) * sψ}
+	vInfOutGA1 := MxV33(DCM, vInfOutGA1VNC)
+	_, rPEGA1, bTEGA1, bREGA1, _, _ := smd.GAFromVinf(vInfInGA1, vInfOutGA1, smd.Earth)
+	fmt.Printf("==== EGA1 INFO ====\nrP=%f km\tBt=%f km\tBr=%f\nVin=%f\tVout=%f\nDelta=%f\n\n", rPEGA1, bTEGA1, bREGA1, norm(vInfInGA1), norm(vInfOutGA1), norm(vInfOutGA1)-norm(vInfInGA1))
+
+	vInfInGA2 := make([]float64, 3)
+	for i := 0; i < 3; i++ {
+		vInfInGA2[i] = vInfOutGA1[i] + scOrbitAtEGA1.V()[i] - scOrbitAtEGA2.V()[i]
 	}
-	// Export data
-	f, err := os.Create("./q3.tsv")
-	if err != nil {
-		panic(err)
-	}
-	f.WriteString(data)
-	f.Close()
+	_, rPEGA2, bTEGA2, bREGA2, _, _ := smd.GAFromVinf(vInfOutGA1, vInfInGA2, smd.Earth)
+	fmt.Printf("==== EGA2 INFO ====\nrP=%f km\tBt=%f km\tBr=%f\nVin=%f\tVout=%f\nDelta=%f\n\n", rPEGA2, bTEGA2, bREGA2, norm(vInfOutGA1), norm(vInfInGA2), norm(vInfInGA2)-norm(vInfOutGA1))
+
 }
 
 // Unshamefully copied from smd/math.go
