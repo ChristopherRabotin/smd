@@ -78,11 +78,8 @@ func main() {
 	minDeltaBT := 1e12
 	minDeltaBR := 1e12
 	minDeltaRp := 1e12
-	var minBT1, minBT2, minBR1, minBR2, minAssocψ, minRp1, minRp2 float64
-	var minega1Vin, minega1Vout, minega2Vin, minega2Vout float64
-	// The following store the information for when the maximum radius of periapsis is reached for both.
-	var maxBT1, maxBT2, maxBR1, maxBR2, maxAssocψ, maxRp1, maxRp2 float64
-	var maxega1Vin, maxega1Vout, maxega2Vin, maxega2Vout float64
+	maxRp2 := 0.0
+	var minBPlane, minRpDiff, maxRps target
 	for ψ := step; ψ < 2*math.Pi; ψ += step {
 		sψ, cψ := math.Sincos(ψ)
 		vInfOutEGA1VNC := []float64{vInfInEGA1Norm * math.Cos(math.Pi-theta), vInfInEGA1Norm * math.Sin(math.Pi-theta) * cψ, -vInfInEGA1Norm * math.Sin(math.Pi-theta) * sψ}
@@ -106,36 +103,16 @@ func main() {
 				// New mins!
 				minDeltaBT = math.Abs(bT1 - bT2)
 				minDeltaBR = math.Abs(bR1 - bR2)
-				// Store them
-				minBT1 = bT1
-				minBR1 = bR1
-				minRp1 = rP1
-				minega1Vin = norm(vInfInEGA1)
-				minega1Vout = norm(vInfOutEGA1Eclip)
-				minBT2 = bT2
-				minBR2 = bR2
-				minRp2 = rP2
-				minega2Vin = norm(vInfInEGA2Eclip)
-				minega2Vout = norm(vInfOutEGA2)
-				minAssocψ = ψ
-			} else {
-				//fmt.Printf("deltaBt = %f => %v\tdeltaBr = %f => %v\n", math.Abs(bT1-bT2), math.Abs(bT1-bT2) < minDeltaBT, math.Abs(bR1-bR2), math.Abs(bR1-bR2) < minDeltaBR)
+				minBPlane = target{bT1, bT2, bR1, bR2, ψ, rP1, rP2, norm(vInfInEGA1), norm(vInfOutEGA1Eclip), norm(vInfInEGA2Eclip), norm(vInfOutEGA2)}
 			}
 			if math.Abs(rP1-rP2) < minDeltaRp {
 				// Just reached a new high for both rPs.
 				minDeltaRp = math.Abs(rP1 - rP2)
-				// Store them
-				maxBT1 = bT1
-				maxBR1 = bR1
-				maxRp1 = rP1
-				maxega1Vin = norm(vInfInEGA1)
-				maxega1Vout = norm(vInfOutEGA1Eclip)
-				maxBT2 = bT2
-				maxBR2 = bR2
+				minRpDiff = target{bT1, bT2, bR1, bR2, ψ, rP1, rP2, norm(vInfInEGA1), norm(vInfOutEGA1Eclip), norm(vInfInEGA2Eclip), norm(vInfOutEGA2)}
+			}
+			if rP2 > maxRp2 {
 				maxRp2 = rP2
-				maxega2Vin = norm(vInfInEGA2Eclip)
-				maxega2Vout = norm(vInfOutEGA2)
-				maxAssocψ = ψ
+				maxRps = target{bT1, bT2, bR1, bR2, ψ, rP1, rP2, norm(vInfInEGA1), norm(vInfOutEGA1Eclip), norm(vInfInEGA2Eclip), norm(vInfOutEGA2)}
 			}
 			if rP1 < minRadius || rP2 < minRadius {
 				rpsOkay = false
@@ -143,9 +120,9 @@ func main() {
 			}
 		}
 	}
-	fmt.Printf("=== Mins: ψ=%f ===\nEGA1: Bt=%f\tBr=%f\trP=%f\nVin=%f\tVout=%f\tdelta=%f\n\nEGA2: Bt=%f\tBr=%f\trP=%f\nVin=%f\tVout=%f\tdelta=%f\n", minAssocψ*r2d, minBT1, minBR1, minRp1, minega1Vin, minega1Vout, minega1Vout-minega1Vin, minBT2, minBR2, minRp2, minega2Vin, minega2Vout, minega2Vout-minega2Vin)
-
-	fmt.Printf("=== Max: ψ=%f ===\nEGA1: Bt=%f\tBr=%f\trP=%f\nVin=%f\tVout=%f\tdelta=%f\n\nEGA2: Bt=%f\tBr=%f\trP=%f\nVin=%f\tVout=%f\tdelta=%f\n", maxAssocψ*r2d, maxBT1, maxBR1, maxRp1, maxega1Vin, maxega1Vout, maxega1Vout-maxega1Vin, maxBT2, maxBR2, maxRp2, maxega2Vin, maxega2Vout, maxega2Vout-maxega2Vin)
+	fmt.Printf("=== Min B-Plane diff.: %s\n", minBPlane)
+	fmt.Printf("=== Min Rp difference: %s\n", minRpDiff)
+	fmt.Printf("=== Max Rp2 GA: %s\n", maxRps)
 
 	// Export data
 	f, err := os.Create("./q3.tsv")
@@ -155,6 +132,15 @@ func main() {
 	f.WriteString(data)
 	f.Close()
 
+}
+
+type target struct {
+	BT1, BT2, BR1, BR2, Assocψ, Rp1, Rp2 float64
+	ega1Vin, ega1Vout, ega2Vin, ega2Vout float64
+}
+
+func (t target) String() string {
+	return fmt.Sprintf("ψ=%f ===\nEGA1: Bt=%f\tBr=%f\trP=%f\nVin=%f\tVout=%f\tdelta=%f\n\nEGA2: Bt=%f\tBr=%f\trP=%f\nVin=%f\tVout=%f\tdelta=%f\n", t.Assocψ*r2d, t.BT1, t.BR1, t.Rp1, t.ega1Vin, t.ega1Vout, t.ega1Vout-t.ega1Vin, t.BT2, t.BR2, t.Rp2, t.ega2Vin, t.ega2Vout, t.ega2Vout-t.ega2Vin)
 }
 
 // Unshamefully copied from smd/math.go
