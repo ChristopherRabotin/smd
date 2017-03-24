@@ -44,9 +44,9 @@
                     <relation tag="rP1 vs psi (C1)"/>
                     <relation tag="rP2 vs psi (C2)"/>
                     <box name="Box">
-                        <position x="20.1485444072148" y="-21.8019234035353" z="496"/>
-                        <rect x="-141.085823761975" y="-269.734726436037" width="282.171647523949" height="539.469452872073"/>
-                        <relativesize width="0.230601675890734" height="1.03444673116855" centerx="0.47666199906648" centery="0.520023625064721" posx="0.361361161121113" posy="0.00280025948044674" leftx="0.361361161121113" lefty="1.03724699064899" rightx="0.591962837011847" righty="1.03724699064899" fixaspect="false" lockpostodata="true" datarect_x="130.1" datarect_y="8.18545231595635e-12" datarect_width="83" datarect_height="36000"/>
+                        <position x="-249.437567705485" y="-615.937905403974" z="496"/>
+                        <rect x="-75.5132124674935" y="-834.771105781552" width="151.026424934987" height="1669.5422115631"/>
+                        <relativesize width="0.123424684936987" height="3.20139068876789" centerx="0.256345713587162" centery="-0.619247599984073" posx="0.194633371118668" posy="-2.21994294436802" leftx="0.194633371118668" lefty="0.981447744399871" rightx="0.318058056055656" righty="0.981447744399871" fixaspect="false" lockpostodata="true" datarect_x="70.09" datarect_y="2.81374923361e-12" datarect_width="44.424" datarect_height="36000"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                             <brush color="#ffff00" style="1"/>
@@ -54,9 +54,9 @@
                         <brush color="#ffff00" style="1"/>
                     </box>
                     <line name="Line">
-                        <position x="48.705675" y="147.861219524732" z="500"/>
+                        <position x="48.705675" y="-90.8668798673776" z="500"/>
                         <rect x="-612.436680652287" y="-4.5" width="1224.87336130457" height="9"/>
-                        <relativesize width="1.00101428456513" height="0.0172577344851529" centerx="0.5" centery="0.845357122017229" posx="-0.000507142282566451" posy="0.836728254774653" leftx="-0.000507142282566451" lefty="0.853985989259806" rightx="1.00050714228257" righty="0.853985989259806" fixaspect="false" lockpostodata="true" datarect_x="0" datarect_y="6678" datarect_width="360" datarect_height="0"/>
+                        <relativesize width="1.00101428456513" height="0.0172577344851529" centerx="0.5" centery="0.387589771633428" posx="-0.000507142282566451" posy="0.378960904390852" leftx="-0.000507142282566451" lefty="0.396218638876004" rightx="1.00050714228257" righty="0.396218638876004" fixaspect="false" lockpostodata="true" datarect_x="0" datarect_y="6678" datarect_width="360" datarect_height="0"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="2" width="1" miterlimit="2" cap="16" joinStyle="64">
                             <brush color="#ff0000" style="1"/>
@@ -75,7 +75,7 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="\Phi (degrees)" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0.036" y="1296.24041815" width="359.928" height="34801.2120057"/>
+                <projectionrect x="0.036" y="-208.622210325" width="359.928" height="11245.11298365"/>
             </plot>
         </view>
     </graphics>
