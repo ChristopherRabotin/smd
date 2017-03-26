@@ -48,7 +48,7 @@ func (o Orbit) HNorm() float64 {
 // CosΦfpa returns the cosine of the flight path angle.
 // WARNING: As per Vallado page 105, *do not* use math.Acos(o.CosΦfpa())
 // to get the flight path angle as you'll have a quadran problem. Instead
-// use math.Atan2(o.GetSinΦfpa(), o.CosΦfpa()).
+// use math.Atan2(o.SinΦfpa(), o.CosΦfpa()).
 func (o Orbit) CosΦfpa() float64 {
 	_, e, _, _, _, ν, _, _, _ := o.Elements()
 	if e < eccentricityε {

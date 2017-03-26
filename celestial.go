@@ -3,6 +3,7 @@ package smd
 import (
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/soniakeys/meeus/julian"
@@ -130,6 +131,24 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 	R := pstate.R
 	V := pstate.V
 	return *NewOrbitFromRV(R, V, Sun)
+}
+
+// CelestialObjectFromString returns the object from its name
+func CelestialObjectFromString(name string) (CelestialObject, error) {
+	switch strings.ToLower(name) {
+	case "earth":
+		return Earth, nil
+	case "venus":
+		return Venus, nil
+	case "mars":
+		return Mars, nil
+	case "jupiter":
+		return Jupiter, nil
+	case "pluto":
+		return Pluto, nil
+	default:
+		return CelestialObject{}, fmt.Errorf("undefined planet '%s'", name)
+	}
 }
 
 /* Definitions */

@@ -1,0 +1,16 @@
+# Example Pork Chop Plot scenario
+[General]
+fileprefix = "lab6p1toml"
+verbose = true
+
+[Departure]
+planet = "Earth"
+from = "2006-01-09 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
+until = "2006-01-10 00:00:00"
+resolution = 24 # Number of points per day. For example, set to 24 for one point per hour.
+
+[Arrival]
+planet = "Jupiter"
+from = 2454129.5
+until = 2454239.5
+resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.
