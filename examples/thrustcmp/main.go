@@ -17,6 +17,7 @@ const (
 	bht8000
 	hermes
 	vx200
+	missionNo = 3
 )
 
 var (
@@ -129,10 +130,13 @@ func main() {
 	earthOrbit := smd.Earth.HelioOrbit(startDT)
 	marsOrbit := smd.Mars.HelioOrbit(startDT)
 
-	numThrusters := 1
+	numThrusters := 12
+	combinations := []thrusterType{pps1350, pps5000, bht1500, bht8000, hermes, vx200}
+	if missionNo == 3 {
+		combinations = []thrusterType{pps5000, bht8000, hermes, vx200}
+	}
 
-	for _, thruster := range []thrusterType{pps1350, pps5000, bht1500, bht8000, hermes, vx200} {
-
+	for _, thruster := range combinations {
 		var bestCSV string
 		var bestTOF = 1e9
 		for ω := 0.0; ω < 360; ω += 10.0 {
@@ -164,13 +168,22 @@ func main() {
 				}
 			}
 			sc, maxThrust := createSpacecraft(thruster, numThrusters, distance, further)
-			if departEarth {
-				sc.DryMass = 900 + 577 + 1e3 + 1e3 // Add MRO, Curiosity and Schiaparelli, and suppose 1 ton bus.
-				sc.FuelMass = 3e3
-			} else {
-				// Suppose less return mass
-				sc.DryMass = 500 + 1e3 // Add Schiaparelli return, and suppose 1 ton bus.
-				sc.FuelMass = 1e3
+			if missionNo == 2 {
+				if departEarth {
+					sc.DryMass = 900 + 577 + 1e3 + 1e3 // Add MRO, Curiosity and Schiaparelli, and suppose 1 ton bus.
+					sc.FuelMass = 3e3
+				} else {
+					// Suppose less return mass
+					sc.DryMass = 500 + 1e3 // Add Schiaparelli return, and suppose 1 ton bus.
+					sc.FuelMass = 1e3
+				}
+			} else if missionNo == 3 {
+				sc.DryMass = 52e3
+				if departEarth {
+					sc.FuelMass = 24e3
+				} else {
+					sc.FuelMass = 6e3
+				}
 			}
 			initV := initOrbit.VNorm()
 			initFuel := sc.FuelMass
