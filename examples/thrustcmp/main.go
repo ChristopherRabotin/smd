@@ -23,7 +23,6 @@ var (
 	wg             sync.WaitGroup
 	departEarth    = true
 	interplanetary = false
-	maximizeVinf   = true
 )
 
 type thrusterType uint8
@@ -88,15 +87,15 @@ func main() {
 	var fn string
 	if departEarth {
 		if interplanetary {
-			fn = "earth2mars"
+			fn = "earth2mars-tof"
 		} else {
-			fn = "gto2escape"
+			fn = "gto2escape-tof"
 		}
 	} else {
 		if interplanetary {
-			fn = "mars2earth"
+			fn = "mars2earth-tof"
 		} else {
-			fn = "mro2escape"
+			fn = "mro2escape-tof"
 		}
 	}
 	rslts := make(chan string, 10)
@@ -109,84 +108,85 @@ func main() {
 	marsOrbit := smd.Mars.HelioOrbit(startDT)
 
 	for _, thruster := range []thrusterType{pps1350, pps5000, bht1500, bht8000, hermes, vx200} {
-		for numThrusters := 1; numThrusters <= 4; numThrusters++ {
+		for numThrusters := 1; numThrusters <= 1; numThrusters++ {
 			var bestCSV string
-			var bestVinf float64
-			if maximizeVinf {
-				bestVinf = -1e9
-			} else {
-				bestVinf = 1e9
-			}
-			for _, i := range []float64{0, 5.16, 28.39} {
-				for ω := 0.0; ω < 180; ω += 10.0 {
-					fmt.Printf("\n##### %.1f / %.1f deg #####\n", i, ω)
-					var initOrbit *smd.Orbit
-					var distance float64
-					var further bool
-					if departEarth {
-						if interplanetary {
-							ugh := smd.Earth.HelioOrbit(startDT)
-							initOrbit = &ugh
-							further = true
-							distance = marsOrbit.RNorm()
-						} else {
-							initOrbit = smd.NewOrbitFromOE(aGTO, eGTO, i, 330, ω, 210, smd.Earth)
-							distance = smd.Earth.SOI
-							further = true
-						}
-					} else {
-						if interplanetary {
-							ugh := smd.Mars.HelioOrbit(startDT)
-							initOrbit = &ugh
-							further = false
-							distance = earthOrbit.RNorm()
-						} else {
-							initOrbit = smd.NewOrbitFromOE(aMRO, eMRO, i, 240, ω, 180, smd.Mars)
-							distance = smd.Mars.SOI
-							further = true
-						}
-					}
-					sc, maxThrust := createSpacecraft(thruster, numThrusters, distance, further)
-					initV := initOrbit.VNorm()
-					initFuel := sc.FuelMass
-					// Propagate
-					astro := smd.NewPreciseMission(sc, initOrbit, startDT, startDT.Add(-1), smd.Cartesian, smd.Perturbations{}, 5*time.Minute, smd.ExportConfig{})
-					astro.Propagate()
-					// Compute data.
-					tof := astro.CurrentDT.Sub(startDT).Hours() / 24
-					deltaV := astro.Orbit.VNorm() - initV
-					deltaFuel := sc.FuelMass - initFuel
-					var vInf float64
-					if departEarth {
-						if interplanetary { // Arriving at Mars, check how fast we're going compared to some standard velocity
-							vInf = astro.Orbit.VNorm() - marsOrbit.VNorm()
-						} else {
-							vInf = astro.Orbit.VNorm() - smd.Earth.HelioOrbit(astro.CurrentDT).VNorm()
-						}
-					} else {
-						if interplanetary {
-							vInf = astro.Orbit.VNorm() - earthOrbit.VNorm()
-						} else {
-							vInf = astro.Orbit.VNorm() - smd.Mars.HelioOrbit(astro.CurrentDT).VNorm()
-						}
-					}
-
-					csv := fmt.Sprintf("%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n", i, ω, maxThrust, tof, deltaV, deltaFuel, vInf)
-					// Check if best
-					if (maximizeVinf && vInf > bestVinf) || (!maximizeVinf && vInf < bestVinf) {
-						bestVinf = vInf
-						bestCSV = csv
-					}
+			var bestTOF = 1e9
+			for ω := 0.0; ω < 360; ω += 10.0 {
+				fmt.Printf("\n##### %.1f deg #####\n", ω)
+				var initOrbit *smd.Orbit
+				var distance float64
+				var further bool
+				if departEarth {
 					if interplanetary {
-						rslts <- csv
-						break
+						ugh := smd.Earth.HelioOrbit(startDT)
+						initOrbit = &ugh
+						further = true
+						distance = marsOrbit.RNorm()
+					} else {
+						initOrbit = smd.NewOrbitFromOE(aGTO, eGTO, 0.0, 0, ω, 210, smd.Earth)
+						distance = smd.Earth.SOI
+						further = true
+					}
+				} else {
+					if interplanetary {
+						ugh := smd.Mars.HelioOrbit(startDT)
+						initOrbit = &ugh
+						further = false
+						distance = earthOrbit.RNorm()
+					} else {
+						initOrbit = smd.NewOrbitFromOE(aMRO, eMRO, 0.0, 0, ω, 180, smd.Mars)
+						distance = smd.Mars.SOI
+						further = true
 					}
 				}
-				if interplanetary {
-					break // No need to go further for interplanetary because I can't alter inc or arg of periapsis
+				sc, maxThrust := createSpacecraft(thruster, numThrusters, distance, further)
+				/*if departEarth {
+					sc.DryMass = 900 + 577 + 1e3 + 1e3 // Add MRO, Curiosity and Schiaparelli, and suppose 1 ton bus.
+					sc.FuelMass = 3e3
+				} else {
+					// Suppose less return mass
+					sc.DryMass = 577 + 1e3 // Add Curiosity return, and suppose 1 ton bus.
+					sc.FuelMass = 1e3
+				}*/
+				initV := initOrbit.VNorm()
+				initFuel := sc.FuelMass
+				// Propagate
+				astro := smd.NewPreciseMission(sc, initOrbit, startDT, startDT.Add(-1), smd.Cartesian, smd.Perturbations{}, 5*time.Minute, smd.ExportConfig{})
+				astro.Propagate()
+				// Compute data.
+				tof := astro.CurrentDT.Sub(startDT).Hours() / 24
+				deltaV := astro.Orbit.VNorm() - initV
+				deltaFuel := sc.FuelMass - initFuel
+				var vInf float64
+				if departEarth {
+					if interplanetary { // Arriving at Mars, check how fast we're going compared to some standard velocity
+						vInf = astro.Orbit.VNorm() - marsOrbit.VNorm()
+					} else {
+						astro.Orbit.ToXCentric(smd.Sun, astro.CurrentDT)
+						vInf = astro.Orbit.VNorm() - smd.Earth.HelioOrbit(astro.CurrentDT).VNorm()
+					}
+				} else {
+					if interplanetary {
+						vInf = astro.Orbit.VNorm() - earthOrbit.VNorm()
+					} else {
+						astro.Orbit.ToXCentric(smd.Sun, astro.CurrentDT)
+						vInf = astro.Orbit.VNorm() - smd.Mars.HelioOrbit(astro.CurrentDT).VNorm()
+					}
+				}
+
+				csv := fmt.Sprintf("%.3f,%s,%.3f,%.3f,%.3f,%.3f,%.3f\n", ω, sc.Name, maxThrust, tof, deltaV, deltaFuel, vInf)
+				// Check if best
+				if tof < bestTOF {
+					bestTOF = tof
+					bestCSV = csv
+				}
+				if interplanetary || true {
+					rslts <- csv
+					//break
 				}
 			}
-			if !interplanetary {
+
+			if !interplanetary && false {
 				rslts <- bestCSV
 			}
 		}
@@ -201,7 +201,7 @@ func streamResults(fn string, rslts <-chan string) {
 	}
 	defer f.Close()
 	// Header
-	f.WriteString("inc. (deg), arg. periapsis (deg), name, thrust (N), T.O.F. (days), \\Delta V (km/s), fuel (kf), \\V_{\\infty} (km/s)\n")
+	f.WriteString("arg. periapsis (deg), name, thrust (N), T.O.F. (days), \\Delta V (km/s), fuel (kf), \\V_{\\infty} (km/s)\n")
 	for {
 		rslt, more := <-rslts
 		if more {
