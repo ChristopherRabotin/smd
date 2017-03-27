@@ -17,13 +17,14 @@ const (
 	bht8000
 	hermes
 	vx200
-	missionNo = 3
+	missionNo    = 1
+	numThrusters = 2
 )
 
 var (
 	wg             sync.WaitGroup
 	departEarth    = true
-	interplanetary = false
+	interplanetary = true
 )
 
 type thrusterType uint8
@@ -106,7 +107,6 @@ func createSpacecraft(thruster thrusterType, numThrusters int, dist float64, fur
 }
 
 func main() {
-	wg.Add(1)
 	var fn string
 	if departEarth {
 		if interplanetary {
@@ -121,7 +121,19 @@ func main() {
 			fn = "mro2escape-tof"
 		}
 	}
+	if missionNo < 3 {
+		if numThrusters == 1 {
+			fn += fmt.Sprintf("-%da", missionNo)
+		} else {
+			fn += fmt.Sprintf("-%db", missionNo)
+		}
+	} else if numThrusters == 8 {
+		fn += "-3a"
+	} else {
+		fn += "-3b"
+	}
 	rslts := make(chan string, 10)
+	wg.Add(1)
 	go streamResults(fn, rslts)
 
 	aGTO, eGTO := smd.Radii2ae(39300+smd.Earth.Radius, 290+smd.Earth.Radius)
@@ -130,7 +142,6 @@ func main() {
 	earthOrbit := smd.Earth.HelioOrbit(startDT)
 	marsOrbit := smd.Mars.HelioOrbit(startDT)
 
-	numThrusters := 12
 	combinations := []thrusterType{pps1350, pps5000, bht1500, bht8000, hermes, vx200}
 	if missionNo == 3 {
 		combinations = []thrusterType{pps5000, bht8000, hermes, vx200}
@@ -217,9 +228,9 @@ func main() {
 				bestTOF = tof
 				bestCSV = csv
 			}
-			if interplanetary || true {
+			if interplanetary {
 				rslts <- csv
-				//break
+				break
 			}
 		}
 
