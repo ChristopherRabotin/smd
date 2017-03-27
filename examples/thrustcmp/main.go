@@ -17,8 +17,9 @@ const (
 	bht8000
 	hermes
 	vx200
-	missionNo    = 1
-	numThrusters = 2
+	cnfmissionNo    = 2
+	cnfnumThrusters = 2
+	opti            = false
 )
 
 var (
@@ -103,10 +104,28 @@ func createSpacecraft(thruster thrusterType, numThrusters int, dist float64, fur
 	fuelMass := 1000.0
 	name := fmt.Sprintf("%dx%s", numThrusters, thruster)
 	fmt.Printf("\n===== %s ======\n", name)
-	return smd.NewSpacecraft(name, dryMass, fuelMass, smd.NewUnlimitedEPS(), thrusters, false, []*smd.Cargo{}, []smd.Waypoint{smd.NewReachDistance(dist, further, nil)}), thrust
+	waypoints := []smd.Waypoint{smd.NewReachDistance(dist, further, nil)}
+	if opti {
+		if departEarth {
+			waypoints = []smd.Waypoint{smd.NewOrbitTarget(smd.Mars.HelioOrbit(time.Now()), nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔiCL)}
+		} else {
+			waypoints = []smd.Waypoint{smd.NewOrbitTarget(smd.Earth.HelioOrbit(time.Now()), nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔiCL)}
+		}
+	}
+	return smd.NewSpacecraft(name, dryMass, fuelMass, smd.NewUnlimitedEPS(), thrusters, false, []*smd.Cargo{}, waypoints), thrust
 }
 
 func main() {
+	// Go through all combinations
+	combinations := []struct {
+		missionNo, numThrusters int
+	}{{1, 1}, {1, 2}, {2, 1}, {2, 2}, {3, 8}, {3, 12}}
+	for _, combin := range combinations {
+		run(combin.missionNo, combin.numThrusters)
+	}
+}
+
+func run(missionNo, numThrusters int) {
 	var fn string
 	if departEarth {
 		if interplanetary {
@@ -199,7 +218,16 @@ func main() {
 			initV := initOrbit.VNorm()
 			initFuel := sc.FuelMass
 			// Propagate
-			astro := smd.NewPreciseMission(sc, initOrbit, startDT, startDT.Add(-1), smd.Cartesian, smd.Perturbations{}, 5*time.Minute, smd.ExportConfig{})
+			ts := 5 * time.Minute
+			export := smd.ExportConfig{}
+			if interplanetary {
+				export = smd.ExportConfig{Filename: "tang" + fn + sc.Name, AsCSV: true, Cosmo: true, Timestamp: false}
+			}
+			endDT := startDT.Add(-1)
+			if opti {
+				endDT = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+			}
+			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Cartesian, smd.Perturbations{}, ts, export)
 			astro.Propagate()
 			// Compute data.
 			tof := astro.CurrentDT.Sub(startDT).Hours() / 24
