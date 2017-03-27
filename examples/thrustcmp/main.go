@@ -46,6 +46,28 @@ func (tt thrusterType) Type() smd.EPThruster {
 	}
 }
 
+func (tt thrusterType) BestArgPeri(cluster int) float64 {
+	switch tt {
+	case pps1350:
+		return 320 // cluster irrelevant
+	case pps5000:
+		return 70 // idem
+	case bht1500:
+		return 60 // idem
+	case bht8000:
+		return 230 // idem
+	case hermes:
+		return 110 // idem
+	case vx200:
+		if cluster == 1 {
+			return 270
+		}
+		return 190
+	default:
+		panic("unknown thruster")
+	}
+}
+
 func (tt thrusterType) String() string {
 	switch tt {
 	case pps1350:
@@ -107,88 +129,89 @@ func main() {
 	earthOrbit := smd.Earth.HelioOrbit(startDT)
 	marsOrbit := smd.Mars.HelioOrbit(startDT)
 
+	numThrusters := 1
+
 	for _, thruster := range []thrusterType{pps1350, pps5000, bht1500, bht8000, hermes, vx200} {
-		for numThrusters := 1; numThrusters <= 1; numThrusters++ {
-			var bestCSV string
-			var bestTOF = 1e9
-			for ω := 0.0; ω < 360; ω += 10.0 {
-				fmt.Printf("\n##### %.1f deg #####\n", ω)
-				var initOrbit *smd.Orbit
-				var distance float64
-				var further bool
-				if departEarth {
-					if interplanetary {
-						ugh := smd.Earth.HelioOrbit(startDT)
-						initOrbit = &ugh
-						further = true
-						distance = marsOrbit.RNorm()
-					} else {
-						initOrbit = smd.NewOrbitFromOE(aGTO, eGTO, 0.0, 0, ω, 210, smd.Earth)
-						distance = smd.Earth.SOI
-						further = true
-					}
-				} else {
-					if interplanetary {
-						ugh := smd.Mars.HelioOrbit(startDT)
-						initOrbit = &ugh
-						further = false
-						distance = earthOrbit.RNorm()
-					} else {
-						initOrbit = smd.NewOrbitFromOE(aMRO, eMRO, 0.0, 0, ω, 180, smd.Mars)
-						distance = smd.Mars.SOI
-						further = true
-					}
-				}
-				sc, maxThrust := createSpacecraft(thruster, numThrusters, distance, further)
-				/*if departEarth {
-					sc.DryMass = 900 + 577 + 1e3 + 1e3 // Add MRO, Curiosity and Schiaparelli, and suppose 1 ton bus.
-					sc.FuelMass = 3e3
-				} else {
-					// Suppose less return mass
-					sc.DryMass = 577 + 1e3 // Add Curiosity return, and suppose 1 ton bus.
-					sc.FuelMass = 1e3
-				}*/
-				initV := initOrbit.VNorm()
-				initFuel := sc.FuelMass
-				// Propagate
-				astro := smd.NewPreciseMission(sc, initOrbit, startDT, startDT.Add(-1), smd.Cartesian, smd.Perturbations{}, 5*time.Minute, smd.ExportConfig{})
-				astro.Propagate()
-				// Compute data.
-				tof := astro.CurrentDT.Sub(startDT).Hours() / 24
-				deltaV := astro.Orbit.VNorm() - initV
-				deltaFuel := sc.FuelMass - initFuel
-				var vInf float64
-				if departEarth {
-					if interplanetary { // Arriving at Mars, check how fast we're going compared to some standard velocity
-						vInf = astro.Orbit.VNorm() - marsOrbit.VNorm()
-					} else {
-						astro.Orbit.ToXCentric(smd.Sun, astro.CurrentDT)
-						vInf = astro.Orbit.VNorm() - smd.Earth.HelioOrbit(astro.CurrentDT).VNorm()
-					}
-				} else {
-					if interplanetary {
-						vInf = astro.Orbit.VNorm() - earthOrbit.VNorm()
-					} else {
-						astro.Orbit.ToXCentric(smd.Sun, astro.CurrentDT)
-						vInf = astro.Orbit.VNorm() - smd.Mars.HelioOrbit(astro.CurrentDT).VNorm()
-					}
-				}
 
-				csv := fmt.Sprintf("%.3f,%s,%.3f,%.3f,%.3f,%.3f,%.3f\n", ω, sc.Name, maxThrust, tof, deltaV, deltaFuel, vInf)
-				// Check if best
-				if tof < bestTOF {
-					bestTOF = tof
-					bestCSV = csv
+		var bestCSV string
+		var bestTOF = 1e9
+		for ω := 0.0; ω < 360; ω += 10.0 {
+			fmt.Printf("\n##### %.1f deg #####\n", ω)
+			var initOrbit *smd.Orbit
+			var distance float64
+			var further bool
+			if departEarth {
+				if interplanetary {
+					ugh := smd.Earth.HelioOrbit(startDT)
+					initOrbit = &ugh
+					further = true
+					distance = marsOrbit.RNorm()
+				} else {
+					initOrbit = smd.NewOrbitFromOE(aGTO, eGTO, 0.0, 0, ω, 210, smd.Earth)
+					distance = smd.Earth.SOI
+					further = true
 				}
-				if interplanetary || true {
-					rslts <- csv
-					//break
+			} else {
+				if interplanetary {
+					ugh := smd.Mars.HelioOrbit(startDT)
+					initOrbit = &ugh
+					further = false
+					distance = earthOrbit.RNorm()
+				} else {
+					initOrbit = smd.NewOrbitFromOE(aMRO, eMRO, 0.0, 0, ω, 180, smd.Mars)
+					distance = smd.Mars.SOI
+					further = true
+				}
+			}
+			sc, maxThrust := createSpacecraft(thruster, numThrusters, distance, further)
+			if departEarth {
+				sc.DryMass = 900 + 577 + 1e3 + 1e3 // Add MRO, Curiosity and Schiaparelli, and suppose 1 ton bus.
+				sc.FuelMass = 3e3
+			} else {
+				// Suppose less return mass
+				sc.DryMass = 500 + 1e3 // Add Schiaparelli return, and suppose 1 ton bus.
+				sc.FuelMass = 1e3
+			}
+			initV := initOrbit.VNorm()
+			initFuel := sc.FuelMass
+			// Propagate
+			astro := smd.NewPreciseMission(sc, initOrbit, startDT, startDT.Add(-1), smd.Cartesian, smd.Perturbations{}, 5*time.Minute, smd.ExportConfig{})
+			astro.Propagate()
+			// Compute data.
+			tof := astro.CurrentDT.Sub(startDT).Hours() / 24
+			deltaV := astro.Orbit.VNorm() - initV
+			deltaFuel := sc.FuelMass - initFuel
+			var vInf float64
+			if departEarth {
+				if interplanetary { // Arriving at Mars, check how fast we're going compared to some standard velocity
+					vInf = astro.Orbit.VNorm() - marsOrbit.VNorm()
+				} else {
+					astro.Orbit.ToXCentric(smd.Sun, astro.CurrentDT)
+					vInf = astro.Orbit.VNorm() - smd.Earth.HelioOrbit(astro.CurrentDT).VNorm()
+				}
+			} else {
+				if interplanetary {
+					vInf = astro.Orbit.VNorm() - earthOrbit.VNorm()
+				} else {
+					astro.Orbit.ToXCentric(smd.Sun, astro.CurrentDT)
+					vInf = astro.Orbit.VNorm() - smd.Mars.HelioOrbit(astro.CurrentDT).VNorm()
 				}
 			}
 
-			if !interplanetary && false {
-				rslts <- bestCSV
+			csv := fmt.Sprintf("%.3f,%s,%.3f,%.3f,%.3f,%.3f,%.3f\n", ω, sc.Name, maxThrust, tof, deltaV, deltaFuel, vInf)
+			// Check if best
+			if tof < bestTOF {
+				bestTOF = tof
+				bestCSV = csv
 			}
+			if interplanetary || true {
+				rslts <- csv
+				//break
+			}
+		}
+
+		if !interplanetary && false {
+			rslts <- bestCSV
 		}
 	}
 }
