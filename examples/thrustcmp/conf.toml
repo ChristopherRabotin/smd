@@ -1,7 +1,7 @@
 # smd TOML config file
 # If both VSOP87 and SPICE are enabled, smd will panic
 [general]
-output_path = "./" # Defines the output directory. Use "./" to output to current working directory.
+output_path = "./outputs/" # Defines the output directory. Use "./" to output to current working directory.
 test_export = false # Set to true to export the test cases.
 
 [VSOP87]

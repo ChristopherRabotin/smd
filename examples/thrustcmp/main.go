@@ -17,15 +17,13 @@ const (
 	bht8000
 	hermes
 	vx200
-	cnfmissionNo    = 2
-	cnfnumThrusters = 2
-	opti            = false
+	opti = true
 )
 
 var (
 	wg             sync.WaitGroup
-	departEarth    = true
-	interplanetary = true
+	departEarth    = false
+	interplanetary = false
 )
 
 type thrusterType uint8
@@ -106,11 +104,24 @@ func createSpacecraft(thruster thrusterType, numThrusters int, dist float64, fur
 	fmt.Printf("\n===== %s ======\n", name)
 	waypoints := []smd.Waypoint{smd.NewReachDistance(dist, further, nil)}
 	if opti {
-		if departEarth {
-			waypoints = []smd.Waypoint{smd.NewOrbitTarget(smd.Mars.HelioOrbit(time.Now()), nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔiCL)}
+		if interplanetary {
+			if departEarth {
+				waypoints = []smd.Waypoint{smd.NewOrbitTarget(smd.Mars.HelioOrbit(time.Now()), nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔiCL), smd.NewCruiseToDistance(dist, further, nil)}
+			} else {
+				waypoints = []smd.Waypoint{smd.NewOrbitTarget(smd.Earth.HelioOrbit(time.Now()), nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔiCL, smd.OptiΔeCL), smd.NewCruiseToDistance(dist, further, nil)}
+			}
 		} else {
-			waypoints = []smd.Waypoint{smd.NewOrbitTarget(smd.Earth.HelioOrbit(time.Now()), nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔiCL)}
+			if departEarth {
+				// Create virtual orbit
+				tgt := smd.NewOrbitFromOE(smd.Earth.SOI, 0.75, 0, 0, 230, 0, smd.Earth)
+				waypoints = []smd.Waypoint{smd.NewOrbitTarget(*tgt, nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔeCL), smd.NewCruiseToDistance(dist, further, nil)}
+			} else {
+				tgt := smd.NewOrbitFromOE(smd.Mars.SOI, 0.85, 0, 0, 230, 0, smd.Mars)
+				waypoints = []smd.Waypoint{smd.NewOrbitTarget(*tgt, nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔeCL), smd.NewCruiseToDistance(dist, further, nil)}
+			}
 		}
+		//eGTO = 0.745230 eMRO=0.852192
+
 	}
 	return smd.NewSpacecraft(name, dryMass, fuelMass, smd.NewUnlimitedEPS(), thrusters, false, []*smd.Cargo{}, waypoints), thrust
 }
@@ -123,6 +134,7 @@ func main() {
 	for _, combin := range combinations {
 		run(combin.missionNo, combin.numThrusters)
 	}
+	wg.Wait()
 }
 
 func run(missionNo, numThrusters int) {
@@ -151,6 +163,11 @@ func run(missionNo, numThrusters int) {
 	} else {
 		fn += "-3b"
 	}
+	if opti {
+		fn += "-opti-we"
+	} else {
+		fn += "-notopti"
+	}
 	rslts := make(chan string, 10)
 	wg.Add(1)
 	go streamResults(fn, rslts)
@@ -161,9 +178,9 @@ func run(missionNo, numThrusters int) {
 	earthOrbit := smd.Earth.HelioOrbit(startDT)
 	marsOrbit := smd.Mars.HelioOrbit(startDT)
 
-	combinations := []thrusterType{pps1350, pps5000, bht1500, bht8000, hermes, vx200}
+	combinations := []thrusterType{ /*pps1350, pps5000, bht1500,*/ bht8000 /* hermes, vx200*/}
 	if missionNo == 3 {
-		combinations = []thrusterType{pps5000, bht8000, hermes, vx200}
+		combinations = []thrusterType{ /*pps5000,*/ bht8000 /*, hermes, vx200*/}
 	}
 
 	for _, thruster := range combinations {
@@ -219,13 +236,10 @@ func run(missionNo, numThrusters int) {
 			initFuel := sc.FuelMass
 			// Propagate
 			ts := 5 * time.Minute
-			export := smd.ExportConfig{}
-			if interplanetary {
-				export = smd.ExportConfig{Filename: "tang" + fn + sc.Name, AsCSV: true, Cosmo: true, Timestamp: false}
-			}
+			export := smd.ExportConfig{Filename: fn + sc.Name, AsCSV: true, Cosmo: true, Timestamp: false}
 			endDT := startDT.Add(-1)
 			if opti {
-				endDT = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+				//	endDT = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 			}
 			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Cartesian, smd.Perturbations{}, ts, export)
 			astro.Propagate()
@@ -256,7 +270,7 @@ func run(missionNo, numThrusters int) {
 				bestTOF = tof
 				bestCSV = csv
 			}
-			if interplanetary {
+			if true {
 				rslts <- csv
 				break
 			}
@@ -266,6 +280,7 @@ func run(missionNo, numThrusters int) {
 			rslts <- bestCSV
 		}
 	}
+	close(rslts)
 }
 
 func streamResults(fn string, rslts <-chan string) {
