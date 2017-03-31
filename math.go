@@ -118,3 +118,21 @@ func Rad2deg180(a float64) float64 {
 	}
 	return math.Mod(a/deg2rad, 360)
 }
+
+// DenseIdentity returns an identity matrix of type Dense and of the provided size.
+func DenseIdentity(n int) *mat64.Dense {
+	return ScaledDenseIdentity(n, 1)
+}
+
+// ScaledDenseIdentity returns an identity matrix time of type Dense a scaling factor of the provided size.
+func ScaledDenseIdentity(n int, s float64) *mat64.Dense {
+	vals := make([]float64, n*n)
+	for j := 0; j < n*n; j++ {
+		if j%(n+1) == 0 {
+			vals[j] = s
+		} else {
+			vals[j] = 0
+		}
+	}
+	return mat64.NewDense(n, n, vals)
+}

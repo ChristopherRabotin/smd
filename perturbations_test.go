@@ -14,14 +14,14 @@ func TestPertArbitrary(t *testing.T) {
 
 	pertForce := []float64{1, 2, 3, 4, 5, 6, 0}
 
-	arb := func(o Orbit, m Propagator) []float64 {
+	arb := func(o Orbit) []float64 {
 		return pertForce
 	}
 
 	perts := Perturbations{}
 	perts.Arbitrary = arb
 
-	if !floats.Equal(pertForce, perts.Perturb(o, time.Now(), GaussianVOP)) {
+	if !floats.Equal(pertForce, perts.Perturb(o, time.Now())) {
 		t.Fatal("arbitrary pertubations fail")
 	}
 
@@ -45,7 +45,7 @@ func TestPert3rdBody(t *testing.T) {
 	dt, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
 	for _, test := range testValues {
 		perts.PerturbingBody = &test.body
-		pert := perts.Perturb(o, dt, Cartesian)
+		pert := perts.Perturb(o, dt)
 		if !floats.Equal(pert, test.pert) {
 			t.Fatalf("invalid pertubations for %s\n%+v\n%v", test.body, pert, test.pert)
 		}

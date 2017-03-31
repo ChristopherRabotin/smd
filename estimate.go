@@ -107,7 +107,7 @@ func (e *OrbitEstimate) Func(t float64, f []float64) (fDot []float64) {
 	fDot[4] = bodyAcc * f[1]
 	fDot[5] = bodyAcc * f[2]
 
-	pert := e.Perts.Perturb(*orbit, e.dt, Cartesian)
+	pert := e.Perts.Perturb(*orbit, e.dt)
 	for i := 0; i < 6; i++ {
 		fDot[i] += pert[i]
 	}
