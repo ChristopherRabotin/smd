@@ -211,9 +211,9 @@ time,a,e,i,Omega,omega,nu,fuel,timeInHours,timeInDays,`, time.Now(), stateDT.UTC
 }
 
 // StreamStates streams the output of the channel to the provided file.
-func StreamStates(conf ExportConfig, stateChan <-chan (MissionState)) {
+func StreamStates(conf ExportConfig, stateChan <-chan (State)) {
 	// Read from channel
-	var prevStatePtr, firstStatePtr *MissionState
+	var prevStatePtr, firstStatePtr *State
 	var fileNo uint8
 	var f, fAsCSV *os.File
 	fileNo = 0
@@ -374,8 +374,8 @@ type ExportConfig struct {
 	Cosmo        bool
 	AsCSV        bool
 	Timestamp    bool
-	CSVAppend    func(st MissionState) string // Custom export (do not include leading comma)
-	CSVAppendHdr func() string                // Header for the custom export
+	CSVAppend    func(st State) string // Custom export (do not include leading comma)
+	CSVAppendHdr func() string         // Header for the custom export
 }
 
 // IsUseless returns whether this config doesn't actually do anything.

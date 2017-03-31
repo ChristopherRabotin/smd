@@ -241,7 +241,7 @@ func run(missionNo, numThrusters int) {
 			if opti {
 				//	endDT = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 			}
-			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Cartesian, smd.Perturbations{}, ts, export)
+			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Perturbations{}, ts, false, export)
 			astro.Propagate()
 			// Compute data.
 			tof := astro.CurrentDT.Sub(startDT).Hours() / 24

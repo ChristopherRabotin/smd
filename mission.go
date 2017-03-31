@@ -28,7 +28,7 @@ type Mission struct {
 	perts                      Perturbations
 	step                       time.Duration // time step
 	stopChan                   chan (bool)
-	histChan                   chan<- (MissionState)
+	histChan                   chan<- (State)
 	computeSTM, done, collided bool
 }
 
@@ -40,9 +40,9 @@ func NewMission(s *Spacecraft, o *Orbit, start, end time.Time, perts Perturbatio
 // NewPreciseMission returns a new Mission instance with custom provided time step.
 func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, perts Perturbations, step time.Duration, computeSTM bool, conf ExportConfig) *Mission {
 	// If no filepath is provided, then no output will be written.
-	var histChan chan (MissionState)
+	var histChan chan (State)
 	if !conf.IsUseless() {
-		histChan = make(chan (MissionState), 1000) // a 1k entry buffer
+		histChan = make(chan (State), 1000) // a 1k entry buffer
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -62,7 +62,7 @@ func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, perts Pert
 	a := &Mission{s, o, DenseIdentity(6), start, end, start, perts, step, make(chan (bool), 1), histChan, computeSTM, false, false}
 	// Write the first data point.
 	if histChan != nil {
-		histChan <- MissionState{a.CurrentDT, *s, *o}
+		histChan <- State{a.CurrentDT, *s, *o}
 	}
 
 	if end.Before(start) {
@@ -189,7 +189,7 @@ func (a *Mission) GetState() (s []float64) {
 // SetState sets the updated state.
 func (a *Mission) SetState(t float64, s []float64) {
 	if a.histChan != nil {
-		a.histChan <- MissionState{a.CurrentDT, *a.Vehicle, *a.Orbit}
+		a.histChan <- State{a.CurrentDT, *a.Vehicle, *a.Orbit}
 	}
 
 	R := []float64{s[0], s[1], s[2]}
@@ -262,8 +262,8 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	return
 }
 
-// MissionState stores propagated state.
-type MissionState struct {
+// State stores propagated state.
+type State struct {
 	DT    time.Time
 	SC    Spacecraft
 	Orbit Orbit

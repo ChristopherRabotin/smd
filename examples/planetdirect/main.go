@@ -59,7 +59,7 @@ func main() {
 	arrival := time.Date(2018, 14, 8, 0, 0, 0, 0, time.UTC) // mars arrival date
 	initOrbit := smd.Earth.HelioOrbit(depart)
 	vehicle := sc2Mars(arrival)
-	astro := smd.NewMission(vehicle, &initOrbit, depart, maxToMars, smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: "d2m", AsCSV: false, Cosmo: true, Timestamp: false})
+	astro := smd.NewMission(vehicle, &initOrbit, depart, maxToMars, smd.Perturbations{}, false, smd.ExportConfig{Filename: "d2m", AsCSV: false, Cosmo: true, Timestamp: false})
 	astro.Propagate()
 	R, V := initOrbit.RV()
 	fmt.Printf("%+v\n%+v\n", R, V)
@@ -68,6 +68,6 @@ func main() {
 	expectedArrival := astro.CurrentDT.Add(time.Duration(6*31*24) * time.Hour) // mars arrival date
 	earthDistance := smd.Earth.HelioOrbit(expectedArrival).RNorm()
 	vehicle.WayPoints = []smd.Waypoint{smd.NewReachDistance(earthDistance+smd.Earth.SOI, false, nil)}
-	astro = smd.NewMission(vehicle, &initOrbit, astro.CurrentDT, depart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: "d2e", AsCSV: false, Cosmo: true, Timestamp: false})
+	astro = smd.NewMission(vehicle, &initOrbit, astro.CurrentDT, depart.Add(-1), smd.Perturbations{}, false, smd.ExportConfig{Filename: "d2e", AsCSV: false, Cosmo: true, Timestamp: false})
 	astro.Propagate()*/
 }

@@ -39,7 +39,7 @@ func main() {
 		}
 		return hdr[:len(hdr)-1] // Remove trailing comma
 	}
-	export.CSVAppend = func(state smd.MissionState) string {
+	export.CSVAppend = func(state smd.State) string {
 		Δt := state.DT.Sub(startDT).Seconds()
 		str := fmt.Sprintf("%f,", Δt)
 		θgst := Δt * smd.EarthRotationRate
@@ -60,7 +60,7 @@ func main() {
 
 	// Generate the perturbed orbit
 	scName := "LEO"
-	smd.NewPreciseMission(smd.NewEmptySC(scName, 0), leo, startDT, endDT, smd.Cartesian, smd.Perturbations{Jn: 3}, timeStep, export).Propagate()
+	smd.NewPreciseMission(smd.NewEmptySC(scName, 0), leo, startDT, endDT, smd.Perturbations{Jn: 3}, timeStep, false, export).Propagate()
 
 	// Take care of the measurements:
 	fmt.Printf("\n[INFO] Generated %d measurements\n", len(measurements))

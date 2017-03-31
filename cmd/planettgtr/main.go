@@ -110,7 +110,7 @@ func targeter(sc *smd.Spacecraft) {
 	attempts[launchDT] = true
 	attemptsMutex.Unlock()
 	launchOrbit := initPlanet.HelioOrbit(launchDT)
-	astro := smd.NewPreciseMission(sc, &launchOrbit, launchDT, launchDT.Add(-1), smd.Cartesian, smd.Perturbations{}, missionTimeStep, smd.ExportConfig{})
+	astro := smd.NewPreciseMission(sc, &launchOrbit, launchDT, launchDT.Add(-1), smd.Perturbations{}, missionTimeStep, false, smd.ExportConfig{})
 	astro.Propagate()
 	// Let's check if we are within the SOI of the destination planet
 	scR := astro.Orbit.R()

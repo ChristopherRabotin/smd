@@ -61,7 +61,7 @@ func main() {
 			}
 			return hdr[:len(hdr)-1] // Remove trailing comma
 		}
-		export.CSVAppend = func(state smd.MissionState) string {
+		export.CSVAppend = func(state smd.State) string {
 			str := fmt.Sprintf("%f,", state.DT.Sub(startDT).Seconds())
 			θgst := state.DT.Sub(startDT).Seconds() * smd.EarthRotationRate
 			rECEF := smd.ECI2ECEF(state.Orbit.R(), θgst)
@@ -86,7 +86,7 @@ func main() {
 		}
 
 		// Generate the orbits
-		smd.NewMission(smd.NewEmptySC(tcase.name, 0), tcase.orbit, startDT, endDT, smd.Cartesian, smd.Perturbations{}, export).Propagate()
+		smd.NewMission(smd.NewEmptySC(tcase.name, 0), tcase.orbit, startDT, endDT, smd.Perturbations{}, false, export).Propagate()
 	}
 }
 

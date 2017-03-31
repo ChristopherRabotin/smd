@@ -107,7 +107,7 @@ func main() {
 			for ω := 0.0; ω < 360; ω += stepSize {
 				for ν := 0.0; ν < 360; ν += stepSize {
 					initOrbit := orbitPtr(i, Ω, ω, ν)
-					astro := smd.NewMission(sc(), initOrbit, depart, depart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{})
+					astro := smd.NewMission(sc(), initOrbit, depart, depart.Add(-1), smd.Perturbations{}, false, smd.ExportConfig{})
 					astro.Propagate()
 
 					// Run chgframe

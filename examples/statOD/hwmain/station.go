@@ -31,7 +31,7 @@ type Station struct {
 }
 
 // PerformMeasurement returns whether the SC is visible, and if so, the measurement.
-func (s Station) PerformMeasurement(θgst float64, state smd.MissionState) (bool, Measurement) {
+func (s Station) PerformMeasurement(θgst float64, state smd.State) (bool, Measurement) {
 	// The station vectors are in ECEF, so let's convert the state to ECEF.
 	rECEF := smd.ECI2ECEF(state.Orbit.R(), θgst)
 	vECEF := smd.ECI2ECEF(state.Orbit.V(), θgst)
@@ -86,7 +86,7 @@ type Measurement struct {
 	ρ, ρDot         float64 // Store the range and range rate
 	trueρ, trueρDot float64 // Store the true range and range rate
 	θgst            float64
-	State           smd.MissionState
+	State           smd.State
 	Station         Station
 }
 

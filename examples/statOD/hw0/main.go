@@ -15,12 +15,12 @@ func main() {
 	export.CSVAppendHdr = func() string {
 		return "energy,r,v,acc"
 	}
-	export.CSVAppend = func(st smd.MissionState) string {
+	export.CSVAppend = func(st smd.State) string {
 		// Energy, |r|, |v|, |acc|
 		acc := st.Orbit.VNorm() - prevV
 		prevV = st.Orbit.VNorm()
 		return fmt.Sprintf("%.15f,%.3f,%.6f,%.6f", st.Orbit.Energyξ()-ξ0, st.Orbit.RNorm(), st.Orbit.VNorm(), acc)
 	}
 	start := time.Now().UTC()
-	smd.NewMission(smd.NewEmptySC("hw", 0), osc, start, start.Add(osc.Period()*2), smd.GaussianVOP, smd.Perturbations{}, export).Propagate()
+	smd.NewMission(smd.NewEmptySC("hw", 0), osc, start, start.Add(osc.Period()*2), smd.Perturbations{}, false, export).Propagate()
 }
