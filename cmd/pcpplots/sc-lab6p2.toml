@@ -1,0 +1,16 @@
+# Example Pork Chop Plot scenario
+[General]
+fileprefix = "lab6p2toml"
+verbose = true
+
+[Arrival]
+planet = "Pluto"
+from = 2456917.5
+until = 2457517.5
+resolution = 24
+
+[Departure]
+planet = "Jupiter"
+from = 2454129.5
+until = 2454239.5
+resolution = 24

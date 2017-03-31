@@ -144,10 +144,18 @@ func (a *Mission) Stop(t float64) bool {
 	default:
 		a.CurrentDT = a.CurrentDT.Add(a.step)
 		if a.EndDT.Before(a.StartDT) {
-			// Check if any waypoint still needs to be reached.
-			for _, wp := range a.Vehicle.WayPoints {
-				if !wp.Cleared() {
-					return false
+			// A hard limit is set on a ten year propagation.
+			kill := false
+			if a.CurrentDT.After(a.StartDT.Add(24 * 3652.5 * time.Hour)) {
+				a.Vehicle.logger.Log("level", "critical", "subsys", "astro", "status", "killed")
+				kill = true
+			}
+			if !kill {
+				// Check if any waypoint still needs to be reached.
+				for _, wp := range a.Vehicle.WayPoints {
+					if !wp.Cleared() {
+						return false
+					}
 				}
 			}
 			if a.histChan != nil {

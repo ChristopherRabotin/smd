@@ -1,0 +1,16 @@
+[General]
+fileprefix = "gjoi"
+verbose = true
+c3plot = false
+
+[Departure]
+planet = "Earth"
+from = "1992-08-15 00:00:00"
+until = "1993-02-15 00:00:00"
+resolution = 1
+
+[Arrival]
+planet = "Jupiter"
+from = "1996-01-01 00:00:00"
+until = "1996-06-01 00:00:00"
+resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.

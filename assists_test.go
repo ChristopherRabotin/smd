@@ -13,8 +13,8 @@ func TestBPlane(t *testing.T) {
 	orbit := NewOrbitFromRV(rSOI, vSOI, Earth)
 	// Compute nominal values
 	initBPlane := NewBPlane(*orbit)
-	expBR := 10606.21042874
-	expBT := 45892.32379544
+	expBR := 10606.210428
+	expBT := 45892.323790
 	if !floats.EqualWithinAbs(initBPlane.BR, expBR, 1e-6) {
 		t.Fatalf("BR got: %f\nexp:%f", initBPlane.BR, expBR)
 	}
@@ -41,7 +41,7 @@ func TestGARpAngle(t *testing.T) {
 	vInf := 8.970655
 	ψ := GATurnAngle(vInf, 300, Earth)
 	rP := GARPeriapsis(vInf, ψ, Earth)
-	if !floats.EqualWithinAbs(rP, 300, 1e-12) {
+	if !floats.EqualWithinAbs(rP, 300, 1e-11) {
 		t.Fatalf("got %.12f km when expecting 300 km.", rP)
 	}
 }

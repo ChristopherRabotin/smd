@@ -1,0 +1,16 @@
+[General]
+fileprefix = "gega2"
+verbose = true
+c3plot = false
+
+[Departure]
+planet = "Earth"
+from = "1990-08-15 00:00:00"
+until = "1991-02-15 00:00:00"
+resolution = 1
+
+[Arrival]
+planet = "Earth"
+from = "1992-08-15 00:00:00"
+until = "1993-02-15 00:00:00"
+resolution = 1

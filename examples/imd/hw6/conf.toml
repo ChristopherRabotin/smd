@@ -10,3 +10,6 @@ directory = "/home/chris/go/src/github.com/ChristopherRabotin/smd/data/vsop87"
 [SPICE]
 enabled = true
 directory = "/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/refframes"
+horizonDir = "/home/chris/go/src/github.com/ChristopherRabotin/smd/data/horizon"
+horizonCSV = true
+truncation = "1m"

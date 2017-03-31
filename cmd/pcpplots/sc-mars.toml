@@ -1,0 +1,16 @@
+# Example Pork Chop Plot scenario
+[General]
+fileprefix = "marstoml"
+verbose = true
+
+[Departure]
+planet = "Earth"
+from = "2016-01-01 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
+until = "2016-06-30 00:00:00"
+resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.
+
+[Arrival]
+planet = "Mars"
+from = "2016-04-30 00:00:00"
+until = "2017-02-05 00:00:00"
+resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.

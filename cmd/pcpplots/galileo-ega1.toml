@@ -1,0 +1,16 @@
+[General]
+fileprefix = "gega1"
+verbose = true
+c3plot = false
+
+[Arrival]
+planet = "Earth"
+from = "1990-08-15 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
+until = "1991-02-15 00:00:00"
+resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.
+
+[Departure]
+planet = "Venus"
+from = "1989-12-01 00:00:00"
+until = "1990-05-01 00:00:00"
+resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.
