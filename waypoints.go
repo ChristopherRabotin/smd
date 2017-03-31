@@ -327,3 +327,44 @@ func (wp *ToHyperbolic) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, b
 func NewToHyperbolic(action *WaypointAction) *ToHyperbolic {
 	return &ToHyperbolic{action, false}
 }
+
+// CruiseToDistance is a type of waypoint which cruises until a given distance is reached from the central body.
+type CruiseToDistance struct {
+	distance         float64
+	action           *WaypointAction
+	further, cleared bool
+}
+
+// String implements the Waypoint interface.
+func (wp *CruiseToDistance) String() string {
+	return fmt.Sprintf("Cruise distance of %.1f km.", wp.distance)
+}
+
+// Cleared implements the Waypoint interface.
+func (wp *CruiseToDistance) Cleared() bool {
+	return wp.cleared
+}
+
+// ThrustDirection implements the Waypoint interface.
+func (wp *CruiseToDistance) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
+	if wp.further {
+		if o.RNorm() >= wp.distance {
+			wp.cleared = true
+		}
+		return Coast{}, wp.cleared
+	}
+	if o.RNorm() <= wp.distance {
+		wp.cleared = true
+	}
+	return Coast{}, wp.cleared
+}
+
+// Action implements the Waypoint interface.
+func (wp *CruiseToDistance) Action() *WaypointAction {
+	return wp.action
+}
+
+// NewCruiseToDistance defines a new cruising regime until a given distance is reached.
+func NewCruiseToDistance(distance float64, further bool, action *WaypointAction) *CruiseToDistance {
+	return &CruiseToDistance{distance, action, further, false}
+}
