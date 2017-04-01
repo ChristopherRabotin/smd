@@ -74,14 +74,14 @@ func TestOrbitRV2COE(t *testing.T) {
 	if !floats.EqualWithinAbs(o.Energyξ(), -5.516604, valladoε) {
 		t.Fatalf("incorrect energy ξ=%f", o.Energyξ())
 	}
-	if !floats.EqualWithinAbs(norm(o.R()), o.RNorm(), valladoε) {
-		t.Fatalf("incorrect r norm |R|=%f\tr=%f", norm(o.R()), o.RNorm())
+	if !floats.EqualWithinAbs(Norm(o.R()), o.RNorm(), valladoε) {
+		t.Fatalf("incorrect r norm |R|=%f\tr=%f", Norm(o.R()), o.RNorm())
 	}
-	if !floats.EqualWithinAbs(norm(o.V()), o.VNorm(), valladoε) {
-		t.Fatalf("incorrect v norm |V|=%f\tv=%f", norm(o.V()), o.VNorm())
+	if !floats.EqualWithinAbs(Norm(o.V()), o.VNorm(), valladoε) {
+		t.Fatalf("incorrect v norm |V|=%f\tv=%f", Norm(o.V()), o.VNorm())
 	}
-	if !floats.EqualWithinAbs(norm(o.H()), o.HNorm(), valladoε) {
-		t.Fatalf("incorrect h norm |h|=%f\th=%f", norm(o.H()), o.HNorm())
+	if !floats.EqualWithinAbs(Norm(o.H()), o.HNorm(), valladoε) {
+		t.Fatalf("incorrect h norm |h|=%f\th=%f", Norm(o.H()), o.HNorm())
 	}
 }
 
@@ -242,7 +242,7 @@ func TestOrbitΦfpa(t *testing.T) {
 			if exp < 0 {
 				exp += 360
 			}
-			if (e != 0 && sign(Φ) != sign(ν)) || !floats.EqualWithinAbs(Rad2deg(Φ), exp, angleε) {
+			if (e != 0 && Sign(Φ) != Sign(ν)) || !floats.EqualWithinAbs(Rad2deg(Φ), exp, angleε) {
 				t.Fatalf("Φ = %f (%f) != %f for e=%f with ν=%f", Rad2deg(Φ), Φ, exp, e, ν)
 			}
 		}

@@ -47,7 +47,7 @@ func (s Station) RangeElAz(rECEF []float64) (ρECEF []float64, ρ, el, az float6
 	for i := 0; i < 3; i++ {
 		ρECEF[i] = rECEF[i] - s.R[i]
 	}
-	ρ = norm(ρECEF)
+	ρ = Norm(ρECEF)
 	rSEZ := MxV33(R3(s.Longθ), ρECEF)
 	rSEZ = MxV33(R2(math.Pi/2-s.LatΦ), rSEZ)
 	el = math.Asin(rSEZ[2]/ρ) * r2d
@@ -58,7 +58,7 @@ func (s Station) RangeElAz(rECEF []float64) (ρECEF []float64, ρ, el, az float6
 // NewStation returns a new station. Angles in degrees.
 func NewStation(name string, altitude, elevation, latΦ, longθ, σρ, σρDot float64) Station {
 	R := GEO2ECEF(altitude, latΦ*d2r, longθ*d2r)
-	V := cross([]float64{0, 0, EarthRotationRate}, R)
+	V := Cross([]float64{0, 0, EarthRotationRate}, R)
 	seed := rand.New(rand.NewSource(time.Now().UnixNano()))
 	ρNoise, ok := distmv.NewNormal([]float64{0}, mat64.NewSymDense(1, []float64{σρ}), seed)
 	if !ok {

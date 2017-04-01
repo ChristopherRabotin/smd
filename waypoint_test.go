@@ -20,7 +20,7 @@ func TestLoiter(t *testing.T) {
 	if reached {
 		t.Fatal("Loiter waypoint was reached too early.")
 	}
-	if norm(dV) != 0 {
+	if Norm(dV) != 0 {
 		t.Fatal("Loiter waypoint required a velocity change.")
 	}
 	if wp.Action() != nil {
@@ -32,7 +32,7 @@ func TestLoiter(t *testing.T) {
 	if reached {
 		t.Fatal("Loiter waypoint was reached too early.")
 	}
-	if norm(dV) != 0 {
+	if Norm(dV) != 0 {
 		t.Fatal("Loiter waypoint required a velocity change.")
 	}
 	o = *NewOrbitFromRV([]float64{100, 0, 0}, []float64{0, 0, 0}, Sun)
@@ -41,7 +41,7 @@ func TestLoiter(t *testing.T) {
 	if !reached {
 		t.Fatal("Loiter waypoint was not reached as it should have been.")
 	}
-	if norm(dV) != 0 {
+	if Norm(dV) != 0 {
 		t.Fatal("Reached loiter waypoint returned a velocity change after being reached.")
 	}
 	if wp.Action() == nil {

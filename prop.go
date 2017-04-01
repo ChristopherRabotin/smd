@@ -211,13 +211,13 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 	case OptiΔiCL:
 		ctrl = func(o Orbit) []float64 {
 			_, _, _, _, ω, ν, _, _, _ := o.Elements()
-			return unitΔvFromAngles(0.0, sign(math.Cos(ω+ν))*math.Pi/2)
+			return unitΔvFromAngles(0.0, Sign(math.Cos(ω+ν))*math.Pi/2)
 		}
 		break
 	case OptiΔΩCL:
 		ctrl = func(o Orbit) []float64 {
 			_, _, _, _, ω, ν, _, _, _ := o.Elements()
-			return unitΔvFromAngles(0.0, sign(math.Sin(ω+ν))*math.Pi/2)
+			return unitΔvFromAngles(0.0, Sign(math.Sin(ω+ν))*math.Pi/2)
 		}
 		break
 	case OptiΔωCL:
@@ -236,7 +236,7 @@ func NewOptimalThrust(cl ControlLaw, reason string) ThrustControl {
 				sinν, cosν := math.Sincos(ν)
 				return unitΔvFromAngles(math.Atan2(-p*cosν, (p+o.RNorm())*sinν), 0.0)
 			}
-			return unitΔvFromAngles(0.0, sign(-math.Sin(ω+ν))*math.Cos(i)*math.Pi/2)
+			return unitΔvFromAngles(0.0, Sign(-math.Sin(ω+ν))*math.Cos(i)*math.Pi/2)
 		}
 		break
 	default:
@@ -374,19 +374,19 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				if math.Abs(δO) < dε {
 					δO = 0
 				}
-				weight = sign(δO) * math.Pow(h, 2) / (4 * math.Pow(a, 4) * math.Pow(1+e, 2))
+				weight = Sign(δO) * math.Pow(h, 2) / (4 * math.Pow(a, 4) * math.Pow(1+e, 2))
 			case OptiΔeCL:
 				δO = cl.oTgte - e
 				if math.Abs(δO) < eε {
 					δO = 0
 				}
-				weight = sign(δO) * math.Pow(h, 2) / (4 * math.Pow(p, 2))
+				weight = Sign(δO) * math.Pow(h, 2) / (4 * math.Pow(p, 2))
 			case OptiΔiCL:
 				δO = cl.oTgti - i
 				if math.Abs(δO) < aε {
 					δO = 0
 				}
-				weight = sign(δO) * math.Pow((h+e*h*math.Cos(ω+math.Asin(e*sinω)))/(p*(math.Pow(e*sinω, 2)-1)), 2)
+				weight = Sign(δO) * math.Pow((h+e*h*math.Cos(ω+math.Asin(e*sinω)))/(p*(math.Pow(e*sinω, 2)-1)), 2)
 			case OptiΔΩCL:
 				δO = cl.oTgtΩ - Ω
 				if δO > math.Pi {
@@ -396,7 +396,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				if math.Abs(δO) < aε {
 					δO = 0
 				}
-				weight = sign(δO) * math.Pow((h*math.Sin(i)*(e*math.Sin(ω+math.Asin(e*cosω))-1))/(p*(1-math.Pow(e*cosω, 2))), 2)
+				weight = Sign(δO) * math.Pow((h*math.Sin(i)*(e*math.Sin(ω+math.Asin(e*cosω))-1))/(p*(1-math.Pow(e*cosω, 2))), 2)
 			case OptiΔωCL:
 				δO = cl.oTgtω - ω
 				if δO > math.Pi {
@@ -406,7 +406,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				if math.Abs(δO) < aε {
 					δO = 0
 				}
-				weight = sign(δO) * (math.Pow(e*h, 2) / (4 * math.Pow(p, 2))) * (1 - math.Pow(e, 2)/4)
+				weight = Sign(δO) * (math.Pow(e*h, 2) / (4 * math.Pow(p, 2))) * (1 - math.Pow(e, 2)/4)
 			}
 			if δO != 0 {
 				cl.cleared = false // We're not actually done.
@@ -421,7 +421,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		panic(fmt.Errorf("control law sumation %+v not yet supported", cl.method))
 	}
 
-	return unit(thrust)
+	return Unit(thrust)
 }
 
 // HohmannΔv computes the Δv needed to go from one orbit to another, and performs an instantaneous Δv.
@@ -475,7 +475,7 @@ func (cl *HohmannΔv) Control(o Orbit) []float64 {
 			cl.status = hohmmanCoast
 			return []float64{0, 0, 0}
 		}
-		return []float64{sign(cl.ΔvInit), 0, 0}
+		return []float64{Sign(cl.ΔvInit), 0, 0}
 	case hohmmanFinalΔv:
 		if floats.EqualWithinAbs(cl.ΔvBurnInit-o.VNorm(), cl.ΔvFinal, velocityε) {
 			// We have applied enough Δv, so let's stop burning.
@@ -483,7 +483,7 @@ func (cl *HohmannΔv) Control(o Orbit) []float64 {
 			cl.ΔvBurnInit = 0 // Reset to zero after burn is completed.
 			return []float64{0, 0, 0}
 		}
-		return []float64{sign(cl.ΔvFinal), 0, 0}
+		return []float64{Sign(cl.ΔvFinal), 0, 0}
 	default:
 		panic("unreachable code")
 	}

@@ -61,7 +61,7 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time) []float64 {
 		relPertR := make([]float64, 3) // R between main body and pertubing body
 		scPert := make([]float64, 3)   // r_{i/sc} of spacecraft to pertubing body.
 		oppose := 1.
-		if norm(mainR) > norm(pertR) {
+		if Norm(mainR) > Norm(pertR) {
 			oppose = -1
 		}
 		scR := o.R()
@@ -69,8 +69,8 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time) []float64 {
 			relPertR[i] = oppose * (pertR[i] - mainR[i])
 			scPert[i] = relPertR[i] - scR[i]
 		}
-		relPertRNorm3 := math.Pow(norm(relPertR), 3)
-		scPertNorm3 := math.Pow(norm(scPert), 3)
+		relPertRNorm3 := math.Pow(Norm(relPertR), 3)
+		scPertNorm3 := math.Pow(Norm(scPert), 3)
 		for i := 0; i < 3; i++ {
 			pert[i] += p.PerturbingBody.μ * (scPert[i]/scPertNorm3 - relPertR[i]/relPertRNorm3)
 		}

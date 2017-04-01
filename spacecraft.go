@@ -79,11 +79,11 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		// We've found a waypoint which isn't reached.
 		ctrl, reached := wp.ThrustDirection(*o, dt)
 		if clType := ctrl.Type(); sc.prevCL == nil || *sc.prevCL != clType {
-			sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "thrust", clType, "reason", ctrl.Reason(), "v(km/s)", norm(o.V()), "orbit", o, "period", o.Period())
+			sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "thrust", clType, "reason", ctrl.Reason(), "v(km/s)", Norm(o.V()), "orbit", o, "period", o.Period())
 			sc.prevCL = &clType
 		}
 		if reached {
-			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp, "status", "completed", "r(km)", norm(o.R()), "v (km/s)", norm(o.V()))
+			sc.logger.Log("level", "notice", "subsys", "astro", "waypoint", wp, "status", "completed", "r(km)", Norm(o.R()), "v (km/s)", Norm(o.V()))
 			// Handle waypoint action
 			if action := wp.Action(); action != nil {
 				switch action.Type {
@@ -136,7 +136,7 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 		}
 		Δv := ctrl.Control(*o)
 		// Let's normalize the allocation.
-		if ΔvNorm := norm(Δv); ΔvNorm == 0 {
+		if ΔvNorm := Norm(Δv); ΔvNorm == 0 {
 			// Nothing to do, we're probably just loitering.
 			return []float64{0, 0, 0}, 0
 		} else if math.Abs(ΔvNorm-1) > 1e-12 {

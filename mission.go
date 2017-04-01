@@ -97,10 +97,10 @@ func (a *Mission) Propagate() {
 			a.LogStatus()
 		}
 	}()
-	vInit := norm(a.Orbit.V())
+	vInit := Norm(a.Orbit.V())
 	initFuel := a.Vehicle.FuelMass
 	ode.NewRK4(0, a.step.Seconds(), a).Solve() // Blocking.
-	vFinal := norm(a.Orbit.V())
+	vFinal := Norm(a.Orbit.V())
 	a.done = true
 	duration := a.CurrentDT.Sub(a.StartDT)
 	durStr := duration.String()

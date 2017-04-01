@@ -12,14 +12,14 @@ const (
 	rad2deg = 1 / deg2rad
 )
 
-// norm returns the norm of a given vector which is supposed to be 3x1.
-func norm(v []float64) float64 {
+// Norm returns the Norm of a given vector which is supposed to be 3x1.
+func Norm(v []float64) float64 {
 	return math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])
 }
 
-// unit returns the unit vector of a given vector.
-func unit(a []float64) (b []float64) {
-	n := norm(a)
+// Unit returns the Unit vector of a given vector.
+func Unit(a []float64) (b []float64) {
+	n := Norm(a)
 	if floats.EqualWithinAbs(n, 0, 1e-12) {
 		return []float64{0, 0, 0}
 	}
@@ -41,21 +41,21 @@ func unitVec(a *mat64.Vector) (b *mat64.Vector) {
 	return
 }
 
-// sign returns the sign of a given number.
-func sign(v float64) float64 {
+// Sign returns the Sign of a given number.
+func Sign(v float64) float64 {
 	if floats.EqualWithinAbs(v, 0, 1e-12) {
 		return 1
 	}
 	return v / math.Abs(v)
 }
 
-// dot performs the inner product via mat64/BLAS.
-func dot(a, b []float64) float64 {
+// Dot performs the inner product via mat64/BLAS.
+func Dot(a, b []float64) float64 {
 	return mat64.Dot(mat64.NewVector(len(a), a), mat64.NewVector(len(b), b))
 }
 
-// cross performs the cross product.
-func cross(a, b []float64) []float64 {
+// Cross performs the Cross product.
+func Cross(a, b []float64) []float64 {
 	return []float64{a[1]*b[2] - a[2]*b[1],
 		a[2]*b[0] - a[0]*b[2],
 		a[0]*b[1] - a[1]*b[0]} // Cross product R x V.
@@ -84,10 +84,10 @@ func Spherical2Cartesian(a []float64) (b []float64) {
 // Cartesian2Spherical returns the provided Cartesian coordinates vector in spherical.
 func Cartesian2Spherical(a []float64) (b []float64) {
 	b = make([]float64, 3)
-	if norm(a) == 0 {
+	if Norm(a) == 0 {
 		return []float64{0, 0, 0}
 	}
-	b[0] = norm(a)
+	b[0] = Norm(a)
 	b[1] = math.Acos(a[2] / b[0])
 	b[2] = math.Atan2(a[1], a[0])
 	return

@@ -37,7 +37,7 @@ func (o Orbit) Energyξ() float64 {
 
 // H returns the orbital angular momentum vector.
 func (o Orbit) H() []float64 {
-	return cross(o.RV())
+	return Cross(o.RV())
 }
 
 // HNorm returns the norm of orbital angular momentum.
@@ -139,7 +139,7 @@ func (o Orbit) R() (R []float64) {
 // RNorm returns the norm of the radius vector, but without computing the radius vector.
 // If only the norm is needed, it is encouraged to use this function instead of norm(o.R()).
 func (o Orbit) RNorm() float64 {
-	return norm(o.rVec)
+	return Norm(o.rVec)
 }
 
 // V returns the velocity vector.
@@ -150,7 +150,7 @@ func (o Orbit) V() (V []float64) {
 // VNorm returns the norm of the velocity vector, but without computing the velocity vector.
 // If only the norm is needed, it is encouraged to use this function instead of norm(o.GetV()).
 func (o Orbit) VNorm() float64 {
-	return norm(o.vVec)
+	return Norm(o.vVec)
 }
 
 // Elements returns the nine orbital elements in radians which work for circular and elliptical orbits
@@ -159,49 +159,49 @@ func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
 		return o.ccha, o.cche, o.cchi, o.cchΩ, o.cchω, o.cchν, o.cchλ, o.cchtildeω, o.cchu
 	}
 	// Algorithm from Vallado, 4th edition, page 113 (RV2COE).
-	hVec := cross(o.rVec, o.vVec)
-	n := cross([]float64{0, 0, 1}, hVec)
-	v := norm(o.vVec)
-	r := norm(o.rVec)
+	hVec := Cross(o.rVec, o.vVec)
+	n := Cross([]float64{0, 0, 1}, hVec)
+	v := Norm(o.vVec)
+	r := Norm(o.rVec)
 	ξ := (v*v)/2 - o.Origin.μ/r
 	a = -o.Origin.μ / (2 * ξ)
 	eVec := make([]float64, 3, 3)
 	for i := 0; i < 3; i++ {
-		eVec[i] = ((v*v-o.Origin.μ/r)*o.rVec[i] - dot(o.rVec, o.vVec)*o.vVec[i]) / o.Origin.μ
+		eVec[i] = ((v*v-o.Origin.μ/r)*o.rVec[i] - Dot(o.rVec, o.vVec)*o.vVec[i]) / o.Origin.μ
 	}
-	e = norm(eVec)
+	e = Norm(eVec)
 	// Prevent nil values for e
 	if e < eccentricityε {
 		e = eccentricityε
 	}
-	i = math.Acos(hVec[2] / norm(hVec))
+	i = math.Acos(hVec[2] / Norm(hVec))
 	if i < angleε {
 		i = angleε
 	}
-	ω = math.Acos(dot(n, eVec) / (norm(n) * e))
+	ω = math.Acos(Dot(n, eVec) / (Norm(n) * e))
 	if math.IsNaN(ω) {
 		ω = 0
 	}
 	if eVec[2] < 0 {
 		ω = 2*math.Pi - ω
 	}
-	Ω = math.Acos(n[0] / norm(n))
+	Ω = math.Acos(n[0] / Norm(n))
 	if math.IsNaN(Ω) {
 		Ω = angleε
 	}
 	if n[1] < 0 {
 		Ω = 2*math.Pi - Ω
 	}
-	cosν := dot(eVec, o.rVec) / (e * r)
+	cosν := Dot(eVec, o.rVec) / (e * r)
 	if abscosν := math.Abs(cosν); abscosν > 1 && floats.EqualWithinAbs(abscosν, 1, 1e-12) {
 		// Welcome to the edge case which took about 1.5 hours of my time.
-		cosν = sign(cosν) // GTFO NaN!
+		cosν = Sign(cosν) // GTFO NaN!
 	}
 	ν = math.Acos(cosν)
 	if math.IsNaN(ν) {
 		ν = 0
 	}
-	if dot(o.rVec, o.vVec) < 0 {
+	if Dot(o.rVec, o.vVec) < 0 {
 		ν = 2*math.Pi - ν
 	}
 	// Fix rounding errors.
@@ -213,7 +213,7 @@ func (o *Orbit) Elements() (a, e, i, Ω, ω, ν, λ, tildeω, u float64) {
 	tildeω = math.Mod(ω+Ω, 2*math.Pi)
 	if e < eccentricityε {
 		// Circular
-		u = math.Acos(dot(n, o.rVec) / (norm(n) * r))
+		u = math.Acos(Dot(n, o.rVec) / (Norm(n) * r))
 	} else {
 		u = math.Mod(ν+ω, 2*math.Pi)
 	}
@@ -257,7 +257,7 @@ func (o Orbit) hashValid() bool {
 // String implements the stringer interface (hence the value receiver)
 func (o Orbit) String() string {
 	a, e, i, Ω, ω, ν, λ, _, u := o.Elements()
-	return fmt.Sprintf("r=%.1f a=%.1f e=%.4f i=%.3f Ω=%.3f ω=%.3f ν=%.3f λ=%.3f u=%.3f", norm(o.rVec), a, e, Rad2deg(i), Rad2deg(Ω), Rad2deg(ω), Rad2deg(ν), Rad2deg(λ), Rad2deg(u))
+	return fmt.Sprintf("r=%.1f a=%.1f e=%.4f i=%.3f Ω=%.3f ω=%.3f ν=%.3f λ=%.3f u=%.3f", Norm(o.rVec), a, e, Rad2deg(i), Rad2deg(Ω), Rad2deg(ω), Rad2deg(ν), Rad2deg(λ), Rad2deg(u))
 }
 
 // epsilons returns the epsilons used to determine equality.
