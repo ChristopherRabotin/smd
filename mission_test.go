@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gonum/floats"
+	"github.com/gonum/matrix/mat64"
 )
 
 /* Testing here should propagate a given a orbit which is created via OEs and check that only nu changes.*/
@@ -696,5 +697,51 @@ func TestMissionSpiral(t *testing.T) {
 	exp := NewOrbitFromOE(153996645.4, 0.0472, 0.310, 290.149, 139.622, 34.434, Sun)
 	if ok, err := exp.StrictlyEquals(*astro.Orbit); !ok {
 		t.Fatalf("final orbit invalid (expected / got): %s\n%s\n%s", err, exp, astro.Orbit)
+	}
+}
+
+func TestMissionSTM(t *testing.T) {
+	// Tests that the STM is a good linearization (norm between truth and linearization less than 0.1)
+	// Also tests that the PropagateUntil and Propagate work the same way.
+	perts := Perturbations{Jn: 3}
+	startDT := time.Now().UTC()
+	endDT := startDT.Add(time.Duration(24) * time.Hour)
+	for meth := 0; meth < 2; meth++ {
+		// Define the orbits
+		leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
+		// Initialize the mission and estimates
+		mission := NewPreciseMission(NewEmptySC("LEO", 0), leoMission, startDT, endDT, perts, 1*time.Second, true, ExportConfig{})
+		stateChan := make(chan (State), 1)
+		mission.RegisterStateChan(stateChan)
+		// Run
+		iR, iV := leoMission.RV()
+		previousState := mat64.NewVector(6, nil)
+		for i := 0; i < 3; i++ {
+			previousState.SetVec(i, iR[i])
+			previousState.SetVec(i+3, iV[i])
+		}
+		if meth == 0 {
+			go mission.PropagateUntil(endDT)
+		} else {
+			go mission.Propagate()
+		}
+		numStates := 0
+		for {
+			state, more := <-stateChan
+			if !more {
+				break
+			}
+			numStates++
+			stmState := mat64.NewVector(6, nil)
+			stmState.MulVec(state.Φ, previousState)
+			stmState.SubVec(state.Vector(), stmState)
+			if mat64.Norm(stmState.T(), 2) > 0.1 {
+				t.Fatalf("Invalid estimation: norm of difference: %f", mat64.Norm(stmState.T(), 2))
+			}
+			previousState = state.Vector()
+		}
+		if numStates != 86400 {
+			t.Fatalf("expected 86400 states to be processed, got %d (failed on %d)", numStates, meth)
+		}
 	}
 }
