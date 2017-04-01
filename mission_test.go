@@ -474,13 +474,8 @@ func TestCorrectOEω(t *testing.T) {
 		end := start.Add(time.Duration(2.5*24) * time.Hour) // just after the expected time
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{})
 		astro.Propagate()
-		tol := angleε * 13
-		if meth == Naasz {
-			//XXX: I genuinely have *no* idea why, but Naasz stops before the actual target on ω.
-			tol = Deg2rad(0.115)
-		}
 		_, _, _, _, ω, _, _, _, _ := astro.Orbit.Elements()
-		if !floats.EqualWithinAbs(ω, Deg2rad(183), tol) {
+		if !floats.EqualWithinAbs(ω, Deg2rad(183), Deg2rad(0.12)) {
 			t.Logf("METHOD=%s", meth)
 			t.Logf("\noOsc: %s\noTgt: %s", astro.Orbit, oTarget)
 			t.Fatal("decreasing argument of periapsis failed")
