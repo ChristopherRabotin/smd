@@ -48,9 +48,7 @@ func main() {
 	st3 := smd.NewStation("st3", 0, 10, 35.247164, 243.205, σρ, σρDot)
 	stations := []smd.Station{st1, st2, st3}
 
-	// Vector of measurements
-	measurements := []smd.Measurement{}
-	allmeasurements := make(map[time.Time]smd.Measurement)
+	measurements := make(map[time.Time]smd.Measurement)
 	numMeasurements := 0 // Easier to count them here than to iterate the map to count.
 
 	// Define the special export functions
@@ -71,12 +69,11 @@ func main() {
 			measurement := st.PerformMeasurement(θgst, state)
 			if measurement.Visible {
 				// Sanity check
-				if _, exists := allmeasurements[state.DT]; exists {
+				if _, exists := measurements[state.DT]; exists {
 					panic(fmt.Errorf("already have a measurement for %s", state.DT))
 				}
-				allmeasurements[state.DT] = measurement
+				measurements[state.DT] = measurement
 				numMeasurements++
-				measurements = append(measurements, measurement)
 				str += measurement.CSV()
 			} else {
 				str += ",,,,"
@@ -95,7 +92,8 @@ func main() {
 	stateTruth := make([]*mat64.Vector, numMeasurements)
 	truthMeas := make([]*mat64.Vector, numMeasurements)
 	residuals := make([]*mat64.Vector, numMeasurements)
-	for measNo, measurement := range measurements {
+	measNo := 0
+	for _, measurement := range measurements {
 		orbit := make([]float64, 6)
 		R, V := measurement.State.Orbit.RV()
 		for i := 0; i < 3; i++ {
@@ -104,6 +102,7 @@ func main() {
 		}
 		stateTruth[measNo] = mat64.NewVector(6, orbit)
 		truthMeas[measNo] = measurement.StateVector()
+		measNo++
 	}
 	truth := gokalman.NewBatchGroundTruth(stateTruth, truthMeas)
 
@@ -160,6 +159,11 @@ func main() {
 	var prevStationName = ""
 	var prevDT time.Time
 	var ckfMeasNo = 0
+	// TODO: Here is where everything changes.
+	// This should be a channel reader which reads each state as it comes out.
+	// Then check whether, for the given time, there is a measurement. If not,
+	// only compute the STM and propagate the covariance, but if so,
+	// feed it to the KF for a full update.
 	for measNo, measurement := range measurements {
 		if !measurement.Visible {
 			panic("why is there a non visible measurement?!")
@@ -229,9 +233,9 @@ func main() {
 			if Δt < sncDisableTime {
 				if sncRIC {
 					// Build the RIC DCM
-					rUnit := unit(orbitEstimate.Orbit.R())
-					cUnit := unit(orbitEstimate.Orbit.H())
-					iUnit := unit(cross(rUnit, cUnit))
+					rUnit := smd.Unit(orbitEstimate.Orbit.R())
+					cUnit := smd.Unit(orbitEstimate.Orbit.H())
+					iUnit := smd.Unit(smd.Cross(rUnit, cUnit))
 					dcmVals := make([]float64, 9)
 					for i := 0; i < 3; i++ {
 						dcmVals[i] = rUnit[i]
