@@ -84,7 +84,7 @@ func (e *OrbitEstimate) Stop(t float64) bool {
 
 // State returns the latest state
 func (e *OrbitEstimate) State() State {
-	return State{e.dt, Spacecraft{}, e.Orbit}
+	return State{e.dt, Spacecraft{}, e.Orbit, nil, nil}
 }
 
 // Func does the math. Returns a new state.
