@@ -30,6 +30,7 @@ type Mission struct {
 	stopChan                   chan (bool)
 	histChans                  []chan (State)
 	computeSTM, done, collided bool
+	autoChanClosing            bool // Set to False to not automatically close the channels upon end propgation time reached.
 }
 
 // NewMission is the same as NewPreciseMission with the default step size.
@@ -47,7 +48,7 @@ func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, perts Pert
 		end = end.UTC()
 	}
 
-	a := &Mission{s, o, DenseIdentity(6), start, end, start, perts, step, make(chan (bool), 1), nil, computeSTM, false, false}
+	a := &Mission{s, o, DenseIdentity(6), start, end, start, perts, step, make(chan (bool), 1), nil, computeSTM, false, false, true}
 	// Create a main history channel if there is any exporting
 	if !conf.IsUseless() {
 		a.histChans = []chan (State){make(chan (State), 10)}
@@ -79,7 +80,8 @@ func (a *Mission) LogStatus() {
 }
 
 // PropagateUntil propagates until the given time is reached.
-func (a *Mission) PropagateUntil(dt time.Time) {
+func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
+	a.autoChanClosing = autoClose
 	a.StopDT = dt
 	a.Propagate()
 }
@@ -150,7 +152,7 @@ func (a *Mission) Stop(t float64) bool {
 			}
 			return true
 		}
-		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() > 0 {
+		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() > 0 && a.autoChanClosing {
 			for _, histChan := range a.histChans {
 				close(histChan)
 			}

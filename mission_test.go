@@ -721,7 +721,7 @@ func TestMissionSTM(t *testing.T) {
 			previousState.SetVec(i+3, iV[i])
 		}
 		if meth == 0 {
-			go mission.PropagateUntil(endDT)
+			go mission.PropagateUntil(endDT, true)
 		} else {
 			go mission.Propagate()
 		}
