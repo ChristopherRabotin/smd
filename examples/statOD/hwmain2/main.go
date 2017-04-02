@@ -182,10 +182,10 @@ func main() {
 			if perr != nil {
 				panic(fmt.Errorf("[ERR!] (#%04d)\n%s", measNo, perr))
 			}
-			stateEst := mat64.NewVector(6, nil)
-			stateEst.SubVec(est.State(), state.Vector())
-			// NOTE: Not too sure what to expect from this print.
-			fmt.Printf("[pred] (%04d) norm = %f\n", measNo, mat64.Norm(stateEst, 2))
+			/*stateEst := mat64.NewVector(6, nil)
+			stateEst.SubVec(est.State(), state.Vector())*/
+			// NOTE: The state seems to be all I need, along with Phi maybe (?) because the KF already uses the previous state?!
+			fmt.Printf("[pred] (%04d) norm = %f\n", measNo, mat64.Norm(est.State(), 2))
 			continue
 		}
 		if measNo == 0 {
@@ -276,7 +276,8 @@ func main() {
 		} else {
 			// Stream to CSV file
 			//estChan <- truth.ErrorWithOffset(measNo, est, stateEst)
-			fmt.Printf("[esti] (%04d) norm = %f\n", measNo, mat64.Norm(stateEst, 2))
+			// NOTE: The state seems to be all I need, along with Phi maybe (?) because the KF already uses the previous state?!
+			fmt.Printf("[esti] (%04d) norm = %f\n", measNo, mat64.Norm(est.State(), 2))
 		}
 		prevDT = measurement.State.DT
 

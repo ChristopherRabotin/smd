@@ -191,13 +191,6 @@ func (a *Mission) GetState() (s []float64) {
 
 // SetState sets the updated state.
 func (a *Mission) SetState(t float64, s []float64) {
-	/*pR, pV := a.Orbit.RV()
-	latestVector := mat64.NewVector(6, nil)
-	for i := 0; i < 3; i++ {
-		latestVector.SetVec(i, pR[i])
-		latestVector.SetVec(i+3, pV[i])
-	}*/
-
 	R := []float64{s[0], s[1], s[2]}
 	V := []float64{s[3], s[4], s[5]}
 	*a.Orbit = *NewOrbitFromRV(R, V, a.Orbit.Origin) // Deref is important (cd. TestMissionSpiral)
