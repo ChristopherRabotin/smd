@@ -83,6 +83,8 @@ func (a *Mission) LogStatus() {
 func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 	a.autoChanClosing = autoClose
 	a.StopDT = dt
+	// For the final propagation report says the exact prop time, we update the start date time.
+	a.StartDT = a.CurrentDT
 	a.Propagate()
 }
 
@@ -152,9 +154,11 @@ func (a *Mission) Stop(t float64) bool {
 			}
 			return true
 		}
-		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() > 0 && a.autoChanClosing {
-			for _, histChan := range a.histChans {
-				close(histChan)
+		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() > 0 {
+			if a.autoChanClosing {
+				for _, histChan := range a.histChans {
+					close(histChan)
+				}
 			}
 			return true // Stop, we've reached the end of the simulation.
 		}

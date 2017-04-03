@@ -121,7 +121,6 @@ func main() {
 	// Go-routine to advance propagation.
 	go func() {
 		for measNo, measTime := range measurementTimes {
-			// BUG: This does not seem to advance at all although the propagation does go through. I don't know why.
 			mEst.PropagateUntil(measTime, measNo == len(measurementTimes)-1)
 		}
 	}()
@@ -183,15 +182,14 @@ func main() {
 	// Now let's do the filtering.
 	for {
 		state, more := <-stateEstChan
-		if !more || measNo == len(measurementTimes)-1 {
-			// BUG: The second condition is necessary because of the previously indicated bug.
+		if !more {
 			break
 		}
 		roundedDT := state.DT.Truncate(time.Second)
 		measurement, exists := measurements[roundedDT]
 		if !exists {
 			if measNo == 0 {
-				panic("should start KF at first measurement")
+				panic(fmt.Errorf("should start KF at first measurement: \n%s (got)\n%s (exp)", roundedDT, measurementTimes[0]))
 			}
 			// There is no truth measurement here, let's only predict the KF covariance.
 			kf.Prepare(state.Φ, nil)
@@ -204,6 +202,7 @@ func main() {
 			stateEst.SubVec(est.State(), state.Vector())
 			// NOTE: The state seems to be all I need, along with Phi maybe (?) because the KF already uses the previous state?!
 			fmt.Printf("[pred] (%04d) %+v\n", measNo, mat64.Formatted(est.State().T()))
+			estChan <- truth.ErrorWithOffset(-1, est, nil)
 			continue
 		}
 
@@ -279,10 +278,10 @@ func main() {
 			}
 		}
 		est, err := kf.Update(measurement.StateVector(), computedObservation.StateVector())
-
 		if err != nil {
-			panic(fmt.Errorf("[error] %s", err))
+			panic(fmt.Errorf("[ERR!] %s", err))
 		}
+
 		prevP = est.Covariance().(*mat64.SymDense)
 		stateEst := mat64.NewVector(6, nil)
 		stateEst.AddVec(state.Vector(), est.State())
