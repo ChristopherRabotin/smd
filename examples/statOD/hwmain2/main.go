@@ -106,13 +106,14 @@ func main() {
 	// Get the first measurement as an initial orbit estimation.
 	firstDT := measurementTimes[0]
 	estOrbit := measurements[firstDT].State.Orbit
+	startDT = firstDT.Add(-10 * time.Second)
 	// TODO: Add noise to initial orbit estimate.
 
 	// Perturbations in the estimate
 	estPerts := smd.Perturbations{Jn: 2}
 
-	stateEstChan := make(chan (smd.State), 2)
-	mEst := smd.NewPreciseMission(smd.NewEmptySC(scName+"Est", 0), &estOrbit, firstDT, firstDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
+	stateEstChan := make(chan (smd.State), 1)
+	mEst := smd.NewPreciseMission(smd.NewEmptySC(scName+"Est", 0), &estOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
 	mEst.RegisterStateChan(stateEstChan)
 
 	fmt.Printf("%d number of measurements\n", len(measurementTimes))
@@ -144,7 +145,6 @@ func main() {
 	estChan := make(chan (gokalman.Estimate), 1)
 	go processEst("hybridkf", estChan)
 
-	//prevXHat := mat64.NewVector(6, nil)
 	prevP := mat64.NewSymDense(6, nil)
 	var covarDistance float64 = 50
 	var covarVelocity float64 = 1
@@ -187,7 +187,8 @@ func main() {
 			// BUG: The second condition is necessary because of the previously indicated bug.
 			break
 		}
-		measurement, exists := measurements[state.DT.Truncate(time.Second)]
+		roundedDT := state.DT.Truncate(time.Second)
+		measurement, exists := measurements[roundedDT]
 		if !exists {
 			if measNo == 0 {
 				panic("should start KF at first measurement")
@@ -204,6 +205,11 @@ func main() {
 			// NOTE: The state seems to be all I need, along with Phi maybe (?) because the KF already uses the previous state?!
 			fmt.Printf("[pred] (%04d) %+v\n", measNo, mat64.Formatted(est.State().T()))
 			continue
+		}
+
+		// Sanity check
+		if measurementTimes[measNo] != roundedDT {
+			panic(fmt.Errorf("expected time of\n%s\tgot\n%s", measurementTimes[measNo], roundedDT))
 		}
 
 		if measNo == 0 {
@@ -294,10 +300,9 @@ func main() {
 		} else {
 			// Stream to CSV file
 			estChan <- truth.ErrorWithOffset(measNo, est, state.Vector())
-			//estChan <- truth.Error(measNo, stateEst)
 			diff := mat64.NewVector(6, nil)
 			diff.SubVec(stateEst, measurement.State.Vector())
-			fmt.Printf("[diff] (%04d) %+v\n", measNo, mat64.Formatted(measurement.State.Vector().T()))
+			fmt.Printf("[diff] (%04d) %+v\n", measNo, mat64.Formatted(diff.T()))
 		}
 		prevDT = measurement.State.DT
 
@@ -313,7 +318,6 @@ func main() {
 		}
 		ckfMeasNo++
 		measNo++
-
 	} // end while true
 
 	close(estChan)
