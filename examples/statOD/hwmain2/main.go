@@ -35,7 +35,7 @@ func init() {
 func main() {
 	flag.Parse()
 	// Define the times
-	startDT := time.Now()
+	startDT := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
 	// Define the orbits
 	leo := smd.NewOrbitFromOE(7000, 0.001, 30, 80, 40, 0, smd.Earth)
@@ -106,7 +106,7 @@ func main() {
 	// Get the first measurement as an initial orbit estimation.
 	firstDT := measurementTimes[0]
 	estOrbit := measurements[firstDT].State.Orbit
-	startDT = firstDT.Add(-10 * time.Second)
+	startDT = firstDT //.Add(-10 * time.Second)
 	// TODO: Add noise to initial orbit estimate.
 
 	// Perturbations in the estimate
@@ -120,7 +120,9 @@ func main() {
 
 	// Go-routine to advance propagation.
 	go func() {
+		// TODO: Why not just propagate until the last time? The channel is populated anyway.
 		for measNo, measTime := range measurementTimes {
+			fmt.Printf("[til] %04d %s\n", measNo, measTime)
 			mEst.PropagateUntil(measTime, measNo == len(measurementTimes)-1)
 		}
 	}()
@@ -186,9 +188,11 @@ func main() {
 			break
 		}
 		roundedDT := state.DT.Truncate(time.Second)
+		fmt.Printf("%04d %s\n", measNo, roundedDT)
 		measurement, exists := measurements[roundedDT]
 		if !exists {
 			if measNo == 0 {
+				time.Sleep(time.Second)
 				panic(fmt.Errorf("should start KF at first measurement: \n%s (got)\n%s (exp)", roundedDT, measurementTimes[0]))
 			}
 			// There is no truth measurement here, let's only predict the KF covariance.
@@ -205,15 +209,16 @@ func main() {
 			estChan <- truth.ErrorWithOffset(-1, est, nil)
 			continue
 		}
-
-		// Sanity check
-		if measurementTimes[measNo] != roundedDT {
-			panic(fmt.Errorf("expected time of\n%s\tgot\n%s", measurementTimes[measNo], roundedDT))
+		if roundedDT != measurementTimes[measNo] {
+			panic(fmt.Errorf("[ERR!] %04d delta = %s", measNo, measurement.State.DT.Sub(measurementTimes[measNo])))
 		}
 
 		if measNo == 0 {
 			prevDT = measurement.State.DT
 		}
+
+		measNo++
+		fmt.Printf("[meas] %04d\n", measNo)
 
 		// Let's perform a full update since there is a measurement.
 		ΔtDuration := measurement.State.DT.Sub(prevDT)

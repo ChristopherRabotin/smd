@@ -133,7 +133,7 @@ func (a *Mission) Stop(t float64) bool {
 		}
 		return true // Stop because there is a request to stop.
 	default:
-		a.CurrentDT = a.CurrentDT.Add(a.step)
+		a.CurrentDT = a.CurrentDT.Add(a.step) // XXX: Should this be in SetState?
 		if a.StopDT.Before(a.StartDT) {
 			// A hard limit is set on a ten year propagation.
 			kill := false

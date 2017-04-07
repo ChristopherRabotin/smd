@@ -721,15 +721,36 @@ func TestMissionSTM(t *testing.T) {
 			previousState.SetVec(i+3, iV[i])
 		}
 		if meth == 0 {
-			go mission.PropagateUntil(endDT, true)
+			//go mission.PropagateUntil(endDT, true)
+			go func() {
+				curDT := startDT
+				for {
+					curDT = curDT.Add(time.Hour)
+					gonnaBreak := curDT.Equal(endDT)
+					mission.PropagateUntil(curDT, gonnaBreak)
+					if gonnaBreak {
+						break
+					}
+				}
+			}()
 		} else {
 			go mission.Propagate()
 		}
 		numStates := 0
+		prevDT := time.Now()
 		for {
 			state, more := <-stateChan
 			if !more {
 				break
+			}
+			if numStates == 0 {
+				prevDT = state.DT
+			} else {
+				if prevDT.After(state.DT) {
+					t.Fatal("expected future date")
+				} else {
+					prevDT = state.DT
+				}
 			}
 			numStates++
 			stmState := mat64.NewVector(6, nil)
