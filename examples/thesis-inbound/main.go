@@ -18,11 +18,11 @@ func main() {
 	// Find target hyperbola
 	hypDepart := estArrival.Add(time.Duration(-6*31*24) * time.Hour)
 	hypsc := OutboundHyp("hypSC")
-	hyp := smd.NewPreciseMission(hypsc, finalGTO(), hypDepart, hypDepart.Add(-1), smd.Cartesian, smd.Perturbations{}, time.Minute, smd.ExportConfig{})
+	hyp := smd.NewPreciseMission(hypsc, finalGTO(), hypDepart, hypDepart.Add(-1), smd.Perturbations{}, time.Minute, false, smd.ExportConfig{})
 	hyp.Propagate()
 
 	// Now let's grab the final hyperbolic orbit as the target.
-	inb := smd.NewPreciseMission(InboundSpacecraft("inbSC", *hyp.Orbit), InitialMarsOrbit(), baseDepart, maxPropDT, smd.Cartesian, smd.Perturbations{}, time.Minute, smd.ExportConfig{AsCSV: false, Cosmo: true, Filename: "inb"})
+	inb := smd.NewPreciseMission(InboundSpacecraft("inbSC", *hyp.Orbit), InitialMarsOrbit(), baseDepart, maxPropDT, smd.Perturbations{}, time.Minute, false, smd.ExportConfig{AsCSV: false, Cosmo: true, Filename: "inb"})
 	inb.Propagate()
 }
 

@@ -63,7 +63,7 @@ func main() {
 	ViGA2, VfJOI, _, _ := smd.Lambert(ega2R, joiR, joi.Sub(ega2), smd.TTypeAuto, smd.Sun)
 	scOrbitAtEGA2 := smd.NewOrbitFromRV(earthAtEGA2.R(), []float64{ViGA2.At(0, 0), ViGA2.At(1, 0), ViGA2.At(2, 0)}, smd.Sun)
 	// Let's propagate this spacecraft until JOI time.
-	smd.NewPreciseMission(smd.NewEmptySC("galileo", 0), scOrbitAtEGA2, ega2, joi, smd.Cartesian, smd.Perturbations{}, time.Hour, smd.ExportConfig{}).Propagate()
+	smd.NewPreciseMission(smd.NewEmptySC("galileo", 0), scOrbitAtEGA2, ega2, joi, smd.Perturbations{}, time.Hour, false, smd.ExportConfig{}).Propagate()
 	// Check how big the difference is between the Lambert expected value and the true value.
 	vJOIExp := mat64.NewVector(3, []float64{VfJOI.At(0, 0), VfJOI.At(1, 0), VfJOI.At(2, 0)})
 	vJOIGot := mat64.NewVector(3, scOrbitAtEGA2.V())

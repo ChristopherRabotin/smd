@@ -42,7 +42,7 @@ func main() {
 	depart := time.Date(2018, 11, 8, 0, 0, 0, 0, time.UTC)
 	initOrbit := initEarthOrbit(137) // max
 	//initOrbit := initEarthOrbit(188) // min
-	astro := smd.NewMission(sc(), initOrbit, depart, depart.Add(-1), smd.Cartesian, smd.Perturbations{}, smd.ExportConfig{Filename: "spiral", AsCSV: false, Cosmo: true, Timestamp: false})
+	astro := smd.NewMission(sc(), initOrbit, depart, depart.Add(-1), smd.Perturbations{}, false, smd.ExportConfig{Filename: "spiral", AsCSV: false, Cosmo: true, Timestamp: false})
 	astro.Propagate()
 	R, V := initOrbit.RV()
 	fmt.Printf("\nR = %+v\t|R| = %f AU\nV = %+v\n", R, initOrbit.RNorm()/smd.AU, V)

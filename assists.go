@@ -128,36 +128,36 @@ func (b BPlane) String() string {
 // NewBPlane returns the B-plane of a given orbit.
 func NewBPlane(o Orbit) BPlane {
 	// Some of this is quite similar to RV2COE.
-	hHat := unit(cross(o.rVec, o.vVec))
+	hHat := Unit(Cross(o.rVec, o.vVec))
 	k := []float64{0, 0, 1}
-	v := norm(o.vVec)
-	r := norm(o.rVec)
+	v := Norm(o.vVec)
+	r := Norm(o.rVec)
 	eVec := make([]float64, 3, 3)
 	for i := 0; i < 3; i++ {
-		eVec[i] = ((v*v-o.Origin.μ/r)*o.rVec[i] - dot(o.rVec, o.vVec)*o.vVec[i]) / o.Origin.μ
+		eVec[i] = ((v*v-o.Origin.μ/r)*o.rVec[i] - Dot(o.rVec, o.vVec)*o.vVec[i]) / o.Origin.μ
 	}
-	e := norm(eVec)
+	e := Norm(eVec)
 	ξ := (v*v)/2 - o.Origin.μ/r
 	a := -o.Origin.μ / (2 * ξ)
 	c := a * e
 	b := math.Sqrt(math.Pow(c, 2) - math.Pow(a, 2))
 
 	// Compute B plane frame
-	heVec := unit(cross(hHat, eVec))
+	heVec := Unit(Cross(hHat, eVec))
 	β := math.Acos(1 / e)
 	sinβ, cosβ := math.Sincos(β)
 	sHat := make([]float64, 3)
 	for i := 0; i < 3; i++ {
 		sHat[i] = cosβ*eVec[i]/e + sinβ*heVec[i]
 	}
-	tHat := unit(cross(sHat, k))
-	rHat := unit(cross(sHat, tHat))
-	bVec := cross(sHat, hHat)
+	tHat := Unit(Cross(sHat, k))
+	rHat := Unit(Cross(sHat, tHat))
+	bVec := Cross(sHat, hHat)
 	for i := 0; i < 3; i++ {
 		bVec[i] *= b
 	}
-	bT := dot(bVec, tHat)
-	bR := dot(bVec, rHat)
+	bT := Dot(bVec, tHat)
+	bR := Dot(bVec, rHat)
 	νB := math.Pi/2 - β
 	sinνB, cosνB := math.Sincos(νB)
 	νR := math.Acos((-a*(e*e-1))/(r*e) - 1/e)
@@ -184,23 +184,23 @@ func GARPeriapsis(vInf, ψ float64, body CelestialObject) float64 {
 // GAFromVinf computes gravity assist parameters about a given body from the V infinity vectors.
 // All angles are in radians!
 func GAFromVinf(vInfInVec, vInfOutVec []float64, body CelestialObject) (ψ, rP, bT, bR, B, θ float64) {
-	vInfIn := norm(vInfInVec)
-	vInfOut := norm(vInfOutVec)
-	ψ = math.Acos(dot(vInfInVec, vInfOutVec) / (vInfIn * vInfOut))
+	vInfIn := Norm(vInfInVec)
+	vInfOut := Norm(vInfOutVec)
+	ψ = math.Acos(Dot(vInfInVec, vInfOutVec) / (vInfIn * vInfOut))
 	rP = (body.μ / math.Pow(vInfIn, 2)) * (1/math.Cos((math.Pi-ψ)/2) - 1)
 	k := []float64{0, 0, 1}
-	sHat := unit(vInfInVec)
-	tHat := unit(cross(sHat, k))
-	rHat := unit(cross(sHat, tHat))
-	hHat := unit(cross(vInfInVec, vInfOutVec))
-	bVec := unit(cross(sHat, hHat))
+	sHat := Unit(vInfInVec)
+	tHat := Unit(Cross(sHat, k))
+	rHat := Unit(Cross(sHat, tHat))
+	hHat := Unit(Cross(vInfInVec, vInfOutVec))
+	bVec := Unit(Cross(sHat, hHat))
 	bVal := (body.μ / math.Pow(vInfIn, 2)) * math.Sqrt(math.Pow(1+math.Pow(vInfIn, 2)*(rP/body.μ), 2)-1)
 	for i := 0; i < 3; i++ {
 		bVec[i] *= bVal
 	}
-	bT = dot(bVec, tHat)
-	bR = dot(bVec, rHat)
-	B = norm(bVec)
+	bT = Dot(bVec, tHat)
+	bR = Dot(bVec, rHat)
+	B = Norm(bVec)
 	θ = math.Atan2(bT, bR)
 	return
 }

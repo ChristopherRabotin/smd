@@ -17,6 +17,6 @@ func main() {
 	initEarthOrbit := smd.NewOrbitFromOE(smd.Earth.Radius+400, 0, 0, 0, 10, 36, smd.Earth)
 	soiEarthOrbit := smd.NewOrbitFromOE(smd.Earth.SOI, 0, 0, 0, 0, 36, smd.Earth)
 	sc.WayPoints = []smd.Waypoint{smd.NewHohmannTransfer(*soiEarthOrbit, nil)}
-	mss := smd.NewMission(sc, initEarthOrbit, start, end, smd.GaussianVOP, smd.Perturbations{}, smd.ExportConfig{Filename: "Hoh", AsCSV: false, Cosmo: true, Timestamp: false})
+	mss := smd.NewMission(sc, initEarthOrbit, start, end, smd.Perturbations{}, false, smd.ExportConfig{Filename: "Hoh", AsCSV: false, Cosmo: true, Timestamp: false})
 	mss.Propagate()
 }

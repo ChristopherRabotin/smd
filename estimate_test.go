@@ -19,7 +19,7 @@ func TestEstimate(t *testing.T) {
 	leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 	leoEstimate := *NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 	// Initialize the mission and estimates
-	mission := NewPreciseMission(NewEmptySC("LEO", 0), leoMission, startDT, endDT, Cartesian, perts, time.Second, ExportConfig{})
+	mission := NewPreciseMission(NewEmptySC("LEO", 0), leoMission, startDT, endDT, perts, time.Second, false, ExportConfig{})
 	orbitEstimate := NewOrbitEstimate("estimator", leoEstimate, perts, startDT, time.Second)
 	// Run
 	mission.Propagate()

@@ -31,7 +31,7 @@ type Station struct {
 }
 
 // PerformMeasurement returns whether the SC is visible, and if so, the measurement.
-func (s Station) PerformMeasurement(θgst float64, state smd.MissionState) (bool, Measurement) {
+func (s Station) PerformMeasurement(θgst float64, state smd.State) (bool, Measurement) {
 	// The station vectors are in ECEF, so let's convert the state to ECEF.
 	rECEF := smd.ECI2ECEF(state.Orbit.R(), θgst)
 	vECEF := smd.ECI2ECEF(state.Orbit.V(), θgst)
@@ -86,7 +86,7 @@ type Measurement struct {
 	ρ, ρDot         float64 // Store the range and range rate
 	trueρ, trueρDot float64 // Store the true range and range rate
 	θgst            float64
-	State           smd.MissionState
+	State           smd.State
 	Station         Station
 }
 
@@ -95,23 +95,23 @@ func (m Measurement) IsNil() bool {
 	return m.ρ == m.ρDot && m.ρDot == 0
 }
 
-// StateVector returns the state vector as a mat64.Vector
-func (m Measurement) StateVector() *mat64.Vector {
+// Observation returns the state vector as a mat64.Vector
+func (m Measurement) Observation() *mat64.Vector {
 	return mat64.NewVector(2, []float64{m.ρ, m.ρDot})
 }
 
 // HTilde returns the H tilde matrix for this given measurement.
-func (m Measurement) HTilde(state smd.MissionState, θgst float64) *mat64.Dense {
-	stationR := smd.ECEF2ECI(m.Station.R, θgst)
-	stationV := smd.ECEF2ECI(m.Station.V, θgst)
+func (m Measurement) HTilde() *mat64.Dense {
+	stationR := smd.ECEF2ECI(m.Station.R, m.θgst)
+	stationV := smd.ECEF2ECI(m.Station.V, m.θgst)
 	xS := stationR[0]
 	yS := stationR[1]
 	zS := stationR[2]
 	xSDot := stationV[0]
 	ySDot := stationV[1]
 	zSDot := stationV[2]
-	R := state.Orbit.R()
-	V := state.Orbit.V()
+	R := m.State.Orbit.R()
+	V := m.State.Orbit.V()
 	x := R[0]
 	y := R[1]
 	z := R[2]
