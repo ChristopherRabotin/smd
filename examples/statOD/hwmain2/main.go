@@ -106,7 +106,7 @@ func main() {
 	// Get the first measurement as an initial orbit estimation.
 	firstDT := measurementTimes[0]
 	estOrbit := measurements[firstDT].State.Orbit
-	startDT = firstDT //.Add(-10 * time.Second)
+	startDT = firstDT.Add(-10 * time.Second)
 	// TODO: Add noise to initial orbit estimate.
 
 	// Perturbations in the estimate
@@ -119,13 +119,14 @@ func main() {
 	fmt.Printf("%d number of measurements\n", len(measurementTimes))
 
 	// Go-routine to advance propagation.
-	go func() {
+	/*go func() {
 		// TODO: Why not just propagate until the last time? The channel is populated anyway.
 		for measNo, measTime := range measurementTimes {
 			fmt.Printf("[til] %04d %s\n", measNo, measTime)
 			mEst.PropagateUntil(measTime, measNo == len(measurementTimes)-1)
 		}
-	}()
+	}()*/
+	go mEst.PropagateUntil(measurementTimes[len(measurementTimes)-1], true)
 
 	// KF filter initialization stuff.
 
