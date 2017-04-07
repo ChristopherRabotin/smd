@@ -711,7 +711,7 @@ func TestMissionSTM(t *testing.T) {
 		leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 		// Initialize the mission and estimates
 		mission := NewPreciseMission(NewEmptySC("LEO", 0), leoMission, startDT, endDT, perts, 1*time.Second, true, ExportConfig{})
-		stateChan := make(chan (State), 1)
+		stateChan := make(chan (State))
 		mission.RegisterStateChan(stateChan)
 		// Run
 		iR, iV := leoMission.RV()
@@ -721,11 +721,15 @@ func TestMissionSTM(t *testing.T) {
 			previousState.SetVec(i+3, iV[i])
 		}
 		if meth == 0 {
-			//go mission.PropagateUntil(endDT, true)
+			go mission.PropagateUntil(endDT, true)
+		} else if meth == 1 {
+			go mission.Propagate()
+		} else {
+			// BUG: This does NOT work. Don't know why yet, but I don't need just yet, so it can wait.
 			go func() {
 				curDT := startDT
 				for {
-					curDT = curDT.Add(time.Hour)
+					curDT = curDT.Add(10 * time.Second)
 					gonnaBreak := curDT.Equal(endDT)
 					mission.PropagateUntil(curDT, gonnaBreak)
 					if gonnaBreak {
@@ -733,16 +737,10 @@ func TestMissionSTM(t *testing.T) {
 					}
 				}
 			}()
-		} else {
-			go mission.Propagate()
 		}
 		numStates := 0
 		prevDT := time.Now()
-		for {
-			state, more := <-stateChan
-			if !more {
-				break
-			}
+		for state := range stateChan {
 			if numStates == 0 {
 				prevDT = state.DT
 			} else {
