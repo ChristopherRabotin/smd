@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	transitionPhiOnly = true
+	transitionPhiOnly = false
 )
 
 // OrbitEstimate is an ode.Integrable which allows to propagate an orbit via its initial estimate.
