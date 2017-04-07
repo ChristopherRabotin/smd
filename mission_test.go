@@ -706,7 +706,7 @@ func TestMissionSTM(t *testing.T) {
 	perts := Perturbations{Jn: 3}
 	startDT := time.Now().UTC()
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
-	for meth := 0; meth < 2; meth++ {
+	for meth := 0; meth < 3; meth++ {
 		// Define the orbits
 		leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 		// Initialize the mission and estimates
@@ -725,6 +725,7 @@ func TestMissionSTM(t *testing.T) {
 		} else if meth == 1 {
 			go mission.Propagate()
 		} else {
+			t.Skip("Multiple calls to PropagateUntil fails, cf. issue #104")
 			// BUG: This does NOT work. Don't know why yet, but I don't need just yet, so it can wait.
 			go func() {
 				curDT := startDT
