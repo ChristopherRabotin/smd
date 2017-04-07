@@ -191,7 +191,6 @@ func main() {
 								maxRp = rp
 							}
 							if rp < minRp {
-								//fmt.Printf("rP = %.2f * Jupiter radius (%.3f km)\t%+v\t%+v\n", rp/smd.Jupiter.Radius, rp, vInfIn, vInfOut)
 								continue
 							}
 						}

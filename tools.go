@@ -232,7 +232,7 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 }
 
 // PCPGenerator generates the PCP files to perform contour plots in Matlab (and eventually prints the command).
-func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, plotC3 bool, pcpName string, verbose bool) (c3Map, tofMap, vinfMap map[time.Time][]float64, vInfInitVecs, vInfArriVecs map[time.Time][]mat64.Vector) {
+func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, plotC3 bool, verbose bool) (c3Map, tofMap, vinfMap map[time.Time][]float64, vInfInitVecs, vInfArriVecs map[time.Time][]mat64.Vector) {
 	launchWindow := int(maxLaunch.Sub(initLaunch).Hours() / 24)    //days
 	arrivalWindow := int(maxArrival.Sub(initArrival).Hours() / 24) //days
 	// Create the output arrays
@@ -254,6 +254,7 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 	} else {
 		fNames = []string{"vinf-init", "tof", "vinf-arrival", "dates"}
 	}
+	pcpName := fmt.Sprintf("%s-to-%s", initPlanet.Name, arrivalPlanet.Name)
 	for i, name := range fNames {
 		// Write CSV file.
 		f, err := os.Create(fmt.Sprintf("./contour-%s-%s.dat", pcpName, name))
