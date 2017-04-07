@@ -75,6 +75,11 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 					panic(fmt.Errorf("error running horizon: %s \ncheck that you are in the Python virtual environment", err))
 				}
 				log.Println("[OK]")
+				// Load the file again and totally fail if issue.
+				file, err = os.Open(fmt.Sprintf("%s/%s.csv", conf.HorizonDir, ephemeride))
+				if err != nil {
+					log.Fatalf("could not open file after generation: %s", err)
+				}
 			}
 			defer file.Close()
 			scanner := bufio.NewScanner(file)
@@ -105,7 +110,7 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 			}
 
 			if err := scanner.Err(); err != nil {
-				panic(err)
+				log.Fatalf("[smd:error] %s when loading %s", err, ephemeride)
 			}
 			fmt.Printf("[smd:info] %s loaded in %s\n", ephemeride, time.Now().Sub(loadingProfileDT))
 		}

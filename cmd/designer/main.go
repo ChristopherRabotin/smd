@@ -2,8 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"math"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -19,17 +21,20 @@ const (
 
 var (
 	scenario               string
+	numCPUs                int
 	initLaunch, maxArrival time.Time
 	periapsisRadii         []float64
 	planets                []smd.CelestialObject
 	maxDeltaVs             []float64
 	maxC3, maxVinfArrival  float64
+	cpuChan                chan (bool)
 	rsltChan               chan (Result)
 )
 
 func init() {
 	// Read flags
 	flag.StringVar(&scenario, "scenario", defaultScenario, "designer scenario TOML file")
+	flag.IntVar(&numCPUs, "cpus", -1, "number of CPUs to use for after first finding (set to 0 for max CPUs)")
 }
 
 func main() {
@@ -38,6 +43,14 @@ func main() {
 	if scenario == defaultScenario {
 		log.Fatal("no scenario provided and no finder set")
 	}
+	availableCPUs := runtime.NumCPU()
+	if numCPUs <= 0 || numCPUs > availableCPUs {
+		numCPUs = availableCPUs
+	}
+	runtime.GOMAXPROCS(numCPUs)
+	fmt.Printf("running on %d CPUs\n", numCPUs)
+
+	cpuChan = make(chan (bool), numCPUs)
 	// Load scenario
 	viper.AddConfigPath(".")
 	viper.SetConfigName(scenario)
@@ -151,7 +164,10 @@ func main() {
 	// Let's do the magic.
 	// Always leave Earth.
 	// NOTE: This is a VERY broad sweep.
-	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(smd.Earth, planets[0], initLaunch, maxArrival, initLaunch, maxArrival, 1, 1, true, true)
+	if verbose {
+		log.Printf("[info] searching for %s -> %s", smd.Earth.Name, planets[0].Name)
+	}
+	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(smd.Earth, planets[0], initLaunch, maxArrival, initLaunch, maxArrival, 1, 1, true, false)
 	for launchDT, c3PerDay := range c3Map {
 		for arrivalIdx, c3 := range c3PerDay {
 			if c3 > maxC3 {
@@ -162,18 +178,20 @@ func main() {
 			if arrivalDT.After(maxArrival) {
 				continue
 			}
-			// This seems to work.
+			// Fulfills the launch requirements.
 			vInfIn := []float64{vInfArriVecs[launchDT][arrivalIdx].At(0, 0), vInfArriVecs[launchDT][arrivalIdx].At(1, 0), vInfArriVecs[launchDT][arrivalIdx].At(2, 0)}
 			prevResult := NewResult(launchDT, c3, len(planets)-1)
-			GAPCP(launchDT, 0, vInfIn, prevResult)
+			cpuChan <- true
+			go GAPCP(launchDT, 0, vInfIn, prevResult)
 		}
 	}
 }
 
 // GAPCP performs the recursion.
 func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result) {
-	isLastPlanet := planetNo == len(planets)-1
-	vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(smd.Jupiter, smd.Pluto, launchDT, launchDT.Add(24*time.Hour), launchDT, maxArrival, 1, 1, false, false)
+	isLastPlanet := planetNo == len(planets)-2
+	log.Printf("[info] searching for %s -> %s", planets[planetNo].Name, planets[planetNo+1].Name)
+	vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(planets[planetNo], planets[planetNo+1], launchDT, launchDT.Add(24*time.Hour), launchDT, maxArrival, 1, 1, false, false)
 	// Go through solutions and move on with values which are within the constraints.
 	vInfInNorm := smd.Norm(vInfIn)
 	minRp := periapsisRadii[planetNo]
@@ -199,13 +217,15 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 						result.arrival = arrivalDT
 						result.vInf = vinfArr
 						rsltChan <- result
+						// All done, let's free that CPU
+						<-cpuChan
 					}
 				} else {
 					result := prevResult.Clone()
 					result.flybys = append(result.flybys, GAResult{arrivalDT, flybyDV, rp})
 					// Recursion
 					vInfInNext := []float64{vInfNextInVecs[depDT][arrIdx].At(0, 0), vInfNextInVecs[depDT][arrIdx].At(1, 0), vInfNextInVecs[depDT][arrIdx].At(2, 0)}
-					GAPCP(launchDT, planetNo+1, vInfInNext, result)
+					GAPCP(arrivalDT, planetNo+1, vInfInNext, result)
 				}
 			}
 		}
