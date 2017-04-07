@@ -170,8 +170,8 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	var Δt, y float64
 	var iteration uint
 	for math.Abs(Δt-Δt0Sec) > lambertTlambertε {
-		if iteration > 10000 {
-			err = errors.New("did not converge after 10000 iterations")
+		if iteration > 1000 {
+			err = errors.New("did not converge after 1000 iterations")
 			return
 		}
 		iteration++
@@ -181,8 +181,8 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 			for y < 0 {
 				φ += 0.1
 				y = rI + rF + A*(φ*c3-1)/math.Sqrt(c2)
-				if tmpIt > 10000 {
-					err = errors.New("did not converge after 10000 attempts to increase φ")
+				if tmpIt > 500 {
+					err = errors.New("did not converge after 500 attempts to increase φ")
 					return
 				}
 				tmpIt++
@@ -296,6 +296,10 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 		arrivalIdx := 0
 		for arrivalDay := 0.; arrivalDay < float64(arrivalWindow); arrivalDay += 1 / ptsPerArrivalDay {
 			arrivalDT := initArrival.Add(time.Duration(arrivalDay*24) * time.Hour)
+			// Check if this is anachronologic, and if so, skip.
+			if arrivalDT.Before(launchDT) {
+				continue
+			}
 			arrivalOrbit := arrivalPlanet.HelioOrbit(arrivalDT)
 			arrivalR := mat64.NewVector(3, arrivalOrbit.R())
 			arrivalV := mat64.NewVector(3, arrivalOrbit.V())

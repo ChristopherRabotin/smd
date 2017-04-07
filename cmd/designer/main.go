@@ -182,7 +182,7 @@ func main() {
 			vInfIn := []float64{vInfArriVecs[launchDT][arrivalIdx].At(0, 0), vInfArriVecs[launchDT][arrivalIdx].At(1, 0), vInfArriVecs[launchDT][arrivalIdx].At(2, 0)}
 			prevResult := NewResult(launchDT, c3, len(planets)-1)
 			cpuChan <- true
-			go GAPCP(launchDT, 0, vInfIn, prevResult)
+			go GAPCP(arrivalDT, 0, vInfIn, prevResult)
 		}
 	}
 }
