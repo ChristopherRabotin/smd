@@ -67,7 +67,14 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 			loadingProfileDT := time.Now()
 			file, err := os.Open(fmt.Sprintf("%s/%s.csv", conf.HorizonDir, ephemeride))
 			if err != nil {
-				log.Fatal(err)
+				log.Printf("%s\nGenerating it now...", err)
+				// Generate it.
+				cmd := exec.Command("python3", conf.SPICEDir+"/horizon.py", "-p", planet, "-y", fmt.Sprintf("%d", epoch.Year()), "-r", "1m")
+				_, err := cmd.Output()
+				if err != nil {
+					panic(fmt.Errorf("error running horizon: %s \ncheck that you are in the Python virtual environment", err))
+				}
+				log.Println("[OK]")
 			}
 			defer file.Close()
 			scanner := bufio.NewScanner(file)
