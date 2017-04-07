@@ -1,0 +1,12 @@
+[General]
+fileprefix = "gvga"
+verbose = true
+from = "2020-01-01 00:00:00"
+until = "2040-01-01 00:00:00"
+step = "24h" # Time step, must be in time.Duration format
+planets = "Venus Mars Earth Earth Saturn Uranus"
+
+[DepartureConstraints]
+c3 = 35 # Max c3 allowed
+[ArrivalConstraints]
+vInf = 10 # Max v infinity at destination

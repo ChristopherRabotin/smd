@@ -74,7 +74,7 @@ func main() {
 				log.Fatal("could not read Arrival.from")
 			}
 		} else {
-			initLaunch = julian.JDToTime(initArrivalJD)
+			initArrival = julian.JDToTime(initArrivalJD)
 		}
 		maxLaunchJD := viper.GetFloat64("Departure.until")
 		if initLaunchJD == 0 {
