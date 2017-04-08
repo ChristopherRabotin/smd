@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
-	"github.com/gonum/matrix/mat64"
 	"github.com/soniakeys/meeus/julian"
 	"github.com/spf13/viper"
 )
@@ -211,11 +210,6 @@ func main() {
 				continue
 			}
 			// Fulfills the launch requirements.
-			rVec, _ := vInfArriVecs[launchDT][arrivalIdx].Dims()
-			if rVec == 0 {
-				log.Printf("WTF?! [%s][%d] arrival vector is empty?!\n%+v", launchDT, arrivalIdx, mat64.Formatted(&vInfArriVecs[launchDT][arrivalIdx]))
-				continue
-			}
 			vInfIn := []float64{vInfArriVecs[launchDT][arrivalIdx].At(0, 0), vInfArriVecs[launchDT][arrivalIdx].At(1, 0), vInfArriVecs[launchDT][arrivalIdx].At(2, 0)}
 			prevResult := NewResult(launchDT, c3, len(planets)-1)
 			cpuChan <- true
@@ -227,7 +221,7 @@ func main() {
 // GAPCP performs the recursion.
 func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result) {
 	isLastPlanet := planetNo == len(planets)-2
-	log.Printf("[info] searching for %s -> %s", planets[planetNo].Name, planets[planetNo+1].Name)
+	log.Printf("[info] searching for %s -> %s (last = %v)", planets[planetNo].Name, planets[planetNo+1].Name, isLastPlanet)
 	vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(planets[planetNo], planets[planetNo+1], launchDT, launchDT.Add(24*time.Hour), launchDT, maxArrival, 1, 1, false, false, false)
 	// Go through solutions and move on with values which are within the constraints.
 	vInfInNorm := smd.Norm(vInfIn)
@@ -237,7 +231,6 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 		for arrIdx, vInfDep := range vInfDepPerDay {
 			flybyDV := math.Abs(vInfInNorm - vInfDep)
 			if flybyDV < maxDV {
-				log.Println("[debug] valid delta-V")
 				// Check if the rP is okay
 				vInfOut := []float64{vinfMapVecs[depDT][arrIdx].At(0, 0), vinfMapVecs[depDT][arrIdx].At(1, 0), vinfMapVecs[depDT][arrIdx].At(2, 0)}
 				_, rp, _, _, _, _ := smd.GAFromVinf(vInfIn, vInfOut, smd.Jupiter)
@@ -248,7 +241,6 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 				TOF := tofMap[depDT][arrIdx]
 				arrivalDT := launchDT.Add(time.Duration(TOF*24) * time.Hour)
 				if isLastPlanet {
-					log.Println("[debug] IS last planet")
 					vinfArr := vinfArr[depDT][arrIdx]
 					if vinfArr < maxVinfArrival {
 						log.Println("[debug] valid traj!")
@@ -262,7 +254,6 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 					// All done, let's free that CPU
 					<-cpuChan
 				} else {
-					log.Println("[debug] not last planet")
 					result := prevResult.Clone()
 					result.flybys = append(result.flybys, GAResult{arrivalDT, flybyDV, rp})
 					// Recursion
@@ -270,7 +261,7 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 					GAPCP(arrivalDT, planetNo+1, vInfInNext, result)
 				}
 			} else {
-				// Won't go anywhere, let's move onto another date.
+				// Won't go anywhere, let's move onto another date. and clear queue if needed.
 				select {
 				case <-cpuChan:
 					continue

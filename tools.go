@@ -314,8 +314,8 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 				if verbose {
 					fmt.Printf("departure: %s\tarrival: %s\t\t%s\n", launchDT, arrivalDT, err)
 				}
-				c3 = math.NaN()
-				vInfArrival = math.NaN()
+				c3 = math.Inf(1)
+				vInfArrival = math.Inf(1)
 				// Store a nil vector to not loose track of indexing
 				vInfInitVecs[launchDT][arrivalIdx] = *mat64.NewVector(3, nil)
 				vInfArriVecs[launchDT][arrivalIdx] = *mat64.NewVector(3, nil)
@@ -329,7 +329,7 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 				} else {
 					c3 = mat64.Norm(VInfInit, 2)
 				}
-				if math.IsNaN(c3) {
+				if math.IsInf(c3, 1) {
 					c3 = 0
 				}
 				// Compute the v_infinity at destination
