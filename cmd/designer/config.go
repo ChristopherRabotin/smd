@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
@@ -54,9 +53,17 @@ func (f Flyby) String() string {
 func readAllFlybys(minDT, maxDT time.Time) []Flyby {
 	tmpFlybys := make([]Flyby, 20) // Unlikely to be more than 20.
 	flybycount := 0
+	prevPlanets := make(map[string]int)
 	for _, planetName := range viper.GetStringSlice("general.flybyplanets") {
+		num, isResonance := prevPlanets[planetName]
 		key := fmt.Sprintf("flyby.%s", planetName)
-		planet, perr := smd.CelestialObjectFromString(strings.Replace(key, "flyby.", "", 1))
+		if isResonance {
+			key = fmt.Sprintf("flyby.%s.%d", planetName, num+1)
+			prevPlanets[planetName]++
+		} else {
+			prevPlanets[planetName] = 0
+		}
+		planet, perr := smd.CelestialObjectFromString(planetName)
 		if perr != nil {
 			log.Fatalf("could not understand planet in `%s`", key)
 		}

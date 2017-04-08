@@ -1,14 +1,31 @@
-[General]
-fileprefix = "demo"
+[general]
+fileprefix = "veej"
 verbose = true
-from = "2020-01-01 00:00:00"
-until = "2030-01-01 00:00:00"
 step = "24h"
-planets = "Venus Earth Earth Jupiter"
-periRFactor = "1.05 1.05 1.05 4.0" # Factor of minimum periapsis radii based on the radius of the planet
-maxDeltaV = "1.0 1.0 1.0 1.0" # Maximum delta-V allowed per passage.
+flybyplanets = "Venus Earth Earth"
 
-[DepartureConstraints]
-c3 = 10 # Max c3 allowed
-[ArrivalConstraints]
-vInf = 6 # Max v infinity at destination
+[launch]
+planet = "Earth"
+from = "2020-01-09 00:00:00"
+until = "2021-01-01 00:00:00"
+maxC3 = 18 # Max c3 allowed
+
+[arrival]
+planet = "Jupiter"
+until = "2030-01-01 00:00:00"
+maxVinf = 6
+
+[flyby.Venus]
+position = 1
+deltaV = 1.0
+periapsis = 1.1
+
+[flyby.Earth]
+position = 2
+deltaV = 1.0
+periapsis = 1.1
+
+[flyby.Earth.1]
+position = 3
+deltaV = 1.0
+periapsis = 1.1

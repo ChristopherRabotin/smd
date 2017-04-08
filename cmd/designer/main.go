@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"math"
 	"os"
@@ -18,16 +17,16 @@ import (
 const (
 	defaultScenario = "~~unset~~"
 	dateTimeFormat  = "2006-01-02 15:04:05"
-	ultraDebug      = true
 )
 
 var (
-	scenario string
-	numCPUs  int
-	arrival  Arrival
-	flybys   []Flyby
-	cpuChan  chan (bool)
-	rsltChan chan (Result)
+	scenario   string
+	numCPUs    int
+	ultraDebug bool
+	arrival    Arrival
+	flybys     []Flyby
+	cpuChan    chan (bool)
+	rsltChan   chan (Result)
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
@@ -37,6 +36,7 @@ func init() {
 	// Read flags
 	flag.StringVar(&scenario, "scenario", defaultScenario, "designer scenario TOML file")
 	flag.IntVar(&numCPUs, "cpus", -1, "number of CPUs to use for after first finding (set to 0 for max CPUs)")
+	flag.BoolVar(&ultraDebug, "debug", false, "debug everything (really verbose)")
 }
 
 func main() {
@@ -60,7 +60,7 @@ func main() {
 		numCPUs = availableCPUs
 	}
 	runtime.GOMAXPROCS(numCPUs)
-	fmt.Printf("running on %d CPUs\n", numCPUs)
+	log.Printf("[info] running on %d CPUs\n", numCPUs)
 
 	cpuChan = make(chan (bool), numCPUs)
 	// Load scenario
@@ -68,7 +68,7 @@ func main() {
 	viper.SetConfigName(scenario)
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Fatalf("./%s.toml not found", scenario)
+		log.Fatalf("./%s.toml: Error %s", scenario, err)
 	}
 	// Read scenario
 	prefix := viper.GetString("general.fileprefix")
