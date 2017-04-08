@@ -8,12 +8,10 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
-	"github.com/soniakeys/meeus/julian"
 	"github.com/spf13/viper"
 )
 
@@ -76,104 +74,20 @@ func main() {
 		log.Fatalf("./%s.toml not found", scenario)
 	}
 	// Read scenario
-	prefix := viper.GetString("General.fileprefix")
-	verbose := viper.GetBool("General.verbose")
+	prefix := viper.GetString("general.fileprefix")
+	verbose := viper.GetBool("general.verbose")
 	if verbose {
-		log.Printf("[info] file prefix: %s\n", prefix)
+		log.Printf("[conf] file prefix: %s\n", prefix)
 	}
-	timeStepStr := viper.GetString("General.step")
-	timeStep, durErr := time.ParseDuration(timeStepStr)
-	if durErr != nil {
-		log.Fatalf("could not understand `step`: %s", durErr)
-	}
+	timeStep := viper.GetDuration("general.step")
 	if verbose {
-		log.Printf("[info] time step: %s\n", timeStep)
+		log.Printf("[conf] time step: %s\n", timeStep)
 	}
-	// Date time information
-	var perr error
-	initLaunchJD := viper.GetFloat64("General.from")
-	if initLaunchJD == 0 {
-		initLaunch, perr = time.Parse(dateTimeFormat, viper.GetString("General.from"))
-		if perr != nil {
-			log.Fatalf("could not understand `from`: %s", perr)
-		}
-	} else {
-		initLaunch = julian.JDToTime(initLaunchJD)
-	}
-	if verbose {
-		log.Printf("[info] init launch: %s\n", initLaunch)
-	}
-	maxArrivalJD := viper.GetFloat64("General.until")
-	if maxArrivalJD == 0 {
-		maxArrival, perr = time.Parse(dateTimeFormat, viper.GetString("General.until"))
-		if perr != nil {
-			log.Fatalf("could not understand `until`: %s", perr)
-		}
-	} else {
-		maxArrival = julian.JDToTime(maxArrivalJD)
-	}
-	if verbose {
-		log.Printf("[info] max arrival: %s\n", maxArrival)
-	}
-	// Read all the planets.
-	planetSlice := viper.GetStringSlice("General.planets")
-	planets = make([]smd.CelestialObject, len(planetSlice))
-	periapsisRadii = make([]float64, len(planetSlice))
-	maxDeltaVs = make([]float64, len(planetSlice))
-	for pNo, planetStr := range planetSlice {
-		planet, err := smd.CelestialObjectFromString(planetStr)
-		if err != nil {
-			log.Fatalf("could not read planet #%d: %s", pNo, err)
-		}
-		planets[pNo] = planet
-	}
-	// Read and compute the radii constraints
-	for pNo, periRfactorStr := range viper.GetStringSlice("General.periRFactor") {
-		periRfactor, err := strconv.ParseFloat(periRfactorStr, 64)
-		if err != nil {
-			log.Fatalf("could not read radius periapsis factor #%d: %s", pNo, err)
-		}
-		periapsisRadii[pNo] = periRfactor * planets[pNo].Radius
-	}
-	// Read the deltaV constraints
-	for pNo, deltaVStr := range viper.GetStringSlice("General.maxDeltaV") {
-		deltaV, err := strconv.ParseFloat(deltaVStr, 64)
-		if err != nil {
-			log.Fatalf("could not read maximum deltaV #%d: %s", pNo, err)
-		}
-		maxDeltaVs[pNo] = deltaV
-	}
-	// Now summarize the planet passages
-	if verbose {
-		for pNo, planet := range planets {
-			if pNo != len(planets)-1 {
-				log.Printf("[info] #%d: %s\trP: %f km\tdeltaV: %f km/s\n", pNo, planet.Name, periapsisRadii[pNo], maxDeltaVs[pNo])
-			} else {
-				log.Printf("[info] #%d: %s (destination)\n", pNo, planet.Name)
-			}
-		}
-	}
-	// Read departure/arrival constraints.
-	if viper.IsSet("DepartureConstraints.c3") {
-		maxC3 = viper.GetFloat64("DepartureConstraints.c3")
-	}
-	if verbose {
-		if maxC3 > 0 {
-			log.Printf("[info] max c3: %f km^2/s^2\n", maxC3)
-		} else {
-			log.Println("[warn] no max c3 set")
-		}
-	}
-	if viper.IsSet("ArrivalConstraints.vInf") {
-		maxVinfArrival = viper.GetFloat64("ArrivalConstraints.vInf")
-	}
-	if verbose {
-		if maxVinfArrival > 0 {
-			log.Printf("[info] max vInf: %f km/s\n", maxVinfArrival)
-		} else {
-			log.Println("[warn] no max vInf set")
-		}
-	}
+
+	launch := readLaunchArrival(true)
+	arrival := readLaunchArrival(false)
+	flybys := readAllFlybys()
+
 	// Starting the streamer
 	rsltChan = make(chan (Result), 10) // Buffered to not loose any data.
 	go StreamResults(prefix, planets, rsltChan)
@@ -237,7 +151,7 @@ func main() {
 // GAPCP performs the recursion.
 func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result) {
 	isLastPlanet := planetNo == len(planets)-1
-	log.Printf("[info] searching for %s -> %s (last = %v)", planets[planetNo].Name, planets[planetNo+1].Name, isLastPlanet)
+	log.Printf("[conf] searching for %s -> %s (last = %v)", planets[planetNo].Name, planets[planetNo+1].Name, isLastPlanet)
 	vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(planets[planetNo], planets[planetNo+1], launchDT, launchDT.Add(24*time.Hour), launchDT, maxArrival, 1, 1, false, false, false)
 	// Go through solutions and move on with values which are within the constraints.
 	vInfInNorm := smd.Norm(vInfIn)

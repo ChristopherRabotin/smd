@@ -1,14 +1,24 @@
-[General]
+[general]
 fileprefix = "nh"
 verbose = true
-from = "2006-01-09 00:00:00"
-until = 2457517.5
 step = "24h"
-planets = "Jupiter Pluto"
-periRFactor = "4.0 10" # Factor of minimum periapsis radii based on the radius of the planet
-maxDeltaV = "3.0 3.0" # Maximum delta-V allowed per passage.
 
-[DepartureConstraints]
+[launch]
+planet = "Earth"
+from = "2006-01-09 00:00:00"
+until = "2006-01-10 00:00:00"
 c3 = 180 # Max c3 allowed
-[ArrivalConstraints]
-vInf = 14.5 # Max v infinity at destination
+
+[arrival]
+planet = "Pluto"
+from = 2456917.5
+until = 2457517.5
+maxVinf = 14.5
+
+[flyby]
+[flyby.Jupiter]
+position = 1
+from = 2454129.5
+until = 2454239.5
+deltaV = 0.4
+periapsis = 30.0
