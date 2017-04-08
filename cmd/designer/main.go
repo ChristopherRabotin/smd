@@ -175,6 +175,13 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 		maxArrival = next.until
 	}
 	log.Printf("[info] searching for %s -> %s (last? %v)", fromPlanet.Name, toPlanet.Name, isLastPlanet)
+	// Semi-smart memory allocation to avoid too much allocation.
+	if minArrival.Before(launchDT) {
+		minArrival = launchDT
+	}
+	if maxArrival.Before(launchDT) {
+		maxArrival = launchDT
+	}
 	vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 1, 1, false, false, false)
 	// Go through solutions and move on with values which are within the constraints.
 	vInfInNorm := smd.Norm(vInfIn)
