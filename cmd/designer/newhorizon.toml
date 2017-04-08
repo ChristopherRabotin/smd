@@ -8,7 +8,7 @@ flybyplanets = "Jupiter"
 planet = "Earth"
 from = "2006-01-09 00:00:00"
 until = "2006-01-10 00:00:00"
-c3 = 180 # Max c3 allowed
+maxC3 = 180 # Max c3 allowed
 
 [arrival]
 planet = "Pluto"

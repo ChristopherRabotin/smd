@@ -22,15 +22,12 @@ const (
 )
 
 var (
-	scenario               string
-	numCPUs                int
-	initLaunch, maxArrival time.Time
-	periapsisRadii         []float64
-	planets                []smd.CelestialObject
-	maxDeltaVs             []float64
-	maxC3, maxVinfArrival  float64
-	cpuChan                chan (bool)
-	rsltChan               chan (Result)
+	scenario string
+	numCPUs  int
+	arrival  Arrival
+	flybys   []Flyby
+	cpuChan  chan (bool)
+	rsltChan chan (Result)
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
@@ -85,8 +82,8 @@ func main() {
 	}
 
 	launch := readLaunch()
-	arrival := readArrival()
-	flybys := readAllFlybys(launch.from, arrival.until)
+	arrival = readArrival()
+	flybys = readAllFlybys(launch.from, arrival.until)
 
 	if verbose {
 		log.Printf("[conf] Launch: %s", launch)
@@ -98,13 +95,18 @@ func main() {
 
 	// Starting the streamer
 	rsltChan = make(chan (Result), 10) // Buffered to not loose any data.
+	planets := make([]smd.CelestialObject, len(flybys)+1)
+	for i, fb := range flybys {
+		planets[i] = fb.planet
+	}
+	planets[len(flybys)] = arrival.planet
 	go StreamResults(prefix, planets, rsltChan)
 
 	// Let's do the magic.
 	if verbose {
 		log.Printf("[info] searching for %s -> %s", launch.planet.Name, flybys[0].planet.Name)
 	}
-	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(launch.planet, flybys[0].planet, launch.from, launch.until, flybys[0].from, flybys[0].until, 1, 1, true, false, false)
+	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(launch.planet, flybys[0].planet, launch.from, launch.until, flybys[0].from, flybys[0].until, 1, 1, true, ultraDebug, false)
 	/*for initLaunch.Before(maxArrival) {
 		smd.FreeEphemeralData(smd.Earth, initLaunch.Year())
 		smd.FreeEphemeralData(planets[0], initLaunch.Year())
@@ -124,7 +126,7 @@ func main() {
 	}
 	for launchDT, c3PerDay := range c3Map {
 		for arrivalIdx, c3 := range c3PerDay {
-			if c3 > maxC3 || c3 == 0 {
+			if c3 > launch.maxC3 || c3 == 0 {
 				if ultraDebug {
 					log.Printf("[debug] c3 not good (%f)", c3)
 				}
@@ -132,7 +134,7 @@ func main() {
 			}
 			arrivalTOF := tofMap[launchDT][arrivalIdx]
 			arrivalDT := launchDT.Add(time.Duration(arrivalTOF*24) * time.Hour)
-			if arrivalDT.After(maxArrival) {
+			if arrivalDT.After(flybys[0].until) {
 				if ultraDebug {
 					log.Printf("[debug] DT not good (%s)", arrivalDT)
 				}
@@ -145,9 +147,6 @@ func main() {
 			// Fulfills the launch requirements.
 			vInfIn := []float64{vInfInVec.At(0, 0), vInfInVec.At(1, 0), vInfInVec.At(2, 0)}
 			prevResult := NewResult(launchDT, c3, len(planets)-1)
-			if true {
-				continue
-			}
 			cpuChan <- true
 			go GAPCP(arrivalDT, 0, vInfIn, prevResult)
 		}
@@ -156,49 +155,66 @@ func main() {
 
 // GAPCP performs the recursion.
 func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result) {
-	isLastPlanet := planetNo == len(planets)-1
-	log.Printf("[conf] searching for %s -> %s (last = %v)", planets[planetNo].Name, planets[planetNo+1].Name, isLastPlanet)
-	vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(planets[planetNo], planets[planetNo+1], launchDT, launchDT.Add(24*time.Hour), launchDT, maxArrival, 1, 1, false, false, false)
+	inFlyby := flybys[planetNo]
+	minRp := inFlyby.minPeriapsisRadius
+	maxDV := inFlyby.maxDeltaV
+	fromPlanet := inFlyby.planet
+	var toPlanet smd.CelestialObject
+	var minArrival, maxArrival time.Time
+	var isLastPlanet bool
+	if planetNo+1 == len(flybys) {
+		isLastPlanet = true
+		toPlanet = arrival.planet
+		minArrival = arrival.from
+		maxArrival = arrival.until
+	} else {
+		isLastPlanet = false // Not needed, only for clarity
+		next := flybys[planetNo+1]
+		toPlanet = next.planet
+		minArrival = next.from
+		maxArrival = next.until
+	}
+	log.Printf("[info] searching for %s -> %s (last? %v)", fromPlanet.Name, toPlanet.Name, isLastPlanet)
+	vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 1, 1, false, false, false)
 	// Go through solutions and move on with values which are within the constraints.
 	vInfInNorm := smd.Norm(vInfIn)
-	minRp := periapsisRadii[planetNo]
-	maxDV := maxDeltaVs[planetNo]
 	for depDT, vInfDepPerDay := range vinfDep {
 		for arrIdx, vInfOutNorm := range vInfDepPerDay {
 			vInfOut := []float64{vinfMapVecs[depDT][arrIdx].At(0, 0), vinfMapVecs[depDT][arrIdx].At(1, 0), vinfMapVecs[depDT][arrIdx].At(2, 0)}
 			flybyDV := math.Abs(vInfInNorm - vInfOutNorm)
-			if flybyDV < maxDV {
-				log.Println("dv okay")
+			if (maxDV > 0 && flybyDV < maxDV) || maxDV == 0 {
+				log.Printf("[debug] dv OK (%f km/s)", flybyDV)
 				// Check if the rP is okay
-				_, rp, _, _, _, _ := smd.GAFromVinf(vInfIn, vInfOut, smd.Jupiter)
+				_, rp, _, _, _, _ := smd.GAFromVinf(vInfIn, vInfOut, fromPlanet)
 				if minRp > 0 && rp < minRp {
 					log.Printf("[debug] rP no good (%f km)", rp)
 					continue // Too close, ignore
 				}
 				TOF := tofMap[depDT][arrIdx]
 				arrivalDT := launchDT.Add(time.Duration(TOF*24) * time.Hour)
+				result := prevResult.Clone()
+				rslt := GAResult{launchDT, flybyDV, rp}
+				result.flybys = append(result.flybys, rslt)
 				if isLastPlanet {
 					vinfArr := vinfArr[depDT][arrIdx]
-					if vinfArr < maxVinfArrival {
+					if vinfArr < arrival.maxVinf {
 						log.Println("[debug] valid traj!")
 						// This is a valid trajectory?
 						// Add information to result.
-						result := prevResult.Clone()
 						result.arrival = arrivalDT
 						result.vInf = vinfArr
 						rsltChan <- result
+					} else {
+						log.Printf("[debug] vInf too high (%f km/s)", vinfArr)
 					}
 					// All done, let's free that CPU
 					<-cpuChan
 				} else {
-					result := prevResult.Clone()
-					result.flybys = append(result.flybys, GAResult{arrivalDT, flybyDV, rp})
 					// Recursion
 					vInfInNext := []float64{vInfNextInVecs[depDT][arrIdx].At(0, 0), vInfNextInVecs[depDT][arrIdx].At(1, 0), vInfNextInVecs[depDT][arrIdx].At(2, 0)}
 					GAPCP(arrivalDT, planetNo+1, vInfInNext, result)
 				}
 			} else {
-				log.Printf("dV = %f", flybyDV)
 				// Won't go anywhere, let's move onto another date. and clear queue if needed.
 				select {
 				case <-cpuChan:
