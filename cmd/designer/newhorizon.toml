@@ -2,6 +2,7 @@
 fileprefix = "nh"
 verbose = true
 step = "24h"
+flybyplanets = "Jupiter"
 
 [launch]
 planet = "Earth"
@@ -15,7 +16,6 @@ from = 2456917.5
 until = 2457517.5
 maxVinf = 14.5
 
-[flyby]
 [flyby.Jupiter]
 position = 1
 from = 2454129.5

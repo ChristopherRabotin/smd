@@ -84,9 +84,21 @@ func main() {
 		log.Printf("[conf] time step: %s\n", timeStep)
 	}
 
-	launch := readLaunchArrival(true)
-	arrival := readLaunchArrival(false)
+	launch := readLaunch()
+	arrival := readArrival()
 	flybys := readAllFlybys()
+
+	if verbose {
+		log.Printf("[conf] Launch: %s", launch)
+		for no, fb := range flybys {
+			log.Printf("[conf] Flyby#%d %s", no, fb)
+		}
+		log.Printf("[conf] Arrival: %s", arrival)
+	}
+
+	if true {
+		return
+	}
 
 	// Starting the streamer
 	rsltChan = make(chan (Result), 10) // Buffered to not loose any data.
