@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
@@ -19,7 +20,7 @@ import (
 const (
 	defaultScenario = "~~unset~~"
 	dateTimeFormat  = "2006-01-02 15:04:05"
-	ultraDebug      = false
+	ultraDebug      = true
 )
 
 var (
@@ -58,6 +59,7 @@ func main() {
 	if scenario == defaultScenario {
 		log.Fatal("no scenario provided and no finder set")
 	}
+	scenario = strings.Replace(scenario, ".toml", "", 1)
 	availableCPUs := runtime.NumCPU()
 	if numCPUs <= 0 || numCPUs > availableCPUs {
 		numCPUs = availableCPUs
