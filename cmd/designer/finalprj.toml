@@ -1,15 +1,41 @@
-[General]
+[general]
 fileprefix = "prj"
-# TODO: Add an output directory.
 verbose = true
-from = "2020-01-01 00:00:00"
-until = "2024-01-01 00:00:00"
-step = "24h" # Time step, must be in time.Duration format
-planets = "Venus Mars Earth Earth Saturn Uranus"
-periRFactor = "1.05 1.05 1.05 1.05 4.0 3.0" # Factor of minimum periapsis radii based on the radius of the planet
-maxDeltaV = "1.0 1.0 1.0 1.0 1.0 1.0" # Maximum delta-V allowed per passage.
+step = "24h"
+flybyplanets = "Venus Mars Earth Earth Saturn Uranus"
 
-[DepartureConstraints]
-c3 = 35 # Max c3 allowed
-[ArrivalConstraints]
-vInf = 10 # Max v infinity at destination
+[launch]
+planet = "Earth"
+from = "2023-01-01 00:00:00"
+until = "2024-01-01 00:00:00"
+maxC3 = 35
+
+[arrival]
+planet = "Uranus"
+until = "2044-01-01 00:00:00"
+maxVinf = 10
+
+[flyby.Venus]
+position = 1
+deltaV = 1.0
+periapsis = 1.1
+
+[flyby.Mars]
+position = 2
+deltaV = 1.0
+periapsis = 1.1
+
+[flyby.Earth]
+position = 3
+deltaV = 1.0
+periapsis = 1.1
+
+[flyby.Earth.1]
+position = 4
+deltaV = 1.0
+periapsis = 1.1
+
+[flyby.Saturn]
+position = 5
+deltaV = 1.0
+periapsis = 4.0
