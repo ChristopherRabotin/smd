@@ -19,6 +19,7 @@ import (
 const (
 	defaultScenario = "~~unset~~"
 	dateTimeFormat  = "2006-01-02 15:04:05"
+	ultraDebug      = false
 )
 
 var (
@@ -202,11 +203,17 @@ func main() {
 	for launchDT, c3PerDay := range c3Map {
 		for arrivalIdx, c3 := range c3PerDay {
 			if c3 > maxC3 || c3 == 0 {
+				if ultraDebug {
+					log.Printf("[debug] c3 not good (%f)", c3)
+				}
 				continue // Cannot use this launch
 			}
 			arrivalTOF := tofMap[launchDT][arrivalIdx]
 			arrivalDT := launchDT.Add(time.Duration(arrivalTOF*24) * time.Hour)
 			if arrivalDT.After(maxArrival) {
+				if ultraDebug {
+					log.Printf("[debug] DT not good (%s)", arrivalDT)
+				}
 				continue
 			}
 			vInfInVec := vInfArriVecs[launchDT][arrivalIdx]
