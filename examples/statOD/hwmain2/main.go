@@ -106,13 +106,13 @@ func main() {
 	// Get the first measurement as an initial orbit estimation.
 	firstDT := measurementTimes[0]
 	estOrbit := measurements[firstDT].State.Orbit
-	startDT = firstDT.Add(-10 * time.Second)
+	startDT = firstDT //.Add(-10 * time.Second)
 	// TODO: Add noise to initial orbit estimate.
 
 	// Perturbations in the estimate
-	estPerts := smd.Perturbations{Jn: 2}
+	estPerts := smd.Perturbations{Jn: 3}
 
-	stateEstChan := make(chan (smd.State), 1)
+	stateEstChan := make(chan (smd.State))
 	mEst := smd.NewPreciseMission(smd.NewEmptySC(scName+"Est", 0), &estOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
 	mEst.RegisterStateChan(stateEstChan)
 
@@ -177,7 +177,7 @@ func main() {
 	var prevStationName = ""
 	var prevDT time.Time
 	var ckfMeasNo = 0
-	measNo := 0
+	measNo := 1
 	kf, _, err := gokalman.NewHybridKF(mat64.NewVector(6, nil), prevP, noiseKF, 2)
 	if err != nil {
 		panic(fmt.Errorf("%s", err))
@@ -211,7 +211,7 @@ func main() {
 			continue
 		}
 		if roundedDT != measurementTimes[measNo] {
-			panic(fmt.Errorf("[ERR!] %04d delta = %s", measNo, measurement.State.DT.Sub(measurementTimes[measNo])))
+			panic(fmt.Errorf("[ERR!] %04d delta = %s\tstate=%s\tmeas=%s", measNo, state.DT.Sub(measurementTimes[measNo]), state.DT, measurementTimes[measNo]))
 		}
 
 		if measNo == 0 {
@@ -322,7 +322,6 @@ func main() {
 			mEst.Orbit = smd.NewOrbitFromRV(R, V, smd.Earth)
 		}
 		ckfMeasNo++
-		measNo++
 	} // end while true
 
 	close(estChan)
