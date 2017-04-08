@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
+	"github.com/gonum/matrix/mat64"
 	"github.com/soniakeys/meeus/julian"
 	"github.com/spf13/viper"
 )
@@ -207,6 +208,9 @@ func main() {
 			arrivalTOF := tofMap[launchDT][arrivalIdx]
 			arrivalDT := launchDT.Add(time.Duration(arrivalTOF*24) * time.Hour)
 			if arrivalDT.After(maxArrival) {
+				continue
+			}
+			if mat64.Norm(&vInfArriVecs[launchDT][arrivalIdx], 2) == 0 {
 				continue
 			}
 			// Fulfills the launch requirements.
