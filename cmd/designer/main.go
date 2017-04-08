@@ -269,6 +269,14 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 					vInfInNext := []float64{vInfNextInVecs[depDT][arrIdx].At(0, 0), vInfNextInVecs[depDT][arrIdx].At(1, 0), vInfNextInVecs[depDT][arrIdx].At(2, 0)}
 					GAPCP(arrivalDT, planetNo+1, vInfInNext, result)
 				}
+			} else {
+				// Won't go anywhere, let's move onto another date.
+				select {
+				case <-cpuChan:
+					continue
+				default:
+					continue
+				}
 			}
 		}
 	}
