@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"runtime"
+	"runtime/pprof"
 	"strconv"
 	"time"
 
@@ -32,6 +34,9 @@ var (
 	rsltChan               chan (Result)
 )
 
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+var memprofile = flag.String("memprofile", "", "write memory profile to this file")
+
 func init() {
 	// Read flags
 	flag.StringVar(&scenario, "scenario", defaultScenario, "designer scenario TOML file")
@@ -41,6 +46,15 @@ func init() {
 func main() {
 	// Read the configuration file.
 	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+	// End profiling
 	if scenario == defaultScenario {
 		log.Fatal("no scenario provided and no finder set")
 	}
@@ -173,6 +187,18 @@ func main() {
 		smd.FreeEphemeralData(smd.Earth, initLaunch.Year())
 		smd.FreeEphemeralData(planets[0], initLaunch.Year())
 		initLaunch = initLaunch.AddDate(1, 0, 0)
+	}
+	if *cpuprofile != "" {
+		return
+	}
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.WriteHeapProfile(f)
+		f.Close()
+		return
 	}
 	for launchDT, c3PerDay := range c3Map {
 		for arrivalIdx, c3 := range c3PerDay {
