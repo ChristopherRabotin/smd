@@ -1,0 +1,14 @@
+[General]
+fileprefix = "demo"
+verbose = true
+from = "2020-01-01 00:00:00"
+until = "2025-01-01 00:00:00"
+step = "24h"
+planets = "Venus Earth Earth"
+periRFactor = "1.05 1.05 1.05" # Factor of minimum periapsis radii based on the radius of the planet
+maxDeltaV = "1.0 1.0 1.0" # Maximum delta-V allowed per passage.
+
+[DepartureConstraints]
+c3 = 10 # Max c3 allowed
+[ArrivalConstraints]
+vInf = 6 # Max v infinity at destination
