@@ -174,11 +174,11 @@ var Jupiter = CelestialObject{"Jupiter", 71492.0, 778298361, 1.266865361e8, 3.13
 
 // Saturn floats and that's really cool.
 // TODO: SOI
-var Saturn = CelestialObject{"Saturn", 60268.0, 1429394133, 3.794e7, 0.93, 2.485, 0, 0.01645, 0, -0.001, nil}
+var Saturn = CelestialObject{"Saturn", 60268.0, 1429394133, 3.7931208e7, 0.93, 2.485, 0, 0.01645, 0, -0.001, nil}
 
 // Uranus is no joke.
 // TODO: SOI
-var Uranus = CelestialObject{"Uranus", 25559.0, 2875038615, 5.794e6, 1.02, 0.773, 0, 0.012, 0, 0, nil}
+var Uranus = CelestialObject{"Uranus", 25559.0, 2875038615, 5.7939513e6, 1.02, 0.773, 0, 0.012, 0, 0, nil}
 
 // Pluto is not a planet and had that down ranking coming. It should have stayed in its lane.
 // WARNING: Pluto SOI is not defined.
