@@ -86,7 +86,7 @@ func main() {
 
 	launch := readLaunch()
 	arrival := readArrival()
-	flybys := readAllFlybys()
+	flybys := readAllFlybys(launch.from, arrival.until)
 
 	if verbose {
 		log.Printf("[conf] Launch: %s", launch)
@@ -96,21 +96,15 @@ func main() {
 		log.Printf("[conf] Arrival: %s", arrival)
 	}
 
-	if true {
-		return
-	}
-
 	// Starting the streamer
 	rsltChan = make(chan (Result), 10) // Buffered to not loose any data.
 	go StreamResults(prefix, planets, rsltChan)
 
 	// Let's do the magic.
-	// Always leave Earth.
-	// NOTE: This is a VERY broad sweep.
 	if verbose {
-		log.Printf("[info] searching for %s -> %s", smd.Earth.Name, planets[0].Name)
+		log.Printf("[info] searching for %s -> %s", launch.planet.Name, flybys[0].planet.Name)
 	}
-	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(smd.Earth, planets[0], initLaunch, maxArrival, initLaunch, maxArrival, 1, 1, true, false, false)
+	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(launch.planet, flybys[0].planet, launch.from, launch.until, flybys[0].from, flybys[0].until, 1, 1, true, false, false)
 	/*for initLaunch.Before(maxArrival) {
 		smd.FreeEphemeralData(smd.Earth, initLaunch.Year())
 		smd.FreeEphemeralData(planets[0], initLaunch.Year())

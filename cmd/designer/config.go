@@ -51,7 +51,7 @@ func (f Flyby) String() string {
 	return f.commonPlanet.String() + fmt.Sprintf("rP: %.1f km\tdeltaV: %.1f", f.minPeriapsisRadius, f.maxDeltaV)
 }
 
-func readAllFlybys() []Flyby {
+func readAllFlybys(minDT, maxDT time.Time) []Flyby {
 	tmpFlybys := make([]Flyby, 20) // Unlikely to be more than 20.
 	flybycount := 0
 	for _, planetName := range viper.GetStringSlice("general.flybyplanets") {
@@ -72,6 +72,12 @@ func readAllFlybys() []Flyby {
 	flybycount = 0
 	for _, flyby := range tmpFlybys {
 		if flyby != (Flyby{}) {
+			if flyby.from == (time.Time{}) {
+				flyby.from = minDT
+			}
+			if flyby.until == (time.Time{}) {
+				flyby.until = maxDT
+			}
 			flybys[flybycount] = flyby
 			flybycount++
 		}
@@ -108,11 +114,7 @@ func confReadFromUntil(mainKey string) (from, until time.Time) {
 func confReadJDEorTime(key string) (dt time.Time) {
 	jde := viper.GetFloat64(key)
 	if jde == 0 {
-		var perr error
-		dt, perr = time.Parse(dateTimeFormat, viper.GetString(key))
-		if perr != nil {
-			log.Fatalf("could not understand `%s`: %s", key, perr)
-		}
+		dt = viper.GetTime(key)
 	} else {
 		dt = julian.JDToTime(jde)
 	}
