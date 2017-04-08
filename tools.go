@@ -232,7 +232,7 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 }
 
 // PCPGenerator generates the PCP files to perform contour plots in Matlab (and eventually prints the command).
-func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, plotC3 bool, verbose bool) (c3Map, tofMap, vinfMap map[time.Time][]float64, vInfInitVecs, vInfArriVecs map[time.Time][]mat64.Vector) {
+func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, plotC3, verbose, output bool) (c3Map, tofMap, vinfMap map[time.Time][]float64, vInfInitVecs, vInfArriVecs map[time.Time][]mat64.Vector) {
 	launchWindow := int(maxLaunch.Sub(initLaunch).Hours() / 24)    //days
 	arrivalWindow := int(maxArrival.Sub(initArrival).Hours() / 24) //days
 	// Create the output arrays
@@ -255,28 +255,31 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 		fNames = []string{"vinf-init", "tof", "vinf-arrival", "dates"}
 	}
 	pcpName := fmt.Sprintf("%s-to-%s", initPlanet.Name, arrivalPlanet.Name)
-	for i, name := range fNames {
-		// Write CSV file.
-		f, err := os.Create(fmt.Sprintf("./contour-%s-%s.dat", pcpName, name))
-		if err != nil {
-			panic(err)
+	if output {
+		for i, name := range fNames {
+			// Write CSV file.
+			f, err := os.Create(fmt.Sprintf("./contour-%s-%s.dat", pcpName, name))
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+			if _, err := f.WriteString(dat); err != nil {
+				panic(err)
+			}
+			hdls[i] = f
 		}
-		defer f.Close()
-		if _, err := f.WriteString(dat); err != nil {
-			panic(err)
-		}
-		hdls[i] = f
+
+		// Let's write the date information now and close that file.
+		hdls[3].WriteString(fmt.Sprintf("\n%%departure: \"%s\"\n%%arrival: \"%s\"\n%d,%d\n%d,%d\n", initLaunch.Format("2006-Jan-02"), initArrival.Format("2006-Jan-02"), 1, launchWindow, 1, arrivalWindow))
+		hdls[3].Close()
 	}
-
-	// Let's write the date information now and close that file.
-	hdls[3].WriteString(fmt.Sprintf("\n%%departure: \"%s\"\n%%arrival: \"%s\"\n%d,%d\n%d,%d\n", initLaunch.Format("2006-Jan-02"), initArrival.Format("2006-Jan-02"), 1, launchWindow, 1, arrivalWindow))
-	hdls[3].Close()
-
 	for launchDay := 0.; launchDay < float64(launchWindow); launchDay += 1 / ptsPerLaunchDay {
 		// New line in files
-		for _, hdl := range hdls[:3] {
-			if _, err := hdl.WriteString("\n"); err != nil {
-				panic(err)
+		if output {
+			for _, hdl := range hdls[:3] {
+				if _, err := hdl.WriteString("\n"); err != nil {
+					panic(err)
+				}
 			}
 		}
 		launchDT := initLaunch.Add(time.Duration(launchDay*24*3600) * time.Second)
@@ -336,10 +339,12 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 				vInfInitVecs[launchDT][arrivalIdx] = *VInfInit
 				vInfArriVecs[launchDT][arrivalIdx] = *VInfArrival
 			}
-			// Store data in the files
-			hdls[0].WriteString(fmt.Sprintf("%f,", c3))
-			hdls[1].WriteString(fmt.Sprintf("%f,", tof.Hours()/24))
-			hdls[2].WriteString(fmt.Sprintf("%f,", vInfArrival))
+			if output {
+				// Store data in the files
+				hdls[0].WriteString(fmt.Sprintf("%f,", c3))
+				hdls[1].WriteString(fmt.Sprintf("%f,", tof.Hours()/24))
+				hdls[2].WriteString(fmt.Sprintf("%f,", vInfArrival))
+			}
 			// and in the arrays
 			c3Map[launchDT][arrivalIdx] = c3
 			tofMap[launchDT][arrivalIdx] = tof.Hours() / 24
@@ -347,7 +352,7 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 			arrivalIdx++
 		}
 	}
-	if verbose {
+	if verbose && output {
 		// Print the matlab command to help out
 		if plotC3 {
 			fmt.Printf("=== MatLab ===\npcpplots('%s', '%s', '%s', '%s')\n", pcpName, initLaunch.Format("2006-01-02"), initArrival.Format("2006-01-02"), arrivalPlanet.Name)

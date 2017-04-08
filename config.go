@@ -97,11 +97,11 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 				for i := 0; i < 3; i++ {
 					tR, err := strconv.ParseFloat(strings.TrimSpace(entries[i+2]), 64)
 					if err != nil {
-						panic("could not parse position")
+						log.Fatalf("[smd:error] could not parse position when reading %s: `%s`", ephemeride, strings.TrimSpace(entries[i+2]))
 					}
 					tV, err := strconv.ParseFloat(strings.TrimSpace(entries[i+5]), 64)
 					if err != nil {
-						panic("could not parse velocity")
+						log.Fatalf("[smd:error] could not parse velocity when reading %s: `%s`", ephemeride, strings.TrimSpace(entries[i+5]))
 					}
 					R[i] = tR
 					V[i] = tV
