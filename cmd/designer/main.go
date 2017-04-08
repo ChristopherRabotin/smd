@@ -180,10 +180,11 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 	vInfInNorm := smd.Norm(vInfIn)
 	for depDT, vInfDepPerDay := range vinfDep {
 		for arrIdx, vInfOutNorm := range vInfDepPerDay {
-			if math.IsInf(vInfOutNorm, 1) {
-				continue // That one didn't converge.
+			vInfOutVec := vinfMapVecs[depDT][arrIdx]
+			if r, _ := vInfOutVec.Dims(); r == 0 {
+				continue
 			}
-			vInfOut := []float64{vinfMapVecs[depDT][arrIdx].At(0, 0), vinfMapVecs[depDT][arrIdx].At(1, 0), vinfMapVecs[depDT][arrIdx].At(2, 0)}
+			vInfOut := []float64{vInfOutVec.At(0, 0), vInfOutVec.At(1, 0), vInfOutVec.At(2, 0)}
 			flybyDV := math.Abs(vInfInNorm - vInfOutNorm)
 			if (maxDV > 0 && flybyDV < maxDV) || maxDV == 0 {
 				log.Printf("[debug] dv OK (%f km/s)", flybyDV)
