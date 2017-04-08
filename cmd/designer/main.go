@@ -183,11 +183,11 @@ func main() {
 		log.Printf("[info] searching for %s -> %s", smd.Earth.Name, planets[0].Name)
 	}
 	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(smd.Earth, planets[0], initLaunch, maxArrival, initLaunch, maxArrival, 1, 1, true, false, false)
-	for initLaunch.Before(maxArrival) {
+	/*for initLaunch.Before(maxArrival) {
 		smd.FreeEphemeralData(smd.Earth, initLaunch.Year())
 		smd.FreeEphemeralData(planets[0], initLaunch.Year())
 		initLaunch = initLaunch.AddDate(1, 0, 0)
-	}
+	}*/
 	if *cpuprofile != "" {
 		return
 	}
