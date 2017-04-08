@@ -2,7 +2,7 @@
 fileprefix = "prj"
 verbose = true
 step = "24h"
-flybyplanets = "Venus Mars Earth Earth Saturn Uranus"
+flybyplanets = "Venus Mars Earth Earth Saturn"
 
 [launch]
 planet = "Earth"
