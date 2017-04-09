@@ -36,7 +36,11 @@ if __name__ == '__main__':
     end_date = parsedt('{}-01-01'.format(year+1))
 
     _load_kernels_()
-    f = open('../../data/horizon/' + args.planet + '-' + str(start_date.year) + '.csv', 'w')
+    dots = 0
+    for fld in __file__.split('/'):
+        if fld == '..':
+            dots += 1
+    f = open('/'.join(['..' for _ in range(dots)]) + '/data/horizon/' + args.planet + '-' + str(start_date.year) + '.csv', 'w')
     prev_month = 0
     while start_date <= end_date:
         if prev_month != start_date.month:
