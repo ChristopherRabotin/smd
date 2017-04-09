@@ -27,6 +27,8 @@ const (
 // Scenario constants
 const (
 	initJDE = 2456296.25
+	realBT  = 7009.767
+	realBR  = 140002.894
 )
 
 var (
@@ -327,6 +329,7 @@ func main() {
 	}
 	defer f.Close()
 	f.WriteString("bR,bT\n")
+	f.WriteString(fmt.Sprintf("%f,%f\n", realBR, realBT))
 	for _, bPlane := range bPlanes {
 		csv := fmt.Sprintf("%f,%f\n", bPlane.BR, bPlane.BT)
 		if _, err := f.WriteString(csv); err != nil {

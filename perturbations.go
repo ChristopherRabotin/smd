@@ -10,11 +10,20 @@ type Perturbations struct {
 	Jn             uint8                   // Factors to be used (only up to 4 supported)
 	PerturbingBody *CelestialObject        // The 3rd body which is perturbating the spacecraft.
 	AutoThirdBody  bool                    // Automatically determine what is the 3rd body based on distance and mass
+	Drag           bool                    // Set to true to use the Spacecraft's Drag for everything including STM computation
 	Arbitrary      func(o Orbit) []float64 // Additional arbitrary pertubation.
 }
 
 func (p Perturbations) isEmpty() bool {
 	return p.Jn <= 1 && p.PerturbingBody == nil && p.AutoThirdBody && p.Arbitrary == nil
+}
+
+// STMSize returns the size of the STM
+func (p Perturbations) STMSize() (r, c int) {
+	if p.Drag {
+		return 7, 7
+	}
+	return 6, 6
 }
 
 // Perturb returns the perturbing state vector based on the kind of propagation being used.

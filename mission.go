@@ -47,8 +47,8 @@ func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, perts Pert
 	if end.Location() != time.UTC {
 		end = end.UTC()
 	}
-
-	a := &Mission{s, o, DenseIdentity(6), start, end, start, perts, step, make(chan (bool), 1), nil, computeSTM, false, false, true}
+	rSTM, _ := perts.STMSize()
+	a := &Mission{s, o, DenseIdentity(rSTM), start, end, start, perts, step, make(chan (bool), 1), nil, computeSTM, false, false, true}
 	// Create a main history channel if there is any exporting
 	if !conf.IsUseless() {
 		a.histChans = []chan (State){make(chan (State), 10)}
@@ -170,7 +170,8 @@ func (a *Mission) Stop(t float64) bool {
 func (a *Mission) GetState() (s []float64) {
 	stateSize := 7
 	if a.computeSTM {
-		stateSize += 36
+		rSTM, cSTM := a.perts.STMSize()
+		stateSize += rSTM * cSTM
 	}
 	s = make([]float64, stateSize)
 	R, V := a.Orbit.RV()
@@ -220,7 +221,8 @@ func (a *Mission) SetState(t float64, s []float64) {
 
 	if a.computeSTM {
 		// Extract the components of Φ
-		sIdx, rΦ, cΦ := 6, 6, 6
+		sIdx := 6
+		rΦ, cΦ := a.perts.STMSize()
 		ΦkTo0 := mat64.NewDense(rΦ, cΦ, nil)
 		for i := 0; i < rΦ; i++ {
 			for j := 0; j < cΦ; j++ {
@@ -256,7 +258,8 @@ func (a *Mission) SetState(t float64, s []float64) {
 func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	stateSize := 7
 	if a.computeSTM {
-		stateSize += 6 * 6
+		rSTM, cSTM := a.perts.STMSize()
+		stateSize += rSTM * cSTM
 	}
 	fDot = make([]float64, stateSize) // init return vector
 	// Let's add the thrust to increase the magnitude of the velocity.
@@ -288,7 +291,8 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	// Compute STM if needed.
 	if a.computeSTM {
 		// Extract the components of Φ
-		fIdx, rΦ, cΦ := 6, 6, 6
+		fIdx := 6
+		rΦ, cΦ := a.perts.STMSize()
 		Φ := mat64.NewDense(rΦ, cΦ, nil)
 		ΦDot := mat64.NewDense(rΦ, cΦ, nil)
 		for i := 0; i < rΦ; i++ {
@@ -299,12 +303,12 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		}
 
 		// Compute the STM.
-		A := mat64.NewDense(6, 6, nil)
+		A := mat64.NewDense(rΦ, cΦ, nil)
 		// Top right is Identity 3x3
 		A.Set(0, 3, 1)
 		A.Set(1, 4, 1)
 		A.Set(2, 5, 1)
-		// Bottom left is where the magix is.
+		// Bottom left is where the magic is.
 		x := R[0]
 		y := R[1]
 		z := R[2]
