@@ -28,6 +28,8 @@ var (
 	wg         sync.WaitGroup
 )
 
+var debug = flag.Bool("debug", false, "verbose debug")
+
 func init() {
 	flag.Float64Var(&σQExponent, "sigmaExp", 6, "exponent for the Q sigma (default is 6, so sigma=1e-6).")
 }
@@ -116,16 +118,7 @@ func main() {
 	mEst := smd.NewPreciseMission(smd.NewEmptySC(scName+"Est", 0), &estOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
 	mEst.RegisterStateChan(stateEstChan)
 
-	fmt.Printf("%d number of measurements\n", len(measurementTimes))
-
 	// Go-routine to advance propagation.
-	/*go func() {
-		// TODO: Why not just propagate until the last time? The channel is populated anyway.
-		for measNo, measTime := range measurementTimes {
-			fmt.Printf("[til] %04d %s\n", measNo, measTime)
-			mEst.PropagateUntil(measTime, measNo == len(measurementTimes)-1)
-		}
-	}()*/
 	go mEst.PropagateUntil(measurementTimes[len(measurementTimes)-1], true)
 
 	// KF filter initialization stuff.
@@ -189,7 +182,6 @@ func main() {
 			break
 		}
 		roundedDT := state.DT.Truncate(time.Second)
-		fmt.Printf("%04d %s\n", measNo, roundedDT)
 		measurement, exists := measurements[roundedDT]
 		if !exists {
 			if measNo == 0 {
@@ -206,7 +198,9 @@ func main() {
 			stateEst := mat64.NewVector(6, nil)
 			stateEst.SubVec(est.State(), state.Vector())
 			// NOTE: The state seems to be all I need, along with Phi maybe (?) because the KF already uses the previous state?!
-			fmt.Printf("[pred] (%04d) %+v\n", measNo, mat64.Formatted(est.State().T()))
+			if *debug {
+				fmt.Printf("[pred] (%04d) %+v\n", measNo, mat64.Formatted(est.State().T()))
+			}
 			estChan <- truth.ErrorWithOffset(-1, est, nil)
 			continue
 		}
@@ -217,9 +211,6 @@ func main() {
 		if measNo == 0 {
 			prevDT = measurement.State.DT
 		}
-
-		measNo++
-		fmt.Printf("[meas] %04d\n", measNo)
 
 		// Let's perform a full update since there is a measurement.
 		ΔtDuration := measurement.State.DT.Sub(prevDT)
@@ -307,7 +298,9 @@ func main() {
 			estChan <- truth.ErrorWithOffset(measNo, est, state.Vector())
 			diff := mat64.NewVector(6, nil)
 			diff.SubVec(stateEst, measurement.State.Vector())
-			fmt.Printf("[diff] (%04d) %+v\n", measNo, mat64.Formatted(diff.T()))
+			if mat64.Norm(diff, 2) > 1 && *debug {
+				fmt.Printf("[diff] (%04d) %+v\n", measNo, mat64.Formatted(diff.T()))
+			}
 		}
 		prevDT = measurement.State.DT
 
@@ -322,6 +315,7 @@ func main() {
 			mEst.Orbit = smd.NewOrbitFromRV(R, V, smd.Earth)
 		}
 		ckfMeasNo++
+		measNo++
 	} // end while true
 
 	close(estChan)
