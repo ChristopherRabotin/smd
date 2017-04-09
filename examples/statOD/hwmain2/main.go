@@ -14,12 +14,11 @@ import (
 )
 
 const (
-	ekfTrigger     = 15    // Number of measurements prior to switching to EKF mode.
+	ekfTrigger     = -15   // Number of measurements prior to switching to EKF mode.
 	ekfDisableTime = -1200 // Seconds between measurements to switch back to CKF. Set as negative to ignore.
-	sncEnabled     = false // Set to false to disable SNC.
+	sncEnabled     = true  // Set to false to disable SNC.
 	sncDisableTime = 1200  // Number of seconds between measurements to skip using SNC noise.
 	sncRIC         = false // Set to true if the noise should be considered defined in PQW frame.
-	timeBasedPlot  = false // Set to true to plot time, or false to plot on measurements.
 	smoothing      = false // Set to true to smooth the CKF.
 )
 
