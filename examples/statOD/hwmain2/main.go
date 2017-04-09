@@ -97,13 +97,16 @@ func main() {
 	// Let's mark those as the truth so we can plot that.
 	stateTruth := make([]*mat64.Vector, len(measurements))
 	truthMeas := make([]*mat64.Vector, len(measurements))
-	residuals := make([]*mat64.Vector, len(measurements))
 	for measNo, measTime := range measurementTimes {
 		measurement := measurements[measTime]
 		stateTruth[measNo] = measurement.State.Vector()
 		truthMeas[measNo] = measurement.StateVector()
 	}
 	truth := gokalman.NewBatchGroundTruth(stateTruth, truthMeas)
+
+	// Compute number of states which will be generated.
+	numStates := int((measurementTimes[len(measurementTimes)-1].Sub(measurementTimes[0])).Seconds()/timeStep.Seconds()) + 1
+	residuals := make([]*mat64.Vector, numStates)
 
 	// Get the first measurement as an initial orbit estimation.
 	firstDT := measurementTimes[0]
@@ -171,6 +174,7 @@ func main() {
 	var prevDT time.Time
 	var ckfMeasNo = 0
 	measNo := 1
+	stateNo := 0
 	kf, _, err := gokalman.NewHybridKF(mat64.NewVector(6, nil), prevP, noiseKF, 2)
 	if err != nil {
 		panic(fmt.Errorf("%s", err))
@@ -181,6 +185,7 @@ func main() {
 		if !more {
 			break
 		}
+		stateNo++
 		roundedDT := state.DT.Truncate(time.Second)
 		measurement, exists := measurements[roundedDT]
 		if !exists {
@@ -287,7 +292,7 @@ func main() {
 		residual.MulVec(Htilde, est.State())
 		residual.AddScaledVec(residual, -1, est.ObservationDev())
 		residual.ScaleVec(-1, residual)
-		residuals[measNo] = residual
+		residuals[stateNo] = residual
 
 		if smoothing {
 			// Save to history in order to perform smoothing.
@@ -334,7 +339,10 @@ func main() {
 	defer f.Close()
 	f.WriteString("rho,rhoDot\n")
 	for _, residual := range residuals {
-		csv := fmt.Sprintf("%f,%f\n", residual.At(0, 0), residual.At(1, 0))
+		csv := "0,0\n"
+		if residual != nil {
+			csv = fmt.Sprintf("%f,%f\n", residual.At(0, 0), residual.At(1, 0))
+		}
 		if _, err := f.WriteString(csv); err != nil {
 			panic(err)
 		}
