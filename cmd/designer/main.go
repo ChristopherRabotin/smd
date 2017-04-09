@@ -17,6 +17,7 @@ import (
 const (
 	defaultScenario = "~~unset~~"
 	dateTimeFormat  = "2006-01-02 15:04:05"
+	dateFormat      = "2006-01-02 15:04:05"
 )
 
 var (
@@ -174,7 +175,6 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 		minArrival = next.from
 		maxArrival = next.until
 	}
-	log.Printf("[info] searching for %s (@%s) -> %s (@%s)", fromPlanet.Name, launchDT, toPlanet.Name, minArrival)
 	// Semi-smart memory allocation to avoid too much allocation.
 	if minArrival.Before(launchDT) {
 		minArrival = launchDT
@@ -182,6 +182,7 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 	if maxArrival.Before(launchDT) {
 		maxArrival = launchDT
 	}
+	log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s)", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat))
 	vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 1, 1, false, false, false)
 	// Go through solutions and move on with values which are within the constraints.
 	vInfInNorm := smd.Norm(vInfIn)
