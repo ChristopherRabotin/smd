@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	ekfTrigger     = -15   // Number of measurements prior to switching to EKF mode.
+	ekfTrigger     = 15    // Number of measurements prior to switching to EKF mode.
 	ekfDisableTime = -1200 // Seconds between measurements to switch back to CKF. Set as negative to ignore.
 	sncEnabled     = false // Set to false to disable SNC.
 	sncDisableTime = 1200  // Number of seconds between measurements to skip using SNC noise.
@@ -115,7 +115,7 @@ func main() {
 	// TODO: Add noise to initial orbit estimate.
 
 	// Perturbations in the estimate
-	estPerts := smd.Perturbations{Jn: 3}
+	estPerts := smd.Perturbations{Jn: 2}
 
 	stateEstChan := make(chan (smd.State))
 	mEst := smd.NewPreciseMission(smd.NewEmptySC(scName+"Est", 0), &estOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
