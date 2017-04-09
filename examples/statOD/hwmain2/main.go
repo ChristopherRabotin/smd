@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	ekfTrigger     = -15   // Number of measurements prior to switching to EKF mode.
+	ekfTrigger     = 15    // Number of measurements prior to switching to EKF mode.
 	ekfDisableTime = -1200 // Seconds between measurements to switch back to CKF. Set as negative to ignore.
-	sncEnabled     = true  // Set to false to disable SNC.
+	sncEnabled     = false // Set to false to disable SNC.
 	sncDisableTime = 1200  // Number of seconds between measurements to skip using SNC noise.
 	sncRIC         = false // Set to true if the noise should be considered defined in PQW frame.
 	smoothing      = false // Set to true to smooth the CKF.
@@ -116,7 +116,7 @@ func main() {
 	// Perturbations in the estimate
 	estPerts := smd.Perturbations{Jn: 2}
 
-	stateEstChan := make(chan (smd.State))
+	stateEstChan := make(chan (smd.State), 1)
 	mEst := smd.NewPreciseMission(smd.NewEmptySC(scName+"Est", 0), &estOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
 	mEst.RegisterStateChan(stateEstChan)
 
@@ -302,7 +302,7 @@ func main() {
 			estChan <- truth.ErrorWithOffset(measNo, est, state.Vector())
 			diff := mat64.NewVector(6, nil)
 			diff.SubVec(stateEst, measurement.State.Vector())
-			if mat64.Norm(diff, 2) > 1 && *debug {
+			if *debug {
 				fmt.Printf("[diff] (%04d) %+v\n", measNo, mat64.Formatted(diff.T()))
 			}
 		}
@@ -312,9 +312,20 @@ func main() {
 		if kf.EKFEnabled() {
 			// Update the state from the error.
 			R, V := state.Orbit.RV()
+			if *debug {
+				fmt.Printf("[ekf-] (%04d) %+v\n", measNo, mat64.Formatted(state.Vector().T()))
+			}
 			for i := 0; i < 3; i++ {
 				R[i] += est.State().At(i, 0)
 				V[i] += est.State().At(i+3, 0)
+			}
+			if *debug {
+				vec := mat64.NewVector(6, nil)
+				for i := 0; i < 3; i++ {
+					vec.SetVec(i, R[i])
+					vec.SetVec(i+3, V[i])
+				}
+				fmt.Printf("[ekf+] (%04d) %+v\n", measNo, mat64.Formatted(vec.T()))
 			}
 			mEst.Orbit = smd.NewOrbitFromRV(R, V, smd.Earth)
 		}
