@@ -3,6 +3,8 @@ package smd
 import (
 	"math"
 	"time"
+
+	"github.com/gonum/matrix/mat64"
 )
 
 // Perturbations defines how to handle perturbations during the propagation.
@@ -60,8 +62,22 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time) []float64 {
 			pert[5] += 0.5 * accJ3 * (35*z4/r292 - 30*z2/r272 + 3/r252)
 		}
 	}
-	if p.PerturbingBody != nil && !p.PerturbingBody.Equals(o.Origin) {
 
+	if p.Drag {
+		// If Drag, SRP is *also* turned on.
+		// TODO: Drag, there is only SRP here.
+		Cr := 1.2    // TODO: Read actual spacecraft drag.
+		S := 0.01    // TODO: Idem for the Area to mass ratio
+		Phi := 1357. // AU * r // Normalize for the SC to Sun distance
+		SunD := mat64.NewVector(3, o.Origin.HelioOrbit(dt).R())
+		SunD.AddVec(SunD, mat64.NewVector(3, o.R()))
+		SunD.ScaleVec(Cr*Phi*S*S/math.Pow(mat64.Norm(SunD, 2), 3), SunD)
+		for i := 0; i < 3; i++ {
+			pert[i+3] += SunD.At(i, 0)
+		}
+	}
+
+	if p.PerturbingBody != nil && !p.PerturbingBody.Equals(o.Origin) {
 		mainR := o.Origin.HelioOrbit(dt).R()
 		pertR := p.PerturbingBody.HelioOrbit(dt).R()
 		if p.PerturbingBody.Equals(Sun) {

@@ -243,6 +243,7 @@ func (a *Mission) SetState(t float64, s []float64) {
 		if err := Φinv.Inverse(a.Φ); err != nil {
 			panic(fmt.Errorf("could not invert the previous Φ: %s", err))
 		}
+		fmt.Printf("kTo0:\n%+v\n\nInv:\n%+v\n\n", mat64.Formatted(ΦkTo0), mat64.Formatted(&Φinv))
 		a.Φ.Mul(ΦkTo0, &Φinv)
 		latestState.Φ = mat64.DenseCopyOf(a.Φ)
 	}
@@ -316,7 +317,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		A.Set(1, 4, 1)
 		A.Set(2, 5, 1)
 		if a.Vehicle.Drag > 0 {
-			A.Set(3, 6, 1)
+			A.Set(3, 6, 1) // XXX Should this be a 1?
 		}
 		// Bottom left is where the magic is.
 		x := R[0]
@@ -421,6 +422,11 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		}
 
 		if a.perts.Drag {
+			// If with drag, then the A matrix is larger.
+			Cr := a.Vehicle.Drag // XXX: This information must be updated at each estimation.
+			S := 0.01
+			Phi := 1357. // AU * r // Normalize for the SC to Sun distance
+
 			r := math.Sqrt(r2)
 			rVecSun := a.Orbit.Origin.HelioOrbit(a.CurrentDT).R()
 			rSun := Norm(rVecSun)
@@ -440,10 +446,6 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			A32 := A.At(3, 2)
 			A42 := A.At(4, 2)
 			A52 := A.At(5, 2)
-
-			Cr := a.Vehicle.Drag // XXX: This information must be updated at each estimation.
-			S := 0.01
-			Phi := 1357. // AU * r // Normalize for the SC to Sun distance
 
 			dAxDx := -Cr*Phi*S*x2/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x2/((r2)*(rSun2)*rSC2Sun3) + Cr*Phi*S/(r*(rSun2)*rSC2Sun)
 			dAxDy := -Cr*Phi*S*x*y/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x*y/((r2)*(rSun2)*rSC2Sun3)
@@ -467,8 +469,8 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			A.Set(3, 2, A32+dAxDz)
 			A.Set(4, 2, A42+dAyDz)
 			A.Set(5, 2, A52+dAzDz)
-			// If with drag, then the A matrix is larger.
 			A.Set(6, 6, -Phi*S/rSun2)
+
 		}
 
 		ΦDot.Mul(A, Φ)

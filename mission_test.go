@@ -706,7 +706,8 @@ func TestMissionSTM(t *testing.T) {
 	perts := Perturbations{Jn: 3}
 	startDT := time.Now().UTC()
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
-	for meth := 1; meth < 4; meth++ {
+	dragExample := 1.2
+	for meth := 2; meth < 4; meth++ {
 		// Define the orbits
 		leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 		// Initialize the mission and estimates
@@ -718,7 +719,7 @@ func TestMissionSTM(t *testing.T) {
 			previousState = mat64.NewVector(6, nil)
 		} else {
 			previousState = mat64.NewVector(7, nil)
-			previousState.SetVec(6, 1.2)
+			previousState.SetVec(6, dragExample)
 		}
 		for i := 0; i < 3; i++ {
 			previousState.SetVec(i, iR[i])
@@ -737,7 +738,7 @@ func TestMissionSTM(t *testing.T) {
 		} else if meth == 2 {
 			// Test drag with zero drag coefficient.
 			sc := NewEmptySC("LEOwithDrag", 0)
-			sc.Drag = 1.2
+			sc.Drag = dragExample
 			fmt.Printf("%+v\n", sc)
 			perts.Drag = true
 			mission = NewPreciseMission(sc, leoMission, startDT, endDT, perts, 1*time.Second, true, ExportConfig{})
@@ -775,13 +776,15 @@ func TestMissionSTM(t *testing.T) {
 				stmState = mat64.NewVector(6, nil)
 			} else {
 				stmState = mat64.NewVector(7, nil)
-				stmState.SetVec(6, 1.2)
-			}
-			if numStates == 0 {
-				fmt.Printf("[ZERO]\n\n%+v\n\nvec=\n%+v\n\n", mat64.Formatted(state.Φ), mat64.Formatted(previousState.T()))
+				stmState.SetVec(6, dragExample)
 			}
 			stmState.MulVec(state.Φ, previousState)
 			stmState.SubVec(state.Vector(), stmState)
+			if numStates == 0 {
+				fmt.Printf("[ZERO]\n\n%+v\n\nvec=\n%+v\n\n", mat64.Formatted(state.Φ), mat64.Formatted(previousState.T()))
+				fmt.Printf("%+v\n", mat64.Formatted(state.Vector().T()))
+				fmt.Printf("%+v\n", mat64.Formatted(stmState.T()))
+			}
 			if mat64.Norm(stmState.T(), 2) > 0.1 {
 				t.Fatalf("[%d] Invalid estimation: norm of difference: %f", numStates, mat64.Norm(stmState.T(), 2))
 			}
