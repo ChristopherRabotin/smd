@@ -706,24 +706,43 @@ func TestMissionSTM(t *testing.T) {
 	perts := Perturbations{Jn: 3}
 	startDT := time.Now().UTC()
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
-	for meth := 0; meth < 3; meth++ {
+	for meth := 2; meth < 4; meth++ {
 		// Define the orbits
 		leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 		// Initialize the mission and estimates
-		mission := NewPreciseMission(NewEmptySC("LEO", 0), leoMission, startDT, endDT, perts, 1*time.Second, true, ExportConfig{})
-		stateChan := make(chan (State))
-		mission.RegisterStateChan(stateChan)
+		sc := NewEmptySC("LEO", 0)
 		// Run
 		iR, iV := leoMission.RV()
-		previousState := mat64.NewVector(6, nil)
+		var previousState *mat64.Vector
+		if meth != 2 {
+			previousState = mat64.NewVector(6, nil)
+		} else {
+			previousState = mat64.NewVector(7, nil)
+			previousState.SetVec(6, 1.2)
+		}
 		for i := 0; i < 3; i++ {
 			previousState.SetVec(i, iR[i])
 			previousState.SetVec(i+3, iV[i])
+		}
+		stateChan := make(chan (State))
+		var mission *Mission
+		if meth != 2 {
+			mission = NewPreciseMission(sc, leoMission, startDT, endDT, perts, 1*time.Second, true, ExportConfig{})
+			mission.RegisterStateChan(stateChan)
 		}
 		if meth == 0 {
 			go mission.PropagateUntil(endDT, true)
 		} else if meth == 1 {
 			go mission.Propagate()
+		} else if meth == 2 {
+			// Test drag with zero drag coefficient.
+			sc := NewEmptySC("LEOwithDrag", 0)
+			sc.Drag = 1.2
+			fmt.Printf("%+v\n", sc)
+			perts.Drag = true
+			mission = NewPreciseMission(sc, leoMission, startDT, endDT, perts, 1*time.Second, true, ExportConfig{})
+			mission.RegisterStateChan(stateChan)
+			go mission.PropagateUntil(endDT, true)
 		} else {
 			t.Skip("Multiple calls to PropagateUntil fails, cf. issue #104")
 			// BUG: This does NOT work. Don't know why yet, but I don't need just yet, so it can wait.
@@ -752,8 +771,14 @@ func TestMissionSTM(t *testing.T) {
 				}
 			}
 			numStates++
-			stmState := mat64.NewVector(6, nil)
+			var stmState *mat64.Vector
+			if meth != 2 {
+				stmState = mat64.NewVector(6, nil)
+			} else {
+				stmState = mat64.NewVector(7, nil)
+			}
 			stmState.MulVec(state.Φ, previousState)
+			fmt.Printf("%+v\n", mat64.Formatted(state.Vector().T()))
 			stmState.SubVec(state.Vector(), stmState)
 			if mat64.Norm(stmState.T(), 2) > 0.1 {
 				t.Fatalf("Invalid estimation: norm of difference: %f", mat64.Norm(stmState.T(), 2))

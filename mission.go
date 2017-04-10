@@ -216,7 +216,14 @@ func (a *Mission) SetState(t float64, s []float64) {
 	}
 	a.Vehicle.FuelMass = s[6]
 
-	latestVector := mat64.NewVector(6, s[0:6])
+	var latestVector *mat64.Vector
+	if a.Vehicle.Drag > 0 {
+		st := s[0:6]
+		st = append(st, a.Vehicle.Drag)
+		latestVector = mat64.NewVector(7, st)
+	} else {
+		latestVector = mat64.NewVector(6, s[0:6])
+	}
 	latestState := State{a.CurrentDT, *a.Vehicle, *a.Orbit, nil, latestVector}
 
 	if a.computeSTM {
@@ -233,7 +240,7 @@ func (a *Mission) SetState(t float64, s []float64) {
 		// Compute the Φ for this transition
 		var Φinv mat64.Dense
 		if err := Φinv.Inverse(a.Φ); err != nil {
-			panic("could not invert the previous Φ")
+			panic(fmt.Errorf("could not invert the previous Φ: %s", err))
 		}
 		a.Φ.Mul(ΦkTo0, &Φinv)
 		latestState.Φ = mat64.DenseCopyOf(a.Φ)
@@ -285,7 +292,6 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	fDot[6] = -usedFuel
 
 	// Compute and add the perturbations (which are method dependent).
-	// XXX: Should I be using the temp orbit instead?
 	pert := a.perts.Perturb(*tmpOrbit, a.CurrentDT)
 
 	// Compute STM if needed.
@@ -409,6 +415,59 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			A.Set(4, 2, A42)
 			A.Set(5, 2, A52)
 		}
+
+		if a.perts.Drag {
+			r := math.Sqrt(r2)
+			rVecSun := a.Orbit.Origin.HelioOrbit(a.CurrentDT).R()
+			rSun := Norm(rVecSun)
+			rSun2 := math.Pow(rSun, 2)
+			rSC2Sun := math.Pow((r - math.Sqrt(rSun2)), 2)
+			rSC2Sun3 := math.Pow((r - math.Sqrt(rSun2)), 3)
+			// Getting values
+			// Ai0 = \frac{\partial a}{\partial x}
+			// Ai1 = \frac{\partial a}{\partial y}
+			// Ai2 = \frac{\partial a}{\partial z}
+			A30 := A.At(3, 0)
+			A40 := A.At(4, 0)
+			A50 := A.At(5, 0)
+			A31 := A.At(3, 1)
+			A41 := A.At(4, 1)
+			A51 := A.At(5, 1)
+			A32 := A.At(3, 2)
+			A42 := A.At(4, 2)
+			A52 := A.At(5, 2)
+
+			Cr := a.Vehicle.Drag // XXX: This information must be updated at each estimation.
+			S := 0.01
+			Phi := 1357. / AU * r // Normalize for the SC to Sun distance
+
+			dAxDx := -Cr*Phi*S*x2/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x2/((r2)*(rSun2)*rSC2Sun3) + Cr*Phi*S/(r*(rSun2)*rSC2Sun)
+			dAxDy := -Cr*Phi*S*x*y/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x*y/((r2)*(rSun2)*rSC2Sun3)
+			dAxDz := -Cr*Phi*S*x*z/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x*z/((r2)*(rSun2)*rSC2Sun3)
+			dAyDx := -Cr*Phi*S*x*y/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x*y/((r2)*(rSun2)*rSC2Sun3)
+			dAyDy := -Cr*Phi*S*y2/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*y2/((r2)*(rSun2)*rSC2Sun3) + Cr*Phi*S/(r*(rSun2)*rSC2Sun)
+			dAyDz := -Cr*Phi*S*y*z/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*y*z/((r2)*(rSun2)*rSC2Sun3)
+			dAzDx := -Cr*Phi*S*x*z/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x*z/((r2)*(rSun2)*rSC2Sun3)
+			dAzDy := -Cr*Phi*S*y*z/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*y*z/((r2)*(rSun2)*rSC2Sun3)
+			dAzDz := -Cr*Phi*S*z2/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*z2/((r2)*(rSun2)*rSC2Sun3) + Cr*Phi*S/(r*(rSun2)*rSC2Sun)
+
+			// Setting values
+			// \frac{\partial a}{\partial x}
+			A.Set(3, 0, A30+dAxDx)
+			A.Set(4, 0, A40+dAyDx)
+			A.Set(5, 0, A50+dAzDx)
+			// \partial a/\partial y
+			A.Set(3, 1, A31+dAxDy)
+			A.Set(4, 1, A41+dAyDy)
+			A.Set(5, 1, A51+dAzDy)
+			// \partial a/\partial z
+			A.Set(3, 2, A32+dAxDz)
+			A.Set(4, 2, A42+dAyDz)
+			A.Set(5, 2, A52+dAzDz)
+			// If with drag, then the A matrix is larger.
+			A.Set(6, 6, -Phi*S/rSun2)
+		}
+
 		ΦDot.Mul(A, Φ)
 
 		// Store ΦDot in fDot
@@ -446,7 +505,13 @@ type State struct {
 // Vector returns the orbit vector with position and velocity.
 func (s State) Vector() *mat64.Vector {
 	if s.cVector == nil {
-		vec := mat64.NewVector(6, nil)
+		var vec *mat64.Vector
+		if s.SC.Drag > 0 {
+			vec = mat64.NewVector(7, nil)
+			vec.SetVec(6, s.SC.Drag)
+		} else {
+			vec = mat64.NewVector(6, nil)
+		}
 		R, V := s.Orbit.RV()
 		for i := 0; i < 3; i++ {
 			vec.SetVec(i, R[i])
