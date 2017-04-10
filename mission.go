@@ -184,8 +184,9 @@ func (a *Mission) GetState() (s []float64) {
 	if a.computeSTM {
 		// Add the components of Φ
 		sIdx := 6
-		for i := 0; i < 6; i++ {
-			for j := 0; j < 6; j++ {
+		rSTM, cSTM := a.perts.STMSize()
+		for i := 0; i < rSTM; i++ {
+			for j := 0; j < cSTM; j++ {
 				s[sIdx] = a.Φ.At(i, j)
 				sIdx++
 			}
@@ -314,6 +315,9 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		A.Set(0, 3, 1)
 		A.Set(1, 4, 1)
 		A.Set(2, 5, 1)
+		if a.Vehicle.Drag > 0 {
+			A.Set(3, 6, 1)
+		}
 		// Bottom left is where the magic is.
 		x := R[0]
 		y := R[1]
@@ -439,7 +443,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 
 			Cr := a.Vehicle.Drag // XXX: This information must be updated at each estimation.
 			S := 0.01
-			Phi := 1357. / AU * r // Normalize for the SC to Sun distance
+			Phi := 1357. // AU * r // Normalize for the SC to Sun distance
 
 			dAxDx := -Cr*Phi*S*x2/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x2/((r2)*(rSun2)*rSC2Sun3) + Cr*Phi*S/(r*(rSun2)*rSC2Sun)
 			dAxDy := -Cr*Phi*S*x*y/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x*y/((r2)*(rSun2)*rSC2Sun3)
@@ -450,7 +454,6 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			dAzDx := -Cr*Phi*S*x*z/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x*z/((r2)*(rSun2)*rSC2Sun3)
 			dAzDy := -Cr*Phi*S*y*z/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*y*z/((r2)*(rSun2)*rSC2Sun3)
 			dAzDz := -Cr*Phi*S*z2/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*z2/((r2)*(rSun2)*rSC2Sun3) + Cr*Phi*S/(r*(rSun2)*rSC2Sun)
-
 			// Setting values
 			// \frac{\partial a}{\partial x}
 			A.Set(3, 0, A30+dAxDx)

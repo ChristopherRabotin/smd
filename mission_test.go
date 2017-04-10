@@ -706,7 +706,7 @@ func TestMissionSTM(t *testing.T) {
 	perts := Perturbations{Jn: 3}
 	startDT := time.Now().UTC()
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
-	for meth := 2; meth < 4; meth++ {
+	for meth := 1; meth < 4; meth++ {
 		// Define the orbits
 		leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 		// Initialize the mission and estimates
@@ -770,20 +770,23 @@ func TestMissionSTM(t *testing.T) {
 					prevDT = state.DT
 				}
 			}
-			numStates++
 			var stmState *mat64.Vector
 			if meth != 2 {
 				stmState = mat64.NewVector(6, nil)
 			} else {
 				stmState = mat64.NewVector(7, nil)
+				stmState.SetVec(6, 1.2)
+			}
+			if numStates == 0 {
+				fmt.Printf("[ZERO]\n\n%+v\n\nvec=\n%+v\n\n", mat64.Formatted(state.Φ), mat64.Formatted(previousState.T()))
 			}
 			stmState.MulVec(state.Φ, previousState)
-			fmt.Printf("%+v\n", mat64.Formatted(state.Vector().T()))
 			stmState.SubVec(state.Vector(), stmState)
 			if mat64.Norm(stmState.T(), 2) > 0.1 {
-				t.Fatalf("Invalid estimation: norm of difference: %f", mat64.Norm(stmState.T(), 2))
+				t.Fatalf("[%d] Invalid estimation: norm of difference: %f", numStates, mat64.Norm(stmState.T(), 2))
 			}
 			previousState = state.Vector()
+			numStates++
 		}
 		if numStates != 86400 {
 			t.Fatalf("expected 86400 states to be processed, got %d (failed on %d)", numStates, meth)
