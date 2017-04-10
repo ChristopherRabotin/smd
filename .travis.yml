@@ -24,7 +24,7 @@ before_install:
   - wget -O cmd/refframes/spicekernels/de430.bsp https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp
 script:
   - python cmd/refframes/tests.py
-  - go test -v -timeout=30m -covermode=count -coverprofile=coverage.out
+  - source .venv/bin/activate && go test -v -timeout=30m -covermode=count -coverprofile=coverage.out
   - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci
 env:
   - SMD_CONFIG=./
