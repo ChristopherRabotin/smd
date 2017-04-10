@@ -243,7 +243,6 @@ func (a *Mission) SetState(t float64, s []float64) {
 		if err := Φinv.Inverse(a.Φ); err != nil {
 			panic(fmt.Errorf("could not invert the previous Φ: %s", err))
 		}
-		//fmt.Printf("kTo0:\n%+v\n\nInv:\n%+v\n\n", mat64.Formatted(ΦkTo0), mat64.Formatted(&Φinv))
 		a.Φ.Mul(ΦkTo0, &Φinv)
 		latestState.Φ = mat64.DenseCopyOf(a.Φ)
 	}
@@ -317,7 +316,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		A.Set(1, 4, 1)
 		A.Set(2, 5, 1)
 		if a.Vehicle.Drag > 0 {
-			A.Set(3, 6, 1) // XXX Should this be a 1?
+			A.Set(3, 6, 0) // XXX Should this be a 1?
 		}
 		// Bottom left is where the magic is.
 		x := R[0]

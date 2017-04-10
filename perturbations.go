@@ -69,7 +69,12 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time) []float64 {
 		Cr := 1.2    // TODO: Read actual spacecraft drag.
 		S := 0.01    // TODO: Idem for the Area to mass ratio
 		Phi := 1357. // AU * r // Normalize for the SC to Sun distance
-		SunD := mat64.NewVector(3, o.Origin.HelioOrbit(dt).R())
+		SunD := mat64.NewVector(3, nil)
+		for i, xyz := range o.Origin.HelioOrbit(dt).R() {
+			// Important because if the resolution of the ephemeride is less than that of the time step
+			// the following operations will overwrite the storage.
+			SunD.SetVec(i, xyz)
+		}
 		SunD.AddVec(SunD, mat64.NewVector(3, o.R()))
 		SunD.ScaleVec(Cr*Phi*S*S/math.Pow(mat64.Norm(SunD, 2), 3), SunD)
 		for i := 0; i < 3; i++ {
