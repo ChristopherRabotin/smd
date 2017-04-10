@@ -195,6 +195,7 @@ func TestLambertDavisEarth2VenusT3(t *testing.T) {
 }
 
 func TestPCPGen(t *testing.T) {
+	t.Skip("Will be added later after travis has been updated to support SPICCE CSV")
 	t.Log("Not much of a test, just checks it does not crash")
 	PCPGenerator(Venus, Earth, time.Date(1989, 12, 01, 0, 0, 0, 0, time.UTC), time.Date(1990, 05, 01, 0, 0, 0, 0, time.UTC), time.Date(1990, 8, 15, 0, 0, 0, 0, time.UTC), time.Date(1991, 02, 15, 0, 0, 0, 0, time.UTC), 1, 1, true, false, false)
 }
