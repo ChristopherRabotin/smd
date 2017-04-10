@@ -64,6 +64,16 @@ type _smdconfig struct {
 	testExport    bool
 }
 
+func (c _smdconfig) String() string {
+	if c.VSOP87 {
+		return fmt.Sprintf("[smd:config] VSOP87: %s", c.VSOP87Dir)
+	}
+	if c.spiceCSV {
+		return fmt.Sprintf("[smd:config] SPICE: CSV - %s", c.HorizonDir)
+	}
+	return fmt.Sprintf("[smd:config] SPICE: SpiceyPy - %s", c.SPICEDir)
+}
+
 func (c _smdconfig) ChgFrame(toFrame, fromFrame string, epoch time.Time, state []float64) planetstate {
 	conf := smdConfig()
 	stateStr := ""

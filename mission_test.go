@@ -739,6 +739,7 @@ func TestMissionSTM(t *testing.T) {
 			// Set the configuration to use SPICE CSV files.
 			smdConfig()
 			config.spiceCSV = true
+			fmt.Printf("%s\n", config)
 			// Test drag with zero drag coefficient.
 			sc := NewEmptySC("LEOwithDrag", 0)
 			sc.Drag = dragExample
