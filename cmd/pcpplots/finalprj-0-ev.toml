@@ -5,12 +5,12 @@ c3plot = true
 
 [Departure]
 planet = "Earth"
-from = "2021-01-01 00:00:00"
-until = "2022-06-01 00:00:00"
+from = "2023-01-01 00:00:00"
+until = "2024-01-01 00:00:00"
 resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.
 
 [Arrival]
 planet = "Venus"
-from = "2021-10-18 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
-until = "2022-02-23 00:00:00"
+from = "2023-01-01 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
+until = "2024-05-01 00:00:00"
 resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.

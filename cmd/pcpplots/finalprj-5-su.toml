@@ -5,12 +5,12 @@ c3plot = false
 
 [Arrival]
 planet = "Uranus"
-from = "2030-01-01 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
+from = "2034-01-01 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
 until = "2040-01-01 00:00:00"
 resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.
 
 [Departure]
 planet = "Saturn"
-from = "2028-01-01 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
-until = "2038-01-01 00:00:00"
+from = "2031-12-01 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
+until = "2034-01-01 00:00:00"
 resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.
