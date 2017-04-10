@@ -736,6 +736,9 @@ func TestMissionSTM(t *testing.T) {
 		} else if meth == 1 {
 			go mission.Propagate()
 		} else if meth == 2 {
+			// Set the configuration to use SPICE CSV files.
+			smdConfig()
+			config.spiceCSV = true
 			// Test drag with zero drag coefficient.
 			sc := NewEmptySC("LEOwithDrag", 0)
 			sc.Drag = dragExample
