@@ -1,0 +1,31 @@
+[general]
+fileprefix = "prj0"
+verbose = true
+step = "24h"
+flybyplanets = "Venus Mars Earth"
+
+[launch]
+planet = "Earth"
+from = "2020-01-01 00:00:00"
+until = "2026-01-01 00:00:00"
+maxC3 = 35
+
+[arrival]
+planet = "Earth"
+until = "2035-01-01 00:00:00"
+maxVinf = 50
+
+[flyby.Venus]
+position = 1
+deltaV = 1.0
+periapsis = 1.01
+
+[flyby.Mars]
+position = 2
+deltaV = 1.0
+periapsis = 1.01
+
+[flyby.Earth]
+position = 3
+deltaV = 1.0
+periapsis = 1.01

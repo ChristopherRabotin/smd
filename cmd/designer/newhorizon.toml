@@ -1,0 +1,24 @@
+[general]
+fileprefix = "nh"
+verbose = true
+step = "24h"
+flybyplanets = "Jupiter"
+
+[launch]
+planet = "Earth"
+from = "2006-01-09 00:00:00"
+until = "2006-01-10 00:00:00"
+maxC3 = 180 # Max c3 allowed
+
+[arrival]
+planet = "Pluto"
+from = 2456917.5
+until = 2457517.5
+maxVinf = 14.5
+
+[flyby.Jupiter]
+position = 1
+from = 2454129.5
+until = 2454239.5
+deltaV = 0.4
+periapsis = 30.0

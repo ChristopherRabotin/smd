@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"time"
 
 	"github.com/gonum/floats"
@@ -169,8 +170,8 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	var Δt, y float64
 	var iteration uint
 	for math.Abs(Δt-Δt0Sec) > lambertTlambertε {
-		if iteration > 10000 {
-			err = errors.New("did not converge after 10000 iterations")
+		if iteration > 1000 {
+			err = errors.New("did not converge after 1000 iterations")
 			return
 		}
 		iteration++
@@ -180,8 +181,8 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 			for y < 0 {
 				φ += 0.1
 				y = rI + rF + A*(φ*c3-1)/math.Sqrt(c2)
-				if tmpIt > 10000 {
-					err = errors.New("did not converge after 10000 attempts to increase φ")
+				if tmpIt > 500 {
+					err = errors.New("did not converge after 500 attempts to increase φ")
 					return
 				}
 				tmpIt++
@@ -227,5 +228,137 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 	Rf2.ScaleVec(gDot, Rf)
 	Vf.AddScaledVec(Rf2, -1, Ri)
 	Vf.ScaleVec(1/g, Vf)
+	return
+}
+
+// PCPGenerator generates the PCP files to perform contour plots in Matlab (and eventually prints the command).
+func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, plotC3, verbose, output bool) (c3Map, tofMap, vinfMap map[time.Time][]float64, vInfInitVecs, vInfArriVecs map[time.Time][]mat64.Vector) {
+	launchWindow := int(maxLaunch.Sub(initLaunch).Hours() / 24)    //days
+	arrivalWindow := int(maxArrival.Sub(initArrival).Hours() / 24) //days
+	// Create the output arrays
+	c3Map = make(map[time.Time][]float64)
+	tofMap = make(map[time.Time][]float64)
+	vinfMap = make(map[time.Time][]float64)
+	vInfInitVecs = make(map[time.Time][]mat64.Vector)
+	vInfArriVecs = make(map[time.Time][]mat64.Vector)
+	if verbose {
+		fmt.Printf("Launch window: %d days\nArrival window: %d days\n", launchWindow, arrivalWindow)
+	}
+	// Stores the content of the dat file.
+	// No trailing new line because it's add in the for loop.
+	dat := fmt.Sprintf("%% %s -> %s\n%%arrival days as new lines, departure as new columns", initPlanet, arrivalPlanet)
+	hdls := make([]*os.File, 4)
+	var fNames []string
+	if plotC3 {
+		fNames = []string{"c3", "tof", "vinf", "dates"}
+	} else {
+		fNames = []string{"vinf-init", "tof", "vinf-arrival", "dates"}
+	}
+	pcpName := fmt.Sprintf("%s-to-%s", initPlanet.Name, arrivalPlanet.Name)
+	if output {
+		for i, name := range fNames {
+			// Write CSV file.
+			f, err := os.Create(fmt.Sprintf("./contour-%s-%s.dat", pcpName, name))
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+			if _, err := f.WriteString(dat); err != nil {
+				panic(err)
+			}
+			hdls[i] = f
+		}
+
+		// Let's write the date information now and close that file.
+		hdls[3].WriteString(fmt.Sprintf("\n%%departure: \"%s\"\n%%arrival: \"%s\"\n%d,%d\n%d,%d\n", initLaunch.Format("2006-Jan-02"), initArrival.Format("2006-Jan-02"), 1, launchWindow, 1, arrivalWindow))
+		hdls[3].Close()
+	}
+	for launchDay := 0.; launchDay < float64(launchWindow); launchDay += 1 / ptsPerLaunchDay {
+		// New line in files
+		if output {
+			for _, hdl := range hdls[:3] {
+				if _, err := hdl.WriteString("\n"); err != nil {
+					panic(err)
+				}
+			}
+		}
+		launchDT := initLaunch.Add(time.Duration(launchDay*24*3600) * time.Second)
+		if verbose {
+			fmt.Printf("Launch date %s\n", launchDT)
+		}
+		// Initialize the values
+		c3Map[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
+		tofMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
+		vinfMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
+		vInfInitVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay))
+		vInfArriVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay))
+
+		initOrbit := initPlanet.HelioOrbit(launchDT)
+		initPlanetR := mat64.NewVector(3, initOrbit.R())
+		initPlanetV := mat64.NewVector(3, initOrbit.V())
+		arrivalIdx := 0
+		for arrivalDay := 0.; arrivalDay < float64(arrivalWindow); arrivalDay += 1 / ptsPerArrivalDay {
+			arrivalDT := initArrival.Add(time.Duration(arrivalDay*24) * time.Hour)
+			// Check if this is anachronologic, and if so, skip.
+			if arrivalDT.Before(launchDT) {
+				continue
+			}
+			arrivalOrbit := arrivalPlanet.HelioOrbit(arrivalDT)
+			arrivalR := mat64.NewVector(3, arrivalOrbit.R())
+			arrivalV := mat64.NewVector(3, arrivalOrbit.V())
+
+			tof := arrivalDT.Sub(launchDT)
+			Vi, Vf, _, err := Lambert(initPlanetR, arrivalR, tof, TTypeAuto, Sun)
+			var c3, vInfArrival float64
+			if err != nil {
+				if verbose {
+					fmt.Printf("departure: %s\tarrival: %s\t\t%s\n", launchDT, arrivalDT, err)
+				}
+				c3 = math.Inf(1)
+				vInfArrival = math.Inf(1)
+				// Store a nil vector to not loose track of indexing
+				vInfInitVecs[launchDT][arrivalIdx] = *mat64.NewVector(3, nil)
+				vInfArriVecs[launchDT][arrivalIdx] = *mat64.NewVector(3, nil)
+			} else {
+				// Compute the c3
+				VInfInit := mat64.NewVector(3, nil)
+				VInfInit.SubVec(initPlanetV, Vi)
+				// WARNING: When *not* plotting the c3, we just store the V infinity at departure in the c3 variable!
+				if plotC3 {
+					c3 = math.Pow(mat64.Norm(VInfInit, 2), 2)
+				} else {
+					c3 = mat64.Norm(VInfInit, 2)
+				}
+				if math.IsInf(c3, 1) {
+					c3 = 0
+				}
+				// Compute the v_infinity at destination
+				VInfArrival := mat64.NewVector(3, nil)
+				VInfArrival.SubVec(arrivalV, Vf)
+				vInfArrival = mat64.Norm(VInfArrival, 2)
+				vInfInitVecs[launchDT][arrivalIdx] = *VInfInit
+				vInfArriVecs[launchDT][arrivalIdx] = *VInfArrival
+			}
+			if output {
+				// Store data in the files
+				hdls[0].WriteString(fmt.Sprintf("%f,", c3))
+				hdls[1].WriteString(fmt.Sprintf("%f,", tof.Hours()/24))
+				hdls[2].WriteString(fmt.Sprintf("%f,", vInfArrival))
+			}
+			// and in the arrays
+			c3Map[launchDT][arrivalIdx] = c3
+			tofMap[launchDT][arrivalIdx] = tof.Hours() / 24
+			vinfMap[launchDT][arrivalIdx] = vInfArrival
+			arrivalIdx++
+		}
+	}
+	if verbose && output {
+		// Print the matlab command to help out
+		if plotC3 {
+			fmt.Printf("=== MatLab ===\npcpplots('%s', '%s', '%s', '%s')\n", pcpName, initLaunch.Format("2006-01-02"), initArrival.Format("2006-01-02"), arrivalPlanet.Name)
+		} else {
+			fmt.Printf("=== MatLab ===\npcpplotsVinfs('%s', '%s', '%s', '%s', '%s')\n", pcpName, initLaunch.Format("2006-01-02"), initArrival.Format("2006-01-02"), initPlanet.Name, arrivalPlanet.Name)
+		}
+	}
 	return
 }

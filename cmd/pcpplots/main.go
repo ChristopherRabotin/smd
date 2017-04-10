@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
@@ -42,6 +43,7 @@ func main() {
 		if scenario == defaultScenario {
 			log.Fatal("no scenario provided and no finder set")
 		}
+		scenario = strings.Replace(scenario, ".toml", "", 1)
 		// Load scenario
 		viper.AddConfigPath(".")
 		viper.SetConfigName(scenario)
@@ -74,7 +76,7 @@ func main() {
 				log.Fatal("could not read Arrival.from")
 			}
 		} else {
-			initLaunch = julian.JDToTime(initArrivalJD)
+			initArrival = julian.JDToTime(initArrivalJD)
 		}
 		maxLaunchJD := viper.GetFloat64("Departure.until")
 		if initLaunchJD == 0 {
@@ -191,7 +193,6 @@ func main() {
 								maxRp = rp
 							}
 							if rp < minRp {
-								//fmt.Printf("rP = %.2f * Jupiter radius (%.3f km)\t%+v\t%+v\n", rp/smd.Jupiter.Radius, rp, vInfIn, vInfOut)
 								continue
 							}
 						}

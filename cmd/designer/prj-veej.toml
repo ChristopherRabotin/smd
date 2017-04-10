@@ -1,0 +1,34 @@
+[general]
+fileprefix = "veej"
+verbose = true
+step = "24h"
+flybyplanets = "Venus Earth Earth"
+
+[launch]
+planet = "Earth"
+from = "2020-01-09 00:00:00"
+until = "2021-01-01 00:00:00"
+maxC3 = 18 # Max c3 allowed
+
+[arrival]
+planet = "Jupiter"
+until = "2031-01-01 00:00:00"
+maxVinf = 6
+
+[flyby.Venus]
+until = "2023-01-01 00:00:00"
+position = 1
+deltaV = 1.0
+periapsis = 1.01
+
+[flyby.Earth]
+until = "2025-01-01 00:00:00"
+position = 2
+deltaV = 1.0
+periapsis = 1.01
+
+[flyby.Earth.1]
+until = "2028-01-01 00:00:00"
+position = 3
+deltaV = 1.0
+periapsis = 1.01
