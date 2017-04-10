@@ -183,7 +183,7 @@ func (a *Mission) GetState() (s []float64) {
 	s[6] = a.Vehicle.FuelMass
 	if a.computeSTM {
 		// Add the components of Φ
-		sIdx := 6
+		sIdx := 7
 		rSTM, cSTM := a.perts.STMSize()
 		for i := 0; i < rSTM; i++ {
 			for j := 0; j < cSTM; j++ {
@@ -229,7 +229,7 @@ func (a *Mission) SetState(t float64, s []float64) {
 
 	if a.computeSTM {
 		// Extract the components of Φ
-		sIdx := 6
+		sIdx := 7
 		rΦ, cΦ := a.perts.STMSize()
 		ΦkTo0 := mat64.NewDense(rΦ, cΦ, nil)
 		for i := 0; i < rΦ; i++ {
@@ -243,7 +243,7 @@ func (a *Mission) SetState(t float64, s []float64) {
 		if err := Φinv.Inverse(a.Φ); err != nil {
 			panic(fmt.Errorf("could not invert the previous Φ: %s", err))
 		}
-		fmt.Printf("kTo0:\n%+v\n\nInv:\n%+v\n\n", mat64.Formatted(ΦkTo0), mat64.Formatted(&Φinv))
+		//fmt.Printf("kTo0:\n%+v\n\nInv:\n%+v\n\n", mat64.Formatted(ΦkTo0), mat64.Formatted(&Φinv))
 		a.Φ.Mul(ΦkTo0, &Φinv)
 		latestState.Φ = mat64.DenseCopyOf(a.Φ)
 	}
@@ -299,7 +299,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	// Compute STM if needed.
 	if a.computeSTM {
 		// Extract the components of Φ
-		fIdx := 6
+		fIdx := 7
 		rΦ, cΦ := a.perts.STMSize()
 		Φ := mat64.NewDense(rΦ, cΦ, nil)
 		ΦDot := mat64.NewDense(rΦ, cΦ, nil)
@@ -476,7 +476,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		ΦDot.Mul(A, Φ)
 
 		// Store ΦDot in fDot
-		fIdx = 6
+		fIdx = 7
 		for i := 0; i < rΦ; i++ {
 			for j := 0; j < cΦ; j++ {
 				fDot[fIdx] = ΦDot.At(i, j)

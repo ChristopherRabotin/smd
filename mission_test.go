@@ -707,7 +707,7 @@ func TestMissionSTM(t *testing.T) {
 	startDT := time.Now().UTC()
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
 	dragExample := 1.2
-	for meth := 2; meth < 4; meth++ {
+	for meth := 1; meth < 4; meth++ {
 		// Define the orbits
 		leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 		// Initialize the mission and estimates
