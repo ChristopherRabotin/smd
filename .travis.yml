@@ -24,7 +24,7 @@ before_install:
   - wget -O cmd/refframes/spicekernels/de430.bsp https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp
 script:
   - python cmd/refframes/tests.py
-  - python cmd/refframes/horizon -p Earth -y 2017 -r 1m
+  - python cmd/refframes/horizon.py -p Earth -y 2017 -r 1m
   #- go test -v -timeout=30m -covermode=count -coverprofile=coverage.out
   - go test -v -run TestMissionSTM -timeout=30m -covermode=count -coverprofile=coverage.out
   - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci
