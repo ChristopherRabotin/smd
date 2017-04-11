@@ -742,6 +742,7 @@ func TestMissionSTM(t *testing.T) {
 			// Travis is annoying me
 			if config.HorizonDir == "" {
 				config.HorizonDir = "./data/horizon"
+				config.spiceTrunc = time.Minute
 			}
 			fmt.Printf("%s\n", config)
 			// Test drag with zero drag coefficient.
