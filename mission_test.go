@@ -739,6 +739,10 @@ func TestMissionSTM(t *testing.T) {
 			// Set the configuration to use SPICE CSV files.
 			smdConfig()
 			config.spiceCSV = true
+			// Travis is annoying me
+			if config.HorizonDir == "" {
+				config.HorizonDir = "./data/horizon"
+			}
 			fmt.Printf("%s\n", config)
 			// Test drag with zero drag coefficient.
 			sc := NewEmptySC("LEOwithDrag", 0)
