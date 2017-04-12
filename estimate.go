@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/ChristopherRabotin/gokalman"
 	"github.com/ChristopherRabotin/ode"
 	kitlog "github.com/go-kit/kit/log"
 	"github.com/gonum/matrix/mat64"
@@ -258,5 +257,5 @@ func NewOrbitEstimate(n string, o Orbit, p Perturbations, epoch time.Time, step 
 	stopDT := epoch
 	// XXX: We add the step for consistency with Mission. Mission is broken: it skips the first step because the time addition
 	// happens in the Stop function instead of the SetState function, the former being called at the start of the integration.
-	return &OrbitEstimate{gokalman.DenseIdentity(6), o, p, stopDT, epoch.Add(step), step, klog}
+	return &OrbitEstimate{DenseIdentity(6), o, p, stopDT, epoch.Add(step), step, klog}
 }
