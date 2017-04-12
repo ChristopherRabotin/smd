@@ -46,10 +46,10 @@ func (c _smdconfig) ChgFrame(toFrame, fromFrame string, epoch time.Time, state [
 		stateStr += fmt.Sprintf("%f,", val)
 	}
 	stateStr = fmt.Sprintf("[%s]", stateStr[:len(stateStr)-1]) // Trim the last comma
-	cmd := exec.Command("python3", conf.SPICEDir+"/chgframe.py", "-t", toFrame, "-f", fromFrame, "-e", epoch.Format(time.ANSIC), "-s", stateStr)
+	cmd := exec.Command("python", conf.SPICEDir+"/chgframe.py", "-t", toFrame, "-f", fromFrame, "-e", epoch.Format(time.ANSIC), "-s", stateStr)
 	cmdOut, err := cmd.Output()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "command attempted:\npython3 %s/chgframe.py -t %s -f %s -e \"%s\" -s %s\n", conf.SPICEDir, toFrame, fromFrame, epoch.Format(time.ANSIC), stateStr)
+		fmt.Fprintf(os.Stderr, "command attempted:\npython %s/chgframe.py -t %s -f %s -e \"%s\" -s %s\n", conf.SPICEDir, toFrame, fromFrame, epoch.Format(time.ANSIC), stateStr)
 		panic(fmt.Errorf("error running chgframe: %s \ncheck that you are in the Python virtual environment", err))
 	}
 	return stateFromString(cmdOut)
@@ -67,7 +67,19 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 			loadingProfileDT := time.Now()
 			file, err := os.Open(fmt.Sprintf("%s/%s.csv", conf.HorizonDir, ephemeride))
 			if err != nil {
-				log.Fatal(err)
+				log.Printf("%s\nGenerating it now...", err)
+				// Generate it.
+				cmd := exec.Command("python", conf.SPICEDir+"/horizon.py", "-p", planet, "-y", fmt.Sprintf("%d", epoch.Year()), "-r", "1m")
+				_, err := cmd.Output()
+				if err != nil {
+					panic(fmt.Errorf("error running horizon: %s \ncheck that you are in the Python virtual environment", err))
+				}
+				log.Println("[OK]")
+				// Load the file again and totally fail if issue.
+				file, err = os.Open(fmt.Sprintf("%s/%s.csv", conf.HorizonDir, ephemeride))
+				if err != nil {
+					log.Fatalf("could not open file after generation: %s", err)
+				}
 			}
 			defer file.Close()
 			scanner := bufio.NewScanner(file)
@@ -85,11 +97,11 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 				for i := 0; i < 3; i++ {
 					tR, err := strconv.ParseFloat(strings.TrimSpace(entries[i+2]), 64)
 					if err != nil {
-						panic("could not parse position")
+						log.Fatalf("[smd:error] could not parse position when reading %s: `%s`", ephemeride, strings.TrimSpace(entries[i+2]))
 					}
 					tV, err := strconv.ParseFloat(strings.TrimSpace(entries[i+5]), 64)
 					if err != nil {
-						panic("could not parse velocity")
+						log.Fatalf("[smd:error] could not parse velocity when reading %s: `%s`", ephemeride, strings.TrimSpace(entries[i+5]))
 					}
 					R[i] = tR
 					V[i] = tV
@@ -98,7 +110,7 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 			}
 
 			if err := scanner.Err(); err != nil {
-				panic(err)
+				log.Fatalf("[smd:error] %s when loading %s", err, ephemeride)
 			}
 			fmt.Printf("[smd:info] %s loaded in %s\n", ephemeride, time.Now().Sub(loadingProfileDT))
 		}
@@ -110,10 +122,10 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 		spiceCSVMutex.Unlock()
 		return state
 	}
-	cmd := exec.Command("python3", conf.SPICEDir+"/heliostate.py", "-p", planet, "-e", epoch.Format(time.ANSIC))
+	cmd := exec.Command("python", conf.SPICEDir+"/heliostate.py", "-p", planet, "-e", epoch.Format(time.ANSIC))
 	cmdOut, err := cmd.Output()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "command attempted:\npython3 %s/heliostate.py -p %s -e \"%s\"\n", conf.SPICEDir, planet, epoch.Format(time.ANSIC))
+		fmt.Fprintf(os.Stderr, "command attempted:\npython %s/heliostate.py -p %s -e \"%s\"\n", conf.SPICEDir, planet, epoch.Format(time.ANSIC))
 		panic(fmt.Errorf("error running heliostate: %s \ncheck that you are in the Python virtual environment", err))
 	}
 	return stateFromString(cmdOut)
