@@ -3,8 +3,6 @@ package smd
 import (
 	"math"
 	"time"
-
-	"github.com/gonum/matrix/mat64"
 )
 
 // Perturbations defines how to handle perturbations during the propagation.
@@ -66,43 +64,38 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time) []float64 {
 	if p.Drag {
 		// If Drag, SRP is *also* turned on.
 		// TODO: Drag, there is only SRP here.
-		Cr := 1.2    // TODO: Read actual spacecraft drag.
-		S := 0.01    // TODO: Idem for the Area to mass ratio
+		Cr := 1.0    // TODO: Read actual spacecraft drag.
+		S := 0.01e-6 // TODO: Idem for the Area to mass ratio
 		Phi := 1357. // AU * r // Normalize for the SC to Sun distance
-		SunD := mat64.NewVector(3, nil)
-		for i, xyz := range o.Origin.HelioOrbit(dt).R() {
-			// Important because if the resolution of the ephemeride is less than that of the time step
-			// the following operations will overwrite the storage.
-			SunD.SetVec(i, xyz)
-		}
-		SunD.AddVec(SunD, mat64.NewVector(3, o.R()))
-		SunD.ScaleVec(Cr*Phi*S*S/math.Pow(mat64.Norm(SunD, 2), 3), SunD)
+		// Build the vectors.
+		REarthToSC := o.R()
+		RSunToEarth := o.Origin.HelioOrbit(dt).R()
+		RSunToSC := make([]float64, 3)
 		for i := 0; i < 3; i++ {
-			pert[i+3] += SunD.At(i, 0)
+			RSunToSC[i] = RSunToEarth[i] + REarthToSC[i]
+		}
+		srpCst := -Cr * Phi * S * AU * AU / math.Pow(Norm(RSunToSC), 2) // TODO: Plot effects with and without AU^2 to have some kind of check.
+		unitRSunToSC := Unit(RSunToSC)
+		for i := 0; i < 3; i++ {
+			pert[i+3] = srpCst * unitRSunToSC[i]
 		}
 	}
 
 	if p.PerturbingBody != nil && !p.PerturbingBody.Equals(o.Origin) {
-		mainR := o.Origin.HelioOrbit(dt).R()
-		pertR := p.PerturbingBody.HelioOrbit(dt).R()
-		if p.PerturbingBody.Equals(Sun) {
-			pertR = []float64{0, 0, 0}
+		if !p.PerturbingBody.Equals(Sun) {
+			panic("only the Sun as a perturbing body is currently supported")
 		}
-		relPertR := make([]float64, 3) // R between main body and pertubing body
-		scPert := make([]float64, 3)   // r_{i/sc} of spacecraft to pertubing body.
-		oppose := 1.
-		if Norm(mainR) > Norm(pertR) {
-			oppose = -1
-		}
-		scR := o.R()
+		// Build the vectors.
+		REarthToSC := o.R()
+		RSunToEarth := o.Origin.HelioOrbit(dt).R()
+		RSunToSC := make([]float64, 3)
 		for i := 0; i < 3; i++ {
-			relPertR[i] = oppose * (pertR[i] - mainR[i])
-			scPert[i] = relPertR[i] - scR[i]
+			RSunToSC[i] = RSunToEarth[i] + REarthToSC[i]
 		}
-		relPertRNorm3 := math.Pow(Norm(relPertR), 3)
-		scPertNorm3 := math.Pow(Norm(scPert), 3)
+		RSunToEarthNorm3 := math.Pow(Norm(RSunToEarth), 3)
+		RSunToSCNorm3 := math.Pow(Norm(RSunToSC), 3)
 		for i := 0; i < 3; i++ {
-			pert[i] += p.PerturbingBody.μ * (scPert[i]/scPertNorm3 - relPertR[i]/relPertRNorm3)
+			pert[i+3] = Sun.μ * (RSunToEarth[i]/RSunToEarthNorm3 - RSunToSC[i]/RSunToSCNorm3)
 		}
 	}
 	if p.Arbitrary != nil {

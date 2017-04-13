@@ -40,7 +40,7 @@ if __name__ == '__main__':
     for fld in __file__.split('/'):
         if fld == '..':
             dots += 1
-    f = open('.' + '/'.join(['..' for _ in range(dots)]) + '/data/horizon/' + args.planet + '-' + str(start_date.year) + '.csv', 'w')
+    f = open('../../' + '/'.join(['..' for _ in range(dots)]) + '/data/horizon/' + args.planet + '-' + str(start_date.year) + '.csv', 'w')
     prev_month = 0
     while start_date <= end_date:
         if prev_month != start_date.month:
