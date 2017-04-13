@@ -293,7 +293,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	fDot[6] = -usedFuel
 
 	// Compute and add the perturbations (which are method dependent).
-	pert := a.perts.Perturb(*tmpOrbit, a.CurrentDT)
+	pert := a.perts.Perturb(*tmpOrbit, a.CurrentDT, *a.Vehicle)
 
 	// Compute STM if needed.
 	if a.computeSTM {

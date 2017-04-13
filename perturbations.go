@@ -29,7 +29,7 @@ func (p Perturbations) STMSize() (r, c int) {
 // Perturb returns the perturbing state vector based on the kind of propagation being used.
 // For example, if using Cartesian, it'll return the impact on the R vector. If Gaussian, it'll
 // return the impact on Ω, ω, ν (later for ν...).
-func (p Perturbations) Perturb(o Orbit, dt time.Time) []float64 {
+func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 	pert := make([]float64, 7)
 	if p.isEmpty() {
 		return pert
@@ -64,20 +64,22 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time) []float64 {
 	if p.Drag {
 		// If Drag, SRP is *also* turned on.
 		// TODO: Drag, there is only SRP here.
-		Cr := 1.0    // TODO: Read actual spacecraft drag.
+		//Cr := 1.0    // TODO: Read actual spacecraft drag.
+		Cr := sc.Drag
 		S := 0.01e-6 // TODO: Idem for the Area to mass ratio
 		Phi := 1357. // AU * r // Normalize for the SC to Sun distance
 		// Build the vectors.
 		REarthToSC := o.R()
-		RSunToEarth := o.Origin.HelioOrbit(dt).R()
+		RSunToEarth := MxV33(R1(Deg2rad(-Earth.tilt)), o.Origin.HelioOrbit(dt).R())
 		RSunToSC := make([]float64, 3)
 		for i := 0; i < 3; i++ {
 			RSunToSC[i] = RSunToEarth[i] + REarthToSC[i]
 		}
-		srpCst := -Cr * Phi * S * AU * AU / math.Pow(Norm(RSunToSC), 2) // TODO: Plot effects with and without AU^2 to have some kind of check.
-		unitRSunToSC := Unit(RSunToSC)
+		// (SPF*AU^2*srpA2M/vel_c)*CR/(RsatS^3);
+		celerity := 2.997925e+05
+		srpCst := (Phi * AU * AU * S / celerity) * Cr / math.Pow(Norm(RSunToSC), 2)
 		for i := 0; i < 3; i++ {
-			pert[i+3] = srpCst * unitRSunToSC[i]
+			pert[i+3] = srpCst * RSunToSC[i]
 		}
 	}
 
@@ -87,7 +89,7 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time) []float64 {
 		}
 		// Build the vectors.
 		REarthToSC := o.R()
-		RSunToEarth := o.Origin.HelioOrbit(dt).R()
+		RSunToEarth := MxV33(R1(Deg2rad(-Earth.tilt)), o.Origin.HelioOrbit(dt).R())
 		RSunToSC := make([]float64, 3)
 		for i := 0; i < 3; i++ {
 			RSunToSC[i] = RSunToEarth[i] + REarthToSC[i]

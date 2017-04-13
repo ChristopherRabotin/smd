@@ -21,7 +21,7 @@ func TestPertArbitrary(t *testing.T) {
 	perts := Perturbations{}
 	perts.Arbitrary = arb
 
-	if !floats.Equal(pertForce, perts.Perturb(o, time.Now())) {
+	if !floats.Equal(pertForce, perts.Perturb(o, time.Now(), Spacecraft{})) {
 		t.Fatal("arbitrary pertubations fail")
 	}
 
@@ -45,7 +45,7 @@ func TestPert3rdBody(t *testing.T) {
 	dt, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
 	for _, test := range testValues {
 		perts.PerturbingBody = &test.body
-		pert := perts.Perturb(o, dt)
+		pert := perts.Perturb(o, dt, Spacecraft{})
 		if !floats.Equal(pert, test.pert) {
 			t.Fatalf("invalid pertubations for %s\n%+v\n%v", test.body, pert, test.pert)
 		}
