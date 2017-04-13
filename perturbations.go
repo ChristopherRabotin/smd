@@ -75,11 +75,10 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 		for i := 0; i < 3; i++ {
 			RSunToSC[i] = RSunToEarth[i] + REarthToSC[i]
 		}
-		// (SPF*AU^2*srpA2M/vel_c)*CR/(RsatS^3);
 		celerity := 2.997925e+05
-		srpCst := (Phi * AU * AU * S / celerity) * Cr / math.Pow(Norm(RSunToSC), 2)
+		srpCst := (Phi * AU * AU * S / celerity) * Cr / math.Pow(Norm(RSunToSC), 3)
 		for i := 0; i < 3; i++ {
-			pert[i+3] = srpCst * RSunToSC[i]
+			pert[i+3] += -srpCst * RSunToSC[i]
 		}
 	}
 
@@ -97,7 +96,7 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 		RSunToEarthNorm3 := math.Pow(Norm(RSunToEarth), 3)
 		RSunToSCNorm3 := math.Pow(Norm(RSunToSC), 3)
 		for i := 0; i < 3; i++ {
-			pert[i+3] = Sun.μ * (RSunToEarth[i]/RSunToEarthNorm3 - RSunToSC[i]/RSunToSCNorm3)
+			pert[i+3] += Sun.μ * (RSunToEarth[i]/RSunToEarthNorm3 - RSunToSC[i]/RSunToSCNorm3)
 		}
 	}
 	if p.Arbitrary != nil {
