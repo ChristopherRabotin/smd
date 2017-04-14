@@ -17,7 +17,7 @@ import (
 
 // Scenario constants
 const (
-	smoothing = true
+	smoothing = false
 	initJDE   = 2456296.25
 	realBT    = 7009.767
 	realBR    = 140002.894
@@ -37,12 +37,13 @@ func init() {
 }
 
 var (
-	timeStep        = 30 * time.Second
-	σρ              = math.Pow(5e-3, 2) // m , but all measurements in km.
-	σρDot           = math.Pow(5e-6, 2) // m/s , but all measurements in km/s.
-	_DSS34Canberra  = smd.NewStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot)
-	_DSS65Madrid    = smd.NewStation("DSS65Madrid", 0.834939, 0, 40.427222, 355.749444, σρ, σρDot)
-	_DSS13Goldstone = smd.NewStation("DSS13Goldstone", 1.07114904, 0, 35.247164, 243.205, σρ, σρDot)
+	timeStep       = 30 * time.Second
+	σρ             = math.Pow(5e-3, 2) // m , but all measurements in km.
+	σρDot          = math.Pow(5e-6, 2) // m/s , but all measurements in km/s.
+	_DSS34Canberra = smd.NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 7)
+	//_DSS65Madrid    = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 355.749444, σρ, σρDot, 7)
+	_DSS65Madrid    = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 4.250556, σρ, σρDot, 7)
+	_DSS13Goldstone = smd.NewSpecialStation("DSS13Goldstone", 1.07114904, 0, 35.247164, 243.205, σρ, σρDot, 7)
 )
 
 func main() {
@@ -56,7 +57,7 @@ func main() {
 	log.Printf("[info] Loaded %d measurements from %s to %s", len(measurements), startDT, endDT)
 
 	// Compute number of states which will be generated.
-	numStates := int(endDT.Sub(startDT).Seconds()/timeStep.Seconds()) + 2
+	numStates := int(endDT.Sub(startDT).Seconds()/timeStep.Seconds()) + 1
 	residuals := make([]*mat64.Vector, numStates)
 
 	// Get the first measurement as an initial orbit estimation.
@@ -111,6 +112,8 @@ func main() {
 	// Now let's do the filtering.
 	bPlanes := make([]smd.BPlane, 4)
 	bPlaneIdx := 0
+	bPnumHours := 0.0
+	var prevEst *gokalman.SRIFEstimate
 	for {
 		state, more := <-stateEstChan
 		if !more {
@@ -118,7 +121,7 @@ func main() {
 		}
 		stateNo++
 		roundedDT := state.DT.Truncate(time.Second)
-		switch roundedDT.Sub(firstDT).Hours() {
+		switch numHours := roundedDT.Sub(firstDT).Hours(); numHours {
 		case 50 * 24:
 			fallthrough
 		case 100 * 24:
@@ -126,26 +129,30 @@ func main() {
 		case 150 * 24:
 			fallthrough
 		case 190 * 24:
-			// Propagate the estimated orbit until 3*SOI and then compute the B-Plane.
-			Rr, Vr := state.Orbit.RV()
-			R, V := make([]float64, 3), make([]float64, 3)
-			for i := 0; i < 3; i++ {
-				R[i] = Rr[i]
-				V[i] = Vr[i]
+			if numHours > bPnumHours {
+				// Prevents the rounding from starting several estimates from the same hour.
+				numHours = bPnumHours
+				// Propagate the estimated orbit until 3*SOI and then compute the B-Plane.
+				Rr, Vr := state.Orbit.RV()
+				R, V := make([]float64, 3), make([]float64, 3)
+				for i := 0; i < 3; i++ {
+					R[i] = Rr[i] + prevEst.State().At(i, 0)
+					V[i] = Vr[i] + prevEst.State().At(i+3, 0)
+				}
+				wg.Add(1)
+				go func(cloneNo int) {
+					fmt.Printf("[info] Propagating clone to 3*SOI = %f\n", 3*smd.Earth.SOI)
+					sc := smd.NewEmptySC(fmt.Sprintf("BPclone-%d", cloneNo), 0)
+					sc.WayPoints = []smd.Waypoint{smd.NewCruiseToDistance(3*smd.Earth.SOI, false, nil)}
+					sc.Drag = 1.2 + prevEst.State().At(6, 0)
+					mBP := smd.NewPreciseMission(sc, smd.NewOrbitFromRV(R, V, smd.Earth), state.DT, startDT.Add(-1), estPerts, timeStep, false, smd.ExportConfig{})
+					mBP.Propagate()
+					fmt.Println("[info] Done propagating clone")
+					bPlanes[cloneNo] = smd.NewBPlane(*mBP.Orbit)
+					wg.Done()
+				}(bPlaneIdx)
+				bPlaneIdx++
 			}
-			wg.Add(1)
-			go func() {
-				fmt.Println("[info] Propagating clone to 3*SOI")
-				sc := smd.NewEmptySC(fmt.Sprintf("BPclone-%d", bPlaneIdx), 0)
-				sc.WayPoints = []smd.Waypoint{smd.NewCruiseToDistance(3*smd.Earth.SOI, false, nil)}
-				sc.Drag = 1.2
-				mBP := smd.NewPreciseMission(sc, smd.NewOrbitFromRV(R, V, smd.Earth), state.DT, startDT.Add(-1), estPerts, 10*time.Second, false, smd.ExportConfig{})
-				mBP.Propagate()
-				fmt.Println("[info] Done propagating clone")
-				bPlanes[bPlaneIdx] = smd.NewBPlane(*mBP.Orbit)
-				wg.Done()
-			}()
-			bPlaneIdx++
 		}
 		measurement, exists := measurements[roundedDT]
 		if !exists {
@@ -156,17 +163,16 @@ func main() {
 			kf.Prepare(state.Φ, nil)
 			est, perr := kf.Predict()
 			if perr != nil {
-				panic(fmt.Errorf("[ERR!] (#%04d)\n%s", measNo, perr))
+				panic(fmt.Errorf("[ERR!] (#%05d)\n%s", measNo, perr))
 			}
-			stateEst := mat64.NewVector(7, nil)
-			stateEst.SubVec(est.State(), state.Vector())
+			prevEst = est
 			// NOTE: The state seems to be all I need, along with Phi maybe (?) because the KF already uses the previous state?!
 			if *debug {
-				fmt.Printf("[pred] (%04d) %+v\n", measNo, mat64.Formatted(est.State().T()))
+				fmt.Printf("[pred] (%05d) %+v\n", measNo, mat64.Formatted(est.State().T()))
 			}
 			if smoothing {
 				// Save to history in order to perform smoothing.
-				estHistory[stateNo] = est
+				estHistory[stateNo-1] = est
 			} else {
 				// Stream to CSV file
 				estChan <- est
@@ -176,7 +182,7 @@ func main() {
 
 		// Let's perform a full update since there is a measurement.
 		if measurement.Station.Name != prevStationName {
-			fmt.Printf("[info] #%04d in visibility of %s (T+%s)\n", measNo, measurement.Station.Name, measurement.State.DT.Sub(startDT))
+			fmt.Printf("[info] #%05d in visibility of %s (T+%s)\n", measNo, measurement.Station.Name, measurement.State.DT.Sub(startDT))
 			prevStationName = measurement.Station.Name
 		}
 
@@ -193,18 +199,19 @@ func main() {
 		if err != nil {
 			panic(fmt.Errorf("[ERR!] %s", err))
 		}
-
+		prevEst = est
 		prevP = est.Covariance().(*mat64.SymDense)
+
 		// Compute residual
 		residual := mat64.NewVector(2, nil)
 		residual.MulVec(Htilde, est.State())
 		residual.AddScaledVec(residual, -1, est.ObservationDev())
 		residual.ScaleVec(-1, residual)
-		residuals[stateNo] = residual
+		residuals[stateNo-1] = residual
 		// Stream to CSV file
 		if smoothing {
 			// Save to history in order to perform smoothing.
-			estHistory[stateNo] = est
+			estHistory[stateNo-1] = est
 		} else {
 			// Stream to CSV file
 			estChan <- est

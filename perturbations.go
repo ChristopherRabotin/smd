@@ -77,7 +77,7 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 		// TODO: Drag, there is only SRP here.
 		Cr := sc.Drag
 		S := 0.01e-6 // TODO: Idem for the Area to mass ratio
-		Phi := 1357. // AU * r // Normalize for the SC to Sun distance
+		Phi := 1357.
 		// Build the vectors.
 		celerity := 2.997925e+05
 		srpCst := (Phi * AU * AU * S / celerity) * Cr / math.Pow(Norm(RSunToSC), 3)

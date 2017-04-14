@@ -22,6 +22,7 @@ type Station struct {
 	LatΦ, Longθ                float64   // these are stored in radians!
 	Altitude, Elevation        float64
 	RangeNoise, RangeRateNoise *distmv.Normal // Station noise
+	rowsH                      int            // If estimating Cr in addition to position and velocity, this needs to be 7
 }
 
 // PerformMeasurement returns whether the SC is visible, and if so, the measurement.
@@ -57,6 +58,10 @@ func (s Station) RangeElAz(rECEF []float64) (ρECEF []float64, ρ, el, az float6
 
 // NewStation returns a new station. Angles in degrees.
 func NewStation(name string, altitude, elevation, latΦ, longθ, σρ, σρDot float64) Station {
+	return NewSpecialStation(name, altitude, elevation, latΦ, longθ, σρ, σρDot, 6)
+}
+
+func NewSpecialStation(name string, altitude, elevation, latΦ, longθ, σρ, σρDot float64, rowsH int) Station {
 	R := GEO2ECEF(altitude, latΦ*d2r, longθ*d2r)
 	V := Cross([]float64{0, 0, EarthRotationRate}, R)
 	seed := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -68,7 +73,7 @@ func NewStation(name string, altitude, elevation, latΦ, longθ, σρ, σρDot f
 	if !ok {
 		panic("NOK in Gaussian")
 	}
-	return Station{name, R, V, latΦ * d2r, longθ * d2r, altitude, elevation, ρNoise, ρDotNoise}
+	return Station{name, R, V, latΦ * d2r, longθ * d2r, altitude, elevation, ρNoise, ρDotNoise, rowsH}
 }
 
 // Measurement stores a measurement of a station.
@@ -109,7 +114,7 @@ func (m Measurement) HTilde() *mat64.Dense {
 	xDot := V[0]
 	yDot := V[1]
 	zDot := V[2]
-	H := mat64.NewDense(2, 7, nil)
+	H := mat64.NewDense(2, m.Station.rowsH, nil)
 	// \partial \rho / \partial {x,y,z}
 	H.Set(0, 0, (x-xS)/m.Range)
 	H.Set(0, 1, (y-yS)/m.Range)
