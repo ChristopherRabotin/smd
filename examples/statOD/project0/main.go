@@ -15,15 +15,6 @@ import (
 	"github.com/soniakeys/meeus/julian"
 )
 
-const (
-	ekfTrigger     = -15   // Number of measurements prior to switching to EKF mode.
-	ekfDisableTime = -1200 // Seconds between measurements to switch back to CKF. Set as negative to ignore.
-	sncEnabled     = false // Set to false to disable SNC.
-	sncDisableTime = 1200  // Number of seconds between measurements to skip using SNC noise.
-	sncRIC         = false // Set to true if the noise should be considered defined in PQW frame.
-	smoothing      = true  // Set to true to smooth the CKF.
-)
-
 // Scenario constants
 const (
 	initJDE = 2456296.25
@@ -87,19 +78,13 @@ func main() {
 	// Initialize the KF noise
 	σQx := math.Pow(10, -2*σQExponent)
 	var σQy, σQz float64
-	if !sncRIC {
-		σQy = σQx
-		σQz = σQx
-	}
 	noiseQ := mat64.NewSymDense(3, []float64{σQx, 0, 0, 0, σQy, 0, 0, 0, σQz})
 	noiseR := mat64.NewSymDense(2, []float64{σρ, 0, 0, σρDot})
 	noiseKF := gokalman.NewNoiseless(noiseQ, noiseR)
 
 	// Take care of measurements.
-	estHistory := make([]*gokalman.HybridKFEstimate, len(measurements))
-	stateHistory := make([]*mat64.Vector, len(measurements)) // Stores the histories of the orbit estimate (to post compute the truth)
 	estChan := make(chan (gokalman.Estimate), 1)
-	go processEst("hybridkf", estChan)
+	go processEst(fmt.Sprintf("srif-part-%s", measFile), estChan)
 
 	prevP := mat64.NewSymDense(6, nil)
 	var covarDistance = 100.0
@@ -111,29 +96,10 @@ func main() {
 
 	visibilityErrors := 0
 
-	if smoothing {
-		fmt.Println("[INFO] Smoothing enabled")
-	}
-
-	if ekfTrigger < 0 {
-		fmt.Println("[WARNING] EKF disabled")
-	} else {
-		if smoothing {
-			fmt.Println("[ERROR] Enabling smooth has NO effect because EKF is enabled")
-		}
-		if ekfTrigger < 10 {
-			fmt.Println("[WARNING] EKF may be turned on too early")
-		} else {
-			fmt.Printf("[INFO] EKF will turn on after %d measurements\n", ekfTrigger)
-		}
-	}
-
 	var prevStationName = ""
-	var prevDT time.Time
-	var ckfMeasNo = 0
 	measNo := 1
 	stateNo := 0
-	kf, _, err := gokalman.NewHybridKF(mat64.NewVector(6, nil), prevP, noiseKF, 2)
+	kf, _, err := gokalman.NewSRIF(mat64.NewVector(6, nil), prevP, 2, false, noiseKF)
 	if err != nil {
 		panic(fmt.Errorf("%s", err))
 	}
@@ -161,7 +127,6 @@ func main() {
 		measurement, exists := measurements[roundedDT]
 		if !exists {
 			if measNo == 0 {
-				time.Sleep(time.Second)
 				panic(fmt.Errorf("should start KF at first measurement: \n%s (got)\n%s (exp)", roundedDT, startDT))
 			}
 			// There is no truth measurement here, let's only predict the KF covariance.
@@ -170,7 +135,6 @@ func main() {
 			if perr != nil {
 				panic(fmt.Errorf("[ERR!] (#%04d)\n%s", measNo, perr))
 			}
-			// TODO: Plot this too.
 			stateEst := mat64.NewVector(6, nil)
 			stateEst.SubVec(est.State(), state.Vector())
 			// NOTE: The state seems to be all I need, along with Phi maybe (?) because the KF already uses the previous state?!
@@ -181,25 +145,7 @@ func main() {
 			continue
 		}
 
-		if measNo == 0 {
-			prevDT = measurement.State.DT
-		}
-
 		// Let's perform a full update since there is a measurement.
-		ΔtDuration := measurement.State.DT.Sub(prevDT)
-		Δt := ΔtDuration.Seconds() // Everything is in seconds.
-		// Infomrational messages.
-		if !kf.EKFEnabled() && ckfMeasNo == ekfTrigger {
-			// Switch KF to EKF mode
-			kf.EnableEKF()
-			fmt.Printf("[info] #%04d EKF now enabled\n", measNo)
-		} else if kf.EKFEnabled() && ekfDisableTime > 0 && Δt > ekfDisableTime {
-			// Switch KF back to CKF mode
-			kf.DisableEKF()
-			ckfMeasNo = 0
-			fmt.Printf("[info] #%04d EKF now disabled (Δt=%s)\n", measNo, ΔtDuration)
-		}
-
 		if measurement.Station.Name != prevStationName {
 			fmt.Printf("[info] #%04d in visibility of %s (T+%s)\n", measNo, measurement.Station.Name, measurement.State.DT.Sub(startDT))
 			prevStationName = measurement.Station.Name
@@ -214,39 +160,6 @@ func main() {
 
 		Htilde := computedObservation.HTilde()
 		kf.Prepare(state.Φ, Htilde)
-		if sncEnabled {
-			if Δt < sncDisableTime {
-				if sncRIC {
-					// Build the RIC DCM
-					rUnit := smd.Unit(state.Orbit.R())
-					cUnit := smd.Unit(state.Orbit.H())
-					iUnit := smd.Unit(smd.Cross(rUnit, cUnit))
-					dcmVals := make([]float64, 9)
-					for i := 0; i < 3; i++ {
-						dcmVals[i] = rUnit[i]
-						dcmVals[i+3] = cUnit[i]
-						dcmVals[i+6] = iUnit[i]
-					}
-					// Update the Q matrix in the PQW
-					dcm := mat64.NewDense(3, 3, dcmVals)
-					var QECI, QECI0 mat64.Dense
-					QECI0.Mul(noiseQ, dcm.T())
-					QECI.Mul(dcm, &QECI0)
-					QECISym, err := gokalman.AsSymDense(&QECI)
-					if err != nil {
-						fmt.Printf("[ERR!] QECI is not symmertric!")
-						panic(err)
-					}
-					kf.SetNoise(gokalman.NewNoiseless(QECISym, noiseR))
-				}
-				// Only enable SNC for small time differences between measurements.
-				Γtop := gokalman.ScaledDenseIdentity(3, math.Pow(Δt, 2)/2)
-				Γbot := gokalman.ScaledDenseIdentity(3, Δt)
-				Γ := mat64.NewDense(6, 3, nil)
-				Γ.Stack(Γtop, Γbot)
-				kf.PreparePNT(Γ)
-			}
-		}
 		est, err := kf.Update(measurement.StateVector(), computedObservation.StateVector())
 		if err != nil {
 			panic(fmt.Errorf("[ERR!] %s", err))
@@ -261,39 +174,9 @@ func main() {
 		residual.AddScaledVec(residual, -1, est.ObservationDev())
 		residual.ScaleVec(-1, residual)
 		residuals[stateNo] = residual
+		// Stream to CSV file
+		estChan <- est
 
-		if smoothing {
-			// Save to history in order to perform smoothing.
-			estHistory[measNo] = est
-			stateHistory[measNo] = stateEst
-		} else {
-			// Stream to CSV file
-			estChan <- est
-		}
-		prevDT = measurement.State.DT
-
-		// If in EKF, update the reference trajectory.
-		if kf.EKFEnabled() {
-			// Update the state from the error.
-			R, V := state.Orbit.RV()
-			if *debug {
-				fmt.Printf("[ekf-] (%04d) %+v\n", measNo, mat64.Formatted(state.Vector().T()))
-			}
-			for i := 0; i < 3; i++ {
-				R[i] += est.State().At(i, 0)
-				V[i] += est.State().At(i+3, 0)
-			}
-			if *debug {
-				vec := mat64.NewVector(6, nil)
-				for i := 0; i < 3; i++ {
-					vec.SetVec(i, R[i])
-					vec.SetVec(i+3, V[i])
-				}
-				fmt.Printf("[ekf+] (%04d) %+v\n", measNo, mat64.Formatted(vec.T()))
-			}
-			mEst.Orbit = smd.NewOrbitFromRV(R, V, smd.Earth)
-		}
-		ckfMeasNo++
 		measNo++
 	} // end while true
 
