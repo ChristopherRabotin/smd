@@ -36,6 +36,7 @@ func init() {
 }
 
 var (
+	timeStep        = 30 * time.Second
 	σρ              = math.Pow(5e-3, 2) // m , but all measurements in km.
 	σρDot           = math.Pow(5e-6, 2) // m/s , but all measurements in km/s.
 	_DSS34Canberra  = smd.NewStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot)
@@ -53,21 +54,21 @@ func main() {
 	measurements, startDT, endDT := loadMeasurementFile(measFile, startDT)
 	log.Printf("[info] Loaded %d measurements from %s to %s", len(measurements), startDT, endDT)
 
-	timeStep := 10 * time.Second
-
 	// Compute number of states which will be generated.
 	numStates := int(endDT.Sub(startDT).Seconds()/timeStep.Seconds()) + 1
-	residuals := make([]*mat64.Vector, numStates)
+	residuals := make([]*mat64.Vector, numStates+1)
 
 	// Get the first measurement as an initial orbit estimation.
 	firstDT := startDT
 	estOrbit := smd.NewOrbitFromRV([]float64{-274096790.0, -92859240.0, -40199490.0}, []float64{32.67, -8.94, -3.88}, smd.Earth)
-	startDT = firstDT.Add(-10 * time.Second)
+	startDT = firstDT.Add(-timeStep)
 	// Perturbations in the estimate
-	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun}
+	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun, Drag: true}
 
 	stateEstChan := make(chan (smd.State))
-	mEst := smd.NewPreciseMission(smd.NewEmptySC("prj0", 0), estOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{Filename: "prj0", Cosmo: true})
+	sc := smd.NewEmptySC("prj0", 0)
+	sc.Drag = 1.2
+	mEst := smd.NewPreciseMission(sc, estOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{Filename: "prj0", Cosmo: true})
 	mEst.RegisterStateChan(stateEstChan)
 
 	// Go-routine to advance propagation.
@@ -87,9 +88,10 @@ func main() {
 	filename := fmt.Sprintf("srif-part-%s", measFile)
 	go processEst(filename, estChan)
 
-	prevP := mat64.NewSymDense(6, nil)
+	prevP := mat64.NewSymDense(7, nil)
 	var covarDistance = 100.0
 	var covarVelocity = 0.1
+	prevP.SetSym(6, 6, 0.1)
 	for i := 0; i < 3; i++ {
 		prevP.SetSym(i, i, covarDistance)
 		prevP.SetSym(i+3, i+3, covarVelocity)
@@ -100,7 +102,7 @@ func main() {
 	var prevStationName = ""
 	measNo := 0
 	stateNo := 0
-	kf, _, err := gokalman.NewSRIF(mat64.NewVector(6, nil), prevP, 2, false, noiseKF)
+	kf, _, err := gokalman.NewSRIF(mat64.NewVector(7, nil), prevP, 2, false, noiseKF)
 	if err != nil {
 		panic(fmt.Errorf("%s", err))
 	}
@@ -136,7 +138,7 @@ func main() {
 			if perr != nil {
 				panic(fmt.Errorf("[ERR!] (#%04d)\n%s", measNo, perr))
 			}
-			stateEst := mat64.NewVector(6, nil)
+			stateEst := mat64.NewVector(7, nil)
 			stateEst.SubVec(est.State(), state.Vector())
 			// NOTE: The state seems to be all I need, along with Phi maybe (?) because the KF already uses the previous state?!
 			if *debug {
@@ -167,7 +169,7 @@ func main() {
 		}
 
 		prevP = est.Covariance().(*mat64.SymDense)
-		stateEst := mat64.NewVector(6, nil)
+		stateEst := mat64.NewVector(7, nil)
 		stateEst.AddVec(state.Vector(), est.State())
 		// Compute residual
 		residual := mat64.NewVector(2, nil)

@@ -109,7 +109,7 @@ func (m Measurement) HTilde() *mat64.Dense {
 	xDot := V[0]
 	yDot := V[1]
 	zDot := V[2]
-	H := mat64.NewDense(2, 6, nil)
+	H := mat64.NewDense(2, 7, nil)
 	// \partial \rho / \partial {x,y,z}
 	H.Set(0, 0, (x-xS)/m.Range)
 	H.Set(0, 1, (y-yS)/m.Range)

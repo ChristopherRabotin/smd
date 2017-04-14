@@ -221,6 +221,9 @@ func (a *Mission) SetState(t float64, s []float64) {
 	if a.Vehicle.Drag > 0 {
 		st := s[0:6]
 		st = append(st, a.Vehicle.Drag)
+		// Update Cr
+		a.Vehicle.Drag = s[7]
+		//fmt.Printf("New drag: %f\n", a.Vehicle.Drag) //TODO: Check if this gets updated.
 		latestVector = mat64.NewVector(7, st)
 	} else {
 		latestVector = mat64.NewVector(6, s[0:6])
@@ -328,8 +331,8 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		r2 := x2 + y2 + z2
 		r232 := math.Pow(r2, 3/2.)
 		r252 := math.Pow(r2, 5/2.)
-		// Add the body perturbations
 
+		// Add the body perturbations
 		dAxDx := 3*a.Orbit.Origin.μ*x2/r252 - a.Orbit.Origin.μ/r232
 		dAxDy := 3 * a.Orbit.Origin.μ * x * y / r252
 		dAxDz := 3 * a.Orbit.Origin.μ * x * z / r252
