@@ -420,18 +420,28 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			A.Set(5, 2, A52)
 		}
 
-		if a.perts.Drag {
-			// If with drag, then the A matrix is larger.
-			Cr := a.Vehicle.Drag // XXX: This information must be updated at each estimation.
-			S := 0.01
-			Phi := 1357. // AU * r // Normalize for the SC to Sun distance
+		var RSunToEarth, RSunToSC, REarthToSC []float64
 
-			r := math.Sqrt(r2)
-			rVecSun := a.Orbit.Origin.HelioOrbit(a.CurrentDT).R()
-			rSun := Norm(rVecSun)
-			rSun2 := math.Pow(rSun, 2)
-			rSC2Sun := math.Pow((r - math.Sqrt(rSun2)), 2)
-			rSC2Sun3 := math.Pow((r - math.Sqrt(rSun2)), 3)
+		if a.perts.Drag || a.perts.PerturbingBody != nil {
+			REarthToSC = a.Orbit.R()
+			RSunToEarth = MxV33(R1(Deg2rad(-Earth.tilt)), a.Orbit.Origin.HelioOrbit(a.CurrentDT).R())
+			RSunToSC = make([]float64, 3)
+			for i := 0; i < 3; i++ {
+				RSunToSC[i] = RSunToEarth[i] + REarthToSC[i]
+			}
+		}
+
+		// BUG: This includes BOTH SRP and Sun perturbations.
+		if a.perts.Drag {
+			Cr := a.Vehicle.Drag // XXX: This information must be updated at each estimation.
+			S := 0.01e-6         // TODO: Idem for the Area to mass ratio
+			Phi := 1357.         // AU * r // Normalize for the SC to Sun distance
+			// Build the vectors.
+			celerity := 2.997925e+05
+			srpCst := -Sun.μ + (Phi*AU*AU*S/celerity)*Cr
+			RSunToSC3 := math.Pow(Norm(RSunToSC), 3)
+			RSunToSC5 := math.Pow(Norm(RSunToSC), 5)
+
 			// Getting values
 			// Ai0 = \frac{\partial a}{\partial x}
 			// Ai1 = \frac{\partial a}{\partial y}
@@ -446,15 +456,18 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			A42 := A.At(4, 2)
 			A52 := A.At(5, 2)
 
-			dAxDx := -Cr*Phi*S*x2/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x2/((r2)*(rSun2)*rSC2Sun3) + Cr*Phi*S/(r*(rSun2)*rSC2Sun)
-			dAxDy := -Cr*Phi*S*x*y/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x*y/((r2)*(rSun2)*rSC2Sun3)
-			dAxDz := -Cr*Phi*S*x*z/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x*z/((r2)*(rSun2)*rSC2Sun3)
-			dAyDx := -Cr*Phi*S*x*y/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x*y/((r2)*(rSun2)*rSC2Sun3)
-			dAyDy := -Cr*Phi*S*y2/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*y2/((r2)*(rSun2)*rSC2Sun3) + Cr*Phi*S/(r*(rSun2)*rSC2Sun)
-			dAyDz := -Cr*Phi*S*y*z/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*y*z/((r2)*(rSun2)*rSC2Sun3)
-			dAzDx := -Cr*Phi*S*x*z/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*x*z/((r2)*(rSun2)*rSC2Sun3)
-			dAzDy := -Cr*Phi*S*y*z/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*y*z/((r2)*(rSun2)*rSC2Sun3)
-			dAzDz := -Cr*Phi*S*z2/(r232*(rSun2)*rSC2Sun) - 2*Cr*Phi*S*z2/((r2)*(rSun2)*rSC2Sun3) + Cr*Phi*S/(r*(rSun2)*rSC2Sun)
+			dAxDx := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[0])*2*(-RSunToSC[0])
+			dAxDy := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[0]) * 2 * (-RSunToSC[1])
+			dAxDz := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[0]) * 2 * (-RSunToSC[2])
+			dAxDCr := (Phi * AU * AU * S / celerity) / RSunToSC3 * (-RSunToSC[0])
+			dAyDx := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[1]) * 2 * (-RSunToSC[0])
+			dAyDy := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[1])*2*(-RSunToSC[1])
+			dAyDz := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[1]) * 2 * (-RSunToSC[2])
+			dAyDCr := (Phi * AU * AU * S / celerity) / RSunToSC3 * (-RSunToSC[1])
+			dAzDx := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[2]) * 2 * (-RSunToSC[0])
+			dAzDy := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[2]) * 2 * (-RSunToSC[1])
+			dAzDz := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[2])*2*(-RSunToSC[2])
+			dAzDCr := (Phi * AU * AU * S / celerity) / RSunToSC3 * (-RSunToSC[2])
 			// Setting values
 			// \frac{\partial a}{\partial x}
 			A.Set(3, 0, A30+dAxDx)
@@ -468,7 +481,10 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			A.Set(3, 2, A32+dAxDz)
 			A.Set(4, 2, A42+dAyDz)
 			A.Set(5, 2, A52+dAzDz)
-			A.Set(6, 6, -Phi*S/rSun2)
+			// \partial a/\partial Cr
+			A.Set(3, 6, dAxDCr)
+			A.Set(4, 6, dAyDCr)
+			A.Set(5, 6, dAzDCr)
 
 		}
 
