@@ -218,7 +218,7 @@ func (a *Mission) SetState(t float64, s []float64) {
 	a.Vehicle.FuelMass = s[6]
 
 	var latestVector *mat64.Vector
-	if a.Vehicle.Drag > 0 {
+	if a.Vehicle.Drag > 0 && a.computeSTM {
 		st := s[0:6]
 		st = append(st, a.Vehicle.Drag)
 		// Update Cr

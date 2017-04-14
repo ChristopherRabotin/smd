@@ -17,9 +17,10 @@ import (
 
 // Scenario constants
 const (
-	initJDE = 2456296.25
-	realBT  = 7009.767
-	realBR  = 140002.894
+	smoothing = true
+	initJDE   = 2456296.25
+	realBT    = 7009.767
+	realBR    = 140002.894
 )
 
 var (
@@ -55,8 +56,8 @@ func main() {
 	log.Printf("[info] Loaded %d measurements from %s to %s", len(measurements), startDT, endDT)
 
 	// Compute number of states which will be generated.
-	numStates := int(endDT.Sub(startDT).Seconds()/timeStep.Seconds()) + 1
-	residuals := make([]*mat64.Vector, numStates+1)
+	numStates := int(endDT.Sub(startDT).Seconds()/timeStep.Seconds()) + 2
+	residuals := make([]*mat64.Vector, numStates)
 
 	// Get the first measurement as an initial orbit estimation.
 	firstDT := startDT
@@ -84,6 +85,7 @@ func main() {
 	noiseKF := gokalman.NewNoiseless(noiseQ, noiseR)
 
 	// Take care of measurements.
+	estHistory := make([]*gokalman.SRIFEstimate, numStates)
 	estChan := make(chan (gokalman.Estimate), 1)
 	filename := fmt.Sprintf("srif-part-%s", measFile)
 	go processEst(filename, estChan)
@@ -124,7 +126,25 @@ func main() {
 		case 150 * 24:
 			fallthrough
 		case 190 * 24:
-			bPlanes[bPlaneIdx] = smd.NewBPlane(state.Orbit)
+			// Propagate the estimated orbit until 3*SOI and then compute the B-Plane.
+			Rr, Vr := state.Orbit.RV()
+			R, V := make([]float64, 3), make([]float64, 3)
+			for i := 0; i < 3; i++ {
+				R[i] = Rr[i]
+				V[i] = Vr[i]
+			}
+			wg.Add(1)
+			go func() {
+				fmt.Println("[info] Propagating clone to 3*SOI")
+				sc := smd.NewEmptySC(fmt.Sprintf("BPclone-%d", bPlaneIdx), 0)
+				sc.WayPoints = []smd.Waypoint{smd.NewCruiseToDistance(3*smd.Earth.SOI, false, nil)}
+				sc.Drag = 1.2
+				mBP := smd.NewPreciseMission(sc, smd.NewOrbitFromRV(R, V, smd.Earth), state.DT, startDT.Add(-1), estPerts, 10*time.Second, false, smd.ExportConfig{})
+				mBP.Propagate()
+				fmt.Println("[info] Done propagating clone")
+				bPlanes[bPlaneIdx] = smd.NewBPlane(*mBP.Orbit)
+				wg.Done()
+			}()
 			bPlaneIdx++
 		}
 		measurement, exists := measurements[roundedDT]
@@ -144,7 +164,13 @@ func main() {
 			if *debug {
 				fmt.Printf("[pred] (%04d) %+v\n", measNo, mat64.Formatted(est.State().T()))
 			}
-			estChan <- est
+			if smoothing {
+				// Save to history in order to perform smoothing.
+				estHistory[stateNo] = est
+			} else {
+				// Stream to CSV file
+				estChan <- est
+			}
 			continue
 		}
 
@@ -169,8 +195,6 @@ func main() {
 		}
 
 		prevP = est.Covariance().(*mat64.SymDense)
-		stateEst := mat64.NewVector(7, nil)
-		stateEst.AddVec(state.Vector(), est.State())
 		// Compute residual
 		residual := mat64.NewVector(2, nil)
 		residual.MulVec(Htilde, est.State())
@@ -178,10 +202,28 @@ func main() {
 		residual.ScaleVec(-1, residual)
 		residuals[stateNo] = residual
 		// Stream to CSV file
-		estChan <- est
-
+		if smoothing {
+			// Save to history in order to perform smoothing.
+			estHistory[stateNo] = est
+		} else {
+			// Stream to CSV file
+			estChan <- est
+		}
 		measNo++
 	} // end while true
+
+	if smoothing {
+		fmt.Println("[info] Smoothing started")
+		// Perform the smoothing. First, play back all the estimates backward, and then replay the smoothed estimates forward to compute the difference.
+		if err := kf.SmoothAll(estHistory); err != nil {
+			panic(err)
+		}
+		// Replay forward
+		for _, estimate := range estHistory {
+			estChan <- estimate
+		}
+		fmt.Println("[info] Smoothing completed")
+	}
 
 	close(estChan)
 	wg.Wait()
@@ -209,7 +251,7 @@ func main() {
 	}
 
 	// Write BPlane
-	f, ferr = os.Create("./bplane.csv")
+	f, ferr = os.Create(fmt.Sprintf("./%s-bplane.csv", filename))
 	if ferr != nil {
 		panic(ferr)
 	}
