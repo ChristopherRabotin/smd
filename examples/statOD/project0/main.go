@@ -62,7 +62,7 @@ func main() {
 	// Get the first measurement as an initial orbit estimation.
 	firstDT := startDT
 	estOrbit := smd.NewOrbitFromRV([]float64{-274096790.0, -92859240.0, -40199490.0}, []float64{32.67, -8.94, -3.88}, smd.Earth)
-	startDT = firstDT
+	startDT = firstDT.Add(-10 * time.Second)
 	// Perturbations in the estimate
 	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun}
 
@@ -84,7 +84,8 @@ func main() {
 
 	// Take care of measurements.
 	estChan := make(chan (gokalman.Estimate), 1)
-	go processEst(fmt.Sprintf("srif-part-%s", measFile), estChan)
+	filename := fmt.Sprintf("srif-part-%s", measFile)
+	go processEst(filename, estChan)
 
 	prevP := mat64.NewSymDense(6, nil)
 	var covarDistance = 100.0
@@ -97,7 +98,7 @@ func main() {
 	visibilityErrors := 0
 
 	var prevStationName = ""
-	measNo := 1
+	measNo := 0
 	stateNo := 0
 	kf, _, err := gokalman.NewSRIF(mat64.NewVector(6, nil), prevP, 2, false, noiseKF)
 	if err != nil {
@@ -189,7 +190,7 @@ func main() {
 	}
 	fmt.Printf("[%s] %d visibility errors\n", severity, visibilityErrors)
 	// Write the residuals to a CSV file
-	f, ferr := os.Create("./hkf-residuals.csv")
+	f, ferr := os.Create(fmt.Sprintf("./%s-residuals.csv", filename))
 	if ferr != nil {
 		panic(ferr)
 	}
