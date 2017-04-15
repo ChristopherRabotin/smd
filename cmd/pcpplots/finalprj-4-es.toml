@@ -1,0 +1,16 @@
+[General]
+fileprefix = "fp4es"
+verbose = true
+c3plot = false
+
+[Arrival]
+planet = "Saturn"
+from = "2031-12-01 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
+until = "2034-01-01 00:00:00"
+resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.
+
+[Departure]
+planet = "Earth"
+from = "2026-12-01 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
+until = "2027-04-01 00:00:00"
+resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.

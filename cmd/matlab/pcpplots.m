@@ -1,10 +1,10 @@
 function [] = pcpplots(fname, initLaunch, initArrival, arrivalPlanet)
 close all
 % Load data file
-C3 = load(sprintf('../contour-%s-c3.dat', fname));
-vinf = load(sprintf('../contour-%s-vinf.dat', fname));
-tof = load(sprintf('../contour-%s-tof.dat', fname));
-dates = load(sprintf('../contour-%s-dates.dat', fname));
+C3 = load(sprintf('../pcpplots/contour-%s-c3.dat', fname));
+vinf = load(sprintf('../pcpplots/contour-%s-vinf.dat', fname));
+tof = load(sprintf('../pcpplots/contour-%s-tof.dat', fname));
+dates = load(sprintf('../pcpplots/contour-%s-dates.dat', fname));
 % Transpose data because it's written that way
 C3 = C3';
 vinf = vinf';
@@ -20,12 +20,13 @@ if maxVinf == inf
 else
     vinf_contours = round(min(min(vinf))):round((maxVinf-min(min(vinf)))/ptsVinf, 1):round(maxVinf);
 end
-maxC3= max(max(C3));
+%maxC3= max(max(C3));
+maxC3 = 35;
 if maxC3 == inf
     minC3 = round(min(min(C3)));
     C3_contours = [minC3:3:(minC3*4) (minC3*4):10:(minC3*10)];
 else
-    C3_contours = round(min(min(C3))):round((maxC3-min(min(C3)))/20, 1):round(maxC3);
+    C3_contours = round(min(min(C3))):round((maxC3-min(min(C3)))/10, 1):round(maxC3);
 end
 
 figure(1)

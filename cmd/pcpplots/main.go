@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
@@ -42,6 +43,7 @@ func main() {
 		if scenario == defaultScenario {
 			log.Fatal("no scenario provided and no finder set")
 		}
+		scenario = strings.Replace(scenario, ".toml", "", 1)
 		// Load scenario
 		viper.AddConfigPath(".")
 		viper.SetConfigName(scenario)
