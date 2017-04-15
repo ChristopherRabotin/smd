@@ -6,36 +6,40 @@ flybyplanets = "Venus Mars Earth Earth Saturn"
 
 [launch]
 planet = "Earth"
-from = "2023-01-01 00:00:00"
-until = "2024-01-01 00:00:00"
-maxC3 = 35
+from = 2461251.5
+until = 2461361.5
+resolution = 1
+maxC3 = 40
 
 [arrival]
-planet = "Uranus"
-until = "2044-01-01 00:00:00"
-maxVinf = 10
+planet = "Neptune"
+until = 2468620.5
+maxVinf = 18
 
 [flyby.Venus]
+from = 2461400.5
+until = 2461500.5
 position = 1
 deltaV = 1.0
 periapsis = 1.01
 
-[flyby.Mars]
+[flyby.Earth]
 position = 2
 deltaV = 1.0
-periapsis = 1.01
-
-[flyby.Earth]
-position = 3
-deltaV = 1.0
+from = 2461750.5
+until = 2461785.5
 periapsis = 1.01
 
 [flyby.Earth.1]
-position = 4
+position = 3
 deltaV = 1.0
+from = 2462470.5
+until = 2462530.5
 periapsis = 1.01
 
-[flyby.Saturn]
-position = 5
+[flyby.Jupiter]
+position = 4
 deltaV = 1.0
+from = 2463350.5
+until = 2463400.5
 periapsis = 4.0

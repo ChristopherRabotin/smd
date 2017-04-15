@@ -18,7 +18,7 @@ if maxVinf == inf
     minVinf = round(min(min(vinf)));
     vinf_contours = [minVinf:0.5:(minVinf*2) (minVinf*2+1):(minVinf*4)];
 else
-    vinf_contours = round(min(min(vinf))):round((maxVinf-min(min(vinf)))/ptsVinf, 1):round(maxVinf);
+    vinf_contours = round(min(min(vinf))):round((maxVinf-min(min(vinf)))/15, 1):round(maxVinf);
 end
 %maxC3= max(max(C3));
 maxC3 = 35;
@@ -26,7 +26,7 @@ if maxC3 == inf
     minC3 = round(min(min(C3)));
     C3_contours = [minC3:3:(minC3*4) (minC3*4):10:(minC3*10)];
 else
-    C3_contours = round(min(min(C3))):round((maxC3-min(min(C3)))/10, 1):round(maxC3);
+    C3_contours = round(min(min(C3))):round((maxC3-min(min(C3)))/20, 1):round(maxC3);
 end
 
 figure(1)

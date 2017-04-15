@@ -65,6 +65,17 @@ func (t TransferType) String() string {
 	}
 }
 
+func TransferTypeFromInt(ttype int) TransferType {
+	switch ttype {
+	case 4:
+		return TType4
+	case 3:
+		return TType3
+	default:
+		return TTypeAuto
+	}
+}
+
 const (
 	// TTypeAuto lets the Lambert solver determine the type
 	TTypeAuto TransferType = iota + 1
@@ -232,7 +243,7 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 }
 
 // PCPGenerator generates the PCP files to perform contour plots in Matlab (and eventually prints the command).
-func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, plotC3, verbose, output bool) (c3Map, tofMap, vinfMap map[time.Time][]float64, vInfInitVecs, vInfArriVecs map[time.Time][]mat64.Vector) {
+func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, transferType TransferType, plotC3, verbose, output bool) (c3Map, tofMap, vinfMap map[time.Time][]float64, vInfInitVecs, vInfArriVecs map[time.Time][]mat64.Vector) {
 	launchWindow := int(maxLaunch.Sub(initLaunch).Hours() / 24)    //days
 	arrivalWindow := int(maxArrival.Sub(initArrival).Hours() / 24) //days
 	// Create the output arrays
@@ -242,7 +253,7 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 	vInfInitVecs = make(map[time.Time][]mat64.Vector)
 	vInfArriVecs = make(map[time.Time][]mat64.Vector)
 	if verbose {
-		fmt.Printf("Launch window: %d days\nArrival window: %d days\n", launchWindow, arrivalWindow)
+		fmt.Printf("Launch window: %d days\nArrival window: %d days\nTransfer: %s\n", launchWindow, arrivalWindow, transferType)
 	}
 	// Stores the content of the dat file.
 	// No trailing new line because it's add in the for loop.
@@ -308,7 +319,7 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 			arrivalV := mat64.NewVector(3, arrivalOrbit.V())
 
 			tof := arrivalDT.Sub(launchDT)
-			Vi, Vf, _, err := Lambert(initPlanetR, arrivalR, tof, TTypeAuto, Sun)
+			Vi, Vf, _, err := Lambert(initPlanetR, arrivalR, tof, transferType, Sun)
 			var c3, vInfArrival float64
 			if err != nil {
 				if verbose {
