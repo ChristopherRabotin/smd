@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
@@ -21,6 +22,7 @@ const (
 )
 
 var (
+	wg         sync.WaitGroup
 	scenario   string
 	numCPUs    int
 	ultraDebug bool
@@ -149,9 +151,13 @@ func main() {
 			vInfIn := []float64{vInfInVec.At(0, 0), vInfInVec.At(1, 0), vInfInVec.At(2, 0)}
 			prevResult := NewResult(launchDT, c3, len(planets)-1)
 			cpuChan <- true
+			wg.Add(1)
 			go GAPCP(arrivalDT, 0, vInfIn, prevResult)
 		}
 	}
+	log.Println("[info] All valid launches started")
+	wg.Wait()
+	log.Println("[info] Done")
 }
 
 // GAPCP performs the recursion.
@@ -164,6 +170,9 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 	var minArrival, maxArrival time.Time
 	var isLastPlanet bool
 	if planetNo+1 == len(flybys) {
+		if ultraDebug {
+			log.Println("reached last planet")
+		}
 		isLastPlanet = true
 		toPlanet = arrival.planet
 		minArrival = arrival.from
@@ -215,7 +224,7 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 					vinfArr := vinfArr[depDT][arrIdx]
 					if vinfArr < arrival.maxVinf {
 						log.Println("[debug] valid traj!")
-						// This is a valid trajectory?
+						// This is a valid trajectory
 						// Add information to result.
 						result.arrival = arrivalDT
 						result.vInf = vinfArr
@@ -231,6 +240,9 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 					GAPCP(arrivalDT, planetNo+1, vInfInNext, result)
 				}
 			} else {
+				if ultraDebug {
+					log.Printf("[debug] dv NOK (%f km/s)", flybyDV)
+				}
 				// Won't go anywhere, let's move onto another date. and clear queue if needed.
 				select {
 				case <-cpuChan:
@@ -240,5 +252,8 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 				}
 			}
 		}
+	}
+	if planetNo == 0 {
+		wg.Done()
 	}
 }
