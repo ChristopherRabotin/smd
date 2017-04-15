@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -26,30 +25,6 @@ var (
 
 type planetstate struct {
 	R, V []float64
-}
-
-// FreeEphemeralData call this to clear some memory.
-// NOTE: If called impromptly, this will lead to loading data several times.
-func FreeEphemeralData(planet CelestialObject, year int) {
-	ephemeride := fmt.Sprintf("%s-%04d", planet.Name, year)
-	_, exists := loadedCSVdata[ephemeride]
-	if !exists {
-		log.Printf("ephemeride `%s` not loaded", ephemeride)
-		return
-	}
-	newLoadedCSVdata := make(map[string]map[time.Time]planetstate)
-	spiceCSVMutex.Lock()
-	for key, val := range loadedCSVdata {
-		if key != ephemeride {
-			newLoadedCSVdata[key] = val
-		} else {
-			delete(loadedCSVdata, ephemeride)
-		}
-	}
-	loadedCSVdata = newLoadedCSVdata
-	runtime.GC()
-	spiceCSVMutex.Unlock()
-	fmt.Printf("[smd:info] %s freed from memory\n", ephemeride)
 }
 
 // _smdconfig is a "hidden" struct, just use `smdConfig`

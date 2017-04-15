@@ -1,0 +1,16 @@
+[General]
+fileprefix = "fp1vm"
+verbose = true
+c3plot = false
+
+[Departure]
+planet = "Venus"
+from = "2023-01-01 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
+until = "2024-05-01 00:00:00"
+resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.
+
+[Arrival]
+planet = "Mars"
+from = "2023-03-01 00:00:00" # Supports both Julian dates (must be floats) and "YYYY-MM-DD HH:MM:SS".
+until = "2026-01-01 00:00:00"
+resolution = 1 # Number of points per day. For example, set to 24 for one point per hour.

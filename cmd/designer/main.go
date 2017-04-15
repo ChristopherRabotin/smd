@@ -17,6 +17,7 @@ import (
 const (
 	defaultScenario = "~~unset~~"
 	dateTimeFormat  = "2006-01-02 15:04:05"
+	dateFormat      = "2006-01-02 15:04:05"
 )
 
 var (
@@ -42,6 +43,11 @@ func init() {
 func main() {
 	// Read the configuration file.
 	flag.Parse()
+	if ultraDebug {
+		log.Println("[info] DEBUG is ON")
+	} else {
+		log.Println("[info] DEBUG is OFF")
+	}
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
@@ -107,11 +113,6 @@ func main() {
 		log.Printf("[info] searching for %s -> %s", launch.planet.Name, flybys[0].planet.Name)
 	}
 	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(launch.planet, flybys[0].planet, launch.from, launch.until, flybys[0].from, flybys[0].until, 1, 1, true, ultraDebug, false)
-	/*for initLaunch.Before(maxArrival) {
-		smd.FreeEphemeralData(smd.Earth, initLaunch.Year())
-		smd.FreeEphemeralData(planets[0], initLaunch.Year())
-		initLaunch = initLaunch.AddDate(1, 0, 0)
-	}*/
 	if *cpuprofile != "" {
 		return
 	}
@@ -174,7 +175,14 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 		minArrival = next.from
 		maxArrival = next.until
 	}
-	log.Printf("[info] searching for %s -> %s (last? %v)", fromPlanet.Name, toPlanet.Name, isLastPlanet)
+	// Semi-smart memory allocation to avoid too much allocation.
+	if minArrival.Before(launchDT) {
+		minArrival = launchDT
+	}
+	if maxArrival.Before(launchDT) {
+		maxArrival = launchDT
+	}
+	log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s)", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat))
 	vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 1, 1, false, false, false)
 	// Go through solutions and move on with values which are within the constraints.
 	vInfInNorm := smd.Norm(vInfIn)
@@ -187,11 +195,15 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 			vInfOut := []float64{vInfOutVec.At(0, 0), vInfOutVec.At(1, 0), vInfOutVec.At(2, 0)}
 			flybyDV := math.Abs(vInfInNorm - vInfOutNorm)
 			if (maxDV > 0 && flybyDV < maxDV) || maxDV == 0 {
-				log.Printf("[debug] dv OK (%f km/s)", flybyDV)
+				if ultraDebug {
+					log.Printf("[debug] dv OK (%f km/s)", flybyDV)
+				}
 				// Check if the rP is okay
 				_, rp, _, _, _, _ := smd.GAFromVinf(vInfIn, vInfOut, fromPlanet)
 				if minRp > 0 && rp < minRp {
-					log.Printf("[debug] rP no good (%f km)", rp)
+					if ultraDebug {
+						log.Printf("[debug] rP NOK (%f km)", rp)
+					}
 					continue // Too close, ignore
 				}
 				TOF := tofMap[depDT][arrIdx]
@@ -208,7 +220,7 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 						result.arrival = arrivalDT
 						result.vInf = vinfArr
 						rsltChan <- result
-					} else {
+					} else if ultraDebug {
 						log.Printf("[debug] vInf too high (%f km/s)", vinfArr)
 					}
 					// All done, let's free that CPU
