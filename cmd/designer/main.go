@@ -210,13 +210,13 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 			flybyDV := math.Abs(vInfInNorm - vInfOutNorm)
 			if (maxDV > 0 && flybyDV < maxDV) || maxDV == 0 {
 				if ultraDebug {
-					log.Printf("[debug] dv OK (%f km/s)", flybyDV)
+					log.Printf("[ ok ] dv @ %s: %f km/s", fromPlanet.Name, flybyDV)
 				}
 				// Check if the rP is okay
 				_, rp, _, _, _, _ := smd.GAFromVinf(vInfIn, vInfOut, fromPlanet)
 				if minRp > 0 && rp < minRp {
 					if ultraDebug {
-						log.Printf("[debug] rP NOK (%f km)", rp)
+						log.Printf("[NOK ] rP @ %s: %f km", fromPlanet.Name, rp)
 					}
 					continue // Too close, ignore
 				}
@@ -228,14 +228,14 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 				if isLastPlanet {
 					vinfArr := vinfArr[depDT][arrIdx]
 					if vinfArr < arrival.maxVinf {
-						log.Println("[debug] valid traj!")
+						log.Println("[ ok ] valid traj!")
 						// This is a valid trajectory
 						// Add information to result.
 						result.arrival = arrivalDT
 						result.vInf = vinfArr
 						rsltChan <- result
 					} else if ultraDebug {
-						log.Printf("[debug] vInf too high (%f km/s)", vinfArr)
+						log.Printf("[NOK ] vInf @ %s: %f km/s", toPlanet.Name, vinfArr)
 					}
 					// All done, let's free that CPU
 					<-cpuChan
@@ -246,7 +246,7 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 				}
 			} else {
 				if ultraDebug {
-					log.Printf("[debug] dv NOK (%f km/s)", flybyDV)
+					log.Printf("[NOK ] dv @ %s: %f km/s", fromPlanet.Name, flybyDV)
 				}
 				// Won't go anywhere, let's move onto another date. and clear queue if needed.
 				select {
