@@ -1,0 +1,35 @@
+[general]
+fileprefix = "galileo"
+verbose = true
+step = "24h"
+flybyplanets = "Venus Earth Earth"
+
+[launch]
+planet = "Earth"
+from = "1989-10-07 00:00:00"
+until = "1989-10-09 00:00:00"
+maxC3 = 50 # Max c3 allowed
+
+[arrival]
+planet = "Jupiter"
+from = "1996-03-20 00:00:00"
+until = "1996-03-22 00:00:00"
+maxVinf = 20
+
+[flyby.Venus]
+position = 1
+from = "1990-02-09 00:00:00"
+until = "1990-02-11 00:00:00"
+deltaV = 0.9
+
+[flyby.Earth]
+position = 2
+from = "1990-12-09 00:00:00"
+until = "1990-12-11 00:00:00"
+deltaV = 0.9
+
+[flyby.Earth.1]
+position = 3
+from = "1992-12-08 00:00:00"
+until = "1992-12-10 00:00:00"
+deltaV = 0.9

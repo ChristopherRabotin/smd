@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"math"
 	"os"
@@ -12,12 +13,12 @@ import (
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
+	"github.com/gonum/matrix/mat64"
 	"github.com/spf13/viper"
 )
 
 const (
 	defaultScenario = "~~unset~~"
-	dateTimeFormat  = "2006-01-02 15:04:05"
 	dateFormat      = "2006-01-02 15:04:05"
 )
 
@@ -198,8 +199,12 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 	for depDT, vInfDepPerDay := range vinfDep {
 		for arrIdx, vInfOutNorm := range vInfDepPerDay {
 			vInfOutVec := vinfMapVecs[depDT][arrIdx]
-			if r, _ := vInfOutVec.Dims(); r == 0 {
+			if r, _ := vInfOutVec.Dims(); r == 0 || math.IsInf(vInfOutNorm, 1) {
 				continue
+			}
+			// Sanity check
+			if math.Abs(mat64.Norm(&vInfOutVec, 2)-vInfOutNorm) > 1e-6 {
+				panic(fmt.Errorf("%f != %f when sanity check of vInfOut", mat64.Norm(&vInfOutVec, 2), vInfOutNorm))
 			}
 			vInfOut := []float64{vInfOutVec.At(0, 0), vInfOutVec.At(1, 0), vInfOutVec.At(2, 0)}
 			flybyDV := math.Abs(vInfInNorm - vInfOutNorm)

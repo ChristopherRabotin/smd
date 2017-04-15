@@ -1,0 +1,17 @@
+[General]
+fileprefix = "fpmrtest"
+verbose = true
+c3plot = false
+transfer_type = 4
+
+[Departure]
+planet = "Venus"
+from = 2461355.75
+until = 2461375.75
+resolution = 1
+
+[Arrival]
+planet = "Earth"
+from = 2461832.75
+until = 2461852.75
+resolution = 1
