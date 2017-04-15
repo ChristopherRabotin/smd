@@ -17,7 +17,7 @@ import (
 
 // Scenario constants
 const (
-	smoothing = false
+	smoothing = true
 	initJDE   = 2456296.25
 	realBT    = 7009.767
 	realBR    = 140002.894
@@ -140,17 +140,17 @@ func main() {
 					V[i] = Vr[i] + prevEst.State().At(i+3, 0)
 				}
 				wg.Add(1)
-				go func(cloneNo int) {
+				go func(cloneNo int, dt time.Time) {
 					fmt.Printf("[info] Propagating clone to 3*SOI = %f\n", 3*smd.Earth.SOI)
 					sc := smd.NewEmptySC(fmt.Sprintf("BPclone-%d", cloneNo), 0)
 					sc.WayPoints = []smd.Waypoint{smd.NewCruiseToDistance(3*smd.Earth.SOI, false, nil)}
 					sc.Drag = 1.2 + prevEst.State().At(6, 0)
-					mBP := smd.NewPreciseMission(sc, smd.NewOrbitFromRV(R, V, smd.Earth), state.DT, startDT.Add(-1), estPerts, timeStep, false, smd.ExportConfig{})
+					mBP := smd.NewPreciseMission(sc, smd.NewOrbitFromRV(R, V, smd.Earth), dt, dt.Add(-1), estPerts, timeStep, false, smd.ExportConfig{})
 					mBP.Propagate()
 					fmt.Println("[info] Done propagating clone")
 					bPlanes[cloneNo] = smd.NewBPlane(*mBP.Orbit)
 					wg.Done()
-				}(bPlaneIdx)
+				}(bPlaneIdx, state.DT)
 				bPlaneIdx++
 			}
 		}
@@ -276,11 +276,18 @@ func main() {
 
 func processEst(fn string, estChan chan (gokalman.Estimate)) {
 	wg.Add(1)
-	// We also compute the RMS here.
+	// We also compute the RMS here and write the pre-fit residuals.
+	// Write BPlane
+	f, ferr := os.Create(fmt.Sprintf("./%s-prefit.csv", fn))
+	if ferr != nil {
+		panic(ferr)
+	}
+	defer f.Close()
+	f.WriteString("rho,rhoDot\n")
 	numMeasurements := 0
 	rmsPosition := 0.0
 	rmsVelocity := 0.0
-	ce, _ := gokalman.NewCustomCSVExporter([]string{"x", "y", "z", "xDot", "yDot", "zDot"}, ".", fn+".csv", 3)
+	ce, _ := gokalman.NewCustomCSVExporter([]string{"x", "y", "z", "xDot", "yDot", "zDot", "Cr"}, ".", fn+".csv", 3)
 	for {
 		est, more := <-estChan
 		if !more {
@@ -288,6 +295,7 @@ func processEst(fn string, estChan chan (gokalman.Estimate)) {
 			wg.Done()
 			break
 		}
+		f.WriteString(fmt.Sprintf("%f,%f\n", est.Innovation().At(0, 0), est.Innovation().At(1, 0)))
 		numMeasurements++
 		for i := 0; i < 3; i++ {
 			rmsPosition += math.Pow(est.State().At(i, 0), 2)
