@@ -148,6 +148,8 @@ func CelestialObjectFromString(name string) (CelestialObject, error) {
 		return Saturn, nil
 	case "uranus":
 		return Uranus, nil
+	case "neptune":
+		return Neptune, nil
 	case "pluto":
 		return Pluto, nil
 	default:
@@ -179,6 +181,10 @@ var Saturn = CelestialObject{"Saturn", 60268.0, 1429394133, 3.7931208e7, 0.93, 2
 // Uranus is no joke.
 // TODO: SOI
 var Uranus = CelestialObject{"Uranus", 25559.0, 2875038615, 5.7939513e6, 1.02, 0.773, 0, 0.012, 0, 0, nil}
+
+// Neptune is giant.
+// TODO: SOI
+var Neptune = CelestialObject{"Neptune", 24622.0, 30.110387 * AU, 6.8365299e6, 1.767, 0.72, 0, 0, 0, 0, nil}
 
 // Pluto is not a planet and had that down ranking coming. It should have stayed in its lane.
 // WARNING: Pluto SOI is not defined.
