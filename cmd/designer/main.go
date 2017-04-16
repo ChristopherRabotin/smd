@@ -171,7 +171,6 @@ func main() {
 
 // GAPCP performs the recursion.
 func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, prevResult Result) {
-	//inFlyby := flybys[planetNo]
 	minRp := inFlyby.minPeriapsisRadius
 	maxDV := inFlyby.maxDeltaV
 	fromPlanet := inFlyby.planet
@@ -212,7 +211,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 		for arrivalDay := 0.; arrivalDay < float64(arrivalWindow); arrivalDay += 1 / ptsPerArrivalDay {
 			nextPlanetArrivalDT := minArrival.Add(time.Duration(arrivalDay*24) * time.Hour)
 			nextPlanetR := mat64.NewVector(3, toPlanet.HelioOrbit(nextPlanetArrivalDT).R())
-			ViGA2, _, _, _ := smd.Lambert(ga2R, nextPlanetR, nextPlanetArrivalDT.Sub(ga2DT), smd.TTypeAuto, smd.Sun)
+			ViGA2, VfNext, _, _ := smd.Lambert(ga2R, nextPlanetR, nextPlanetArrivalDT.Sub(ga2DT), smd.TTypeAuto, smd.Sun)
 			vInfOutGA2Vec := mat64.NewVector(3, nil)
 			vInfOutGA2Vec.SubVec(ViGA2, mat64.NewVector(3, fromPlanetAtGA2.V()))
 			vInfOutGA2 := []float64{vInfOutGA2Vec.At(0, 0), vInfOutGA2Vec.At(1, 0), vInfOutGA2Vec.At(2, 0)}
@@ -287,22 +286,40 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 			f.WriteString(data)
 			f.Close()
 
-			// Spawn the next flyby computation.
 			result := prevResult.Clone()
-			rslt := GAResult{nextPlanetArrivalDT, bestRp.ega2Vout - bestRp.ega2Vin, bestRp.Rp2, bestRp.Assocψ}
-			result.flybys = append(result.flybys, rslt)
-			// Recursion after creating a new "flyby" struct leaving from this best departure.
-			GAPCP(nextPlanetArrivalDT, inFlyby.PostResonance(), planetNo, vInfOutGA2, result)
+			if isLastPlanet {
+				vinfArr := mat64.Norm(VfNext, 2)
+				if vinfArr < arrival.maxVinf {
+					log.Println("[ ok ] valid traj!")
+					// This is a valid trajectory
+					// Add information to result.
+					result.arrival = nextPlanetArrivalDT
+					result.vInf = vinfArr
+					rsltChan <- result
+				} else if ultraDebug {
+					log.Printf("[NOK ] vInf @ %s: %f km/s", toPlanet.Name, vinfArr)
+				}
+				// All done, let's free that CPU
+				<-cpuChan
+			} else {
+				// Spawn the next flyby computation.
+				rslt := GAResult{nextPlanetArrivalDT, bestRp.ega2Vout - bestRp.ega2Vin, bestRp.Rp2, bestRp.Assocψ}
+				result.flybys = append(result.flybys, rslt)
+				// Recursion after creating a new "flyby" struct leaving from this best departure.
+				GAPCP(nextPlanetArrivalDT, inFlyby.PostResonance(), planetNo, vInfOutGA2, result)
+			}
 		}
 	} else {
 		log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s)", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat))
-		vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 1, 1, smd.TTypeAuto, false, false, false)
+		vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 1, 1, smd.TTypeAuto, false, true, false)
 		// Go through solutions and move on with values which are within the constraints.
 		vInfInNorm := smd.Norm(vInfIn)
+		log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s) -- %d", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat), len(vinfDep))
 		for depDT, vInfDepPerDay := range vinfDep {
 			for arrIdx, vInfOutNorm := range vInfDepPerDay {
 				vInfOutVec := vinfMapVecs[depDT][arrIdx]
 				if r, _ := vInfOutVec.Dims(); r == 0 || math.IsInf(vInfOutNorm, 1) || vInfOutNorm == 0 {
+					log.Printf("[info] skipping item when searching for %s (@%s) -> %s (@%s :: %s) -- %d", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat), len(vinfDep))
 					continue
 				}
 				// Sanity check
@@ -361,6 +378,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 				}
 			}
 		}
+		log.Printf("[done] TOTALLY DONE searching for %s (@%s) -> %s (@%s :: %s) -- %d", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat), len(vinfDep))
 	}
 	if planetNo == 0 {
 		wg.Done()

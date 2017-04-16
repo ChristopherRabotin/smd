@@ -3,6 +3,7 @@ package smd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"time"
@@ -253,7 +254,7 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 	vInfInitVecs = make(map[time.Time][]mat64.Vector)
 	vInfArriVecs = make(map[time.Time][]mat64.Vector)
 	if verbose {
-		fmt.Printf("Launch window: %d days\nArrival window: %d days\nTransfer: %s\n", launchWindow, arrivalWindow, transferType)
+		log.Printf("[info] %s depart window: %d days\t%s arrival window: %d days\t transfer: %s", initPlanet.Name, launchWindow, arrivalPlanet.Name, arrivalWindow, transferType)
 	}
 	// Stores the content of the dat file.
 	// No trailing new line because it's add in the for loop.
@@ -295,7 +296,7 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 		}
 		launchDT := initLaunch.Add(time.Duration(launchDay*24*3600) * time.Second)
 		if verbose {
-			fmt.Printf("Launch date %s\n", launchDT)
+			log.Printf("[info] depart %s on %s", initPlanet.Name, launchDT)
 		}
 		// Initialize the values
 		c3Map[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
@@ -362,6 +363,9 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 			vinfMap[launchDT][arrivalIdx] = vInfArrival
 			arrivalIdx++
 		}
+		if verbose {
+			log.Printf("[done] depart %s on %s", initPlanet.Name, launchDT)
+		}
 	}
 	if verbose && output {
 		// Print the matlab command to help out
@@ -370,6 +374,9 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 		} else {
 			fmt.Printf("=== MatLab ===\npcpplotsVinfs('%s', '%s', '%s', '%s', '%s')\n", pcpName, initLaunch.Format("2006-01-02"), initArrival.Format("2006-01-02"), initPlanet.Name, arrivalPlanet.Name)
 		}
+	}
+	if verbose {
+		log.Printf("[done] %s depart window: %d days\t%s arrival window: %d days\t transfer: %s", initPlanet.Name, launchWindow, arrivalPlanet.Name, arrivalWindow, transferType)
 	}
 	return
 }
