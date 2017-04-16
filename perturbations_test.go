@@ -21,7 +21,7 @@ func TestPertArbitrary(t *testing.T) {
 	perts := Perturbations{}
 	perts.Arbitrary = arb
 
-	if !floats.Equal(pertForce, perts.Perturb(o, time.Now())) {
+	if !floats.Equal(pertForce, perts.Perturb(o, time.Now(), Spacecraft{})) {
 		t.Fatal("arbitrary pertubations fail")
 	}
 
@@ -36,17 +36,15 @@ func TestPert3rdBody(t *testing.T) {
 		body CelestialObject
 		pert []float64
 	}{
-		{Sun, []float64{-3.9833995987367734e-10, 3.9842231561973734e-10, -2.689062600261818e-10, 0, 0, 0, 0}},
-		{Mars, []float64{-8.34637777124967e-18, -1.3508542238725528e-17, -1.0830758197973537e-17, 0, 0, 0, 0}},
-		{Earth, []float64{0, 0, 0, 0, 0, 0, 0}},
+		{Sun, []float64{0, 0, 0, -4.4284739788758433e-10, 5.637851322253714e-10, 9.962451049697812e-11, 0}},
 	}
 
 	perts := Perturbations{}
 	dt, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
 	for _, test := range testValues {
 		perts.PerturbingBody = &test.body
-		pert := perts.Perturb(o, dt)
-		if !floats.Equal(pert, test.pert) {
+		pert := perts.Perturb(o, dt, Spacecraft{})
+		if !floats.EqualApprox(pert, test.pert, 1e-13) {
 			t.Fatalf("invalid pertubations for %s\n%+v\n%v", test.body, pert, test.pert)
 		}
 	}

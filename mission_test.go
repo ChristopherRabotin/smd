@@ -706,24 +706,52 @@ func TestMissionSTM(t *testing.T) {
 	perts := Perturbations{Jn: 3}
 	startDT := time.Now().UTC()
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
-	for meth := 0; meth < 3; meth++ {
+	dragExample := 1.2
+	for meth := 0; meth < 4; meth++ {
 		// Define the orbits
 		leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 		// Initialize the mission and estimates
-		mission := NewPreciseMission(NewEmptySC("LEO", 0), leoMission, startDT, endDT, perts, 1*time.Second, true, ExportConfig{})
-		stateChan := make(chan (State))
-		mission.RegisterStateChan(stateChan)
+		sc := NewEmptySC("LEO", 0)
 		// Run
 		iR, iV := leoMission.RV()
-		previousState := mat64.NewVector(6, nil)
+		var previousState *mat64.Vector
+		if meth != 2 {
+			previousState = mat64.NewVector(6, nil)
+		} else {
+			previousState = mat64.NewVector(7, nil)
+			previousState.SetVec(6, dragExample)
+		}
 		for i := 0; i < 3; i++ {
 			previousState.SetVec(i, iR[i])
 			previousState.SetVec(i+3, iV[i])
+		}
+		stateChan := make(chan (State))
+		var mission *Mission
+		if meth != 2 {
+			mission = NewPreciseMission(sc, leoMission, startDT, endDT, perts, 1*time.Second, true, ExportConfig{})
+			mission.RegisterStateChan(stateChan)
 		}
 		if meth == 0 {
 			go mission.PropagateUntil(endDT, true)
 		} else if meth == 1 {
 			go mission.Propagate()
+		} else if meth == 2 {
+			// Set the configuration to use SPICE CSV files.
+			smdConfig()
+			config.spiceCSV = true
+			// Travis is annoying me
+			if config.HorizonDir == "" {
+				config.HorizonDir = "./data/horizon"
+				config.spiceTrunc = time.Minute
+			}
+			fmt.Printf("%s\n", config)
+			// Test drag with zero drag coefficient.
+			sc := NewEmptySC("LEOwithDrag", 0)
+			sc.Drag = dragExample
+			perts.Drag = true
+			mission = NewPreciseMission(sc, leoMission, startDT, endDT, perts, 1*time.Second, true, ExportConfig{})
+			mission.RegisterStateChan(stateChan)
+			go mission.PropagateUntil(endDT, true)
 		} else {
 			t.Skip("Multiple calls to PropagateUntil fails, cf. issue #104")
 			// BUG: This does NOT work. Don't know why yet, but I don't need just yet, so it can wait.
@@ -751,17 +779,28 @@ func TestMissionSTM(t *testing.T) {
 					prevDT = state.DT
 				}
 			}
-			numStates++
-			stmState := mat64.NewVector(6, nil)
+			var stmState *mat64.Vector
+			if meth != 2 {
+				stmState = mat64.NewVector(6, nil)
+			} else {
+				stmState = mat64.NewVector(7, nil)
+				stmState.SetVec(6, dragExample)
+			}
 			stmState.MulVec(state.Φ, previousState)
 			stmState.SubVec(state.Vector(), stmState)
 			if mat64.Norm(stmState.T(), 2) > 0.1 {
-				t.Fatalf("Invalid estimation: norm of difference: %f", mat64.Norm(stmState.T(), 2))
+				t.Logf("STM:\n %+v", mat64.Formatted(state.Φ))
+				t.Logf("Delta: %+v", mat64.Formatted(stmState.T()))
+				t.Fatalf("meth=%d stateNo=%d invalid estimation: norm of difference: %f", meth, numStates, mat64.Norm(stmState.T(), 2))
 			}
 			previousState = state.Vector()
+			numStates++
 		}
 		if numStates != 86400 {
 			t.Fatalf("expected 86400 states to be processed, got %d (failed on %d)", numStates, meth)
+		}
+		if meth == 2 {
+			cfgLoaded = false // Unload the modified config file
 		}
 	}
 }

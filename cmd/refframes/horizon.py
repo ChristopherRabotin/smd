@@ -36,7 +36,9 @@ if __name__ == '__main__':
     end_date = parsedt('{}-01-01'.format(year+1))
 
     _load_kernels_()
-    f = open('../../data/horizon/' + args.planet + '-' + str(start_date.year) + '.csv', 'w')
+    outdir = os.path.dirname(os.path.abspath(__file__)) + '/../../data/horizon/'
+    path = outdir + args.planet + '-' + str(start_date.year) + '.csv'
+    f = open(path , 'w')
     prev_month = 0
     while start_date <= end_date:
         if prev_month != start_date.month:

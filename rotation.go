@@ -9,6 +9,8 @@ import (
 const (
 	// EarthRotationRate is the average Earth rotation rate in radians per second.
 	EarthRotationRate = 7.292115900231276e-5
+	// EarthRotationRate2 is another value (project of StatOD).
+	EarthRotationRate2 = 7.29211585275553e-5
 )
 
 // Rot313Vec converts a given vector from PQW frame to ECI frame.

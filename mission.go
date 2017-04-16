@@ -47,8 +47,8 @@ func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, perts Pert
 	if end.Location() != time.UTC {
 		end = end.UTC()
 	}
-
-	a := &Mission{s, o, DenseIdentity(6), start, end, start, perts, step, make(chan (bool), 1), nil, computeSTM, false, false, true}
+	rSTM, _ := perts.STMSize()
+	a := &Mission{s, o, DenseIdentity(rSTM), start, end, start, perts, step, make(chan (bool), 1), nil, computeSTM, false, false, true}
 	// Create a main history channel if there is any exporting
 	if !conf.IsUseless() {
 		a.histChans = []chan (State){make(chan (State), 10)}
@@ -170,7 +170,11 @@ func (a *Mission) Stop(t float64) bool {
 func (a *Mission) GetState() (s []float64) {
 	stateSize := 7
 	if a.computeSTM {
-		stateSize += 36
+		rSTM, cSTM := a.perts.STMSize()
+		stateSize += rSTM * cSTM
+		if a.perts.Drag {
+			stateSize += 1
+		}
 	}
 	s = make([]float64, stateSize)
 	R, V := a.Orbit.RV()
@@ -182,9 +186,10 @@ func (a *Mission) GetState() (s []float64) {
 	s[6] = a.Vehicle.FuelMass
 	if a.computeSTM {
 		// Add the components of Φ
-		sIdx := 6
-		for i := 0; i < 6; i++ {
-			for j := 0; j < 6; j++ {
+		rSTM, cSTM := a.perts.STMSize()
+		sIdx := rSTM + 1
+		for i := 0; i < rSTM; i++ {
+			for j := 0; j < cSTM; j++ {
 				s[sIdx] = a.Φ.At(i, j)
 				sIdx++
 			}
@@ -215,12 +220,22 @@ func (a *Mission) SetState(t float64, s []float64) {
 	}
 	a.Vehicle.FuelMass = s[6]
 
-	latestVector := mat64.NewVector(6, s[0:6])
+	var latestVector *mat64.Vector
+	if a.Vehicle.Drag > 0 && a.computeSTM {
+		st := s[0:6]
+		st = append(st, a.Vehicle.Drag)
+		// Update Cr
+		a.Vehicle.Drag = s[7]
+		latestVector = mat64.NewVector(7, st)
+	} else {
+		latestVector = mat64.NewVector(6, s[0:6])
+	}
 	latestState := State{a.CurrentDT, *a.Vehicle, *a.Orbit, nil, latestVector}
 
 	if a.computeSTM {
 		// Extract the components of Φ
-		sIdx, rΦ, cΦ := 6, 6, 6
+		rΦ, cΦ := a.perts.STMSize()
+		sIdx := rΦ + 1
 		ΦkTo0 := mat64.NewDense(rΦ, cΦ, nil)
 		for i := 0; i < rΦ; i++ {
 			for j := 0; j < cΦ; j++ {
@@ -231,7 +246,7 @@ func (a *Mission) SetState(t float64, s []float64) {
 		// Compute the Φ for this transition
 		var Φinv mat64.Dense
 		if err := Φinv.Inverse(a.Φ); err != nil {
-			panic("could not invert the previous Φ")
+			panic(fmt.Errorf("could not invert the previous Φ: %s", err))
 		}
 		a.Φ.Mul(ΦkTo0, &Φinv)
 		latestState.Φ = mat64.DenseCopyOf(a.Φ)
@@ -256,7 +271,11 @@ func (a *Mission) SetState(t float64, s []float64) {
 func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	stateSize := 7
 	if a.computeSTM {
-		stateSize += 6 * 6
+		rSTM, cSTM := a.perts.STMSize()
+		stateSize += rSTM * cSTM
+		if a.perts.Drag {
+			stateSize += 1
+		}
 	}
 	fDot = make([]float64, stateSize) // init return vector
 	// Let's add the thrust to increase the magnitude of the velocity.
@@ -267,7 +286,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	R := []float64{f[0], f[1], f[2]}
 	V := []float64{f[3], f[4], f[5]}
 	tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
-	bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
+	bodyAcc := -tmpOrbit.Origin.μ / math.Pow(Norm(R), 3)
 	_, _, i, Ω, _, _, _, _, u := tmpOrbit.Elements()
 	Δv = Rot313Vec(-u, -i, -Ω, Δv)
 	// d\vec{R}/dt
@@ -282,13 +301,13 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	fDot[6] = -usedFuel
 
 	// Compute and add the perturbations (which are method dependent).
-	// XXX: Should I be using the temp orbit instead?
-	pert := a.perts.Perturb(*tmpOrbit, a.CurrentDT)
+	pert := a.perts.Perturb(*tmpOrbit, a.CurrentDT, *a.Vehicle)
 
 	// Compute STM if needed.
 	if a.computeSTM {
 		// Extract the components of Φ
-		fIdx, rΦ, cΦ := 6, 6, 6
+		rΦ, cΦ := a.perts.STMSize()
+		fIdx := rΦ + 1
 		Φ := mat64.NewDense(rΦ, cΦ, nil)
 		ΦDot := mat64.NewDense(rΦ, cΦ, nil)
 		for i := 0; i < rΦ; i++ {
@@ -299,12 +318,15 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		}
 
 		// Compute the STM.
-		A := mat64.NewDense(6, 6, nil)
+		A := mat64.NewDense(rΦ, cΦ, nil)
 		// Top right is Identity 3x3
 		A.Set(0, 3, 1)
 		A.Set(1, 4, 1)
 		A.Set(2, 5, 1)
-		// Bottom left is where the magix is.
+		if rΦ == 7 {
+			A.Set(3, 6, 1)
+		}
+		// Bottom left is where the magic is.
 		x := R[0]
 		y := R[1]
 		z := R[2]
@@ -314,8 +336,8 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		r2 := x2 + y2 + z2
 		r232 := math.Pow(r2, 3/2.)
 		r252 := math.Pow(r2, 5/2.)
-		// Add the body perturbations
 
+		// Add the body perturbations
 		dAxDx := 3*a.Orbit.Origin.μ*x2/r252 - a.Orbit.Origin.μ/r232
 		dAxDy := 3 * a.Orbit.Origin.μ * x * y / r252
 		dAxDz := 3 * a.Orbit.Origin.μ * x * z / r252
@@ -405,10 +427,81 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			A.Set(4, 2, A42)
 			A.Set(5, 2, A52)
 		}
+
+		var RSunToEarth, RSunToSC, REarthToSC []float64
+
+		if a.perts.Drag || a.perts.PerturbingBody != nil {
+			REarthToSC = a.Orbit.R()
+			RSunToEarth = MxV33(R1(Deg2rad(-Earth.tilt)), a.Orbit.Origin.HelioOrbit(a.CurrentDT).R())
+			RSunToSC = make([]float64, 3)
+			for i := 0; i < 3; i++ {
+				RSunToSC[i] = RSunToEarth[i] + REarthToSC[i]
+			}
+		}
+
+		// BUG: This includes BOTH SRP and Sun perturbations.
+		if a.perts.Drag {
+			Cr := a.Vehicle.Drag
+			S := 0.01e-6 // TODO: Idem for the Area to mass ratio
+			Phi := 1357.
+			// Build the vectors.
+			celerity := 2.997925e+05
+			srpCst := -Sun.μ + (Phi*AU*AU*S/celerity)*Cr
+			RSunToSC3 := math.Pow(Norm(RSunToSC), 3)
+			RSunToSC5 := math.Pow(Norm(RSunToSC), 5)
+
+			// Getting values
+			// Ai0 = \frac{\partial a}{\partial x}
+			// Ai1 = \frac{\partial a}{\partial y}
+			// Ai2 = \frac{\partial a}{\partial z}
+			A30 := A.At(3, 0)
+			A40 := A.At(4, 0)
+			A50 := A.At(5, 0)
+			A31 := A.At(3, 1)
+			A41 := A.At(4, 1)
+			A51 := A.At(5, 1)
+			A32 := A.At(3, 2)
+			A42 := A.At(4, 2)
+			A52 := A.At(5, 2)
+
+			dAxDx := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[0])*2*(-RSunToSC[0])
+			dAxDy := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[0]) * 2 * (-RSunToSC[1])
+			dAxDz := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[0]) * 2 * (-RSunToSC[2])
+			dAxDCr := (Phi * AU * AU * S / celerity) / (RSunToSC3 * (-RSunToSC[0]))
+			dAyDx := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[1]) * 2 * (-RSunToSC[0])
+			dAyDy := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[1])*2*(-RSunToSC[1])
+			dAyDz := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[1]) * 2 * (-RSunToSC[2])
+			dAyDCr := (Phi * AU * AU * S / celerity) / (RSunToSC3 * (-RSunToSC[1]))
+			dAzDx := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[2]) * 2 * (-RSunToSC[0])
+			dAzDy := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[2]) * 2 * (-RSunToSC[1])
+			dAzDz := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[2])*2*(-RSunToSC[2])
+			dAzDCr := (Phi * AU * AU * S / celerity) / (RSunToSC3 * (-RSunToSC[2]))
+			// Setting values
+			// \frac{\partial a}{\partial x}
+			A.Set(3, 0, A30+dAxDx)
+			A.Set(4, 0, A40+dAyDx)
+			A.Set(5, 0, A50+dAzDx)
+			// \partial a/\partial y
+			A.Set(3, 1, A31+dAxDy)
+			A.Set(4, 1, A41+dAyDy)
+			A.Set(5, 1, A51+dAzDy)
+			// \partial a/\partial z
+			A.Set(3, 2, A32+dAxDz)
+			A.Set(4, 2, A42+dAyDz)
+			A.Set(5, 2, A52+dAzDz)
+			// \partial a/\partial Cr
+			A.Set(3, 6, dAxDCr)
+			A.Set(4, 6, dAyDCr)
+			A.Set(5, 6, dAzDCr)
+		}
+
 		ΦDot.Mul(A, Φ)
 
 		// Store ΦDot in fDot
-		fIdx = 6
+		fIdx = rΦ + 1
+		if a.perts.Drag {
+			fDot[fIdx-1] = a.Vehicle.Drag
+		}
 		for i := 0; i < rΦ; i++ {
 			for j := 0; j < cΦ; j++ {
 				fDot[fIdx] = ΦDot.At(i, j)
@@ -442,7 +535,13 @@ type State struct {
 // Vector returns the orbit vector with position and velocity.
 func (s State) Vector() *mat64.Vector {
 	if s.cVector == nil {
-		vec := mat64.NewVector(6, nil)
+		var vec *mat64.Vector
+		if s.SC.Drag > 0 {
+			vec = mat64.NewVector(7, nil)
+			vec.SetVec(6, s.SC.Drag)
+		} else {
+			vec = mat64.NewVector(6, nil)
+		}
 		R, V := s.Orbit.RV()
 		for i := 0; i < 3; i++ {
 			vec.SetVec(i, R[i])

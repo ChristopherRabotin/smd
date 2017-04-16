@@ -158,13 +158,13 @@ func CelestialObjectFromString(name string) (CelestialObject, error) {
 /* Definitions */
 
 // Sun is our closest star.
-var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440018e11, 0.0, 0.0, -1, 0, 0, 0, nil}
+var Sun = CelestialObject{"Sun", 695700, -1, 1.32712440017987e11, 0.0, 0.0, -1, 0, 0, 0, nil}
 
 // Venus is poisonous.
 var Venus = CelestialObject{"Venus", 6051.8, 108208601, 3.24858599e5, 117.36, 3.39458, 0.616e6, 0.000027, 0, 0, nil}
 
 // Earth is home.
-var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.98600433e5, 23.4, 0.00005, 924645.0, 1082.6269e-6, -2.5324e-6, -1.6204e-6, nil}
+var Earth = CelestialObject{"Earth", 6378.1363, 149598023, 3.98600433e5, 23.4393, 0.00005, 924645.0, 1082.6269e-6, -2.5324e-6, -1.6204e-6, nil}
 
 // Mars is the vacation place.
 var Mars = CelestialObject{"Mars", 3396.19, 227939282.5616, 4.28283100e4, 25.19, 1.85, 576000, 1964e-6, 36e-6, -18e-6, nil}

@@ -10,6 +10,7 @@ type Perturbations struct {
 	Jn             uint8                   // Factors to be used (only up to 4 supported)
 	PerturbingBody *CelestialObject        // The 3rd body which is perturbating the spacecraft.
 	AutoThirdBody  bool                    // Automatically determine what is the 3rd body based on distance and mass
+	Drag           bool                    // Set to true to use the Spacecraft's Drag for everything including STM computation
 	Arbitrary      func(o Orbit) []float64 // Additional arbitrary pertubation.
 }
 
@@ -17,10 +18,18 @@ func (p Perturbations) isEmpty() bool {
 	return p.Jn <= 1 && p.PerturbingBody == nil && p.AutoThirdBody && p.Arbitrary == nil
 }
 
+// STMSize returns the size of the STM
+func (p Perturbations) STMSize() (r, c int) {
+	if p.Drag {
+		return 7, 7
+	}
+	return 6, 6
+}
+
 // Perturb returns the perturbing state vector based on the kind of propagation being used.
 // For example, if using Cartesian, it'll return the impact on the R vector. If Gaussian, it'll
 // return the impact on Ω, ω, ν (later for ν...).
-func (p Perturbations) Perturb(o Orbit, dt time.Time) []float64 {
+func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 	pert := make([]float64, 7)
 	if p.isEmpty() {
 		return pert
@@ -51,28 +60,40 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time) []float64 {
 			pert[5] += 0.5 * accJ3 * (35*z4/r292 - 30*z2/r272 + 3/r252)
 		}
 	}
-	if p.PerturbingBody != nil && !p.PerturbingBody.Equals(o.Origin) {
 
-		mainR := o.Origin.HelioOrbit(dt).R()
-		pertR := p.PerturbingBody.HelioOrbit(dt).R()
-		if p.PerturbingBody.Equals(Sun) {
-			pertR = []float64{0, 0, 0}
-		}
-		relPertR := make([]float64, 3) // R between main body and pertubing body
-		scPert := make([]float64, 3)   // r_{i/sc} of spacecraft to pertubing body.
-		oppose := 1.
-		if Norm(mainR) > Norm(pertR) {
-			oppose = -1
-		}
-		scR := o.R()
+	var RSunToEarth, RSunToSC, REarthToSC []float64
+
+	if p.Drag || p.PerturbingBody != nil {
+		REarthToSC = o.R()
+		RSunToEarth = MxV33(R1(Deg2rad(-Earth.tilt)), o.Origin.HelioOrbit(dt).R())
+		RSunToSC = make([]float64, 3)
 		for i := 0; i < 3; i++ {
-			relPertR[i] = oppose * (pertR[i] - mainR[i])
-			scPert[i] = relPertR[i] - scR[i]
+			RSunToSC[i] = RSunToEarth[i] + REarthToSC[i]
 		}
-		relPertRNorm3 := math.Pow(Norm(relPertR), 3)
-		scPertNorm3 := math.Pow(Norm(scPert), 3)
+	}
+
+	if p.Drag {
+		// If Drag, SRP is *also* turned on.
+		// TODO: Drag, there is only SRP here.
+		Cr := sc.Drag
+		S := 0.01e-6 // TODO: Idem for the Area to mass ratio
+		Phi := 1357.
+		// Build the vectors.
+		celerity := 2.997925e+05
+		srpCst := (Phi * AU * AU * S / celerity) * Cr / math.Pow(Norm(RSunToSC), 3)
 		for i := 0; i < 3; i++ {
-			pert[i] += p.PerturbingBody.μ * (scPert[i]/scPertNorm3 - relPertR[i]/relPertRNorm3)
+			pert[i+3] += -srpCst * RSunToSC[i]
+		}
+	}
+
+	if p.PerturbingBody != nil && !p.PerturbingBody.Equals(o.Origin) {
+		if !p.PerturbingBody.Equals(Sun) {
+			panic("only the Sun as a perturbing body is currently supported")
+		}
+		RSunToEarthNorm3 := math.Pow(Norm(RSunToEarth), 3)
+		RSunToSCNorm3 := math.Pow(Norm(RSunToSC), 3)
+		for i := 0; i < 3; i++ {
+			pert[i+3] += Sun.μ * (RSunToEarth[i]/RSunToEarthNorm3 - RSunToSC[i]/RSunToSCNorm3)
 		}
 	}
 	if p.Arbitrary != nil {

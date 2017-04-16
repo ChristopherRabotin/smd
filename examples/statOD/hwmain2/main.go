@@ -14,12 +14,11 @@ import (
 )
 
 const (
-	ekfTrigger     = -15   // Number of measurements prior to switching to EKF mode.
+	ekfTrigger     = 15    // Number of measurements prior to switching to EKF mode.
 	ekfDisableTime = -1200 // Seconds between measurements to switch back to CKF. Set as negative to ignore.
 	sncEnabled     = false // Set to false to disable SNC.
 	sncDisableTime = 1200  // Number of seconds between measurements to skip using SNC noise.
 	sncRIC         = false // Set to true if the noise should be considered defined in PQW frame.
-	timeBasedPlot  = false // Set to true to plot time, or false to plot on measurements.
 	smoothing      = false // Set to true to smooth the CKF.
 )
 
@@ -27,6 +26,8 @@ var (
 	σQExponent float64
 	wg         sync.WaitGroup
 )
+
+var debug = flag.Bool("debug", false, "verbose debug")
 
 func init() {
 	flag.Float64Var(&σQExponent, "sigmaExp", 6, "exponent for the Q sigma (default is 6, so sigma=1e-6).")
@@ -95,7 +96,6 @@ func main() {
 	// Let's mark those as the truth so we can plot that.
 	stateTruth := make([]*mat64.Vector, len(measurements))
 	truthMeas := make([]*mat64.Vector, len(measurements))
-	residuals := make([]*mat64.Vector, len(measurements))
 	for measNo, measTime := range measurementTimes {
 		measurement := measurements[measTime]
 		stateTruth[measNo] = measurement.State.Vector()
@@ -103,10 +103,14 @@ func main() {
 	}
 	truth := gokalman.NewBatchGroundTruth(stateTruth, truthMeas)
 
+	// Compute number of states which will be generated.
+	numStates := int((measurementTimes[len(measurementTimes)-1].Sub(measurementTimes[0])).Seconds()/timeStep.Seconds()) + 1
+	residuals := make([]*mat64.Vector, numStates)
+
 	// Get the first measurement as an initial orbit estimation.
 	firstDT := measurementTimes[0]
 	estOrbit := measurements[firstDT].State.Orbit
-	startDT = firstDT.Add(-10 * time.Second)
+	startDT = firstDT //.Add(-10 * time.Second)
 	// TODO: Add noise to initial orbit estimate.
 
 	// Perturbations in the estimate
@@ -116,16 +120,7 @@ func main() {
 	mEst := smd.NewPreciseMission(smd.NewEmptySC(scName+"Est", 0), &estOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
 	mEst.RegisterStateChan(stateEstChan)
 
-	fmt.Printf("%d number of measurements\n", len(measurementTimes))
-
 	// Go-routine to advance propagation.
-	/*go func() {
-		// TODO: Why not just propagate until the last time? The channel is populated anyway.
-		for measNo, measTime := range measurementTimes {
-			fmt.Printf("[til] %04d %s\n", measNo, measTime)
-			mEst.PropagateUntil(measTime, measNo == len(measurementTimes)-1)
-		}
-	}()*/
 	go mEst.PropagateUntil(measurementTimes[len(measurementTimes)-1], true)
 
 	// KF filter initialization stuff.
@@ -177,7 +172,8 @@ func main() {
 	var prevStationName = ""
 	var prevDT time.Time
 	var ckfMeasNo = 0
-	measNo := 0
+	measNo := 1
+	stateNo := 0
 	kf, _, err := gokalman.NewHybridKF(mat64.NewVector(6, nil), prevP, noiseKF, 2)
 	if err != nil {
 		panic(fmt.Errorf("%s", err))
@@ -188,8 +184,8 @@ func main() {
 		if !more {
 			break
 		}
+		stateNo++
 		roundedDT := state.DT.Truncate(time.Second)
-		fmt.Printf("%04d %s\n", measNo, roundedDT)
 		measurement, exists := measurements[roundedDT]
 		if !exists {
 			if measNo == 0 {
@@ -206,20 +202,19 @@ func main() {
 			stateEst := mat64.NewVector(6, nil)
 			stateEst.SubVec(est.State(), state.Vector())
 			// NOTE: The state seems to be all I need, along with Phi maybe (?) because the KF already uses the previous state?!
-			fmt.Printf("[pred] (%04d) %+v\n", measNo, mat64.Formatted(est.State().T()))
+			if *debug {
+				fmt.Printf("[pred] (%04d) %+v\n", measNo, mat64.Formatted(est.State().T()))
+			}
 			estChan <- truth.ErrorWithOffset(-1, est, nil)
 			continue
 		}
 		if roundedDT != measurementTimes[measNo] {
-			panic(fmt.Errorf("[ERR!] %04d delta = %s", measNo, measurement.State.DT.Sub(measurementTimes[measNo])))
+			panic(fmt.Errorf("[ERR!] %04d delta = %s\tstate=%s\tmeas=%s", measNo, state.DT.Sub(measurementTimes[measNo]), state.DT, measurementTimes[measNo]))
 		}
 
 		if measNo == 0 {
 			prevDT = measurement.State.DT
 		}
-
-		measNo++
-		fmt.Printf("[meas] %04d\n", measNo)
 
 		// Let's perform a full update since there is a measurement.
 		ΔtDuration := measurement.State.DT.Sub(prevDT)
@@ -296,7 +291,7 @@ func main() {
 		residual.MulVec(Htilde, est.State())
 		residual.AddScaledVec(residual, -1, est.ObservationDev())
 		residual.ScaleVec(-1, residual)
-		residuals[measNo] = residual
+		residuals[stateNo] = residual
 
 		if smoothing {
 			// Save to history in order to perform smoothing.
@@ -307,7 +302,9 @@ func main() {
 			estChan <- truth.ErrorWithOffset(measNo, est, state.Vector())
 			diff := mat64.NewVector(6, nil)
 			diff.SubVec(stateEst, measurement.State.Vector())
-			fmt.Printf("[diff] (%04d) %+v\n", measNo, mat64.Formatted(diff.T()))
+			if *debug {
+				fmt.Printf("[diff] (%04d) %+v\n", measNo, mat64.Formatted(diff.T()))
+			}
 		}
 		prevDT = measurement.State.DT
 
@@ -315,9 +312,20 @@ func main() {
 		if kf.EKFEnabled() {
 			// Update the state from the error.
 			R, V := state.Orbit.RV()
+			if *debug {
+				fmt.Printf("[ekf-] (%04d) %+v\n", measNo, mat64.Formatted(state.Vector().T()))
+			}
 			for i := 0; i < 3; i++ {
 				R[i] += est.State().At(i, 0)
 				V[i] += est.State().At(i+3, 0)
+			}
+			if *debug {
+				vec := mat64.NewVector(6, nil)
+				for i := 0; i < 3; i++ {
+					vec.SetVec(i, R[i])
+					vec.SetVec(i+3, V[i])
+				}
+				fmt.Printf("[ekf+] (%04d) %+v\n", measNo, mat64.Formatted(vec.T()))
 			}
 			mEst.Orbit = smd.NewOrbitFromRV(R, V, smd.Earth)
 		}
@@ -341,7 +349,10 @@ func main() {
 	defer f.Close()
 	f.WriteString("rho,rhoDot\n")
 	for _, residual := range residuals {
-		csv := fmt.Sprintf("%f,%f\n", residual.At(0, 0), residual.At(1, 0))
+		csv := "0,0\n"
+		if residual != nil {
+			csv = fmt.Sprintf("%f,%f\n", residual.At(0, 0), residual.At(1, 0))
+		}
 		if _, err := f.WriteString(csv); err != nil {
 			panic(err)
 		}
