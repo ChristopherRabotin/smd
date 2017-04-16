@@ -36,7 +36,7 @@ resonant = true
 resonance = 2
 
 [flyby.Jupiter]
-position = 4
+position = 3
 deltaV = 1.0
 from = 2463340.5
 until = 2463410.5
