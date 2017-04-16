@@ -295,7 +295,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 			if isLastPlanet {
 				vinfArr := mat64.Norm(VfNext, 2)
 				if vinfArr < arrival.maxVinf {
-					log.Println("[ ok ] valid traj!")
+					log.Println("[ ok ] valid traj after resonance!")
 					// This is a valid trajectory
 					// Add information to result.
 					result.arrival = nextPlanetArrivalDT
@@ -309,12 +309,12 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 				<-cpuChan
 			} else {
 				// Spawn the next flyby computation.
-				GAPCP(nextPlanetArrivalDT, inFlyby.PostResonance(), planetNo, vInfOutGA2, result)
+				GAPCP(ga2DT, inFlyby.PostResonance(), planetNo, vInfOutGA2, result)
 			}
 		}
 	} else {
 		log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s)", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat))
-		vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 1, 1, smd.TTypeAuto, false, true, false)
+		vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 1, 1, smd.TTypeAuto, false, ultraDebug, false)
 		// Go through solutions and move on with values which are within the constraints.
 		vInfInNorm := smd.Norm(vInfIn)
 		log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s) -- %d", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat), len(vinfDep))
@@ -384,8 +384,5 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 				}
 			}
 		}
-	}
-	if planetNo == 0 {
-		wg.Done()
 	}
 }
