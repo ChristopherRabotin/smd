@@ -1,5 +1,5 @@
 [general]
-fileprefix = "prj"
+fileprefix = "prj-uranus"
 outputdir = "outputs"
 verbose = true
 step = "24h"
