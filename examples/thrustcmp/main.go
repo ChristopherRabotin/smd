@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -21,11 +22,13 @@ const (
 
 var (
 	wg             sync.WaitGroup
+	numCPUs        int
 	opti           bool
 	departEarth    bool
 	interplanetary bool
 	coarse         bool
 	timeStep       time.Duration
+	cpuChan        chan (bool)
 )
 
 func init() {
@@ -33,6 +36,7 @@ func init() {
 	flag.BoolVar(&interplanetary, "interp", false, "set to true for the interplanetary missions")
 	flag.BoolVar(&opti, "opti", false, "set to true to use Naasz laws")
 	flag.BoolVar(&coarse, "coarse", false, "set to true to perform only a coarse simulation")
+	flag.IntVar(&numCPUs, "cpus", 0, "number of CPUs to use for after first finding (set to 0 for max CPUs)")
 }
 
 type thrusterType uint8
@@ -107,14 +111,19 @@ func createSpacecraft(thruster thrusterType, numThrusters int, dist float64, fur
 				waypoints = []smd.Waypoint{smd.NewOrbitTarget(*tgt, nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔeCL), smd.NewCruiseToDistance(dist, further, nil)}
 			}
 		}
-		//eGTO = 0.745230 eMRO=0.852192
-
 	}
 	return smd.NewSpacecraft(name, dryMass, fuelMass, smd.NewUnlimitedEPS(), thrusters, false, []*smd.Cargo{}, waypoints), thrust
 }
 
 func main() {
 	flag.Parse()
+	availableCPUs := runtime.NumCPU()
+	if numCPUs <= 0 || numCPUs > availableCPUs {
+		numCPUs = availableCPUs
+	}
+	runtime.GOMAXPROCS(numCPUs)
+	cpuChan = make(chan (bool), numCPUs)
+	fmt.Printf("Running on %d CPUs\n", numCPUs)
 	if coarse {
 		timeStep = 5 * time.Minute
 		fmt.Println("=== WARNING ===\n Using a COARSE time step -- Results may be incorrect")
@@ -128,7 +137,8 @@ func main() {
 		missionNo, numThrusters int
 	}{{1, 1}, {1, 2}, {2, 1}, {2, 2}, {3, 8}, {3, 12}}
 	for _, combin := range combinations {
-		run(combin.missionNo, combin.numThrusters)
+		cpuChan <- true
+		go run(combin.missionNo, combin.numThrusters)
 	}
 	wg.Wait()
 }
@@ -258,17 +268,18 @@ func run(missionNo, numThrusters int) {
 				bestTOF = tof
 				bestCSV = csv
 			}
-			if true {
+			if true { // XXX: Switch to false for arg of periapsis finding.
 				rslts <- csv
 				break
 			}
 		}
 
-		if !interplanetary && false {
+		if !interplanetary && false { // XXX: Idem
 			rslts <- bestCSV
 		}
 	}
 	close(rslts)
+	<-cpuChan
 }
 
 func streamResults(fn string, rslts <-chan string) {
