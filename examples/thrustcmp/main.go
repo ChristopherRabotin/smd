@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"sync"
@@ -21,9 +22,17 @@ const (
 
 var (
 	wg             sync.WaitGroup
-	departEarth    = false
-	interplanetary = false
+	departEarth    bool
+	interplanetary bool
+	coarse         bool
+	timeStep       time.Duration
 )
+
+func init() {
+	flag.BoolVar(&departEarth, "fromEarth", true, "set to true to leave Earth")
+	flag.BoolVar(&interplanetary, "interp", false, "set to true for the interplanetary missions")
+	flag.BoolVar(&coarse, "coarse", false, "set to true to perform only a coarse simulation")
+}
 
 type thrusterType uint8
 
@@ -41,28 +50,6 @@ func (tt thrusterType) Type() smd.EPThruster {
 		return new(smd.HERMeS)
 	case vx200:
 		return new(smd.VX200)
-	default:
-		panic("unknown thruster")
-	}
-}
-
-func (tt thrusterType) BestArgPeri(cluster int) float64 {
-	switch tt {
-	case pps1350:
-		return 320 // cluster irrelevant
-	case pps5000:
-		return 70 // idem
-	case bht1500:
-		return 60 // idem
-	case bht8000:
-		return 230 // idem
-	case hermes:
-		return 110 // idem
-	case vx200:
-		if cluster == 1 {
-			return 270
-		}
-		return 190
 	default:
 		panic("unknown thruster")
 	}
@@ -98,7 +85,7 @@ func createSpacecraft(thruster thrusterType, numThrusters int, dist float64, fur
 		thrust += thisThrust
 	}
 	dryMass := 1.0
-	fuelMass := 1000.0
+	fuelMass := 3e3
 	name := fmt.Sprintf("%dx%s", numThrusters, thruster)
 	fmt.Printf("\n===== %s ======\n", name)
 	waypoints := []smd.Waypoint{smd.NewReachDistance(dist, further, nil)}
@@ -126,6 +113,15 @@ func createSpacecraft(thruster thrusterType, numThrusters int, dist float64, fur
 }
 
 func main() {
+	flag.Parse()
+	if coarse {
+		timeStep = 5 * time.Minute
+		fmt.Println("=== WARNING ===\n Using a COARSE time step -- Results may be incorrect")
+	} else if interplanetary {
+		timeStep = 30 * time.Second
+	} else {
+		timeStep = 10 * time.Second
+	}
 	// Go through all combinations
 	combinations := []struct {
 		missionNo, numThrusters int
@@ -137,6 +133,7 @@ func main() {
 }
 
 func run(missionNo, numThrusters int) {
+	fmt.Printf("\n\n====== MISSION %d -- intp: %v -- depEarth: %v ======\n\n", missionNo, interplanetary, departEarth)
 	var fn string
 	if departEarth {
 		if interplanetary {
@@ -177,9 +174,9 @@ func run(missionNo, numThrusters int) {
 	earthOrbit := smd.Earth.HelioOrbit(startDT)
 	marsOrbit := smd.Mars.HelioOrbit(startDT)
 
-	combinations := []thrusterType{ /*pps1350, pps5000, bht1500,*/ bht8000 /* hermes, vx200*/}
+	combinations := []thrusterType{pps1350, pps5000, bht1500, bht8000, hermes, vx200}
 	if missionNo == 3 {
-		combinations = []thrusterType{ /*pps5000,*/ bht8000 /*, hermes, vx200*/}
+		combinations = []thrusterType{pps5000, bht8000, hermes, vx200}
 	}
 
 	for _, thruster := range combinations {
@@ -215,32 +212,26 @@ func run(missionNo, numThrusters int) {
 			}
 			sc, maxThrust := createSpacecraft(thruster, numThrusters, distance, further)
 			if missionNo == 2 {
+				sc.FuelMass = 3e3
 				if departEarth {
 					sc.DryMass = 900 + 577 + 1e3 + 1e3 // Add MRO, Curiosity and Schiaparelli, and suppose 1 ton bus.
-					sc.FuelMass = 3e3
 				} else {
 					// Suppose less return mass
 					sc.DryMass = 500 + 1e3 // Add Schiaparelli return, and suppose 1 ton bus.
-					sc.FuelMass = 1e3
 				}
 			} else if missionNo == 3 {
 				sc.DryMass = 52e3
-				if departEarth {
-					sc.FuelMass = 24e3
-				} else {
-					sc.FuelMass = 6e3
-				}
+				sc.FuelMass = 24e3
 			}
 			initV := initOrbit.VNorm()
 			initFuel := sc.FuelMass
 			// Propagate
-			ts := 5 * time.Minute
 			export := smd.ExportConfig{Filename: fn + sc.Name, AsCSV: true, Cosmo: true, Timestamp: false}
 			endDT := startDT.Add(-1)
 			if opti {
 				//	endDT = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 			}
-			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Perturbations{}, ts, false, export)
+			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Perturbations{}, timeStep, false, export)
 			astro.Propagate()
 			// Compute data.
 			tof := astro.CurrentDT.Sub(startDT).Hours() / 24
