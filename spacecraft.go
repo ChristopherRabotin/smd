@@ -23,6 +23,7 @@ type Spacecraft struct {
 	logger      kitlog.Logger
 	prevCL      *ControlLaw // Stores the previous control law to follow what is going on.
 	Drag        float64
+	handleFuel  bool
 }
 
 // SCLogInit initializes the logger.
@@ -181,12 +182,12 @@ func (sc *Spacecraft) ToXCentric(body CelestialObject, dt time.Time, o *Orbit) f
 
 // NewEmptySC returns a spacecraft with no cargo and no EPThrusters.
 func NewEmptySC(name string, mass uint) *Spacecraft {
-	return &Spacecraft{name, float64(mass), 0, NewUnlimitedEPS(), []EPThruster{}, false, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name), nil, 0}
+	return &Spacecraft{name, float64(mass), 0, NewUnlimitedEPS(), []EPThruster{}, false, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name), nil, 0, false}
 }
 
 // NewSpacecraft returns a spacecraft with initialized function queue and logger.
 func NewSpacecraft(name string, dryMass, fuelMass float64, eps EPS, prop []EPThruster, impulse bool, payload []*Cargo, wp []Waypoint) *Spacecraft {
-	return &Spacecraft{name, dryMass, fuelMass, eps, prop, impulse, payload, wp, make([]func(), 5), SCLogInit(name), nil, 0}
+	return &Spacecraft{name, dryMass, fuelMass, eps, prop, impulse, payload, wp, make([]func(), 5), SCLogInit(name), nil, 0, fuelMass > 0}
 }
 
 // Cargo defines a piece of cargo with arrival date and destination orbit
