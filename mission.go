@@ -2,7 +2,6 @@ package smd
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"sync"
 	"time"
@@ -115,8 +114,8 @@ func (a *Mission) Propagate() {
 	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "duration", durStr, "Δv(km/s)", math.Abs(vFinal-vInit), "fuel(kg)", initFuel-a.Vehicle.FuelMass)
 	a.LogStatus()
 	if a.Vehicle.handleFuel && a.Vehicle.FuelMass < 0 {
-		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
-		log.Fatal("cannot continue without fuel")
+		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg!!!)", a.Vehicle.FuelMass)
+		panic("cannot continue without fuel")
 	}
 	wg.Wait() // Don't return until we're done writing all the files.
 }

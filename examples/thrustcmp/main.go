@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	// TTypeAuto lets the Lambert solver determine the type
 	pps1350 thrusterType = iota + 1
 	pps5000
 	bht1500
