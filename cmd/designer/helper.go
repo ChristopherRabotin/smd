@@ -60,7 +60,7 @@ func (g GAResult) CSV() string {
 
 // StreamResults is used to stream the results to the output file.
 func StreamResults(prefix string, planets []smd.CelestialObject, rsltChan <-chan (Result)) {
-	f, err := os.Create(fmt.Sprintf("./%s-results.csv", prefix))
+	f, err := os.Create(fmt.Sprintf("%s/%s-results.csv", outputdir, prefix))
 	if err != nil {
 		panic(err)
 	}

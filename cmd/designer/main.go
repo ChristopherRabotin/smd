@@ -28,6 +28,7 @@ var (
 	scenario   string
 	prefix     string
 	outputdir  string
+	timeStep   time.Duration
 	numCPUs    int
 	ultraDebug bool
 	arrival    Arrival
@@ -93,7 +94,7 @@ func main() {
 		log.Printf("[conf] file prefix: %s\n", prefix)
 		log.Printf("[conf] file output: %s\n", outputdir)
 	}
-	timeStep := viper.GetDuration("general.step")
+	timeStep = viper.GetDuration("general.step")
 	if verbose {
 		log.Printf("[conf] time step: %s\n", timeStep)
 	}
@@ -207,8 +208,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 		// Find the possible vInfOut via Lambert
 		ga2R := mat64.NewVector(3, fromPlanetAtGA2.R())
 		arrivalWindow := int(maxArrival.Sub(minArrival).Hours() / 24)
-		ptsPerArrivalDay := 1.0 // TODO: Read this from the configuration file
-		for arrivalDay := 0.; arrivalDay < float64(arrivalWindow); arrivalDay += 1 / ptsPerArrivalDay {
+		for arrivalDay := 0.; arrivalDay < float64(arrivalWindow); arrivalDay += timeStep.Hours() / 24 {
 			nextPlanetArrivalDT := minArrival.Add(time.Duration(arrivalDay*24) * time.Hour)
 			nextPlanetR := mat64.NewVector(3, toPlanet.HelioOrbit(nextPlanetArrivalDT).R())
 			ViGA2, VfNext, _, _ := smd.Lambert(ga2R, nextPlanetR, nextPlanetArrivalDT.Sub(ga2DT), smd.TTypeAuto, smd.Sun)
@@ -276,7 +276,9 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 					}
 				}
 			}
-			fmt.Printf("=== Best Rp GA: %s\n", bestRp)
+			if ultraDebug {
+				fmt.Printf("=== Best Rp GA: %s\n", bestRp)
+			}
 
 			// Export data
 			f, err := os.Create(fmt.Sprintf("%s/%s-resonance-%s-%s--to--%s-%s.tsv", outputdir, prefix, fromPlanet.Name, launchDT.Format(dateFormatFilename), toPlanet, nextPlanetArrivalDT.Format(dateFormatFilename)))
