@@ -286,7 +286,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	R := []float64{f[0], f[1], f[2]}
 	V := []float64{f[3], f[4], f[5]}
 	tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
-	bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
+	bodyAcc := -tmpOrbit.Origin.μ / math.Pow(Norm(R), 3)
 	_, _, i, Ω, _, _, _, _, u := tmpOrbit.Elements()
 	Δv = Rot313Vec(-u, -i, -Ω, Δv)
 	// d\vec{R}/dt
@@ -323,8 +323,8 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		A.Set(0, 3, 1)
 		A.Set(1, 4, 1)
 		A.Set(2, 5, 1)
-		if a.Vehicle.Drag > 0 {
-			A.Set(3, 6, 1) // XXX Should this be a 1?
+		if rΦ == 7 {
+			A.Set(3, 6, 1)
 		}
 		// Bottom left is where the magic is.
 		x := R[0]
