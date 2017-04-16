@@ -281,7 +281,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 			}
 
 			// Export data
-			f, err := os.Create(fmt.Sprintf("%s/%s-resonance-%s-%s--to--%s-%s.tsv", outputdir, prefix, fromPlanet.Name, launchDT.Format(dateFormatFilename), toPlanet, nextPlanetArrivalDT.Format(dateFormatFilename)))
+			f, err := os.Create(fmt.Sprintf("%s/%s-resonance-%s-%s--to--%s-%s.tsv", outputdir, prefix, fromPlanet.Name, launchDT.Format(dateFormatFilename), toPlanet.Name, nextPlanetArrivalDT.Format(dateFormatFilename)))
 			if err != nil {
 				panic(err)
 			}

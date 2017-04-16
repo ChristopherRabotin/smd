@@ -7,37 +7,37 @@ flybyplanets = "Venus Earth Jupiter"
 
 [launch]
 planet = "Earth"
-from = 2461300.5
-until = 2461302.5
+from = 2461250.5
+until = 2461350.5
 resolution = 1
 maxC3 = 40
 
 [arrival]
 planet = "Neptune"
-from = 2468592.5
-until = 2468595.5
+from = 2468545.5
+until = 2468625.5
 maxVinf = 18
 
 [flyby.Venus]
-from = 2461458.0
-until = 2461460.5
 position = 1
-deltaV = 2.0
+from = 2461408.5
+until = 2461510.5
+deltaV = 1.0
 periapsis = 1.01
 
 [flyby.Earth]
 # First passage dates, the second is determined by the resonance type.
 position = 2
-deltaV = 2.0
-from = 2461766.5
-until = 2461768.5
+deltaV = 1.0
+from = 2461710.5
+until = 2461810.5
 periapsis = 1.05
 resonant = true
 resonance = 2
 
 [flyby.Jupiter]
 position = 4
-deltaV = 2.0
-from = 2463384.5
-until = 2463386.5
+deltaV = 1.0
+from = 2463340.5
+until = 2463410.5
 periapsis = 4.0

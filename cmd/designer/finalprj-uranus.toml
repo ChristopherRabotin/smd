@@ -8,7 +8,7 @@ flybyplanets = "Venus Mars Earth Saturn"
 [launch]
 planet = "Earth"
 from = "2023-01-01 00:00:00"
-until = "2023-12-31 00:00:00"
+until = "2023-08-31 00:00:00"
 resolution = 1
 maxC3 = 40
 
@@ -19,13 +19,14 @@ maxVinf = 14
 
 [flyby.Venus]
 position = 1
-until = "2024-12-31 00:00:00"
+from = "2023-03-01 00:00:00"
+until = "2023-12-31 00:00:00"
 deltaV = 1.0
 periapsis = 1.01
 
 [flyby.Mars]
 position = 2
-until = "2025-12-31 00:00:00"
+until = "2024-12-31 00:00:00"
 deltaV = 1.0
 periapsis = 1.01
 
@@ -33,13 +34,13 @@ periapsis = 1.01
 # First passage dates, the second is determined by the resonance type.
 position = 3
 deltaV = 1.0
-until = "2026-12-31 00:00:00"
+until = "2025-12-31 00:00:00"
 periapsis = 1.05
 resonant = true
 resonance = 3
 
 [flyby.Saturn]
 position = 4
-deltaV = 2.0
+deltaV = 1.0
 until = "2030-12-31 00:00:00"
 periapsis = 4.0
