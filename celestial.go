@@ -2,13 +2,10 @@ package smd
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
-	"github.com/soniakeys/meeus/julian"
 	"github.com/soniakeys/meeus/planetposition"
-	"github.com/soniakeys/meeus/pluto"
 )
 
 const (
@@ -68,64 +65,6 @@ func (c *CelestialObject) Equals(b CelestialObject) bool {
 func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 	if c.Name == "Sun" {
 		return *NewOrbitFromRV([]float64{0, 0, 0}, []float64{0, 0, 0}, *c)
-	}
-	if smdConfig().VSOP87 {
-		if c.Name == "Pluto" {
-			// Special case in Sonia Keys' Meeus
-			l, b, r := pluto.Heliocentric(julian.TimeToJD(dt))
-			r *= AU
-			v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
-			// Get the Cartesian coordinates from L,B,R.
-			R, V := make([]float64, 3), make([]float64, 3)
-			sB, cB := math.Sincos(b.Rad())
-			sL, cL := math.Sincos(l.Rad())
-			R[0] = r * cB * cL
-			R[1] = r * cB * sL
-			R[2] = r * sB
-			// Let's find the direction of the velocity vector.
-			vDir := Cross(R, []float64{0, 0, -1})
-			for i := 0; i < 3; i++ {
-				V[i] = v * vDir[i] / Norm(vDir)
-			}
-			return *NewOrbitFromRV(R, V, Sun)
-		}
-		if c.PP == nil {
-			// Load the planet.
-			var vsopPosition int
-			switch c.Name {
-			case "Venus":
-				vsopPosition = 2
-			case "Earth":
-				vsopPosition = 3
-			case "Mars":
-				vsopPosition = 4
-			case "Jupiter":
-				vsopPosition = 5
-			default:
-				panic(fmt.Errorf("unknown object: %s", c.Name))
-			}
-			planet, err := planetposition.LoadPlanetPath(vsopPosition-1, smdConfig().VSOP87Dir)
-			if err != nil {
-				panic(fmt.Errorf("could not load planet number %d: %s", vsopPosition, err))
-			}
-			c.PP = planet
-		}
-		l, b, r := c.PP.Position2000(julian.TimeToJD(dt))
-		r *= AU
-		v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
-		// Get the Cartesian coordinates from L,B,R.
-		R, V := make([]float64, 3), make([]float64, 3)
-		sB, cB := math.Sincos(b.Rad())
-		sL, cL := math.Sincos(l.Rad())
-		R[0] = r * cB * cL
-		R[1] = r * cB * sL
-		R[2] = r * sB
-		// Let's find the direction of the velocity vector.
-		vDir := Cross(R, []float64{0, 0, -1})
-		for i := 0; i < 3; i++ {
-			V[i] = v * vDir[i] / Norm(vDir)
-		}
-		return *NewOrbitFromRV(R, V, Sun)
 	}
 	pstate := config.HelioState(c.Name, dt)
 	R := pstate.R

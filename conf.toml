@@ -1,15 +1,9 @@
 # smd TOML config file
-# If both VSOP87 and SPICE are enabled, smd will panic
 [general]
 output_path = "./" # Defines the output directory. Use "./" to output to current working directory.
 test_export = false # Set to true to export the test cases.
 
-[VSOP87]
-enabled = false
-directory = "./data/vsop87"
-
 [SPICE]
-enabled = true
 directory = "./cmd/refframes"
 horizonDir = "./data/horizon" # Files *must* be named to answer to fmt.Sprintf("%s-%04d", planetName, year) // TODO: Switch to a month too
 horizonCSV = false # Set to False to compute each ephemeride separately
