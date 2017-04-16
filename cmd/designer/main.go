@@ -281,7 +281,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 			}
 
 			// Export data
-			f, err := os.Create(fmt.Sprintf("%s/%s-resonance-%s-%s--to--%s-%s.tsv", outputdir, prefix, fromPlanet.Name, launchDT.Format(dateFormatFilename), toPlanet.Name, nextPlanetArrivalDT.Format(dateFormatFilename)))
+			f, err := os.Create(fmt.Sprintf("%s/%s-resonance-%s-%s--to--%s.tsv", outputdir, prefix, fromPlanet.Name, launchDT.Format(dateFormatFilename), ga2DT.Format(dateFormatFilename)))
 			if err != nil {
 				panic(err)
 			}
@@ -317,7 +317,9 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 		vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 1, 1, smd.TTypeAuto, false, ultraDebug, false)
 		// Go through solutions and move on with values which are within the constraints.
 		vInfInNorm := smd.Norm(vInfIn)
-		log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s) -- %d", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat), len(vinfDep))
+		if ultraDebug {
+			log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s) -- %d", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat), len(vinfDep))
+		}
 		for depDT, vInfDepPerDay := range vinfDep {
 			for arrIdx, vInfOutNorm := range vInfDepPerDay {
 				vInfOutVec := vinfMapVecs[depDT][arrIdx]
