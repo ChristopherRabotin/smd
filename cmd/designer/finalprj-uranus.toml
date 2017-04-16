@@ -38,7 +38,7 @@ periapsis = 1.05
 resonant = true
 resonance = 3
 
-[flyby.Jupiter]
+[flyby.Saturn]
 position = 4
 deltaV = 2.0
 until = "2030-12-31 00:00:00"
