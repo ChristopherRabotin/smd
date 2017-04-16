@@ -322,7 +322,9 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 			for arrIdx, vInfOutNorm := range vInfDepPerDay {
 				vInfOutVec := vinfMapVecs[depDT][arrIdx]
 				if r, _ := vInfOutVec.Dims(); r == 0 || math.IsInf(vInfOutNorm, 1) || vInfOutNorm == 0 {
-					log.Printf("[info] skipping item when searching for %s (@%s) -> %s (@%s :: %s) -- %d", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat), len(vinfDep))
+					if ultraDebug {
+						log.Printf("[info] skipping item when searching for %s (@%s) -> %s (@%s :: %s) -- %d", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat), len(vinfDep))
+					}
 					continue
 				}
 				// Sanity check

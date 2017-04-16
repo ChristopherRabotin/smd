@@ -15,7 +15,7 @@ maxC3 = 35
 [arrival]
 planet = "Uranus"
 from = "2040-01-01 00:00:00"
-until = "2043-12-31 00:00:00"
+until = "2042-12-31 00:00:00"
 maxVinf = 14
 
 [flyby.Venus]
