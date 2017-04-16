@@ -115,7 +115,6 @@ func (a *Mission) Propagate() {
 	a.LogStatus()
 	if a.Vehicle.handleFuel && a.Vehicle.FuelMass < 0 {
 		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
-		panic("cannot continue without fuel")
 	}
 	wg.Wait() // Don't return until we're done writing all the files.
 }
@@ -218,7 +217,7 @@ func (a *Mission) SetState(t float64, s []float64) {
 	// Propulsion sanity check
 	if a.Vehicle.handleFuel && a.Vehicle.FuelMass < 0 && s[6] <= 0 {
 		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", s[6])
-		panic("cannot continue without fuel")
+		a.stopChan <- true
 	}
 	a.Vehicle.FuelMass = s[6]
 

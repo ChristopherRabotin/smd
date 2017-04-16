@@ -85,7 +85,7 @@ func createSpacecraft(thruster thrusterType, numThrusters int, dist float64, fur
 		thrust += thisThrust
 	}
 	dryMass := 1.0
-	fuelMass := 3e3
+	fuelMass := 5e3
 	name := fmt.Sprintf("%dx%s", numThrusters, thruster)
 	fmt.Printf("\n===== %s ======\n", name)
 	waypoints := []smd.Waypoint{smd.NewReachDistance(dist, further, nil)}
@@ -228,9 +228,6 @@ func run(missionNo, numThrusters int) {
 			// Propagate
 			export := smd.ExportConfig{Filename: fn + sc.Name, AsCSV: true, Cosmo: true, Timestamp: false}
 			endDT := startDT.Add(-1)
-			if opti {
-				//	endDT = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-			}
 			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Perturbations{}, timeStep, false, export)
 			astro.Propagate()
 			// Compute data.
