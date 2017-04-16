@@ -287,6 +287,9 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 			f.Close()
 
 			result := prevResult.Clone()
+			// Create both the first flyby for start of resonance and the ending flyby to complete the resonance
+			result.flybys = append(result.flybys, GAResult{launchDT, bestRp.ega1Vout - bestRp.ega1Vin, bestRp.Rp1, -1})
+			result.flybys = append(result.flybys, GAResult{ga2DT, bestRp.ega2Vout - bestRp.ega2Vin, bestRp.Rp2, bestRp.Assocψ})
 			if isLastPlanet {
 				vinfArr := mat64.Norm(VfNext, 2)
 				if vinfArr < arrival.maxVinf {
@@ -303,9 +306,6 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 				<-cpuChan
 			} else {
 				// Spawn the next flyby computation.
-				rslt := GAResult{nextPlanetArrivalDT, bestRp.ega2Vout - bestRp.ega2Vin, bestRp.Rp2, bestRp.Assocψ}
-				result.flybys = append(result.flybys, rslt)
-				// Recursion after creating a new "flyby" struct leaving from this best departure.
 				GAPCP(nextPlanetArrivalDT, inFlyby.PostResonance(), planetNo, vInfOutGA2, result)
 			}
 		}

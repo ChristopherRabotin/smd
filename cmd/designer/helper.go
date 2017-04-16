@@ -53,7 +53,7 @@ type GAResult struct {
 // CSV returns the CSV of this result
 func (g GAResult) CSV() string {
 	if g.DT != (time.Time{}) {
-		return fmt.Sprintf("%s,%f,%f,%f,", g.DT, g.deltaV, g.radius, g.phi)
+		return fmt.Sprintf("%s,%f,%f,%f,", g.DT, g.deltaV, g.radius, smd.Rad2deg(g.phi))
 	}
 	return ""
 }
@@ -65,11 +65,18 @@ func StreamResults(prefix string, planets []smd.CelestialObject, rsltChan <-chan
 		panic(err)
 	}
 	hdrs := "launch,c3,"
-	for _, planet := range planets[0 : len(planets)-1] {
+	for pNo, planet := range planets[0 : len(planets)-1] {
 		hdrs += planet.Name + "DT,"
 		hdrs += planet.Name + "DV,"
 		hdrs += planet.Name + "Rp,"
 		hdrs += planet.Name + "Phi,"
+		if pNo > 0 && pNo < len(flybys) && flybys[pNo].isResonant {
+			// Repeat
+			hdrs += planet.Name + "DT,"
+			hdrs += planet.Name + "DV,"
+			hdrs += planet.Name + "Rp,"
+			hdrs += planet.Name + "Phi,"
+		}
 	}
 	hdrs += "arrival,vInf\n"
 	if _, err := f.WriteString(hdrs); err != nil {
