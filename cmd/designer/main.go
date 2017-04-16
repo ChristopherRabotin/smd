@@ -333,7 +333,9 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 						log.Printf("[ ok ] dv @ %s: %f km/s", fromPlanet.Name, flybyDV)
 					}
 					// Check if the rP is okay
-					_, rp, _, _, _, _ := smd.GAFromVinf(vInfIn, vInfOut, fromPlanet)
+					// NOTE: we oppose the vInf in because we are just transfering the vInfOut to the vInfIn via this recursion calling.
+					vInfInBis := []float64{-vInfIn[0], -vInfIn[1], -vInfIn[2]}
+					_, rp, _, _, _, _ := smd.GAFromVinf(vInfInBis, vInfOut, fromPlanet)
 					if minRp > 0 && rp < minRp {
 						if ultraDebug {
 							log.Printf("[NOK ] rP @ %s: %f km", fromPlanet.Name, rp)
@@ -354,13 +356,14 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 							result.arrival = arrivalDT
 							result.vInf = vinfArr
 							rsltChan <- result
+							wg.Done()
 						} else if ultraDebug {
 							log.Printf("[NOK ] vInf @ %s: %f km/s", toPlanet.Name, vinfArr)
 						}
 						// All done, let's free that CPU
 						<-cpuChan
 					} else {
-						// Recursion
+						// Recursion, note the -1 to create the Next (since there is an inversion between planet velocity and the spacecraft vector)
 						vInfInNext := []float64{vInfNextInVecs[depDT][arrIdx].At(0, 0), vInfNextInVecs[depDT][arrIdx].At(1, 0), vInfNextInVecs[depDT][arrIdx].At(2, 0)}
 						GAPCP(arrivalDT, flybys[planetNo+1], planetNo+1, vInfInNext, result)
 					}
@@ -378,7 +381,6 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 				}
 			}
 		}
-		log.Printf("[done] TOTALLY DONE searching for %s (@%s) -> %s (@%s :: %s) -- %d", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat), len(vinfDep))
 	}
 	if planetNo == 0 {
 		wg.Done()
