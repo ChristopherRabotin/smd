@@ -33,7 +33,7 @@ from = 2461766.5
 until = 2461768.5
 periapsis = 1.05
 resonant = true
-resonance = 3
+resonance = 2
 
 [flyby.Jupiter]
 position = 4
