@@ -16,7 +16,7 @@ type commonPlanet struct {
 }
 
 func (p commonPlanet) String() string {
-	return fmt.Sprintf("%s: %s -> %s", p.planet.Name, p.from, p.until)
+	return fmt.Sprintf("%s: %s -> %s", p.planet.Name, p.from.Format(dateFormat), p.until.Format(dateFormat))
 }
 
 // Launch is the start planet
@@ -44,10 +44,15 @@ type Flyby struct {
 	commonPlanet
 	maxDeltaV          float64
 	minPeriapsisRadius float64
+	isResonant         bool
+	resonance          float64
 }
 
 func (f Flyby) String() string {
-	return f.commonPlanet.String() + fmt.Sprintf("rP: %.1f km\tdeltaV: %.1f", f.minPeriapsisRadius, f.maxDeltaV)
+	if f.isResonant {
+		return f.commonPlanet.String() + fmt.Sprintf("\tres. %.1f:1\trP: %.1f km\tdeltaV: %.1f", f.resonance, f.minPeriapsisRadius, f.maxDeltaV)
+	}
+	return f.commonPlanet.String() + fmt.Sprintf("\trP: %.1f km\tdeltaV: %.1f", f.minPeriapsisRadius, f.maxDeltaV)
 }
 
 func readAllFlybys(minDT, maxDT time.Time) []Flyby {
@@ -72,7 +77,9 @@ func readAllFlybys(minDT, maxDT time.Time) []Flyby {
 		maxDV := viper.GetFloat64(fmt.Sprintf("%s.deltaV", key))
 		peri := viper.GetFloat64(fmt.Sprintf("%s.periapsis", key)) * planet.Radius
 		position := viper.GetInt(fmt.Sprintf("%s.position", key))
-		tmpFlybys[position] = Flyby{commonPlanet{planet, from, until}, maxDV, peri}
+		isResonant := viper.GetBool(fmt.Sprintf("%s.resonant", key))
+		resonance := viper.GetFloat64(fmt.Sprintf("%s.resonance", key))
+		tmpFlybys[position] = Flyby{commonPlanet{planet, from, until}, maxDV, peri, isResonant, resonance}
 	}
 	// Remove any empty item.
 	flybys := make([]Flyby, flybycount)

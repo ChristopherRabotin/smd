@@ -25,18 +25,14 @@ deltaV = 2.0
 periapsis = 1.01
 
 [flyby.Earth]
+# First passage dates, the second is determined by the resonance type.
 position = 2
 deltaV = 2.0
 from = 2461766.5
 until = 2461768.5
-periapsis = 1.01
-
-[flyby.Earth.1]
-position = 3
-deltaV = 2.0
-from = 2462496.5
-until = 2462500.5
-periapsis = 1.01
+periapsis = 1.05
+resonant = true
+resonance = 3
 
 [flyby.Jupiter]
 position = 4

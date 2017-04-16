@@ -47,12 +47,13 @@ type GAResult struct {
 	DT     time.Time
 	deltaV float64
 	radius float64
+	phi    float64 // Only used in the case of a resonant orbit
 }
 
 // CSV returns the CSV of this result
 func (g GAResult) CSV() string {
 	if g.DT != (time.Time{}) {
-		return fmt.Sprintf("%s,%f,%f,", g.DT, g.deltaV, g.radius)
+		return fmt.Sprintf("%s,%f,%f,%f,", g.DT, g.deltaV, g.radius, g.phi)
 	}
 	return ""
 }
@@ -68,6 +69,7 @@ func StreamResults(prefix string, planets []smd.CelestialObject, rsltChan <-chan
 		hdrs += planet.Name + "DT,"
 		hdrs += planet.Name + "DV,"
 		hdrs += planet.Name + "Rp,"
+		hdrs += planet.Name + "Phi,"
 	}
 	hdrs += "arrival,vInf\n"
 	if _, err := f.WriteString(hdrs); err != nil {
@@ -76,4 +78,13 @@ func StreamResults(prefix string, planets []smd.CelestialObject, rsltChan <-chan
 	for rslt := range rsltChan {
 		f.WriteString(rslt.CSV() + "\n")
 	}
+}
+
+type target struct {
+	BT1, BT2, BR1, BR2, Assocψ, Rp1, Rp2 float64
+	ega1Vin, ega1Vout, ega2Vin, ega2Vout float64
+}
+
+func (t target) String() string {
+	return fmt.Sprintf("ψ=%f ===\nGA1: Bt=%f\tBr=%f\trP=%f\nVin=%f\tVout=%f\tdelta=%f\n\nGA2: Bt=%f\tBr=%f\trP=%f\nVin=%f\tVout=%f\tdelta=%f\n", smd.Rad2deg(t.Assocψ), t.BT1, t.BR1, t.Rp1, t.ega1Vin, t.ega1Vout, t.ega1Vout-t.ega1Vin, t.BT2, t.BR2, t.Rp2, t.ega2Vin, t.ega2Vout, t.ega2Vout-t.ega2Vin)
 }

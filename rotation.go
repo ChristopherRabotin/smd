@@ -48,7 +48,7 @@ func R3(x float64) *mat64.Dense {
 }
 
 // MxV33 multiplies a matrix with a vector. Note that there is no dimension check!
-func MxV33(m *mat64.Dense, v []float64) (o []float64) {
+func MxV33(m mat64.Matrix, v []float64) (o []float64) {
 	vVec := mat64.NewVector(len(v), v)
 	var rVec mat64.Vector
 	rVec.MulVec(m, vVec)

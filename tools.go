@@ -345,7 +345,7 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 				}
 				// Compute the v_infinity at destination
 				VInfArrival := mat64.NewVector(3, nil)
-				VInfArrival.SubVec(arrivalV, Vf)
+				VInfArrival.SubVec(Vf, arrivalV)
 				vInfArrival = mat64.Norm(VInfArrival, 2)
 				vInfInitVecs[launchDT][arrivalIdx] = *VInfInit
 				vInfArriVecs[launchDT][arrivalIdx] = *VInfArrival

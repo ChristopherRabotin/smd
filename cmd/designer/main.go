@@ -18,13 +18,15 @@ import (
 )
 
 const (
-	defaultScenario = "~~unset~~"
-	dateFormat      = "2006-01-02 15:04:05"
+	defaultScenario    = "~~unset~~"
+	dateFormat         = "2006-01-02 15:04:05"
+	dateFormatFilename = "2006-01-02-15.04.05"
 )
 
 var (
 	wg         sync.WaitGroup
 	scenario   string
+	prefix     string
 	numCPUs    int
 	ultraDebug bool
 	arrival    Arrival
@@ -80,7 +82,7 @@ func main() {
 		log.Fatalf("./%s.toml: Error %s", scenario, err)
 	}
 	// Read scenario
-	prefix := viper.GetString("general.fileprefix")
+	prefix = viper.GetString("general.fileprefix")
 	verbose := viper.GetBool("general.verbose")
 	if verbose {
 		log.Printf("[conf] file prefix: %s\n", prefix)
@@ -97,7 +99,7 @@ func main() {
 	if verbose {
 		log.Printf("[conf] Launch: %s", launch)
 		for no, fb := range flybys {
-			log.Printf("[conf] Flyby#%d %s", no, fb)
+			log.Printf("[conf] Flyby#%d %s", no+1, fb)
 		}
 		log.Printf("[conf] Arrival: %s", arrival)
 	}
@@ -179,7 +181,7 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 		minArrival = arrival.from
 		maxArrival = arrival.until
 	} else {
-		isLastPlanet = false // Not needed, only for clarity
+		isLastPlanet = false // Only for clarity (not needed, initializes at false)
 		next := flybys[planetNo+1]
 		toPlanet = next.planet
 		minArrival = next.from
@@ -192,68 +194,164 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 	if maxArrival.Before(launchDT) {
 		maxArrival = launchDT
 	}
-	log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s)", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat))
-	vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 1, 1, smd.TTypeAuto, false, false, false)
-	// Go through solutions and move on with values which are within the constraints.
-	vInfInNorm := smd.Norm(vInfIn)
-	for depDT, vInfDepPerDay := range vinfDep {
-		for arrIdx, vInfOutNorm := range vInfDepPerDay {
-			vInfOutVec := vinfMapVecs[depDT][arrIdx]
-			if r, _ := vInfOutVec.Dims(); r == 0 || math.IsInf(vInfOutNorm, 1) {
-				continue
+	if inFlyby.isResonant {
+		log.Printf("[info] searching for resonance %.1f:1 with %s (@%s)", inFlyby.resonance, fromPlanet.Name, launchDT.Format(dateFormat))
+		ga2DT := launchDT.Add(time.Duration((365.242189*24*3600)*inFlyby.resonance) * time.Second)
+		fromPlanetAtGA1 := fromPlanet.HelioOrbit(launchDT)
+		fromPlanetAtGA2 := fromPlanet.HelioOrbit(ga2DT)
+		// Find the possible vInfOut via Lambert
+		ga2R := mat64.NewVector(3, fromPlanetAtGA2.R())
+		arrivalWindow := int(maxArrival.Sub(minArrival).Hours() / 24)
+		ptsPerArrivalDay := 1.0 // TODO: Read this from the configuration file
+		for arrivalDay := 0.; arrivalDay < float64(arrivalWindow); arrivalDay += 1 / ptsPerArrivalDay {
+			nextPlanetArrivalDT := minArrival.Add(time.Duration(arrivalDay*24) * time.Hour)
+			nextPlanetR := mat64.NewVector(3, toPlanet.HelioOrbit(nextPlanetArrivalDT).R())
+			ViGA2, _, _, _ := smd.Lambert(ga2R, nextPlanetR, nextPlanetArrivalDT.Sub(ga2DT), smd.TTypeAuto, smd.Sun)
+			vInfOutGA2Vec := mat64.NewVector(3, nil)
+			vInfOutGA2Vec.SubVec(ViGA2, mat64.NewVector(3, fromPlanetAtGA2.V()))
+			vInfOutGA2 := []float64{vInfOutGA2Vec.At(0, 0), vInfOutGA2Vec.At(1, 0), vInfOutGA2Vec.At(2, 0)}
+			// Continue resonance
+			aResonance := math.Pow(smd.Sun.GM()*math.Pow(inFlyby.resonance*fromPlanetAtGA1.Period().Seconds()/(2*math.Pi), 2), 1/3.)
+			VScSunNorm := math.Sqrt(smd.Sun.GM() * ((2 / fromPlanetAtGA1.RNorm()) - 1/aResonance))
+			// Compute angle theta for EGA1
+			vInfInGA1Norm := smd.Norm(vInfIn)
+			theta := math.Acos((math.Pow(VScSunNorm, 2) - math.Pow(vInfInGA1Norm, 2) - math.Pow(fromPlanetAtGA1.VNorm(), 2)) / (-2 * vInfInGA1Norm * fromPlanetAtGA1.VNorm()))
+			if ultraDebug {
+				log.Printf("[info] resonance %.1f:1 with %s (@%s): theta = %f", inFlyby.resonance, fromPlanet.Name, launchDT.Format(dateFormat), smd.Rad2deg(theta))
 			}
-			// Sanity check
-			if math.Abs(mat64.Norm(&vInfOutVec, 2)-vInfOutNorm) > 1e-6 {
-				panic(fmt.Errorf("%f != %f when sanity check of vInfOut", mat64.Norm(&vInfOutVec, 2), vInfOutNorm))
+			// Compute the VNC2ECI DCMs for EGA1.
+			// WARNING: We are generating the transposed DCM because it's simpler code.
+			V := smd.Unit(fromPlanetAtGA1.V())
+			N := smd.Unit(fromPlanetAtGA1.H())
+			C := smd.Cross(V, N)
+			dcmVal := make([]float64, 9)
+			for i := 0; i < 3; i++ {
+				dcmVal[i] = V[i]
+				dcmVal[i+3] = N[i]
+				dcmVal[i+6] = C[i]
 			}
-			vInfOut := []float64{vInfOutVec.At(0, 0), vInfOutVec.At(1, 0), vInfOutVec.At(2, 0)}
-			flybyDV := math.Abs(vInfInNorm - vInfOutNorm)
-			if (maxDV > 0 && flybyDV < maxDV) || maxDV == 0 {
-				if ultraDebug {
-					log.Printf("[ ok ] dv @ %s: %f km/s", fromPlanet.Name, flybyDV)
+			transposedDCM := mat64.NewDense(3, 3, dcmVal)
+			data := "psi\trP1\trP2\n"
+			step := (2 * math.Pi) / 10000
+			// Print when both become higher than minRadius.
+			rpsOkay := false
+			minDeltaRp := math.Inf(1)
+			maxSumRp := 0.0
+			var bestRp target
+			for ψ := step; ψ < 2*math.Pi; ψ += step {
+				sψ, cψ := math.Sincos(ψ)
+				vInfOutEGA1VNC := []float64{vInfInGA1Norm * math.Cos(math.Pi-theta), vInfInGA1Norm * math.Sin(math.Pi-theta) * cψ, -vInfInGA1Norm * math.Sin(math.Pi-theta) * sψ}
+				vInfOutGA1Eclip := smd.MxV33(transposedDCM.T(), vInfOutEGA1VNC)
+				_, rP1, bT1, bR1, _, _ := smd.GAFromVinf(vInfIn, vInfOutGA1Eclip, smd.Earth)
+
+				vInfInGA2Eclip := make([]float64, 3)
+				for i := 0; i < 3; i++ {
+					vInfInGA2Eclip[i] = vInfOutGA1Eclip[i] + fromPlanetAtGA1.V()[i] - fromPlanetAtGA2.V()[i]
 				}
-				// Check if the rP is okay
-				_, rp, _, _, _, _ := smd.GAFromVinf(vInfIn, vInfOut, fromPlanet)
-				if minRp > 0 && rp < minRp {
+				_, rP2, bT2, bR2, _, _ := smd.GAFromVinf(vInfInGA2Eclip, vInfOutGA2, smd.Earth)
+				data += fmt.Sprintf("%f\t%f\t%f\n", smd.Rad2deg(ψ), rP1, rP2)
+				if !rpsOkay && rP1 > inFlyby.minPeriapsisRadius && rP2 > inFlyby.minPeriapsisRadius {
+					rpsOkay = true
 					if ultraDebug {
-						log.Printf("[NOK ] rP @ %s: %f km", fromPlanet.Name, rp)
+						fmt.Printf("[ ok ] ψ=%.6f\trP1=%.3f km\trP2=%.3f km\n", smd.Rad2deg(ψ), rP1, rP2)
 					}
-					continue // Too close, ignore
 				}
-				TOF := tofMap[depDT][arrIdx]
-				arrivalDT := launchDT.Add(time.Duration(TOF*24) * time.Hour)
-				result := prevResult.Clone()
-				rslt := GAResult{launchDT, flybyDV, rp}
-				result.flybys = append(result.flybys, rslt)
-				if isLastPlanet {
-					vinfArr := vinfArr[depDT][arrIdx]
-					if vinfArr < arrival.maxVinf {
-						log.Println("[ ok ] valid traj!")
-						// This is a valid trajectory
-						// Add information to result.
-						result.arrival = arrivalDT
-						result.vInf = vinfArr
-						rsltChan <- result
-					} else if ultraDebug {
-						log.Printf("[NOK ] vInf @ %s: %f km/s", toPlanet.Name, vinfArr)
+				if rpsOkay {
+					if math.Abs(rP1-rP2) < minDeltaRp && rP1+rP2 > maxSumRp {
+						// Just reached a new high for both rPs.
+						minDeltaRp = math.Abs(rP1 - rP2)
+						maxSumRp = rP1 + rP2
+						bestRp = target{bT1, bT2, bR1, bR2, ψ, rP1, rP2, smd.Norm(vInfIn), smd.Norm(vInfOutGA1Eclip), smd.Norm(vInfInGA2Eclip), smd.Norm(vInfOutGA2)}
 					}
-					// All done, let's free that CPU
-					<-cpuChan
+					if rP1 < inFlyby.minPeriapsisRadius || rP2 < inFlyby.minPeriapsisRadius {
+						rpsOkay = false
+						if ultraDebug {
+							fmt.Printf("[NOK ] ψ=%.6f\trP1=%.3f km\trP2=%.3f km\n", smd.Rad2deg(ψ), rP1, rP2)
+						}
+					}
+				}
+			}
+			fmt.Printf("=== Best Rp GA: %s\n", bestRp)
+
+			// Export data
+			f, err := os.Create(fmt.Sprintf("%s-resonance-%s-%s.tsv", prefix, fromPlanet.Name, launchDT.Format(dateFormatFilename)))
+			if err != nil {
+				panic(err)
+			}
+			f.WriteString(data)
+			f.Close()
+
+			// Spawn the next flyby computation.
+			result := prevResult.Clone()
+			rslt := GAResult{nextPlanetArrivalDT, bestRp.ega2Vout - bestRp.ega2Vin, bestRp.Rp2, bestRp.Assocψ}
+			result.flybys = append(result.flybys, rslt)
+			// Recursion
+			GAPCP(nextPlanetArrivalDT, planetNo+1, vInfOutGA2, result)
+		}
+	} else {
+		log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s)", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat))
+		vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 1, 1, smd.TTypeAuto, false, false, false)
+		// Go through solutions and move on with values which are within the constraints.
+		vInfInNorm := smd.Norm(vInfIn)
+		for depDT, vInfDepPerDay := range vinfDep {
+			for arrIdx, vInfOutNorm := range vInfDepPerDay {
+				vInfOutVec := vinfMapVecs[depDT][arrIdx]
+				if r, _ := vInfOutVec.Dims(); r == 0 || math.IsInf(vInfOutNorm, 1) {
+					continue
+				}
+				// Sanity check
+				if math.Abs(mat64.Norm(&vInfOutVec, 2)-vInfOutNorm) > 1e-6 {
+					panic(fmt.Errorf("%f != %f when sanity check of vInfOut", mat64.Norm(&vInfOutVec, 2), vInfOutNorm))
+				}
+				vInfOut := []float64{vInfOutVec.At(0, 0), vInfOutVec.At(1, 0), vInfOutVec.At(2, 0)}
+				flybyDV := math.Abs(vInfInNorm - vInfOutNorm)
+				if (maxDV > 0 && flybyDV < maxDV) || maxDV == 0 {
+					if ultraDebug {
+						log.Printf("[ ok ] dv @ %s: %f km/s", fromPlanet.Name, flybyDV)
+					}
+					// Check if the rP is okay
+					_, rp, _, _, _, _ := smd.GAFromVinf(vInfIn, vInfOut, fromPlanet)
+					if minRp > 0 && rp < minRp {
+						if ultraDebug {
+							log.Printf("[NOK ] rP @ %s: %f km", fromPlanet.Name, rp)
+						}
+						continue // Too close, ignore
+					}
+					TOF := tofMap[depDT][arrIdx]
+					arrivalDT := launchDT.Add(time.Duration(TOF*24) * time.Hour)
+					result := prevResult.Clone()
+					rslt := GAResult{launchDT, flybyDV, rp, -1}
+					result.flybys = append(result.flybys, rslt)
+					if isLastPlanet {
+						vinfArr := vinfArr[depDT][arrIdx]
+						if vinfArr < arrival.maxVinf {
+							log.Println("[ ok ] valid traj!")
+							// This is a valid trajectory
+							// Add information to result.
+							result.arrival = arrivalDT
+							result.vInf = vinfArr
+							rsltChan <- result
+						} else if ultraDebug {
+							log.Printf("[NOK ] vInf @ %s: %f km/s", toPlanet.Name, vinfArr)
+						}
+						// All done, let's free that CPU
+						<-cpuChan
+					} else {
+						// Recursion
+						vInfInNext := []float64{vInfNextInVecs[depDT][arrIdx].At(0, 0), vInfNextInVecs[depDT][arrIdx].At(1, 0), vInfNextInVecs[depDT][arrIdx].At(2, 0)}
+						GAPCP(arrivalDT, planetNo+1, vInfInNext, result)
+					}
 				} else {
-					// Recursion
-					vInfInNext := []float64{vInfNextInVecs[depDT][arrIdx].At(0, 0), vInfNextInVecs[depDT][arrIdx].At(1, 0), vInfNextInVecs[depDT][arrIdx].At(2, 0)}
-					GAPCP(arrivalDT, planetNo+1, vInfInNext, result)
-				}
-			} else {
-				if ultraDebug {
-					log.Printf("[NOK ] dv @ %s: %f km/s", fromPlanet.Name, flybyDV)
-				}
-				// Won't go anywhere, let's move onto another date. and clear queue if needed.
-				select {
-				case <-cpuChan:
-					continue
-				default:
-					continue
+					if ultraDebug {
+						log.Printf("[NOK ] dv @ %s: %f km/s", fromPlanet.Name, flybyDV)
+					}
+					// Won't go anywhere, let's move onto another date. and clear queue if needed.
+					select {
+					case <-cpuChan:
+						continue
+					default:
+						continue
+					}
 				}
 			}
 		}

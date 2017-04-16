@@ -2,7 +2,7 @@
 fileprefix = "galileo"
 verbose = true
 step = "24h"
-flybyplanets = "Venus Earth Earth"
+flybyplanets = "Venus Earth"
 
 [launch]
 planet = "Earth"
@@ -23,13 +23,23 @@ until = "1990-02-11 00:00:00"
 deltaV = 0.9
 
 [flyby.Earth]
+# First passage dates, the second is determined by the resonance type.
 position = 2
+deltaV = 2.0
 from = "1990-12-09 00:00:00"
 until = "1990-12-11 00:00:00"
-deltaV = 0.9
+periapsis = 1.05
+resonant = true
+resonance = 2
 
-[flyby.Earth.1]
-position = 3
-from = "1992-12-08 00:00:00"
-until = "1992-12-10 00:00:00"
-deltaV = 0.9
+#[flyby.Earth]
+#position = 2
+#from = "1990-12-09 00:00:00"
+#until = "1990-12-11 00:00:00"
+#deltaV = 0.9
+#
+#[flyby.Earth.1]
+#position = 3
+#from = "1992-12-08 00:00:00"
+#until = "1992-12-10 00:00:00"
+#deltaV = 0.9
