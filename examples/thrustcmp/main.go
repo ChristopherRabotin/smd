@@ -17,11 +17,11 @@ const (
 	bht8000
 	hermes
 	vx200
-	opti = true
 )
 
 var (
 	wg             sync.WaitGroup
+	opti           bool
 	departEarth    bool
 	interplanetary bool
 	coarse         bool
@@ -31,6 +31,7 @@ var (
 func init() {
 	flag.BoolVar(&departEarth, "fromEarth", true, "set to true to leave Earth")
 	flag.BoolVar(&interplanetary, "interp", false, "set to true for the interplanetary missions")
+	flag.BoolVar(&opti, "opti", false, "set to true to use Naasz laws")
 	flag.BoolVar(&coarse, "coarse", false, "set to true to perform only a coarse simulation")
 }
 
