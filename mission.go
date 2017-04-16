@@ -172,6 +172,9 @@ func (a *Mission) GetState() (s []float64) {
 	if a.computeSTM {
 		rSTM, cSTM := a.perts.STMSize()
 		stateSize += rSTM * cSTM
+		if a.perts.Drag {
+			stateSize += 1
+		}
 	}
 	s = make([]float64, stateSize)
 	R, V := a.Orbit.RV()
@@ -183,8 +186,8 @@ func (a *Mission) GetState() (s []float64) {
 	s[6] = a.Vehicle.FuelMass
 	if a.computeSTM {
 		// Add the components of Φ
-		sIdx := 7
 		rSTM, cSTM := a.perts.STMSize()
+		sIdx := rSTM + 1
 		for i := 0; i < rSTM; i++ {
 			for j := 0; j < cSTM; j++ {
 				s[sIdx] = a.Φ.At(i, j)
@@ -223,7 +226,6 @@ func (a *Mission) SetState(t float64, s []float64) {
 		st = append(st, a.Vehicle.Drag)
 		// Update Cr
 		a.Vehicle.Drag = s[7]
-		//fmt.Printf("New drag: %f\n", a.Vehicle.Drag) //TODO: Check if this gets updated.
 		latestVector = mat64.NewVector(7, st)
 	} else {
 		latestVector = mat64.NewVector(6, s[0:6])
@@ -232,8 +234,8 @@ func (a *Mission) SetState(t float64, s []float64) {
 
 	if a.computeSTM {
 		// Extract the components of Φ
-		sIdx := 7
 		rΦ, cΦ := a.perts.STMSize()
+		sIdx := rΦ + 1
 		ΦkTo0 := mat64.NewDense(rΦ, cΦ, nil)
 		for i := 0; i < rΦ; i++ {
 			for j := 0; j < cΦ; j++ {
@@ -271,6 +273,9 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	if a.computeSTM {
 		rSTM, cSTM := a.perts.STMSize()
 		stateSize += rSTM * cSTM
+		if a.perts.Drag {
+			stateSize += 1
+		}
 	}
 	fDot = make([]float64, stateSize) // init return vector
 	// Let's add the thrust to increase the magnitude of the velocity.
@@ -281,7 +286,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	R := []float64{f[0], f[1], f[2]}
 	V := []float64{f[3], f[4], f[5]}
 	tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
-	bodyAcc := -tmpOrbit.Origin.μ / math.Pow(tmpOrbit.RNorm(), 3)
+	bodyAcc := -tmpOrbit.Origin.μ / math.Pow(Norm(R), 3)
 	_, _, i, Ω, _, _, _, _, u := tmpOrbit.Elements()
 	Δv = Rot313Vec(-u, -i, -Ω, Δv)
 	// d\vec{R}/dt
@@ -301,8 +306,8 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	// Compute STM if needed.
 	if a.computeSTM {
 		// Extract the components of Φ
-		fIdx := 7
 		rΦ, cΦ := a.perts.STMSize()
+		fIdx := rΦ + 1
 		Φ := mat64.NewDense(rΦ, cΦ, nil)
 		ΦDot := mat64.NewDense(rΦ, cΦ, nil)
 		for i := 0; i < rΦ; i++ {
@@ -318,8 +323,8 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		A.Set(0, 3, 1)
 		A.Set(1, 4, 1)
 		A.Set(2, 5, 1)
-		if a.Vehicle.Drag > 0 {
-			A.Set(3, 6, 0) // XXX Should this be a 1?
+		if rΦ == 7 {
+			A.Set(3, 6, 1)
 		}
 		// Bottom left is where the magic is.
 		x := R[0]
@@ -436,9 +441,9 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 
 		// BUG: This includes BOTH SRP and Sun perturbations.
 		if a.perts.Drag {
-			Cr := a.Vehicle.Drag // XXX: This information must be updated at each estimation.
-			S := 0.01e-6         // TODO: Idem for the Area to mass ratio
-			Phi := 1357.         // AU * r // Normalize for the SC to Sun distance
+			Cr := a.Vehicle.Drag
+			S := 0.01e-6 // TODO: Idem for the Area to mass ratio
+			Phi := 1357.
 			// Build the vectors.
 			celerity := 2.997925e+05
 			srpCst := -Sun.μ + (Phi*AU*AU*S/celerity)*Cr
@@ -462,15 +467,15 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			dAxDx := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[0])*2*(-RSunToSC[0])
 			dAxDy := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[0]) * 2 * (-RSunToSC[1])
 			dAxDz := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[0]) * 2 * (-RSunToSC[2])
-			dAxDCr := (Phi * AU * AU * S / celerity) / RSunToSC3 * (-RSunToSC[0])
+			dAxDCr := (Phi * AU * AU * S / celerity) / (RSunToSC3 * (-RSunToSC[0]))
 			dAyDx := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[1]) * 2 * (-RSunToSC[0])
 			dAyDy := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[1])*2*(-RSunToSC[1])
 			dAyDz := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[1]) * 2 * (-RSunToSC[2])
-			dAyDCr := (Phi * AU * AU * S / celerity) / RSunToSC3 * (-RSunToSC[1])
+			dAyDCr := (Phi * AU * AU * S / celerity) / (RSunToSC3 * (-RSunToSC[1]))
 			dAzDx := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[2]) * 2 * (-RSunToSC[0])
 			dAzDy := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[2]) * 2 * (-RSunToSC[1])
 			dAzDz := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[2])*2*(-RSunToSC[2])
-			dAzDCr := (Phi * AU * AU * S / celerity) / RSunToSC3 * (-RSunToSC[2])
+			dAzDCr := (Phi * AU * AU * S / celerity) / (RSunToSC3 * (-RSunToSC[2]))
 			// Setting values
 			// \frac{\partial a}{\partial x}
 			A.Set(3, 0, A30+dAxDx)
@@ -488,13 +493,15 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			A.Set(3, 6, dAxDCr)
 			A.Set(4, 6, dAyDCr)
 			A.Set(5, 6, dAzDCr)
-
 		}
 
 		ΦDot.Mul(A, Φ)
 
 		// Store ΦDot in fDot
-		fIdx = 7
+		fIdx = rΦ + 1
+		if a.perts.Drag {
+			fDot[fIdx-1] = a.Vehicle.Drag
+		}
 		for i := 0; i < rΦ; i++ {
 			for j := 0; j < cΦ; j++ {
 				fDot[fIdx] = ΦDot.At(i, j)

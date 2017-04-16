@@ -789,7 +789,9 @@ func TestMissionSTM(t *testing.T) {
 			stmState.MulVec(state.Φ, previousState)
 			stmState.SubVec(state.Vector(), stmState)
 			if mat64.Norm(stmState.T(), 2) > 0.1 {
-				t.Fatalf("[%d] Invalid estimation: norm of difference: %f", numStates, mat64.Norm(stmState.T(), 2))
+				t.Logf("STM:\n %+v", mat64.Formatted(state.Φ))
+				t.Logf("Delta: %+v", mat64.Formatted(stmState.T()))
+				t.Fatalf("meth=%d stateNo=%d invalid estimation: norm of difference: %f", meth, numStates, mat64.Norm(stmState.T(), 2))
 			}
 			previousState = state.Vector()
 			numStates++
