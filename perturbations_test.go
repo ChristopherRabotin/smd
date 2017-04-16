@@ -44,7 +44,7 @@ func TestPert3rdBody(t *testing.T) {
 	for _, test := range testValues {
 		perts.PerturbingBody = &test.body
 		pert := perts.Perturb(o, dt, Spacecraft{})
-		if !floats.Equal(pert, test.pert) {
+		if !floats.EqualApprox(pert, test.pert, 1e-13) {
 			t.Fatalf("invalid pertubations for %s\n%+v\n%v", test.body, pert, test.pert)
 		}
 	}
