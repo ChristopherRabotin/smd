@@ -706,9 +706,8 @@ func TestMissionSTM(t *testing.T) {
 	perts := Perturbations{Jn: 3}
 	startDT := time.Now().UTC()
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
-	dragExample := 1.
-	//for meth := 0; meth < 4; meth++ {
-	for meth := 2; meth < 4; meth++ {
+	dragExample := 1.2
+	for meth := 0; meth < 4; meth++ {
 		// Define the orbits
 		leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 		// Initialize the mission and estimates
@@ -790,7 +789,9 @@ func TestMissionSTM(t *testing.T) {
 			stmState.MulVec(state.Φ, previousState)
 			stmState.SubVec(state.Vector(), stmState)
 			if mat64.Norm(stmState.T(), 2) > 0.1 {
-				t.Fatalf("[%d-%d] Invalid estimation: norm of difference: %f", meth, numStates, mat64.Norm(stmState.T(), 2))
+				t.Logf("STM:\n %+v", mat64.Formatted(state.Φ))
+				t.Logf("Delta: %+v", mat64.Formatted(stmState.T()))
+				t.Fatalf("meth=%d stateNo=%d invalid estimation: norm of difference: %f", meth, numStates, mat64.Norm(stmState.T(), 2))
 			}
 			previousState = state.Vector()
 			numStates++
