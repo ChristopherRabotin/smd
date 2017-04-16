@@ -27,6 +27,7 @@ var (
 	wg         sync.WaitGroup
 	scenario   string
 	prefix     string
+	outputdir  string
 	numCPUs    int
 	ultraDebug bool
 	arrival    Arrival
@@ -83,9 +84,14 @@ func main() {
 	}
 	// Read scenario
 	prefix = viper.GetString("general.fileprefix")
+	outputdir = viper.GetString("general.outputdir")
+	if len(outputdir) == 0 {
+		outputdir = "./"
+	}
 	verbose := viper.GetBool("general.verbose")
 	if verbose {
 		log.Printf("[conf] file prefix: %s\n", prefix)
+		log.Printf("[conf] file output: %s\n", outputdir)
 	}
 	timeStep := viper.GetDuration("general.step")
 	if verbose {
@@ -155,7 +161,7 @@ func main() {
 			prevResult := NewResult(launchDT, c3, len(planets)-1)
 			cpuChan <- true
 			wg.Add(1)
-			go GAPCP(arrivalDT, 0, vInfIn, prevResult)
+			go GAPCP(arrivalDT, flybys[0], 0, vInfIn, prevResult)
 		}
 	}
 	log.Println("[info] All valid launches started")
@@ -164,8 +170,8 @@ func main() {
 }
 
 // GAPCP performs the recursion.
-func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result) {
-	inFlyby := flybys[planetNo]
+func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, prevResult Result) {
+	//inFlyby := flybys[planetNo]
 	minRp := inFlyby.minPeriapsisRadius
 	maxDV := inFlyby.maxDeltaV
 	fromPlanet := inFlyby.planet
@@ -274,7 +280,7 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 			fmt.Printf("=== Best Rp GA: %s\n", bestRp)
 
 			// Export data
-			f, err := os.Create(fmt.Sprintf("%s-resonance-%s-%s.tsv", prefix, fromPlanet.Name, launchDT.Format(dateFormatFilename)))
+			f, err := os.Create(fmt.Sprintf("%s/%s-resonance-%s-%s--to--%s-%s.tsv", outputdir, prefix, fromPlanet.Name, launchDT.Format(dateFormatFilename), toPlanet, nextPlanetArrivalDT.Format(dateFormatFilename)))
 			if err != nil {
 				panic(err)
 			}
@@ -285,8 +291,8 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 			result := prevResult.Clone()
 			rslt := GAResult{nextPlanetArrivalDT, bestRp.ega2Vout - bestRp.ega2Vin, bestRp.Rp2, bestRp.Assocψ}
 			result.flybys = append(result.flybys, rslt)
-			// Recursion
-			GAPCP(nextPlanetArrivalDT, planetNo+1, vInfOutGA2, result)
+			// Recursion after creating a new "flyby" struct leaving from this best departure.
+			GAPCP(nextPlanetArrivalDT, inFlyby.PostResonance(), planetNo, vInfOutGA2, result)
 		}
 	} else {
 		log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s)", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat))
@@ -296,7 +302,7 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 		for depDT, vInfDepPerDay := range vinfDep {
 			for arrIdx, vInfOutNorm := range vInfDepPerDay {
 				vInfOutVec := vinfMapVecs[depDT][arrIdx]
-				if r, _ := vInfOutVec.Dims(); r == 0 || math.IsInf(vInfOutNorm, 1) {
+				if r, _ := vInfOutVec.Dims(); r == 0 || math.IsInf(vInfOutNorm, 1) || vInfOutNorm == 0 {
 					continue
 				}
 				// Sanity check
@@ -339,7 +345,7 @@ func GAPCP(launchDT time.Time, planetNo int, vInfIn []float64, prevResult Result
 					} else {
 						// Recursion
 						vInfInNext := []float64{vInfNextInVecs[depDT][arrIdx].At(0, 0), vInfNextInVecs[depDT][arrIdx].At(1, 0), vInfNextInVecs[depDT][arrIdx].At(2, 0)}
-						GAPCP(arrivalDT, planetNo+1, vInfInNext, result)
+						GAPCP(arrivalDT, flybys[planetNo+1], planetNo+1, vInfInNext, result)
 					}
 				} else {
 					if ultraDebug {

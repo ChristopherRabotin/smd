@@ -1,5 +1,6 @@
 [general]
 fileprefix = "prj"
+outputdir = "outputs"
 verbose = true
 step = "24h"
 flybyplanets = "Venus Earth Earth Jupiter"

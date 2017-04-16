@@ -48,6 +48,10 @@ type Flyby struct {
 	resonance          float64
 }
 
+func (f Flyby) PostResonance() Flyby {
+	return Flyby{f.commonPlanet, f.maxDeltaV, f.minPeriapsisRadius, false, -1}
+}
+
 func (f Flyby) String() string {
 	if f.isResonant {
 		return f.commonPlanet.String() + fmt.Sprintf("\tres. %.1f:1\trP: %.1f km\tdeltaV: %.1f", f.resonance, f.minPeriapsisRadius, f.maxDeltaV)
