@@ -27,6 +27,7 @@ var (
 	departEarth    bool
 	interplanetary bool
 	coarse         bool
+	argPeri        bool
 	timeStep       time.Duration
 	cpuChan        chan (bool)
 )
@@ -37,6 +38,7 @@ func init() {
 	flag.BoolVar(&opti, "opti", false, "set to true to use Naasz laws")
 	flag.BoolVar(&coarse, "coarse", false, "set to true to perform only a coarse simulation")
 	flag.IntVar(&numCPUs, "cpus", 0, "number of CPUs to use for after first finding (set to 0 for max CPUs)")
+	flag.BoolVar(&argPeri, "peri", false, "set to true to search for periapsis argument (requires a lot of disk space)")
 }
 
 type thrusterType uint8
@@ -237,14 +239,13 @@ func run(missionNo, numThrusters int) {
 			initV := initOrbit.VNorm()
 			initFuel := sc.FuelMass
 			// Propagate
-			export := smd.ExportConfig{Filename: fn + sc.Name, AsCSV: true, Cosmo: true, Timestamp: false}
+			export := smd.ExportConfig{Filename: fn + sc.Name, AsCSV: argPeri, Cosmo: false, Timestamp: false}
 			endDT := startDT.Add(-1)
 			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Perturbations{}, timeStep, false, export)
 			astro.Propagate()
 			// Compute data.
 			tof := astro.CurrentDT.Sub(startDT).Hours() / 24
 			deltaV := astro.Orbit.VNorm() - initV
-			deltaFuel := sc.FuelMass - initFuel
 			var vInf float64
 			if departEarth {
 				if interplanetary { // Arriving at Mars, check how fast we're going compared to some standard velocity
@@ -262,19 +263,19 @@ func run(missionNo, numThrusters int) {
 				}
 			}
 
-			csv := fmt.Sprintf("%.3f,%s,%.3f,%.3f,%.3f,%.3f,%.3f\n", ω, sc.Name, maxThrust, tof, deltaV, deltaFuel, vInf)
+			csv := fmt.Sprintf("%.3f,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%3f\n", ω, sc.Name, maxThrust, tof, deltaV, initFuel, sc.FuelMass, vInf)
 			// Check if best
 			if tof < bestTOF {
 				bestTOF = tof
 				bestCSV = csv
 			}
-			if true { // XXX: Switch to false for arg of periapsis finding.
+			if !argPeri {
 				rslts <- csv
 				break
 			}
 		}
 
-		if !interplanetary && false { // XXX: Idem
+		if !interplanetary && argPeri {
 			rslts <- bestCSV
 		}
 	}
@@ -290,7 +291,7 @@ func streamResults(fn string, rslts <-chan string) {
 	}
 	defer f.Close()
 	// Header
-	f.WriteString("arg. periapsis (deg), name, thrust (N), T.O.F. (days), \\Delta V (km/s), fuel (kf), \\V_{\\infty} (km/s)\n")
+	f.WriteString("arg. periapsis (deg), name, thrust (N), T.O.F. (days), \\Delta V (km/s), init fuel (kg), final fuel (kg), \\V_{\\infty} (km/s)\n")
 	for {
 		rslt, more := <-rslts
 		if more {
