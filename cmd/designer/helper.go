@@ -20,11 +20,11 @@ type Result struct {
 
 // CSV returns the CSV of this result
 func (r Result) CSV() string {
-	rtn := fmt.Sprintf("%s,%f,", r.launch, r.c3)
+	rtn := fmt.Sprintf("%.3f (%s),%f,", julian.TimeToJD(r.launch), r.launch.Format(dateFormat), r.c3)
 	for _, flyby := range r.flybys {
 		rtn += flyby.CSV()
 	}
-	rtn += fmt.Sprintf("%s,%f,", r.arrival, r.vInf)
+	rtn += fmt.Sprintf("%.3f (%s),%f,", julian.TimeToJD(r.arrival), r.arrival.Format(dateFormat), r.vInf)
 	return rtn
 }
 
@@ -54,7 +54,10 @@ type GAResult struct {
 // CSV returns the CSV of this result
 func (g GAResult) CSV() string {
 	if g.DT != (time.Time{}) {
-		return fmt.Sprintf("%f (%s),%f,%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius, smd.Rad2deg(g.phi))
+		if g.phi != 0 {
+			return fmt.Sprintf("%f (%s),%f,%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius, smd.Rad2deg(g.phi))
+		}
+		return fmt.Sprintf("%f (%s),%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius)
 	}
 	return ""
 }
