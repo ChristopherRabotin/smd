@@ -160,9 +160,9 @@ func main() {
 			// Fulfills the launch requirements.
 			vInfIn := []float64{vInfInVec.At(0, 0), vInfInVec.At(1, 0), vInfInVec.At(2, 0)}
 			prevResult := NewResult(launchDT, c3, len(planets)-1)
+			wg.Add(1)
 			cpuChan <- true
 			go GAPCP(arrivalDT, flybys[0], 0, vInfIn, prevResult)
-			wg.Add(1)
 		}
 	}
 	log.Println("[info] All valid launches started")
