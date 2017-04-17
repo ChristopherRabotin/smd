@@ -329,15 +329,13 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 					}
 					continue
 				}
-				// Sanity check
-				if math.Abs(mat64.Norm(&vInfOutVec, 2)-vInfOutNorm) > 1e-6 {
-					panic(fmt.Errorf("%f != %f when sanity check of vInfOut", mat64.Norm(&vInfOutVec, 2), vInfOutNorm))
-				}
+				TOF := tofMap[depDT][arrIdx]
+				arrivalDT := launchDT.Add(time.Duration(TOF*24) * time.Hour)
 				vInfOut := []float64{vInfOutVec.At(0, 0), vInfOutVec.At(1, 0), vInfOutVec.At(2, 0)}
 				flybyDV := math.Abs(vInfInNorm - vInfOutNorm)
 				if (maxDV > 0 && flybyDV < maxDV) || maxDV == 0 {
 					if ultraDebug {
-						log.Printf("[ ok ] dv @ %s: %f km/s", fromPlanet.Name, flybyDV)
+						log.Printf("[ ok ] dv @ %s on %s->%s: %f km/s", fromPlanet.Name, depDT, arrivalDT, flybyDV)
 					}
 					// Check if the rP is okay
 					// NOTE: we oppose the vInf in because we are just transfering the vInfOut to the vInfIn via this recursion calling.
@@ -345,12 +343,10 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 					_, rp, _, _, _, _ := smd.GAFromVinf(vInfInBis, vInfOut, fromPlanet)
 					if minRp > 0 && rp < minRp {
 						if ultraDebug {
-							log.Printf("[NOK ] rP @ %s: %f km", fromPlanet.Name, rp)
+							log.Printf("[NOK ] rP @ %s on %s->%s: %f km", fromPlanet.Name, depDT, arrivalDT, rp)
 						}
 						continue // Too close, ignore
 					}
-					TOF := tofMap[depDT][arrIdx]
-					arrivalDT := launchDT.Add(time.Duration(TOF*24) * time.Hour)
 					result := prevResult.Clone()
 					rslt := GAResult{launchDT, flybyDV, rp, -1}
 					result.flybys = append(result.flybys, rslt)
@@ -365,7 +361,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 							rsltChan <- result
 							wg.Done()
 						} else if ultraDebug {
-							log.Printf("[NOK ] vInf @ %s: %f km/s", toPlanet.Name, vinfArr)
+							log.Printf("[NOK ] vInf @ %s on %s->%s: %f km/s", toPlanet.Name, depDT, arrivalDT, vinfArr)
 						}
 						// All done, let's free that CPU
 						<-cpuChan
@@ -376,7 +372,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 					}
 				} else {
 					if ultraDebug {
-						log.Printf("[NOK ] dv @ %s: %f km/s", fromPlanet.Name, flybyDV)
+						log.Printf("[NOK ] dv @ %s on %s->%s: %f km/s", fromPlanet.Name, depDT, arrivalDT, flybyDV)
 					}
 					// Won't go anywhere, let's move onto another date. and clear queue if needed.
 					select {
