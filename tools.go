@@ -299,11 +299,11 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 			log.Printf("[info] depart %s on %s", initPlanet.Name, launchDT)
 		}
 		// Initialize the values
-		c3Map[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
-		tofMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
-		vinfMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
-		vInfInitVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay))
-		vInfArriVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay))
+		c3Map[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay+1))
+		tofMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay+1))
+		vinfMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay+1))
+		vInfInitVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay+1))
+		vInfArriVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay+1))
 
 		initOrbit := initPlanet.HelioOrbit(launchDT)
 		initPlanetR := mat64.NewVector(3, initOrbit.R())
