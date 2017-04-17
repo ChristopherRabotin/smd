@@ -124,7 +124,7 @@ func main() {
 	if verbose {
 		log.Printf("[info] searching for %s -> %s", launch.planet.Name, flybys[0].planet.Name)
 	}
-	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(launch.planet, flybys[0].planet, launch.from, launch.until, flybys[0].from, flybys[0].until, timeStep.Hours()/24, timeStep.Hours()/24, smd.TTypeAuto, true, ultraDebug, false)
+	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(launch.planet, flybys[0].planet, launch.from, launch.until, flybys[0].from, flybys[0].until, 24/timeStep.Hours(), 24/timeStep.Hours(), smd.TTypeAuto, true, ultraDebug, false)
 	if *cpuprofile != "" {
 		return
 	}
@@ -313,7 +313,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 		}
 	} else {
 		log.Printf("[info] searching for %s (@%s) -> %s (@%s :: %s)", fromPlanet.Name, launchDT.Format(dateFormat), toPlanet.Name, minArrival.Format(dateFormat), maxArrival.Format(dateFormat))
-		vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, timeStep.Hours()/24, timeStep.Hours()/24, smd.TTypeAuto, false, ultraDebug, false)
+		vinfDep, tofMap, vinfArr, vinfMapVecs, vInfNextInVecs := smd.PCPGenerator(fromPlanet, toPlanet, launchDT, launchDT.Add(24*time.Hour), minArrival, maxArrival, 24/timeStep.Hours(), 24/timeStep.Hours(), smd.TTypeAuto, false, ultraDebug, false)
 		// Go through solutions and move on with values which are within the constraints.
 		vInfInNorm := smd.Norm(vInfIn)
 		if ultraDebug {
