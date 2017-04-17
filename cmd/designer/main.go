@@ -161,8 +161,8 @@ func main() {
 			vInfIn := []float64{vInfInVec.At(0, 0), vInfInVec.At(1, 0), vInfInVec.At(2, 0)}
 			prevResult := NewResult(launchDT, c3, len(planets)-1)
 			cpuChan <- true
-			wg.Add(1)
 			go GAPCP(arrivalDT, flybys[0], 0, vInfIn, prevResult)
+			wg.Add(1)
 		}
 	}
 	log.Println("[info] All valid launches started")
@@ -301,7 +301,6 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 					result.arrival = nextPlanetArrivalDT
 					result.vInf = vinfArr
 					rsltChan <- result
-					//wg.Done()
 				} else if ultraDebug {
 					log.Printf("[NOK ] vInf @ %s: %f km/s", toPlanet.Name, vinfArr)
 				}
@@ -359,12 +358,12 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 							result.arrival = arrivalDT
 							result.vInf = vinfArr
 							rsltChan <- result
-							//wg.Done()
 						} else if ultraDebug {
 							log.Printf("[NOK ] vInf @ %s on %s->%s: %f km/s", toPlanet.Name, depDT, arrivalDT, vinfArr)
 						}
 						// All done, let's free that CPU
 						<-cpuChan
+						wg.Done() // Call to release CPU
 					} else {
 						// Recursion, note the -1 to create the Next (since there is an inversion between planet velocity and the spacecraft vector)
 						vInfInNext := []float64{vInfNextInVecs[depDT][arrIdx].At(0, 0), vInfNextInVecs[depDT][arrIdx].At(1, 0), vInfNextInVecs[depDT][arrIdx].At(2, 0)}
@@ -377,6 +376,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 					// Won't go anywhere, let's move onto another date. and clear queue if needed.
 					select {
 					case <-cpuChan:
+						wg.Done() // Call to release CPU
 						continue
 					default:
 						continue
