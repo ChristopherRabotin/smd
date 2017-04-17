@@ -2,26 +2,32 @@
 fileprefix = "prj-neptune"
 outputdir = "outputs"
 verbose = true
-step = "24h"
+step = "6h"
 flybyplanets = "Venus Earth Jupiter"
 
 [launch]
 planet = "Earth"
-from = 2461250.5
-until = 2461350.5
+from = "2026-08-14 00:00:00"
+until = "2026-10-15 00:00:00"
+#from = 2461250.5
+#until = 2461350.5
 resolution = 1
 maxC3 = 40
 
 [arrival]
 planet = "Neptune"
-from = 2468545.5
-until = 2468625.5
+from = "2046-07-01 00:00:00"
+until = "2049-08-01 00:00:00"
+#from = 2468545.5
+#until = 2468625.5
 maxVinf = 18
 
 [flyby.Venus]
 position = 1
-from = 2461408.5
-until = 2461510.5
+from = "2027-02-25 00:00:00"
+until = "2027-03-10 00:00:00"
+#from = 2461408.5
+#until = 2461510.5
 deltaV = 1.0
 periapsis = 1.01
 
@@ -29,8 +35,10 @@ periapsis = 1.01
 # First passage dates, the second is determined by the resonance type.
 position = 2
 deltaV = 1.0
-from = 2461710.5
-until = 2461810.5
+from = "2027-12-17 00:00:00"
+until = "2027-12-27 00:00:00"
+#from = 2461710.5
+#until = 2461810.5
 periapsis = 1.05
 resonant = true
 resonance = 2
@@ -38,6 +46,8 @@ resonance = 2
 [flyby.Jupiter]
 position = 3
 deltaV = 1.0
-from = 2463340.5
-until = 2463410.5
-periapsis = 4.0
+from = "2032-04-16 00:00:00"
+until = "2032-04-18 00:00:00"
+#from = 2463340.5
+#until = 2463410.5
+periapsis = 2.5
