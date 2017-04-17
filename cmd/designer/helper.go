@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
+	"github.com/soniakeys/meeus/julian"
 )
 
 // Result stores a full valid result.
@@ -53,7 +54,7 @@ type GAResult struct {
 // CSV returns the CSV of this result
 func (g GAResult) CSV() string {
 	if g.DT != (time.Time{}) {
-		return fmt.Sprintf("%s,%f,%f,%f,", g.DT, g.deltaV, g.radius, smd.Rad2deg(g.phi))
+		return fmt.Sprintf("%f (%s),%f,%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius, smd.Rad2deg(g.phi))
 	}
 	return ""
 }
@@ -69,8 +70,7 @@ func StreamResults(prefix string, planets []smd.CelestialObject, rsltChan <-chan
 		hdrs += planet.Name + "DT,"
 		hdrs += planet.Name + "DV,"
 		hdrs += planet.Name + "Rp,"
-		hdrs += planet.Name + "Phi,"
-		if pNo > 0 && pNo < len(flybys) && flybys[pNo].isResonant {
+		if pNo > 0 && pNo < len(flybys)-1 && flybys[pNo].isResonant {
 			// Repeat
 			hdrs += planet.Name + "DT,"
 			hdrs += planet.Name + "DV,"

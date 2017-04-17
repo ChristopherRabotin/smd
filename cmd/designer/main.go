@@ -290,7 +290,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 
 			result := prevResult.Clone()
 			// Create both the first flyby for start of resonance and the ending flyby to complete the resonance
-			result.flybys = append(result.flybys, GAResult{launchDT, bestRp.ega1Vout - bestRp.ega1Vin, bestRp.Rp1, -1})
+			result.flybys = append(result.flybys, GAResult{launchDT, bestRp.ega1Vout - bestRp.ega1Vin, bestRp.Rp1, 0})
 			result.flybys = append(result.flybys, GAResult{ga2DT, bestRp.ega2Vout - bestRp.ega2Vin, bestRp.Rp2, bestRp.Assocψ})
 			if isLastPlanet {
 				vinfArr := mat64.Norm(VfNext, 2)
@@ -348,7 +348,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 						continue // Too close, ignore
 					}
 					result := prevResult.Clone()
-					rslt := GAResult{launchDT, flybyDV, rp, -1}
+					rslt := GAResult{launchDT, flybyDV, rp, 0}
 					result.flybys = append(result.flybys, rslt)
 					if isLastPlanet {
 						vinfArr := vinfArr[depDT][arrIdx]
