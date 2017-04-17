@@ -2,7 +2,7 @@
 fileprefix = "prj-neptune"
 outputdir = "outputs"
 verbose = true
-step = "2h"
+step = "24h"
 flybyplanets = "Venus Earth Jupiter"
 
 [launch]

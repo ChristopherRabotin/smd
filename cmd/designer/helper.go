@@ -55,9 +55,9 @@ type GAResult struct {
 func (g GAResult) CSV() string {
 	if g.DT != (time.Time{}) {
 		if g.phi != 0 {
-			return fmt.Sprintf("%f (%s),%f,%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius, smd.Rad2deg(g.phi))
+			return fmt.Sprintf("%.3f (%s),%f,%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius, smd.Rad2deg(g.phi))
 		}
-		return fmt.Sprintf("%f (%s),%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius)
+		return fmt.Sprintf("%.3f (%s),%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius)
 	}
 	return ""
 }
