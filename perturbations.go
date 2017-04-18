@@ -61,14 +61,19 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 		}
 	}
 
-	var RSunToEarth, RSunToSC, REarthToSC []float64
+	var rE2S, RsatS, REarthToSC []float64
 
 	if p.Drag || p.PerturbingBody != nil {
 		REarthToSC = o.R()
-		RSunToEarth = MxV33(R1(Deg2rad(-Earth.tilt)), o.Origin.HelioOrbit(dt).R())
-		RSunToSC = make([]float64, 3)
+		rE2S = MxV33(R1(Deg2rad(-Earth.tilt)), o.Origin.HelioOrbit(dt).R())
+		/*rSun2EarthFact := 1.0
+		if config.meeus {
+			// Meeus returns Earth to Sun, not Sun to Earth.
+			rSun2EarthFact = -1.0
+		}*/
+		RsatS = make([]float64, 3)
 		for i := 0; i < 3; i++ {
-			RSunToSC[i] = RSunToEarth[i] + REarthToSC[i]
+			RsatS[i] = -rE2S[i] - REarthToSC[i]
 		}
 	}
 
@@ -80,9 +85,9 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 		Phi := 1357.
 		// Build the vectors.
 		celerity := 2.997925e+05
-		srpCst := (Phi * AU * AU * S / celerity) * Cr / math.Pow(Norm(RSunToSC), 3)
+		srpCst := (Phi * AU * AU * S / celerity) * Cr / math.Pow(Norm(RsatS), 3)
 		for i := 0; i < 3; i++ {
-			pert[i+3] += -srpCst * RSunToSC[i]
+			pert[i+3] += -srpCst * RsatS[i]
 		}
 	}
 
@@ -90,10 +95,11 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 		if !p.PerturbingBody.Equals(Sun) {
 			panic("only the Sun as a perturbing body is currently supported")
 		}
-		RSunToEarthNorm3 := math.Pow(Norm(RSunToEarth), 3)
-		RSunToSCNorm3 := math.Pow(Norm(RSunToSC), 3)
+		rE2SNorm3 := math.Pow(Norm(rE2S), 3)
+		RsatSNorm3 := math.Pow(Norm(RsatS), 3)
 		for i := 0; i < 3; i++ {
-			pert[i+3] += Sun.μ * (RSunToEarth[i]/RSunToEarthNorm3 - RSunToSC[i]/RSunToSCNorm3)
+			//pert[i+3] += Sun.μ * (rE2S[i]/rE2SNorm3 + RsatS[i]/RsatSNorm3)
+			pert[i+3] += Sun.μ * ((-REarthToSC[i]-rE2S[i])/RsatSNorm3 - (-rE2S[i])/rE2SNorm3)
 		}
 	}
 	if p.Arbitrary != nil {
