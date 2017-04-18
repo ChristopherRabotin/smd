@@ -302,6 +302,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 					// Add information to result.
 					result.arrival = nextPlanetArrivalDT
 					result.vInf = vinfArr
+					wg.Add(1)
 					rsltChan <- result
 				} else if ultraDebug {
 					log.Printf("[NOK ] vInf @ %s: %f km/s", toPlanet.Name, vinfArr)
@@ -360,6 +361,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 							// Add information to result.
 							result.arrival = arrivalDT
 							result.vInf = vinfArr
+							wg.Add(1)
 							rsltChan <- result
 						} else if ultraDebug {
 							log.Printf("[NOK ] vInf @ %s on %s->%s: %f km/s", toPlanet.Name, depDT, arrivalDT, vinfArr)
