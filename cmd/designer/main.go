@@ -137,6 +137,7 @@ func main() {
 		f.Close()
 		return
 	}
+	wg.Add(1) // For the output writing.
 	for launchDT, c3PerDay := range c3Map {
 		for arrivalIdx, c3 := range c3PerDay {
 			if c3 > launch.maxC3 || c3 == 0 {
@@ -166,6 +167,7 @@ func main() {
 		}
 	}
 	log.Println("[info] All valid launches started")
+	//close(rsltChan)
 	wg.Wait()
 	log.Println("[info] Done")
 }
@@ -306,6 +308,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 				}
 				// All done, let's free that CPU
 				<-cpuChan
+				wg.Done() // Call to release CPU
 			} else {
 				// Spawn the next flyby computation.
 				GAPCP(ga2DT, inFlyby.PostResonance(), planetNo, vInfOutGA2, result)

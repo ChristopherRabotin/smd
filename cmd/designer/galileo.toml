@@ -2,7 +2,7 @@
 fileprefix = "galileo"
 outputdir = "outputs"
 verbose = true
-step = "24h"
+step = "2h"
 flybyplanets = "Venus Earth"
 
 [launch]
