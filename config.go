@@ -128,6 +128,13 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 				if err != nil {
 					panic("could not parse date time")
 				}
+				// Check if the truncated date time already exists in the map, and if so skip (so we have store the values which is the closest the time change).
+				// This also allows for a much smaller memory footprint when loading ephemerides with a large truncation step
+				// (e.g. loading 1h instead of 1m requires less than 60 as much memory (less because of the hashing)).
+				dt = dt.Truncate(conf.spiceTrunc)
+				if _, exists := loadedCSVdata[ephemeride][dt]; exists {
+					continue
+				}
 				// Drop the string of the date
 				R := make([]float64, 3)
 				V := make([]float64, 3)
