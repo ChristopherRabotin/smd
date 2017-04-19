@@ -17,6 +17,7 @@ import (
 
 // Scenario constants
 const (
+	withSRP   = false
 	smoothing = false
 	initJDE   = 2456296.25
 	realBT    = 7009.767
@@ -40,9 +41,9 @@ var (
 	timeStep        = 30 * time.Second
 	σρ              = math.Pow(5e-3, 2) // m , but all measurements in km.
 	σρDot           = math.Pow(5e-6, 2) // m/s , but all measurements in km/s.
-	_DSS34Canberra  = smd.NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 7)
-	_DSS65Madrid    = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 4.250556, σρ, σρDot, 7)
-	_DSS13Goldstone = smd.NewSpecialStation("DSS13Goldstone", 1.07114904, 0, 35.247164, 243.205, σρ, σρDot, 7)
+	_DSS34Canberra  = smd.NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 6)
+	_DSS65Madrid    = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 4.250556, σρ, σρDot, 6)
+	_DSS13Goldstone = smd.NewSpecialStation("DSS13Goldstone", 1.07114904, 0, 35.247164, 243.205, σρ, σρDot, 6)
 )
 
 func main() {
@@ -50,8 +51,17 @@ func main() {
 	if measFile != "a" && measFile != "b" {
 		log.Fatalf("unknown file `%s` (should be a or b)", measFile)
 	}
+	if withSRP {
+		_DSS34Canberra = smd.NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 7)
+		_DSS65Madrid = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 4.250556, σρ, σρDot, 7)
+		_DSS13Goldstone = smd.NewSpecialStation("DSS13Goldstone", 1.07114904, 0, 35.247164, 243.205, σρ, σρDot, 7)
+	}
 	if measFile == "b" {
-		_DSS65Madrid = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 355.749444, σρ, σρDot, 7)
+		if withSRP {
+			_DSS65Madrid = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 355.749444, σρ, σρDot, 7)
+		} else {
+			_DSS65Madrid = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 355.749444, σρ, σρDot, 6)
+		}
 	}
 	startDT := julian.JDToTime(initJDE)
 	// Load measurements
@@ -72,14 +82,16 @@ func main() {
 	}
 	startDT = firstDT
 	// Perturbations in the estimate
-	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun, Drag: true}
+	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun, Drag: false}
 
 	stateEstChan := make(chan (smd.State), 1)
 	sc := smd.NewEmptySC("prj0", 0)
-	if measFile == "a" {
-		sc.Drag = 1.2
-	} else {
-		sc.Drag = 1.0
+	if withSRP {
+		if measFile == "a" {
+			sc.Drag = 1.2
+		} else {
+			sc.Drag = 1.0
+		}
 	}
 	mEst := smd.NewPreciseMission(sc, estOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{Filename: "prj0", Cosmo: true})
 	mEst.RegisterStateChan(stateEstChan)
@@ -102,10 +114,15 @@ func main() {
 	filename := fmt.Sprintf("srif-part-%s", measFile)
 	go processEst(filename, estChan)
 
-	prevP := mat64.NewSymDense(7, nil)
+	var prevP *mat64.SymDense
+	if withSRP {
+		prevP = mat64.NewSymDense(7, nil)
+		prevP.SetSym(6, 6, 0.1)
+	} else {
+		prevP = mat64.NewSymDense(6, nil)
+	}
 	var covarDistance = 100.0
 	var covarVelocity = 0.1
-	prevP.SetSym(6, 6, 0.1)
 	for i := 0; i < 3; i++ {
 		prevP.SetSym(i, i, covarDistance)
 		prevP.SetSym(i+3, i+3, covarVelocity)
@@ -116,7 +133,13 @@ func main() {
 	var prevStationName = ""
 	measNo := 1
 	stateNo := 0
-	kf, _, err := gokalman.NewSRIF(mat64.NewVector(7, nil), prevP, 2, false, noiseKF)
+	var x0 *mat64.Vector
+	if withSRP {
+		x0 = mat64.NewVector(7, nil)
+	} else {
+		x0 = mat64.NewVector(6, nil)
+	}
+	kf, _, err := gokalman.NewSRIF(x0, prevP, 2, false, noiseKF)
 	if err != nil {
 		panic(fmt.Errorf("%s", err))
 	}
@@ -155,7 +178,9 @@ func main() {
 					fmt.Printf("[info] Propagating clone to 3*SOI = %f\n", 3*smd.Earth.SOI)
 					sc := smd.NewEmptySC(fmt.Sprintf("BPclone-%d", cloneNo), 0)
 					sc.WayPoints = []smd.Waypoint{smd.NewCruiseToDistance(3*smd.Earth.SOI, false, nil)}
-					sc.Drag = 1.2 + prevEst.State().At(6, 0)
+					if withSRP {
+						sc.Drag = 1.2 + prevEst.State().At(6, 0)
+					}
 					mBP := smd.NewPreciseMission(sc, smd.NewOrbitFromRV(R, V, smd.Earth), dt, dt.Add(-1), estPerts, timeStep, false, smd.ExportConfig{})
 					mBP.Propagate()
 					fmt.Println("[info] Done propagating clone")

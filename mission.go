@@ -325,7 +325,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		A.Set(1, 4, 1)
 		A.Set(2, 5, 1)
 		if rΦ == 7 {
-			A.Set(3, 6, 1)
+			A.Set(3, 6, 0)
 		}
 		// Bottom left is where the magic is.
 		x := R[0]
@@ -440,14 +440,16 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			}
 		}
 
-		// BUG: This includes BOTH SRP and Sun perturbations.
-		if a.perts.Drag {
+		if a.perts.Drag || a.perts.PerturbingBody != nil {
 			Cr := a.Vehicle.Drag
 			S := 0.01e-6 // TODO: Idem for the Area to mass ratio
 			Phi := 1357.
 			// Build the vectors.
 			celerity := 2.997925e+05
-			srpCst := -Sun.μ + (Phi*AU*AU*S/celerity)*Cr
+			thisPert := -Sun.μ
+			if a.perts.Drag {
+				thisPert += (Phi * AU * AU * S / celerity) * Cr
+			}
 			RSunToSC3 := math.Pow(Norm(RSunToSC), 3)
 			RSunToSC5 := math.Pow(Norm(RSunToSC), 5)
 
@@ -465,17 +467,17 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			A42 := A.At(4, 2)
 			A52 := A.At(5, 2)
 
-			dAxDx := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[0])*2*(-RSunToSC[0])
-			dAxDy := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[0]) * 2 * (-RSunToSC[1])
-			dAxDz := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[0]) * 2 * (-RSunToSC[2])
+			dAxDx := thisPert/RSunToSC3 + thisPert*(-1.5/RSunToSC5)*(-RSunToSC[0])*2*(-RSunToSC[0])
+			dAxDy := thisPert * (-1.5 / RSunToSC5) * (-RSunToSC[0]) * 2 * (-RSunToSC[1])
+			dAxDz := thisPert * (-1.5 / RSunToSC5) * (-RSunToSC[0]) * 2 * (-RSunToSC[2])
 			dAxDCr := (Phi * AU * AU * S / celerity) / (RSunToSC3 * (-RSunToSC[0]))
-			dAyDx := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[1]) * 2 * (-RSunToSC[0])
-			dAyDy := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[1])*2*(-RSunToSC[1])
-			dAyDz := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[1]) * 2 * (-RSunToSC[2])
+			dAyDx := thisPert * (-1.5 / RSunToSC5) * (-RSunToSC[1]) * 2 * (-RSunToSC[0])
+			dAyDy := thisPert/RSunToSC3 + thisPert*(-1.5/RSunToSC5)*(-RSunToSC[1])*2*(-RSunToSC[1])
+			dAyDz := thisPert * (-1.5 / RSunToSC5) * (-RSunToSC[1]) * 2 * (-RSunToSC[2])
 			dAyDCr := (Phi * AU * AU * S / celerity) / (RSunToSC3 * (-RSunToSC[1]))
-			dAzDx := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[2]) * 2 * (-RSunToSC[0])
-			dAzDy := srpCst * (-1.5 / RSunToSC5) * (-RSunToSC[2]) * 2 * (-RSunToSC[1])
-			dAzDz := srpCst/RSunToSC3 + srpCst*(-1.5/RSunToSC5)*(-RSunToSC[2])*2*(-RSunToSC[2])
+			dAzDx := thisPert * (-1.5 / RSunToSC5) * (-RSunToSC[2]) * 2 * (-RSunToSC[0])
+			dAzDy := thisPert * (-1.5 / RSunToSC5) * (-RSunToSC[2]) * 2 * (-RSunToSC[1])
+			dAzDz := thisPert/RSunToSC3 + thisPert*(-1.5/RSunToSC5)*(-RSunToSC[2])*2*(-RSunToSC[2])
 			dAzDCr := (Phi * AU * AU * S / celerity) / (RSunToSC3 * (-RSunToSC[2]))
 			// Setting values
 			// \frac{\partial a}{\partial x}
@@ -491,9 +493,11 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 			A.Set(4, 2, A42+dAyDz)
 			A.Set(5, 2, A52+dAzDz)
 			// \partial a/\partial Cr
-			A.Set(3, 6, dAxDCr)
-			A.Set(4, 6, dAyDCr)
-			A.Set(5, 6, dAzDCr)
+			if a.perts.Drag {
+				A.Set(3, 6, dAxDCr)
+				A.Set(4, 6, dAyDCr)
+				A.Set(5, 6, dAzDCr)
+			}
 		}
 
 		ΦDot.Mul(A, Φ)
