@@ -70,11 +70,11 @@ func main() {
 	} else {
 		estOrbit = smd.NewOrbitFromRV([]float64{-274096770.76544, -92859266.4499061, -40199493.6677441}, []float64{32.6704564599943, -8.93838913761049, -3.87881914050316}, smd.Earth)
 	}
-	startDT = firstDT.Add(-timeStep)
+	startDT = firstDT
 	// Perturbations in the estimate
 	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun, Drag: true}
 
-	stateEstChan := make(chan (smd.State))
+	stateEstChan := make(chan (smd.State), 1)
 	sc := smd.NewEmptySC("prj0", 0)
 	if measFile == "a" {
 		sc.Drag = 1.2
@@ -85,7 +85,7 @@ func main() {
 	mEst.RegisterStateChan(stateEstChan)
 
 	// Go-routine to advance propagation.
-	go mEst.PropagateUntil(endDT, true)
+	go mEst.PropagateUntil(endDT.Add(timeStep), true)
 
 	// KF filter initialization stuff.
 
@@ -114,7 +114,7 @@ func main() {
 	visibilityErrors := 0
 
 	var prevStationName = ""
-	measNo := 0
+	measNo := 1
 	stateNo := 0
 	kf, _, err := gokalman.NewSRIF(mat64.NewVector(7, nil), prevP, 2, false, noiseKF)
 	if err != nil {
