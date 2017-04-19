@@ -29,20 +29,15 @@ type planetstate struct {
 
 // _smdconfig is a "hidden" struct, just use `smdConfig`
 type _smdconfig struct {
-	VSOP87, SPICE bool
-	VSOP87Dir     string
-	SPICEDir      string
-	HorizonDir    string
-	outputDir     string
-	spiceTrunc    time.Duration
-	spiceCSV      bool
-	testExport    bool
+	SPICEDir   string
+	HorizonDir string
+	outputDir  string
+	spiceTrunc time.Duration
+	spiceCSV   bool
+	testExport bool
 }
 
 func (c _smdconfig) String() string {
-	if c.VSOP87 {
-		return fmt.Sprintf("[smd:config] VSOP87: %s", c.VSOP87Dir)
-	}
 	if c.spiceCSV {
 		return fmt.Sprintf("[smd:config] SPICE: CSV - %s", c.HorizonDir)
 	}
@@ -179,7 +174,6 @@ func smdConfig() _smdconfig {
 		panic(fmt.Errorf("%s/conf.toml not found", confPath))
 	}
 
-	spiceEnabled := viper.GetBool("SPICE.enabled")
 	spiceDir := viper.GetString("SPICE.directory")
 	spiceCSV := viper.GetBool("SPICE.horizonCSV")
 	spiceCSVDir := viper.GetString("SPICE.HorizonDir")
@@ -190,15 +184,10 @@ func smdConfig() _smdconfig {
 		fmt.Println("[ERROR] Could not parse spice truncation, using 1 second")
 		spiceTruncation = time.Minute // Default value
 	}
-	vsop87Enabled := viper.GetBool("VSOP87.enabled")
-	vsop87Dir := viper.GetString("VSOP87.directory")
 	outputDir := viper.GetString("general.output_path")
 	testExport := viper.GetBool("general.test_export")
 
-	if vsop87Enabled && spiceEnabled {
-		panic("both VSOP87 and SPICE are enabled, please make up your mind (SPICE is more precise)")
-	}
 	cfgLoaded = true
-	config = _smdconfig{VSOP87: vsop87Enabled, VSOP87Dir: vsop87Dir, SPICE: spiceEnabled, SPICEDir: spiceDir, spiceTrunc: spiceTruncation, spiceCSV: spiceCSV, HorizonDir: spiceCSVDir, outputDir: outputDir, testExport: testExport}
+	config = _smdconfig{SPICEDir: spiceDir, spiceTrunc: spiceTruncation, spiceCSV: spiceCSV, HorizonDir: spiceCSVDir, outputDir: outputDir, testExport: testExport}
 	return config
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ChristopherRabotin/smd"
+	"github.com/soniakeys/meeus/julian"
 )
 
 // Result stores a full valid result.
@@ -19,11 +20,11 @@ type Result struct {
 
 // CSV returns the CSV of this result
 func (r Result) CSV() string {
-	rtn := fmt.Sprintf("%s,%f,", r.launch, r.c3)
+	rtn := fmt.Sprintf("%.3f (%s),%f,", julian.TimeToJD(r.launch), r.launch.Format(dateFormat), r.c3)
 	for _, flyby := range r.flybys {
 		rtn += flyby.CSV()
 	}
-	rtn += fmt.Sprintf("%s,%f,", r.arrival, r.vInf)
+	rtn += fmt.Sprintf("%.3f (%s),%f,", julian.TimeToJD(r.arrival), r.arrival.Format(dateFormat), r.vInf)
 	return rtn
 }
 
@@ -47,27 +48,38 @@ type GAResult struct {
 	DT     time.Time
 	deltaV float64
 	radius float64
+	phi    float64 // Only used in the case of a resonant orbit
 }
 
 // CSV returns the CSV of this result
 func (g GAResult) CSV() string {
 	if g.DT != (time.Time{}) {
-		return fmt.Sprintf("%s,%f,%f,", g.DT, g.deltaV, g.radius)
+		if g.phi != 0 {
+			return fmt.Sprintf("%.3f (%s),%f,%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius, smd.Rad2deg(g.phi))
+		}
+		return fmt.Sprintf("%.3f (%s),%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius)
 	}
 	return ""
 }
 
 // StreamResults is used to stream the results to the output file.
 func StreamResults(prefix string, planets []smd.CelestialObject, rsltChan <-chan (Result)) {
-	f, err := os.Create(fmt.Sprintf("./%s-results.csv", prefix))
+	f, err := os.Create(fmt.Sprintf("%s/%s-results.csv", outputdir, prefix))
 	if err != nil {
 		panic(err)
 	}
 	hdrs := "launch,c3,"
-	for _, planet := range planets[0 : len(planets)-1] {
+	for pNo, planet := range planets[0 : len(planets)-1] {
 		hdrs += planet.Name + "DT,"
 		hdrs += planet.Name + "DV,"
 		hdrs += planet.Name + "Rp,"
+		if pNo > 0 && pNo < len(flybys)-1 && flybys[pNo].isResonant {
+			// Repeat
+			hdrs += planet.Name + "DT,"
+			hdrs += planet.Name + "DV,"
+			hdrs += planet.Name + "Rp,"
+			hdrs += planet.Name + "Phi,"
+		}
 	}
 	hdrs += "arrival,vInf\n"
 	if _, err := f.WriteString(hdrs); err != nil {
@@ -75,5 +87,16 @@ func StreamResults(prefix string, planets []smd.CelestialObject, rsltChan <-chan
 	}
 	for rslt := range rsltChan {
 		f.WriteString(rslt.CSV() + "\n")
+		wg.Done()
 	}
+	wg.Done() // Done writing everything.
+}
+
+type target struct {
+	BT1, BT2, BR1, BR2, Assocψ, Rp1, Rp2 float64
+	ega1Vin, ega1Vout, ega2Vin, ega2Vout float64
+}
+
+func (t target) String() string {
+	return fmt.Sprintf("ψ=%f ===\nGA1: Bt=%f\tBr=%f\trP=%f\nVin=%f\tVout=%f\tdelta=%f\n\nGA2: Bt=%f\tBr=%f\trP=%f\nVin=%f\tVout=%f\tdelta=%f\n", smd.Rad2deg(t.Assocψ), t.BT1, t.BR1, t.Rp1, t.ega1Vin, t.ega1Vout, t.ega1Vout-t.ega1Vin, t.BT2, t.BR2, t.Rp2, t.ega2Vin, t.ega2Vout, t.ega2Vout-t.ega2Vin)
 }

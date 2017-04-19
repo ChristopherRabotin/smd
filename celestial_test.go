@@ -68,10 +68,7 @@ func TestHelio(t *testing.T) {
 	} {
 		R, V := exp.body.HelioOrbit(julian.JDToTime(exp.jde)).RV()
 		errDis := 3e3  // 3000 km
-		errVel := 1e-1 // 0.1 km/s
-		if smdConfig().VSOP87 {
-			errVel = 0.5 // 0.5 km/s for VSOP87
-		}
+		errVel := 1e-1 // 0.1 km/
 		for i := 0; i < 3; i++ {
 			if !floats.EqualWithinAbs(R[i], exp.R[i], errDis) {
 				t.Logf("delta[%d] = %f km", i, math.Abs(R[i]-exp.R[i]))

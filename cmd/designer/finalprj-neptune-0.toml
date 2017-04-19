@@ -1,0 +1,42 @@
+[general]
+fileprefix = "prj-neptune"
+outputdir = "outputs"
+verbose = true
+step = "2h"
+flybyplanets = "Venus Earth Jupiter"
+
+[launch]
+planet = "Earth"
+from = "2026-08-14 00:00:00"
+until = "2026-10-15 00:00:00"
+resolution = 1
+maxC3 = 40
+
+[arrival]
+planet = "Neptune"
+from = "2046-07-01 00:00:00"
+until = "2049-08-01 00:00:00"
+maxVinf = 18
+
+[flyby.Venus]
+position = 1
+from = "2027-02-25 00:00:00"
+until = "2027-03-10 00:00:00"
+deltaV = 1.0
+periapsis = 1.01
+
+[flyby.Earth]
+position = 2
+deltaV = 1.0
+from = "2027-12-17 00:00:00"
+until = "2027-12-27 00:00:00"
+periapsis = 1.01
+resonant = true
+resonance = 2
+
+[flyby.Jupiter]
+position = 3
+deltaV = 1.0
+from = "2032-04-10 00:00:00"
+until = "2032-04-20 00:00:00"
+periapsis = 2.5

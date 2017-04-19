@@ -330,50 +330,25 @@ func (o *Orbit) ToXCentric(b CelestialObject, dt time.Time) {
 	if o.Origin.Name == b.Name {
 		panic(fmt.Errorf("already in orbit around %s", b.Name))
 	}
-	config := smdConfig()
-	if config.VSOP87 {
-		if b.SOI == -1 {
-			// Switch to heliocentric
-			// Get planet equatorial coordinates.
-			rel := o.Origin.HelioOrbit(dt)
-			relR := rel.R()
-			relV := rel.V()
-			// Switch frame origin.
-			for i := 0; i < 3; i++ {
-				o.rVec[i] += relR[i]
-				o.vVec[i] += relV[i]
-			}
-		} else {
-			// Switch to planet centric
-			// Get planet ecliptic coordinates.
-			rel := b.HelioOrbit(dt)
-			relR := rel.R()
-			relV := rel.V()
-			// Update frame origin.
-			for i := 0; i < 3; i++ {
-				o.rVec[i] -= relR[i]
-				o.vVec[i] -= relV[i]
-			}
-		}
-	} else if config.SPICE {
-		// Using SPICE for the conversion.
-		state := make([]float64, 6)
-		for i := 0; i < 3; i++ {
-			state[i] = o.rVec[i]
-			state[i+3] = o.vVec[i]
-		}
-		toFrame := "IAU_" + b.Name
-		if b.Equals(Sun) {
-			toFrame = "ECLIPJ2000"
-		}
-		fromFrame := "IAU_" + o.Origin.Name
-		if o.Origin.Equals(Sun) {
-			fromFrame = "ECLIPJ2000"
-		}
-		pstate := config.ChgFrame(toFrame, fromFrame, dt, state)
-		o.rVec = pstate.R
-		o.vVec = pstate.V
+
+	// Using SPICE for the conversion.
+	state := make([]float64, 6)
+	for i := 0; i < 3; i++ {
+		state[i] = o.rVec[i]
+		state[i+3] = o.vVec[i]
 	}
+	toFrame := "IAU_" + b.Name
+	if b.Equals(Sun) {
+		toFrame = "ECLIPJ2000"
+	}
+	fromFrame := "IAU_" + o.Origin.Name
+	if o.Origin.Equals(Sun) {
+		fromFrame = "ECLIPJ2000"
+	}
+	pstate := smdConfig().ChgFrame(toFrame, fromFrame, dt, state)
+	o.rVec = pstate.R
+	o.vVec = pstate.V
+
 	o.Origin = b // Don't forget to switch origin
 }
 

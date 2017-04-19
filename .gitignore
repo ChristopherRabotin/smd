@@ -10,4 +10,5 @@ outputdata/
 data/jplhorizon
 env.sh
 *.csv
+*.tsv
 *.xyzv

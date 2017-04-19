@@ -1,0 +1,16 @@
+[General]
+fileprefix = "fp2me"
+verbose = true
+c3plot = false
+
+[Arrival]
+planet = "Earth"
+from = 2462496.5
+until = 2462500.5
+resolution = 1 
+
+[Departure]
+planet = "Earth"
+from = 2461766.5
+until = 2461768.5
+resolution = 1

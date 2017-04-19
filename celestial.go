@@ -2,13 +2,10 @@ package smd
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
-	"github.com/soniakeys/meeus/julian"
 	"github.com/soniakeys/meeus/planetposition"
-	"github.com/soniakeys/meeus/pluto"
 )
 
 const (
@@ -69,64 +66,6 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 	if c.Name == "Sun" {
 		return *NewOrbitFromRV([]float64{0, 0, 0}, []float64{0, 0, 0}, *c)
 	}
-	if smdConfig().VSOP87 {
-		if c.Name == "Pluto" {
-			// Special case in Sonia Keys' Meeus
-			l, b, r := pluto.Heliocentric(julian.TimeToJD(dt))
-			r *= AU
-			v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
-			// Get the Cartesian coordinates from L,B,R.
-			R, V := make([]float64, 3), make([]float64, 3)
-			sB, cB := math.Sincos(b.Rad())
-			sL, cL := math.Sincos(l.Rad())
-			R[0] = r * cB * cL
-			R[1] = r * cB * sL
-			R[2] = r * sB
-			// Let's find the direction of the velocity vector.
-			vDir := Cross(R, []float64{0, 0, -1})
-			for i := 0; i < 3; i++ {
-				V[i] = v * vDir[i] / Norm(vDir)
-			}
-			return *NewOrbitFromRV(R, V, Sun)
-		}
-		if c.PP == nil {
-			// Load the planet.
-			var vsopPosition int
-			switch c.Name {
-			case "Venus":
-				vsopPosition = 2
-			case "Earth":
-				vsopPosition = 3
-			case "Mars":
-				vsopPosition = 4
-			case "Jupiter":
-				vsopPosition = 5
-			default:
-				panic(fmt.Errorf("unknown object: %s", c.Name))
-			}
-			planet, err := planetposition.LoadPlanetPath(vsopPosition-1, smdConfig().VSOP87Dir)
-			if err != nil {
-				panic(fmt.Errorf("could not load planet number %d: %s", vsopPosition, err))
-			}
-			c.PP = planet
-		}
-		l, b, r := c.PP.Position2000(julian.TimeToJD(dt))
-		r *= AU
-		v := math.Sqrt(2*Sun.μ/r - Sun.μ/c.a)
-		// Get the Cartesian coordinates from L,B,R.
-		R, V := make([]float64, 3), make([]float64, 3)
-		sB, cB := math.Sincos(b.Rad())
-		sL, cL := math.Sincos(l.Rad())
-		R[0] = r * cB * cL
-		R[1] = r * cB * sL
-		R[2] = r * sB
-		// Let's find the direction of the velocity vector.
-		vDir := Cross(R, []float64{0, 0, -1})
-		for i := 0; i < 3; i++ {
-			V[i] = v * vDir[i] / Norm(vDir)
-		}
-		return *NewOrbitFromRV(R, V, Sun)
-	}
 	pstate := config.HelioState(c.Name, dt)
 	R := pstate.R
 	V := pstate.V
@@ -148,6 +87,8 @@ func CelestialObjectFromString(name string) (CelestialObject, error) {
 		return Saturn, nil
 	case "uranus":
 		return Uranus, nil
+	case "neptune":
+		return Neptune, nil
 	case "pluto":
 		return Pluto, nil
 	default:
@@ -179,6 +120,10 @@ var Saturn = CelestialObject{"Saturn", 60268.0, 1429394133, 3.7931208e7, 0.93, 2
 // Uranus is no joke.
 // TODO: SOI
 var Uranus = CelestialObject{"Uranus", 25559.0, 2875038615, 5.7939513e6, 1.02, 0.773, 0, 0.012, 0, 0, nil}
+
+// Neptune is giant.
+// TODO: SOI
+var Neptune = CelestialObject{"Neptune", 24622.0, 30.110387 * AU, 6.8365299e6, 1.767, 0.72, 0, 0, 0, 0, nil}
 
 // Pluto is not a planet and had that down ranking coming. It should have stayed in its lane.
 // WARNING: Pluto SOI is not defined.

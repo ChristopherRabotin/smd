@@ -1,0 +1,16 @@
+[General]
+fileprefix = "fp1vm"
+verbose = true
+c3plot = false
+
+[Departure]
+planet = "Venus"
+from =  2461449.5
+until = 2461469.5
+resolution = 1
+
+[Arrival]
+planet = "Earth"
+from = 2461766.5
+until = 2461768.5
+resolution = 1

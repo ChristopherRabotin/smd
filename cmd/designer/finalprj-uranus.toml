@@ -1,0 +1,49 @@
+[general]
+fileprefix = "prj-uranus"
+outputdir = "outputs"
+verbose = true
+step = "24h"
+flybyplanets = "Venus Mars Earth Saturn"
+
+[launch]
+planet = "Earth"
+from = "2023-06-01 00:00:00"
+until = "2023-12-31 00:00:00"
+resolution = 1
+maxC3 = 35
+
+[arrival]
+planet = "Uranus"
+from = "2036-01-01 00:00:00"
+until = "2038-12-31 00:00:00"
+maxVinf = 14
+
+[flyby.Venus]
+position = 1
+from = "2024-01-01 00:00:00"
+until = "2024-12-31 00:00:00"
+deltaV = 0.5
+periapsis = 1.05
+
+[flyby.Mars]
+position = 2
+from = "2025-01-01 00:00:00"
+until = "2025-12-31 00:00:00"
+deltaV = 0.5
+periapsis = 1.05
+
+[flyby.Earth]
+position = 3
+deltaV = 0.5
+from = "2025-09-01 00:00:00"
+until = "2026-12-31 00:00:00"
+periapsis = 1.05
+resonant = true
+resonance = 3
+
+[flyby.Saturn]
+position = 4
+deltaV = 0.5
+from = "2030-01-01 00:00:00"
+until = "2034-12-31 00:00:00"
+periapsis = 4.0

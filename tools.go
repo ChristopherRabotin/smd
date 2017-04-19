@@ -3,6 +3,7 @@ package smd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"time"
@@ -62,6 +63,17 @@ func (t TransferType) String() string {
 		return "type-4"
 	default:
 		panic("unknown transfer type")
+	}
+}
+
+func TransferTypeFromInt(ttype int) TransferType {
+	switch ttype {
+	case 4:
+		return TType4
+	case 3:
+		return TType3
+	default:
+		return TTypeAuto
 	}
 }
 
@@ -232,7 +244,7 @@ func Lambert(Ri, Rf *mat64.Vector, Δt0 time.Duration, ttype TransferType, body 
 }
 
 // PCPGenerator generates the PCP files to perform contour plots in Matlab (and eventually prints the command).
-func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, plotC3, verbose, output bool) (c3Map, tofMap, vinfMap map[time.Time][]float64, vInfInitVecs, vInfArriVecs map[time.Time][]mat64.Vector) {
+func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaunch, initArrival, maxArrival time.Time, ptsPerLaunchDay, ptsPerArrivalDay float64, transferType TransferType, plotC3, verbose, output bool) (c3Map, tofMap, vinfMap map[time.Time][]float64, vInfInitVecs, vInfArriVecs map[time.Time][]mat64.Vector) {
 	launchWindow := int(maxLaunch.Sub(initLaunch).Hours() / 24)    //days
 	arrivalWindow := int(maxArrival.Sub(initArrival).Hours() / 24) //days
 	// Create the output arrays
@@ -242,7 +254,7 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 	vInfInitVecs = make(map[time.Time][]mat64.Vector)
 	vInfArriVecs = make(map[time.Time][]mat64.Vector)
 	if verbose {
-		fmt.Printf("Launch window: %d days\nArrival window: %d days\n", launchWindow, arrivalWindow)
+		log.Printf("[info] %s depart window: %d days\t%s arrival window: %d days\t transfer: %s", initPlanet.Name, launchWindow, arrivalPlanet.Name, arrivalWindow, transferType)
 	}
 	// Stores the content of the dat file.
 	// No trailing new line because it's add in the for loop.
@@ -284,14 +296,14 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 		}
 		launchDT := initLaunch.Add(time.Duration(launchDay*24*3600) * time.Second)
 		if verbose {
-			fmt.Printf("Launch date %s\n", launchDT)
+			log.Printf("[info] depart %s on %s", initPlanet.Name, launchDT)
 		}
 		// Initialize the values
-		c3Map[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
-		tofMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
-		vinfMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay))
-		vInfInitVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay))
-		vInfArriVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay))
+		c3Map[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay+1))
+		tofMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay+1))
+		vinfMap[launchDT] = make([]float64, arrivalWindow*int(ptsPerArrivalDay+1))
+		vInfInitVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay+1))
+		vInfArriVecs[launchDT] = make([]mat64.Vector, arrivalWindow*int(ptsPerArrivalDay+1))
 
 		initOrbit := initPlanet.HelioOrbit(launchDT)
 		initPlanetR := mat64.NewVector(3, initOrbit.R())
@@ -308,7 +320,7 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 			arrivalV := mat64.NewVector(3, arrivalOrbit.V())
 
 			tof := arrivalDT.Sub(launchDT)
-			Vi, Vf, _, err := Lambert(initPlanetR, arrivalR, tof, TTypeAuto, Sun)
+			Vi, Vf, _, err := Lambert(initPlanetR, arrivalR, tof, transferType, Sun)
 			var c3, vInfArrival float64
 			if err != nil {
 				if verbose {
@@ -334,7 +346,7 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 				}
 				// Compute the v_infinity at destination
 				VInfArrival := mat64.NewVector(3, nil)
-				VInfArrival.SubVec(arrivalV, Vf)
+				VInfArrival.SubVec(Vf, arrivalV)
 				vInfArrival = mat64.Norm(VInfArrival, 2)
 				vInfInitVecs[launchDT][arrivalIdx] = *VInfInit
 				vInfArriVecs[launchDT][arrivalIdx] = *VInfArrival
@@ -351,6 +363,9 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 			vinfMap[launchDT][arrivalIdx] = vInfArrival
 			arrivalIdx++
 		}
+		if verbose {
+			log.Printf("[done] depart %s on %s", initPlanet.Name, launchDT)
+		}
 	}
 	if verbose && output {
 		// Print the matlab command to help out
@@ -359,6 +374,9 @@ func PCPGenerator(initPlanet, arrivalPlanet CelestialObject, initLaunch, maxLaun
 		} else {
 			fmt.Printf("=== MatLab ===\npcpplotsVinfs('%s', '%s', '%s', '%s', '%s')\n", pcpName, initLaunch.Format("2006-01-02"), initArrival.Format("2006-01-02"), initPlanet.Name, arrivalPlanet.Name)
 		}
+	}
+	if verbose {
+		log.Printf("[done] %s depart window: %d days\t%s arrival window: %d days\t transfer: %s", initPlanet.Name, launchWindow, arrivalPlanet.Name, arrivalWindow, transferType)
 	}
 	return
 }
