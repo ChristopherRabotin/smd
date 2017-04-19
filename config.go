@@ -89,6 +89,11 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 		Ccen := (2*e-math.Pow(e, 3)/4+5./96*math.Pow(e, 5))*math.Sin(M) + (5./4*math.Pow(e, 2)-11./24*math.Pow(e, 4))*math.Sin(2*M) + (13./12*math.Pow(e, 3)-43./64*math.Pow(e, 5))*math.Sin(3*M) + 103./96*math.Pow(e, 4)*math.Sin(4*M) + 1097./960*math.Pow(e, 5)*math.Sin(5*M)
 		nu := M + Ccen
 		R, V := NewOrbitFromOE(valSMA, e, valInc, valW, w, nu, Sun).RV()
+		// Meeus returns Earth to Sun and not Sun to Earth (I think...)
+		for i := 0; i < 3; i++ {
+			R[i] *= -1
+			V[i] *= -1
+		}
 		return planetstate{R, V}
 	} else if conf.spiceCSV {
 		spiceCSVMutex.Lock() // Data race if a given thread tries to read from the map while it's loading and the data isn't fully loaded yet.
