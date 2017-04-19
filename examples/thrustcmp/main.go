@@ -1,8 +1,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -10,21 +12,34 @@ import (
 )
 
 const (
-	// TTypeAuto lets the Lambert solver determine the type
 	pps1350 thrusterType = iota + 1
 	pps5000
 	bht1500
 	bht8000
 	hermes
 	vx200
-	opti = true
 )
 
 var (
 	wg             sync.WaitGroup
-	departEarth    = false
-	interplanetary = false
+	numCPUs        int
+	opti           bool
+	departEarth    bool
+	interplanetary bool
+	coarse         bool
+	argPeri        bool
+	timeStep       time.Duration
+	cpuChan        chan (bool)
 )
+
+func init() {
+	flag.BoolVar(&departEarth, "fromEarth", true, "set to true to leave Earth")
+	flag.BoolVar(&interplanetary, "interp", false, "set to true for the interplanetary missions")
+	flag.BoolVar(&opti, "opti", false, "set to true to use Naasz laws")
+	flag.BoolVar(&coarse, "coarse", false, "set to true to perform only a coarse simulation")
+	flag.IntVar(&numCPUs, "cpus", 0, "number of CPUs to use for after first finding (set to 0 for max CPUs)")
+	flag.BoolVar(&argPeri, "peri", false, "set to true to search for periapsis argument (requires a lot of disk space)")
+}
 
 type thrusterType uint8
 
@@ -42,28 +57,6 @@ func (tt thrusterType) Type() smd.EPThruster {
 		return new(smd.HERMeS)
 	case vx200:
 		return new(smd.VX200)
-	default:
-		panic("unknown thruster")
-	}
-}
-
-func (tt thrusterType) BestArgPeri(cluster int) float64 {
-	switch tt {
-	case pps1350:
-		return 320 // cluster irrelevant
-	case pps5000:
-		return 70 // idem
-	case bht1500:
-		return 60 // idem
-	case bht8000:
-		return 230 // idem
-	case hermes:
-		return 110 // idem
-	case vx200:
-		if cluster == 1 {
-			return 270
-		}
-		return 190
 	default:
 		panic("unknown thruster")
 	}
@@ -99,7 +92,7 @@ func createSpacecraft(thruster thrusterType, numThrusters int, dist float64, fur
 		thrust += thisThrust
 	}
 	dryMass := 1.0
-	fuelMass := 1000.0
+	fuelMass := 5e3
 	name := fmt.Sprintf("%dx%s", numThrusters, thruster)
 	fmt.Printf("\n===== %s ======\n", name)
 	waypoints := []smd.Waypoint{smd.NewReachDistance(dist, further, nil)}
@@ -120,24 +113,40 @@ func createSpacecraft(thruster thrusterType, numThrusters int, dist float64, fur
 				waypoints = []smd.Waypoint{smd.NewOrbitTarget(*tgt, nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔeCL), smd.NewCruiseToDistance(dist, further, nil)}
 			}
 		}
-		//eGTO = 0.745230 eMRO=0.852192
-
 	}
 	return smd.NewSpacecraft(name, dryMass, fuelMass, smd.NewUnlimitedEPS(), thrusters, false, []*smd.Cargo{}, waypoints), thrust
 }
 
 func main() {
+	flag.Parse()
+	availableCPUs := runtime.NumCPU()
+	if numCPUs <= 0 || numCPUs > availableCPUs {
+		numCPUs = availableCPUs
+	}
+	runtime.GOMAXPROCS(numCPUs)
+	cpuChan = make(chan (bool), numCPUs)
+	fmt.Printf("Running on %d CPUs\n", numCPUs)
+	if coarse {
+		timeStep = 5 * time.Minute
+		fmt.Println("=== WARNING ===\n Using a COARSE time step -- Results may be incorrect")
+	} else if interplanetary {
+		timeStep = 30 * time.Second
+	} else {
+		timeStep = 10 * time.Second
+	}
 	// Go through all combinations
 	combinations := []struct {
 		missionNo, numThrusters int
 	}{{1, 1}, {1, 2}, {2, 1}, {2, 2}, {3, 8}, {3, 12}}
 	for _, combin := range combinations {
-		run(combin.missionNo, combin.numThrusters)
+		cpuChan <- true
+		go run(combin.missionNo, combin.numThrusters)
 	}
 	wg.Wait()
 }
 
 func run(missionNo, numThrusters int) {
+	fmt.Printf("\n\n====== MISSION %d -- intp: %v -- depEarth: %v ======\n\n", missionNo, interplanetary, departEarth)
 	var fn string
 	if departEarth {
 		if interplanetary {
@@ -178,9 +187,9 @@ func run(missionNo, numThrusters int) {
 	earthOrbit := smd.Earth.HelioOrbit(startDT)
 	marsOrbit := smd.Mars.HelioOrbit(startDT)
 
-	combinations := []thrusterType{ /*pps1350, pps5000, bht1500,*/ bht8000 /* hermes, vx200*/}
+	combinations := []thrusterType{pps1350, pps5000, bht1500, bht8000, hermes, vx200}
 	if missionNo == 3 {
-		combinations = []thrusterType{ /*pps5000,*/ bht8000 /*, hermes, vx200*/}
+		combinations = []thrusterType{pps5000, bht8000, hermes, vx200}
 	}
 
 	for _, thruster := range combinations {
@@ -216,37 +225,27 @@ func run(missionNo, numThrusters int) {
 			}
 			sc, maxThrust := createSpacecraft(thruster, numThrusters, distance, further)
 			if missionNo == 2 {
+				sc.FuelMass = 3e3
 				if departEarth {
 					sc.DryMass = 900 + 577 + 1e3 + 1e3 // Add MRO, Curiosity and Schiaparelli, and suppose 1 ton bus.
-					sc.FuelMass = 3e3
 				} else {
 					// Suppose less return mass
 					sc.DryMass = 500 + 1e3 // Add Schiaparelli return, and suppose 1 ton bus.
-					sc.FuelMass = 1e3
 				}
 			} else if missionNo == 3 {
 				sc.DryMass = 52e3
-				if departEarth {
-					sc.FuelMass = 24e3
-				} else {
-					sc.FuelMass = 6e3
-				}
+				sc.FuelMass = 24e3
 			}
 			initV := initOrbit.VNorm()
 			initFuel := sc.FuelMass
 			// Propagate
-			ts := 5 * time.Minute
-			export := smd.ExportConfig{Filename: fn + sc.Name, AsCSV: true, Cosmo: true, Timestamp: false}
+			export := smd.ExportConfig{Filename: fn + sc.Name, AsCSV: argPeri, Cosmo: false, Timestamp: false}
 			endDT := startDT.Add(-1)
-			if opti {
-				//	endDT = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-			}
-			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Perturbations{}, ts, false, export)
+			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Perturbations{}, timeStep, false, export)
 			astro.Propagate()
 			// Compute data.
 			tof := astro.CurrentDT.Sub(startDT).Hours() / 24
 			deltaV := astro.Orbit.VNorm() - initV
-			deltaFuel := sc.FuelMass - initFuel
 			var vInf float64
 			if departEarth {
 				if interplanetary { // Arriving at Mars, check how fast we're going compared to some standard velocity
@@ -264,23 +263,24 @@ func run(missionNo, numThrusters int) {
 				}
 			}
 
-			csv := fmt.Sprintf("%.3f,%s,%.3f,%.3f,%.3f,%.3f,%.3f\n", ω, sc.Name, maxThrust, tof, deltaV, deltaFuel, vInf)
+			csv := fmt.Sprintf("%.3f,%s,%.3f,%.3f,%.3f,%.3f,%.3f,%3f\n", ω, sc.Name, maxThrust, tof, deltaV, initFuel, sc.FuelMass, vInf)
 			// Check if best
 			if tof < bestTOF {
 				bestTOF = tof
 				bestCSV = csv
 			}
-			if true {
+			if !argPeri {
 				rslts <- csv
 				break
 			}
 		}
 
-		if !interplanetary && false {
+		if !interplanetary && argPeri {
 			rslts <- bestCSV
 		}
 	}
 	close(rslts)
+	<-cpuChan
 }
 
 func streamResults(fn string, rslts <-chan string) {
@@ -291,7 +291,7 @@ func streamResults(fn string, rslts <-chan string) {
 	}
 	defer f.Close()
 	// Header
-	f.WriteString("arg. periapsis (deg), name, thrust (N), T.O.F. (days), \\Delta V (km/s), fuel (kf), \\V_{\\infty} (km/s)\n")
+	f.WriteString("arg. periapsis (deg), name, thrust (N), T.O.F. (days), \\Delta V (km/s), init fuel (kg), final fuel (kg), \\V_{\\infty} (km/s)\n")
 	for {
 		rslt, more := <-rslts
 		if more {

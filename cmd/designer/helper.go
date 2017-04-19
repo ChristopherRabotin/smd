@@ -87,6 +87,7 @@ func StreamResults(prefix string, planets []smd.CelestialObject, rsltChan <-chan
 	}
 	for rslt := range rsltChan {
 		f.WriteString(rslt.CSV() + "\n")
+		wg.Done()
 	}
 	wg.Done() // Done writing everything.
 }

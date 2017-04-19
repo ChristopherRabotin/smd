@@ -1,0 +1,42 @@
+[general]
+fileprefix = "prj-neptune"
+outputdir = "outputs"
+verbose = true
+step = "24h"
+flybyplanets = "Venus Earth Jupiter"
+
+[launch]
+planet = "Earth"
+from = 2461249.5
+until = 2461289.5
+resolution = 1
+maxC3 = 13
+
+[arrival]
+planet = "Neptune"
+from = 2469249.5
+until = 2469449.5
+maxVinf = 7
+
+[flyby.Venus]
+position = 1
+from = 2461449.5
+until = 2461469.5
+deltaV = 0.2
+periapsis = 1.01
+
+[flyby.Earth]
+position = 2
+deltaV = 0.2
+from = 2461739.5
+until = 2461779.5
+periapsis = 1.01
+resonant = true
+resonance = 2 # TODO: Check with a 3:1 resonance
+
+[flyby.Jupiter]
+position = 3
+deltaV = 0.2
+from = 2463136.484
+until = 2463536.484
+periapsis = 1.5
