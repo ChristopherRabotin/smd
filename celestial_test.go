@@ -118,3 +118,16 @@ func TestCosmoBodyChange(t *testing.T) {
 	os.Remove(fmt.Sprintf("%s/prop-%s-1.xyzv", os.Getenv("DATAOUT"), conf.Filename))
 	os.Remove(fmt.Sprintf("%s/catalog-%s.json", os.Getenv("DATAOUT"), conf.Filename))
 }
+
+func TestMeeus(t *testing.T) {
+	meeusconfig := smdConfig()
+	meeusconfig.meeus = true
+	config = meeusconfig
+	R := Earth.HelioOrbit(julian.JDToTime(2456346.2539)).R()
+	exp := []float64{-0.146377664880867e8, -1.485144921336979e8, -0.000000771092830e8}
+	for i := 0; i < 3; i++ {
+		if !floats.EqualWithinAbs(R[i], exp[i], 1e-6) {
+			t.Fatalf("delta[%d] = %f km", i, math.Abs(R[i]-exp[i]))
+		}
+	}
+}

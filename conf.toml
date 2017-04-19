@@ -4,7 +4,7 @@ output_path = "./" # Defines the output directory. Use "./" to output to current
 test_export = false # Set to true to export the test cases.
 
 [Meeus]
-enabled = true # Will superseed any SPICE configuration.
+enabled = false # Will superseed any SPICE configuration.
 
 [SPICE]
 directory = "./cmd/refframes"
