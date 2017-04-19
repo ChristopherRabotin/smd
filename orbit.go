@@ -374,7 +374,8 @@ func NewOrbitFromOE(a, e, i, Ω, ω, ν float64, c CelestialObject) *Orbit {
 			ω = 0
 			ν = math.Mod(ν+ω, 2*math.Pi)
 		}
-	} else if i < angleε {
+	} else if i < angleε && !(c.Equals(Sun) && config.meeus) {
+		// Meeus breaks if doing this correction by Vallado
 		// Elliptical equatorial
 		Ω = 0
 		ω = math.Mod(ω+Ω, 2*math.Pi)

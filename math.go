@@ -54,6 +54,15 @@ func Dot(a, b []float64) float64 {
 	return mat64.Dot(mat64.NewVector(len(a), a), mat64.NewVector(len(b), b))
 }
 
+// dot performs the inner product via mat64/BLAS.
+func dot(a, b []float64) float64 {
+	rtn := 0.
+	for i := 0; i < len(a); i++ {
+		rtn += a[i] * b[i]
+	}
+	return rtn
+}
+
 // Cross performs the Cross product.
 func Cross(a, b []float64) []float64 {
 	return []float64{a[1]*b[2] - a[2]*b[1],

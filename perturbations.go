@@ -66,11 +66,6 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 	if p.Drag || p.PerturbingBody != nil {
 		REarthToSC = o.R()
 		rE2S = MxV33(R1(Deg2rad(-Earth.tilt)), o.Origin.HelioOrbit(dt).R())
-		/*rSun2EarthFact := 1.0
-		if config.meeus {
-			// Meeus returns Earth to Sun, not Sun to Earth.
-			rSun2EarthFact = -1.0
-		}*/
 		RsatS = make([]float64, 3)
 		for i := 0; i < 3; i++ {
 			RsatS[i] = -rE2S[i] - REarthToSC[i]
@@ -87,7 +82,8 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 		celerity := 2.997925e+05
 		srpCst := (Phi * AU * AU * S / celerity) * Cr / math.Pow(Norm(RsatS), 3)
 		for i := 0; i < 3; i++ {
-			pert[i+3] += -srpCst * RsatS[i]
+			//pert[i+3] += -srpCst * RsatS[i]
+			pert[i+3] += srpCst * (REarthToSC[i] + rE2S[i])
 		}
 	}
 
