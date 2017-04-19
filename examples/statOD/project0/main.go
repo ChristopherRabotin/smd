@@ -17,7 +17,7 @@ import (
 
 // Scenario constants
 const (
-	smoothing = true
+	smoothing = false
 	initJDE   = 2456296.25
 	realBT    = 7009.767
 	realBR    = 140002.894
@@ -37,11 +37,10 @@ func init() {
 }
 
 var (
-	timeStep       = 30 * time.Second
-	σρ             = math.Pow(5e-3, 2) // m , but all measurements in km.
-	σρDot          = math.Pow(5e-6, 2) // m/s , but all measurements in km/s.
-	_DSS34Canberra = smd.NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 7)
-	//_DSS65Madrid    = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 355.749444, σρ, σρDot, 7)
+	timeStep        = 30 * time.Second
+	σρ              = math.Pow(5e-3, 2) // m , but all measurements in km.
+	σρDot           = math.Pow(5e-6, 2) // m/s , but all measurements in km/s.
+	_DSS34Canberra  = smd.NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 7)
 	_DSS65Madrid    = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 4.250556, σρ, σρDot, 7)
 	_DSS13Goldstone = smd.NewSpecialStation("DSS13Goldstone", 1.07114904, 0, 35.247164, 243.205, σρ, σρDot, 7)
 )
@@ -50,6 +49,9 @@ func main() {
 	flag.Parse()
 	if measFile != "a" && measFile != "b" {
 		log.Fatalf("unknown file `%s` (should be a or b)", measFile)
+	}
+	if measFile == "b" {
+		_DSS65Madrid = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 355.749444, σρ, σρDot, 7)
 	}
 	startDT := julian.JDToTime(initJDE)
 	// Load measurements
@@ -62,14 +64,23 @@ func main() {
 
 	// Get the first measurement as an initial orbit estimation.
 	firstDT := startDT
-	estOrbit := smd.NewOrbitFromRV([]float64{-274096790.0, -92859240.0, -40199490.0}, []float64{32.67, -8.94, -3.88}, smd.Earth)
+	var estOrbit *smd.Orbit
+	if measFile == "a" {
+		estOrbit = smd.NewOrbitFromRV([]float64{-274096790.0, -92859240.0, -40199490.0}, []float64{32.67, -8.94, -3.88}, smd.Earth)
+	} else {
+		estOrbit = smd.NewOrbitFromRV([]float64{-274096770.76544, -92859266.4499061, -40199493.6677441}, []float64{32.6704564599943, -8.93838913761049, -3.87881914050316}, smd.Earth)
+	}
 	startDT = firstDT.Add(-timeStep)
 	// Perturbations in the estimate
 	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun, Drag: true}
 
 	stateEstChan := make(chan (smd.State))
 	sc := smd.NewEmptySC("prj0", 0)
-	sc.Drag = 1.2
+	if measFile == "a" {
+		sc.Drag = 1.2
+	} else {
+		sc.Drag = 1.0
+	}
 	mEst := smd.NewPreciseMission(sc, estOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{Filename: "prj0", Cosmo: true})
 	mEst.RegisterStateChan(stateEstChan)
 
