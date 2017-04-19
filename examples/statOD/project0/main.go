@@ -82,7 +82,7 @@ func main() {
 	}
 	startDT = firstDT
 	// Perturbations in the estimate
-	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun, Drag: false}
+	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun, Drag: withSRP}
 
 	stateEstChan := make(chan (smd.State), 1)
 	sc := smd.NewEmptySC("prj0", 0)
@@ -109,7 +109,8 @@ func main() {
 	noiseKF := gokalman.NewNoiseless(noiseQ, noiseR)
 
 	// Take care of measurements.
-	estHistory := make([]*gokalman.SRIFEstimate, numStates)
+	//estHistory := make([]*gokalman.SRIFEstimate, numStates)
+	estHistory := make([]*gokalman.HybridKFEstimate, numStates)
 	estChan := make(chan (gokalman.Estimate), 1)
 	filename := fmt.Sprintf("srif-part-%s", measFile)
 	go processEst(filename, estChan)
@@ -139,7 +140,8 @@ func main() {
 	} else {
 		x0 = mat64.NewVector(6, nil)
 	}
-	kf, _, err := gokalman.NewSRIF(x0, prevP, 2, false, noiseKF)
+	//kf, _, err := gokalman.NewSRIF(x0, prevP, 2, false, noiseKF)
+	kf, _, err := gokalman.NewHybridKF(x0, prevP, noiseKF, 2)
 	if err != nil {
 		panic(fmt.Errorf("%s", err))
 	}
@@ -147,7 +149,8 @@ func main() {
 	bPlanes := make([]smd.BPlane, 4)
 	bPlaneIdx := 0
 	bPnumHours := 0.0
-	var prevEst *gokalman.SRIFEstimate
+	//var prevEst *gokalman.SRIFEstimate
+	var prevEst *gokalman.HybridKFEstimate
 	for {
 		state, more := <-stateEstChan
 		if !more {
