@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"strconv"
@@ -34,6 +35,7 @@ type _smdconfig struct {
 	outputDir  string
 	spiceTrunc time.Duration
 	spiceCSV   bool
+	meeus      bool
 	testExport bool
 }
 
@@ -63,7 +65,37 @@ func (c _smdconfig) ChgFrame(toFrame, fromFrame string, epoch time.Time, state [
 func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 	epoch = epoch.UTC()
 	conf := smdConfig()
-	if conf.spiceCSV {
+	if conf.meeus {
+		if planet != "Earth" {
+			panic("Meeus only supports Earth ephemerides")
+		}
+		t := (julian.TimeToJD(epoch) - 2451545.0) / 36525
+		tVec := []float64{1, t, t * t, t * t * t}
+		/* Earth coeffs */
+		L := []float64{100.466449, 35999.3728519, -0.00000568, 0.0}
+		a := []float64{1.000001018, 0.0, 0.0, 0.0}
+		eVec := []float64{0.01670862, -0.000042037, -0.0000001236, 0.00000000004}
+		i := []float64{0.0, 0.0130546, -0.00000931, -0.000000034}
+		W := []float64{174.873174, -0.2410908, 0.00004067, -0.000001327}
+		P := []float64{102.937348, 0.3225557, 0.00015026, 0.000000478}
+		valL := Dot(L, tVec) * deg2rad
+		valSMA := Dot(a, tVec) * AU
+		e := Dot(eVec, tVec)
+		valInc := Dot(i, tVec) * deg2rad
+		valW := Dot(W, tVec) * deg2rad
+		valP := Dot(P, tVec) * deg2rad
+		w := valP - valW
+		M := valL - valP
+		Ccen := (2*e-math.Pow(e, 3)/4+5./96*math.Pow(e, 5))*math.Sin(M) + (5./4*math.Pow(e, 2)-11./24*math.Pow(e, 4))*math.Sin(2*M) + (13./12*math.Pow(e, 3)-43./64*math.Pow(e, 5))*math.Sin(3*M) + 103./96*math.Pow(e, 4)*math.Sin(4*M) + 1097./960*math.Pow(e, 5)*math.Sin(5*M)
+		nu := M + Ccen
+		R, V := NewOrbitFromOE(valSMA, e, valInc, valW, w, nu, Sun).RV()
+		// Meeus returns Earth to Sun and not Sun to Earth (I think...)
+		for i := 0; i < 3; i++ {
+			R[i] *= -1
+			V[i] *= -1
+		}
+		return planetstate{R, V}
+	} else if conf.spiceCSV {
 		spiceCSVMutex.Lock() // Data race if a given thread tries to read from the map while it's loading and the data isn't fully loaded yet.
 		ephemeride := fmt.Sprintf("%s-%04d", planet, epoch.Year())
 		if _, found := loadedCSVdata[ephemeride]; !found {
@@ -95,6 +127,13 @@ func (c _smdconfig) HelioState(planet string, epoch time.Time) planetstate {
 				dt, err := time.Parse("2006-1-2T15:4:5", entries[1])
 				if err != nil {
 					panic("could not parse date time")
+				}
+				// Check if the truncated date time already exists in the map, and if so skip (so we have store the values which is the closest the time change).
+				// This also allows for a much smaller memory footprint when loading ephemerides with a large truncation step
+				// (e.g. loading 1h instead of 1m requires less than 60 as much memory (less because of the hashing)).
+				dt = dt.Truncate(conf.spiceTrunc)
+				if _, exists := loadedCSVdata[ephemeride][dt]; exists {
+					continue
 				}
 				// Drop the string of the date
 				R := make([]float64, 3)
@@ -186,8 +225,12 @@ func smdConfig() _smdconfig {
 	}
 	outputDir := viper.GetString("general.output_path")
 	testExport := viper.GetBool("general.test_export")
+	meeus := viper.GetBool("Meeus.enabled")
+	if meeus {
+		fmt.Println("\nWARNING: Meeus enabled, supersedes SPICE")
+	}
 
 	cfgLoaded = true
-	config = _smdconfig{SPICEDir: spiceDir, spiceTrunc: spiceTruncation, spiceCSV: spiceCSV, HorizonDir: spiceCSVDir, outputDir: outputDir, testExport: testExport}
+	config = _smdconfig{SPICEDir: spiceDir, spiceTrunc: spiceTruncation, spiceCSV: spiceCSV, HorizonDir: spiceCSVDir, outputDir: outputDir, testExport: testExport, meeus: meeus}
 	return config
 }

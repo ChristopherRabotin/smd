@@ -17,7 +17,8 @@ import (
 
 // Scenario constants
 const (
-	smoothing = true
+	withSRP   = false
+	smoothing = false
 	initJDE   = 2456296.25
 	realBT    = 7009.767
 	realBR    = 140002.894
@@ -37,19 +38,30 @@ func init() {
 }
 
 var (
-	timeStep       = 30 * time.Second
-	σρ             = math.Pow(5e-3, 2) // m , but all measurements in km.
-	σρDot          = math.Pow(5e-6, 2) // m/s , but all measurements in km/s.
-	_DSS34Canberra = smd.NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 7)
-	//_DSS65Madrid    = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 355.749444, σρ, σρDot, 7)
-	_DSS65Madrid    = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 4.250556, σρ, σρDot, 7)
-	_DSS13Goldstone = smd.NewSpecialStation("DSS13Goldstone", 1.07114904, 0, 35.247164, 243.205, σρ, σρDot, 7)
+	timeStep        = 30 * time.Second
+	σρ              = math.Pow(5e-3, 2) // m , but all measurements in km.
+	σρDot           = math.Pow(5e-6, 2) // m/s , but all measurements in km/s.
+	_DSS34Canberra  = smd.NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 6)
+	_DSS65Madrid    = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 4.250556, σρ, σρDot, 6)
+	_DSS13Goldstone = smd.NewSpecialStation("DSS13Goldstone", 1.07114904, 0, 35.247164, 243.205, σρ, σρDot, 6)
 )
 
 func main() {
 	flag.Parse()
 	if measFile != "a" && measFile != "b" {
 		log.Fatalf("unknown file `%s` (should be a or b)", measFile)
+	}
+	if withSRP {
+		_DSS34Canberra = smd.NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 7)
+		_DSS65Madrid = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 4.250556, σρ, σρDot, 7)
+		_DSS13Goldstone = smd.NewSpecialStation("DSS13Goldstone", 1.07114904, 0, 35.247164, 243.205, σρ, σρDot, 7)
+	}
+	if measFile == "b" {
+		if withSRP {
+			_DSS65Madrid = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 355.749444, σρ, σρDot, 7)
+		} else {
+			_DSS65Madrid = smd.NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 355.749444, σρ, σρDot, 6)
+		}
 	}
 	startDT := julian.JDToTime(initJDE)
 	// Load measurements
@@ -62,19 +74,30 @@ func main() {
 
 	// Get the first measurement as an initial orbit estimation.
 	firstDT := startDT
-	estOrbit := smd.NewOrbitFromRV([]float64{-274096790.0, -92859240.0, -40199490.0}, []float64{32.67, -8.94, -3.88}, smd.Earth)
-	startDT = firstDT.Add(-timeStep)
+	var estOrbit *smd.Orbit
+	if measFile == "a" {
+		estOrbit = smd.NewOrbitFromRV([]float64{-274096790.0, -92859240.0, -40199490.0}, []float64{32.67, -8.94, -3.88}, smd.Earth)
+	} else {
+		estOrbit = smd.NewOrbitFromRV([]float64{-274096770.76544, -92859266.4499061, -40199493.6677441}, []float64{32.6704564599943, -8.93838913761049, -3.87881914050316}, smd.Earth)
+	}
+	startDT = firstDT
 	// Perturbations in the estimate
-	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun, Drag: true}
+	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun, Drag: withSRP}
 
-	stateEstChan := make(chan (smd.State))
+	stateEstChan := make(chan (smd.State), 1)
 	sc := smd.NewEmptySC("prj0", 0)
-	sc.Drag = 1.2
+	if withSRP {
+		if measFile == "a" {
+			sc.Drag = 1.2
+		} else {
+			sc.Drag = 1.0
+		}
+	}
 	mEst := smd.NewPreciseMission(sc, estOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{Filename: "prj0", Cosmo: true})
 	mEst.RegisterStateChan(stateEstChan)
 
 	// Go-routine to advance propagation.
-	go mEst.PropagateUntil(endDT, true)
+	go mEst.PropagateUntil(endDT.Add(timeStep), true)
 
 	// KF filter initialization stuff.
 
@@ -86,15 +109,21 @@ func main() {
 	noiseKF := gokalman.NewNoiseless(noiseQ, noiseR)
 
 	// Take care of measurements.
-	estHistory := make([]*gokalman.SRIFEstimate, numStates)
+	//estHistory := make([]*gokalman.SRIFEstimate, numStates)
+	estHistory := make([]*gokalman.HybridKFEstimate, numStates)
 	estChan := make(chan (gokalman.Estimate), 1)
 	filename := fmt.Sprintf("srif-part-%s", measFile)
 	go processEst(filename, estChan)
 
-	prevP := mat64.NewSymDense(7, nil)
+	var prevP *mat64.SymDense
+	if withSRP {
+		prevP = mat64.NewSymDense(7, nil)
+		prevP.SetSym(6, 6, 0.1)
+	} else {
+		prevP = mat64.NewSymDense(6, nil)
+	}
 	var covarDistance = 100.0
 	var covarVelocity = 0.1
-	prevP.SetSym(6, 6, 0.1)
 	for i := 0; i < 3; i++ {
 		prevP.SetSym(i, i, covarDistance)
 		prevP.SetSym(i+3, i+3, covarVelocity)
@@ -103,9 +132,16 @@ func main() {
 	visibilityErrors := 0
 
 	var prevStationName = ""
-	measNo := 0
+	measNo := 1
 	stateNo := 0
-	kf, _, err := gokalman.NewSRIF(mat64.NewVector(7, nil), prevP, 2, false, noiseKF)
+	var x0 *mat64.Vector
+	if withSRP {
+		x0 = mat64.NewVector(7, nil)
+	} else {
+		x0 = mat64.NewVector(6, nil)
+	}
+	//kf, _, err := gokalman.NewSRIF(x0, prevP, 2, false, noiseKF)
+	kf, _, err := gokalman.NewHybridKF(x0, prevP, noiseKF, 2)
 	if err != nil {
 		panic(fmt.Errorf("%s", err))
 	}
@@ -113,7 +149,8 @@ func main() {
 	bPlanes := make([]smd.BPlane, 4)
 	bPlaneIdx := 0
 	bPnumHours := 0.0
-	var prevEst *gokalman.SRIFEstimate
+	//var prevEst *gokalman.SRIFEstimate
+	var prevEst *gokalman.HybridKFEstimate
 	for {
 		state, more := <-stateEstChan
 		if !more {
@@ -144,7 +181,9 @@ func main() {
 					fmt.Printf("[info] Propagating clone to 3*SOI = %f\n", 3*smd.Earth.SOI)
 					sc := smd.NewEmptySC(fmt.Sprintf("BPclone-%d", cloneNo), 0)
 					sc.WayPoints = []smd.Waypoint{smd.NewCruiseToDistance(3*smd.Earth.SOI, false, nil)}
-					sc.Drag = 1.2 + prevEst.State().At(6, 0)
+					if withSRP {
+						sc.Drag = 1.2 + prevEst.State().At(6, 0)
+					}
 					mBP := smd.NewPreciseMission(sc, smd.NewOrbitFromRV(R, V, smd.Earth), dt, dt.Add(-1), estPerts, timeStep, false, smd.ExportConfig{})
 					mBP.Propagate()
 					fmt.Println("[info] Done propagating clone")

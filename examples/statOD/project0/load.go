@@ -28,7 +28,7 @@ func loadMeasurementFile(version string, initDT time.Time) (map[time.Time]smd.Me
 		if len(strings.TrimSpace(scanner.Text())) == 0 {
 			continue
 		}
-		if cnt == 0 {
+		if cnt == 0 { // Skip header line
 			cnt++
 			continue
 		}

@@ -61,6 +61,7 @@ func NewStation(name string, altitude, elevation, latΦ, longθ, σρ, σρDot f
 	return NewSpecialStation(name, altitude, elevation, latΦ, longθ, σρ, σρDot, 6)
 }
 
+// NewSpecialStation same as NewStation but can specify the rows of H.
 func NewSpecialStation(name string, altitude, elevation, latΦ, longθ, σρ, σρDot float64, rowsH int) Station {
 	R := GEO2ECEF(altitude, latΦ*d2r, longθ*d2r)
 	V := Cross([]float64{0, 0, EarthRotationRate}, R)
