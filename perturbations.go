@@ -68,7 +68,7 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 		RSunToEarth = MxV33(R1(Deg2rad(-Earth.tilt)), o.Origin.HelioOrbit(dt).R())
 		RSunToSC = make([]float64, 3)
 		for i := 0; i < 3; i++ {
-			RSunToSC[i] = REarthToSC[i] + RSunToEarth[i]
+			RSunToSC[i] = RSunToEarth[i] + REarthToSC[i]
 		}
 	}
 

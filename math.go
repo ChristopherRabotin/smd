@@ -49,13 +49,8 @@ func Sign(v float64) float64 {
 	return v / math.Abs(v)
 }
 
-// Dot performs the inner product via mat64/BLAS.
+// Dot performs the inner product.
 func Dot(a, b []float64) float64 {
-	return mat64.Dot(mat64.NewVector(len(a), a), mat64.NewVector(len(b), b))
-}
-
-// dot performs the inner product via mat64/BLAS.
-func dot(a, b []float64) float64 {
 	rtn := 0.
 	for i := 0; i < len(a); i++ {
 		rtn += a[i] * b[i]
