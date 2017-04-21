@@ -239,7 +239,7 @@ func run(missionNo, numThrusters int) {
 			initV := initOrbit.VNorm()
 			initFuel := sc.FuelMass
 			// Propagate
-			export := smd.ExportConfig{Filename: fn + sc.Name, AsCSV: argPeri, Cosmo: false, Timestamp: false}
+			export := smd.ExportConfig{Filename: fn + sc.Name, AsCSV: false, Cosmo: false, Timestamp: false}
 			endDT := startDT.Add(-1)
 			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Perturbations{}, timeStep, false, export)
 			astro.Propagate()
@@ -269,8 +269,8 @@ func run(missionNo, numThrusters int) {
 				bestTOF = tof
 				bestCSV = csv
 			}
+			rslts <- csv
 			if !argPeri {
-				rslts <- csv
 				break
 			}
 		}

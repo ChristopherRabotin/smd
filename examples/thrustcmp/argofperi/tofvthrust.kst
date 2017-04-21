@@ -2,7 +2,7 @@
 <kst version="2.0">
     <data>
         <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/tofvthrust-sc1.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/tofvthrust-sc1.csv">
-            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-03-26T23:43:02Z" relativeOffset="0" nanValue="0" updateType="0"/>
+            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-04-20T19:05:58Z" relativeOffset="0" nanValue="0" updateType="0"/>
         </source>
         <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/tofvthrust-sc2.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/tofvthrust-sc2.csv">
             <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-03-27T00:50:16Z" relativeOffset="0" nanValue="0" updateType="0"/>
@@ -16,14 +16,14 @@
     </variables>
     <objects/>
     <relations>
-        <curve xvector="thrust (N) (V1)" yvector="Mission 1 (V2)" color="#008000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="2" haspoints="true" pointtype="0" pointdensity="0" pointsize="10" hasbars="false" ignoreautoscale="false" hashead="false" headtype="-1" initialCNum="1"/>
-        <curve xvector="thrust (N) (V3)" yvector="Mission 2 (V4)" color="#000080" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="0" haspoints="true" pointtype="0" pointdensity="0" pointsize="10" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="2"/>
+        <curve xvector="thrust (N) (V1)" yvector="Mission 1 (V2)" color="#008000" alpha="255" headcolor="#008000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="2" haspoints="true" pointtype="0" pointdensity="0" pointsize="10" hasbars="false" ignoreautoscale="false" hashead="false" headtype="-1" initialCNum="1"/>
+        <curve xvector="thrust (N) (V3)" yvector="Mission 2 (V4)" color="#000080" alpha="255" headcolor="#000080" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="0" haspoints="true" pointtype="0" pointdensity="0" pointsize="10" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="2"/>
     </relations>
     <graphics>
-        <view name="View &amp;1" width="1365" height="619" color="#ffffff" style="1">
+        <view name="View &amp;1" width="1365" height="621" color="#ffffff" style="1">
             <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="16" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="1" name="Plot">
-                <position x="682.4536" y="309.504" z="500"/>
-                <rect x="-679.5167" y="-306.497" width="1359.0334" height="612.994"/>
+                <position x="682.45145" y="309.50885" z="500"/>
+                <rect x="-679.5167" y="-306.497" width="1358.0385" height="613.9827"/>
                 <relativesize width="0.9949" height="0.9887" centerx="0.4996" centery="0.4992" posx="0.00214999999999994" posy="0.00484999999999992" leftx="0.00214999999999994" lefty="0.99355" rightx="0.99705" righty="0.99355" fixaspect="false" lockpostodata="false"/>
                 <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                 <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
@@ -31,9 +31,9 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="true" name="Legend">
-                    <position x="-276.4536" y="-237.504" z="500"/>
+                    <position x="-276.596893939802" y="-237.450083535696" z="500"/>
                     <rect x="-122.5" y="-27" width="245" height="54"/>
-                    <relativesize width="0.197754733118284" height="0.103350469096296" centerx="0.242905851635198" centery="0.106207918177051" posx="0.144028485076056" posy="0.054532683628903" leftx="0.144028485076056" lefty="0.157883152725199" rightx="0.34178321819434" righty="0.157883152725199" fixaspect="false" lockpostodata="false"/>
+                    <relativesize width="0.197913666827286" height="0.103155271415846" centerx="0.242985318489699" centery="0.106110319336826" posx="0.144028485076056" posy="0.054532683628903" leftx="0.144028485076056" lefty="0.157687955044749" rightx="0.341942151903342" righty="0.157687955044749" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                     <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                         <brush color="#000000" style="1"/>
@@ -46,9 +46,9 @@
                     <relation tag="Mission 1 vs thrust (N) (C1)"/>
                     <relation tag="Mission 2 vs thrust (N) (C2)"/>
                     <label text="2xPPS1350 (0.178 N)&#10;1xBHT1500 (0.179 N)" scale="12" color="#000000" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fixleft="true" name="Label">
-                        <position x="-281.4536" y="-46.504" z="500"/>
-                        <rect x="-92.5" y="-26" width="185" height="52"/>
-                        <relativesize width="0.149325002558704" height="0.0995226739445812" centerx="0.238870040755233" centery="0.471762355165801" posx="0.164207539475881" posy="0.42200101819351" leftx="0.164207539475881" lefty="0.521523692138092" rightx="0.313532542034585" righty="0.521523692138092" fixaspect="true" lockpostodata="false"/>
+                        <position x="-385.95145" y="-64.50885" z="500"/>
+                        <rect x="0" y="-52" width="185" height="52"/>
+                        <relativesize width="0.149445013726726" height="0.0993347058078519" centerx="0.229370024642271" centery="0.386809630958196" posx="0.154647517778908" posy="0.33714227805427" leftx="0.154647517778908" lefty="0.436476983862122" rightx="0.304092531505634" righty="0.436476983862122" fixaspect="true" lockpostodata="false"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                             <brush color="#000000" style="1"/>
@@ -56,8 +56,8 @@
                         <brush color="#000000" style="0"/>
                     </label>
                     <label text="1xPPS5000 (0.310 N)" scale="12" color="#000000" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fixleft="true" name="Label">
-                        <position x="-121.4536" y="26.496" z="500"/>
-                        <rect x="-91" y="-13" width="182" height="26"/>
+                        <position x="-212.746661953321" y="40.1251667064118" z="500"/>
+                        <rect x="0" y="-26" width="182" height="26"/>
                         <relativesize width="0.146903516030725" height="0.0497613369722906" centerx="0.368015988914112" centery="0.611476878203386" posx="0.294564230898749" posy="0.586596209717241" leftx="0.294564230898749" lefty="0.636357546689531" rightx="0.441467746929474" righty="0.636357546689531" fixaspect="true" lockpostodata="false"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
@@ -66,8 +66,8 @@
                         <brush color="#000000" style="0"/>
                     </label>
                     <label text="2xBHT1500 (0.358 N)" scale="12" color="#000000" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fixleft="true" name="Label">
-                        <position x="-73.4535999999999" y="63.496" z="500"/>
-                        <rect x="-92.5" y="-13" width="185" height="26"/>
+                        <position x="-166.284003575994" y="77.1951807161424" z="500"/>
+                        <rect x="0" y="-26" width="185" height="26"/>
                         <relativesize width="0.149325002558704" height="0.0497613369722906" centerx="0.406759773361776" centery="0.682291088510107" posx="0.332097272082424" posy="0.657410420023962" leftx="0.332097272082424" lefty="0.707171756996253" rightx="0.481422274641128" righty="0.707171756996253" fixaspect="true" lockpostodata="false"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
@@ -76,8 +76,8 @@
                         <brush color="#000000" style="0"/>
                     </label>
                     <label text="1xBHT8000 (0.449 N)" scale="12" color="#000000" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fixleft="true" name="Label">
-                        <position x="-8.45359999999994" y="99.496" z="500"/>
-                        <rect x="-92.5" y="-13" width="185" height="26"/>
+                        <position x="-101.336201543173" y="113.263302455339" z="500"/>
+                        <rect x="0" y="-26" width="185" height="26"/>
                         <relativesize width="0.149325002558704" height="0.0497613369722906" centerx="0.45922531480132" centery="0.751191401240971" posx="0.384562813521968" posy="0.726310732754826" leftx="0.384562813521968" lefty="0.776072069727117" rightx="0.533887816080672" righty="0.776072069727117" fixaspect="true" lockpostodata="false"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
@@ -86,8 +86,8 @@
                         <brush color="#000000" style="0"/>
                     </label>
                     <label text="1xPPS1350 (0.089 N)" scale="12" color="#000000" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fixleft="true" name="Label">
-                        <position x="-470.4536" y="126.496" z="500"/>
-                        <rect x="-91" y="-13" width="182" height="26"/>
+                        <position x="-561.466399021857" y="140.314393759737" z="500"/>
+                        <rect x="0" y="-26" width="182" height="26"/>
                         <relativesize width="0.146903516030725" height="0.0497613369722906" centerx="0.0863163894925566" centery="0.802866635789119" posx="0.012864631477194" posy="0.777985967302974" leftx="0.012864631477194" lefty="0.827747304275264" rightx="0.159768147507919" righty="0.827747304275264" fixaspect="true" lockpostodata="false"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
@@ -95,48 +95,8 @@
                         </pen>
                         <brush color="#000000" style="0"/>
                     </label>
-                    <line name="Line">
-                        <position x="-0.453599999999597" y="147.496" z="500"/>
-                        <rect x="0" y="-4.5" width="209.745083375034" height="9"/>
-                        <relativesize width="0.170727113765952" height="0.017225078182716" centerx="0.545188086544575" centery="0.77415817215126" posx="0.464435762744125" posy="0.83496928358264" leftx="0.466929461674404" lefty="0.851147686181606" rightx="0.625940410345024" righty="0.713347060719879" fixaspect="false" lockpostodata="false"/>
-                        <transform m11="0.931374900934637" m12="-0.364061524895169" m13="0" m21="0.364061524895169" m22="0.931374900934637" m23="0" m31="0" m32="0" m33="1"/>
-                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
-                            <brush color="#000000" style="1"/>
-                        </pen>
-                        <brush color="#000000" style="0"/>
-                    </line>
-                    <line name="Line">
-                        <position x="109.5464" y="165.496" z="500"/>
-                        <rect x="0" y="-4.5" width="267.899234788008" height="9"/>
-                        <relativesize width="0.216801035226094" height="0.017225078182716" centerx="0.660612277711572" centery="0.828704253063185" posx="0.553778983675586" posy="0.869053604849935" leftx="0.555161919461401" lefty="0.885963677645175" rightx="0.767445571747558" righty="0.788354901276435" fixaspect="false" lockpostodata="false"/>
-                        <transform m11="0.97916346231822" m12="-0.203073666586773" m13="0" m21="0.203073666586773" m22="0.97916346231822" m23="0" m31="0" m32="0" m33="1"/>
-                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
-                            <brush color="#000000" style="1"/>
-                        </pen>
-                        <brush color="#000000" style="0"/>
-                    </line>
-                    <line name="Line">
-                        <position x="235.5464" y="177.496" z="500"/>
-                        <rect x="0" y="-4.5" width="141.439032802123" height="9"/>
-                        <relativesize width="0.114558002963993" height="0.017225078182716" centerx="0.711867075887128" centery="0.870809999732057" posx="0.655376789211273" posy="0.892072283466556" leftx="0.656968982275949" lefty="0.90887854084913" rightx="0.768357362562983" righty="0.849547715997557" fixaspect="false" lockpostodata="false"/>
-                        <transform m11="0.9723317219666" m12="-0.233604414464852" m13="0" m21="0.233604414464852" m22="0.9723317219666" m23="0" m31="0" m32="0" m33="1"/>
-                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
-                            <brush color="#000000" style="1"/>
-                        </pen>
-                        <brush color="#000000" style="0"/>
-                    </line>
-                    <line name="Line">
-                        <position x="30.5463999999998" y="153.496" z="500"/>
-                        <rect x="0" y="-4.5" width="176.161857392569" height="9"/>
-                        <relativesize width="0.143113897385573" height="0.017225078182716" centerx="0.558506262448459" centery="0.80382358457705" posx="0.489611848173042" posy="0.846328363799789" leftx="0.491797431157051" lefty="0.862755376874745" rightx="0.627400676723875" righty="0.761318805354311" fixaspect="false" lockpostodata="false"/>
-                        <transform m11="0.947519759045386" m12="-0.319697210213936" m13="0" m21="0.319697210213936" m22="0.947519759045386" m23="0" m31="0" m32="0" m33="1"/>
-                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
-                            <brush color="#000000" style="1"/>
-                        </pen>
-                        <brush color="#000000" style="0"/>
-                    </line>
                     <label text="2xPPS5000 (0.620 N)" scale="12" color="#000000" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fixleft="true" name="Label">
-                        <position x="195.56325076" y="74.4730302" z="500"/>
+                        <position x="194.94253265" y="75.16838291" z="500"/>
                         <rect x="0" y="-26" width="182" height="26"/>
                         <relativesize width="0.138024732094802" height="0.0497613369722906" centerx="0.692912366047401" centery="0.678419331513855" posx="0.6239" posy="0.653538663027709" leftx="0.6239" lefty="0.7033" rightx="0.761924732094802" righty="0.7033" fixaspect="true" lockpostodata="false"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -146,7 +106,7 @@
                         <brush color="#000000" style="0"/>
                     </label>
                     <label text="1xHERMeS (0.680 N)" scale="12" color="#000000" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fixleft="true" name="Label">
-                        <position x="199.5464" y="102.496" z="500"/>
+                        <position x="198.922483239334" y="103.244379750007" z="500"/>
                         <rect x="0" y="-26" width="180" height="26"/>
                         <relativesize width="0.145289191678739" height="0.0497613369722906" centerx="0.699759643247233" centery="0.732052425482398" posx="0.627115047407863" posy="0.707171756996253" leftx="0.627115047407863" lefty="0.756933093968543" rightx="0.772404239086602" righty="0.756933093968543" fixaspect="true" lockpostodata="false"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -156,9 +116,9 @@
                         <brush color="#000000" style="0"/>
                     </label>
                     <label text="2xBHT8000 (0.898 N)" scale="12" color="#000000" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fixleft="true" name="Label">
-                        <position x="472.5464" y="111.496" z="500"/>
-                        <rect x="-92.5" y="-13" width="185" height="26"/>
-                        <relativesize width="0.149325002558704" height="0.0497613369722906" centerx="0.847470321453951" centery="0.774158172151259" posx="0.772807820174599" posy="0.749277503665114" leftx="0.772807820174599" lefty="0.799038840637404" rightx="0.922132822733303" righty="0.799038840637404" fixaspect="true" lockpostodata="false"/>
+                        <position x="267.8556378" y="130.5005043" z="500"/>
+                        <rect x="0" y="-26" width="185" height="26"/>
+                        <relativesize width="0.149445013726726" height="0.049667352903926" centerx="0.757522506863363" centery="0.784166323548037" posx="0.6828" posy="0.759332647096074" leftx="0.6828" lefty="0.809" rightx="0.832245013726726" righty="0.809" fixaspect="true" lockpostodata="false"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                             <brush color="#000000" style="1"/>
@@ -166,15 +126,115 @@
                         <brush color="#000000" style="0"/>
                     </label>
                     <label text="2xHERMeS (1.360 N)" scale="12" color="#000000" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fixleft="true" name="Label">
-                        <position x="468.5464" y="145.496" z="500"/>
-                        <rect x="-90" y="-13" width="180" height="26"/>
-                        <relativesize width="0.145289191678739" height="0.0497613369722906" centerx="0.844241672749979" centery="0.839230689730408" posx="0.771597076910609" posy="0.814350021244263" leftx="0.771597076910609" lefty="0.864111358216554" rightx="0.916886268589349" righty="0.864111358216554" fixaspect="true" lockpostodata="false"/>
+                        <position x="266.3701416" y="164.57922807" z="500"/>
+                        <rect x="0" y="-26" width="180" height="26"/>
+                        <relativesize width="0.14540595930168" height="0.049667352903926" centerx="0.75430297965084" centery="0.849266323548037" posx="0.6816" posy="0.824432647096074" leftx="0.6816" lefty="0.8741" rightx="0.82700595930168" righty="0.8741" fixaspect="true" lockpostodata="false"/>
                         <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                         <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                             <brush color="#000000" style="1"/>
                         </pen>
                         <brush color="#000000" style="0"/>
                     </label>
+                    <line name="Line">
+                        <position x="-234.45145" y="42.4911499999999" z="500"/>
+                        <rect x="-18.9335336308311" y="-4.5" width="37.8670672616622" height="9"/>
+                        <relativesize width="0.0312086086985075" height="0.0171925452359744" centerx="0.277030866857822" centery="0.640877243889817" posx="0.291882466125472" posy="0.629064040450664" leftx="0.28802921591047" lefty="0.614484791249027" rightx="0.262179267590171" righty="0.65269044732897" fixaspect="false" lockpostodata="false"/>
+                        <transform m11="-0.828295441492554" m12="0.560291586232255" m13="0" m21="-0.560291586232255" m22="-0.828295441492554" m23="0" m31="0" m32="0" m33="1"/>
+                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                            <brush color="#000000" style="1"/>
+                        </pen>
+                        <brush color="#000000" style="0"/>
+                    </line>
+                    <line name="Line">
+                        <position x="-188.95145" y="70.4911499999997" z="500"/>
+                        <rect x="-24.5451535117915" y="-4.5" width="49.090307023583" height="9"/>
+                        <relativesize width="0.0398913863256264" height="0.0171925452359744" centerx="0.313786262125746" centery="0.694365162401737" posx="0.333807567846785" posy="0.689231727383041" leftx="0.331732068000146" lefty="0.672754638164474" rightx="0.293764956404708" righty="0.699498597420434" fixaspect="false" lockpostodata="false"/>
+                        <transform m11="-0.951762149490616" m12="0.306836782014482" m13="0" m21="-0.306836782014482" m22="-0.951762149490616" m23="0" m31="0" m32="0" m33="1"/>
+                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                            <brush color="#000000" style="1"/>
+                        </pen>
+                        <brush color="#000000" style="0"/>
+                    </line>
+                    <line name="Line">
+                        <position x="-539.104609422069" y="16.2263475311866" z="500"/>
+                        <rect x="-101.722080412327" y="-4.5" width="203.444160824654" height="9"/>
+                        <relativesize width="0.175062562956801" height="0.0171925452359744" centerx="0.030928728524191" centery="0.590704043383261" posx="0.0145931689792911" posy="0.400070625688436" leftx="0.00753846950506238" lefty="0.404226458811378" rightx="0.047264288069091" righty="0.781337461078086" fixaspect="false" lockpostodata="false"/>
+                        <transform m11="0.226923551746649" m12="0.973912573931914" m13="0" m21="-0.973912573931914" m22="0.226923551746649" m23="0" m31="0" m32="0" m33="1"/>
+                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                            <brush color="#000000" style="1"/>
+                        </pen>
+                        <brush color="#000000" style="0"/>
+                    </line>
+                    <line name="Line">
+                        <position x="-126.451449999999" y="102.991150000001" z="500"/>
+                        <rect x="-21.1519483377859" y="-4.5" width="42.3038966755718" height="9"/>
+                        <relativesize width="0.0342085209071261" height="0.0171925452359744" centerx="0.36427444243883" centery="0.756449353531646" posx="0.346880692387608" posy="0.752689062630193" leftx="0.347740135319659" lefty="0.769761058453082" rightx="0.381668192490051" righty="0.760209644433099" fixaspect="false" lockpostodata="false"/>
+                        <transform m11="0.991801348631954" m12="-0.127789220405465" m13="0" m21="0.127789220405465" m22="0.991801348631954" m23="0" m31="0" m32="0" m33="1"/>
+                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                            <brush color="#000000" style="1"/>
+                        </pen>
+                        <brush color="#000000" style="0"/>
+                    </line>
+                    <line name="Line">
+                        <position x="73.0485499999985" y="118.991149999987" z="500"/>
+                        <rect x="-123.376300227451" y="-4.5" width="246.752600454901" height="9"/>
+                        <relativesize width="0.199531136695345" height="0.0171925452359744" centerx="0.52543271399819" centery="0.787013878395575" posx="0.426048580644679" posy="0.806176301382784" leftx="0.426903180524417" lefty="0.823249656724332" rightx="0.624816847351701" righty="0.767851455408366" fixaspect="false" lockpostodata="false"/>
+                        <transform m11="0.991893646801949" m12="-0.127070820544805" m13="0" m21="0.127070820544805" m22="0.991893646801949" m23="0" m31="0" m32="0" m33="1"/>
+                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                            <brush color="#000000" style="1"/>
+                        </pen>
+                        <brush color="#000000" style="0"/>
+                    </line>
+                    <label text="1xVASIMR (5.8 N)" scale="12" color="#000000" font="Noto Sans,10,-1,0,50,0,0,0,0,0" fixleft="true" name="Label">
+                        <position x="407.54855" y="190.49115" z="500"/>
+                        <rect x="0" y="-26" width="153" height="26"/>
+                        <relativesize width="0.123595065406428" height="0.049667352903926" centerx="0.857442987737027" centery="0.898765422429433" posx="0.795645455033813" posy="0.87393174597747" leftx="0.795645455033813" lefty="0.923599098881396" rightx="0.919240520440241" righty="0.923599098881396" fixaspect="true" lockpostodata="false"/>
+                        <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                            <brush color="#000000" style="1"/>
+                        </pen>
+                        <brush color="#000000" style="0"/>
+                    </label>
+                    <line name="Line">
+                        <position x="138.048550000001" y="142.491150000002" z="500"/>
+                        <rect x="-121.583697349273" y="-4.5" width="243.167394698546" height="9"/>
+                        <relativesize width="0.196682446991479" height="0.0171925452359744" centerx="0.577940421523799" centery="0.831905524289537" posx="0.480120733964621" posy="0.853948567530001" leftx="0.481077685795727" lefty="0.870991530776973" rightx="0.675760109082976" righty="0.809862481049073" fixaspect="false" lockpostodata="false"/>
+                        <transform m11="0.989831203878017" m12="-0.1422469255534" m13="0" m21="0.1422469255534" m22="0.989831203878017" m23="0" m31="0" m32="0" m33="1"/>
+                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                            <brush color="#000000" style="1"/>
+                        </pen>
+                        <brush color="#000000" style="0"/>
+                    </line>
+                    <line name="Line">
+                        <position x="194.54855" y="168.991150000001" z="500"/>
+                        <rect x="-66.2202609637648" y="-4.5" width="132.44052192753" height="9"/>
+                        <relativesize width="0.107265946976551" height="0.0171925452359744" centerx="0.623581736526825" centery="0.882528018595458" posx="0.570387540590336" posy="0.897964958514555" leftx="0.571760517412101" lefty="0.914848148776288" rightx="0.676775932463315" righty="0.86709107867636" fixaspect="false" lockpostodata="false"/>
+                        <transform m11="0.979019138983324" m12="-0.203768313298098" m13="0" m21="0.203768313298098" m22="0.979019138983324" m23="0" m31="0" m32="0" m33="1"/>
+                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                            <brush color="#000000" style="1"/>
+                        </pen>
+                        <brush color="#000000" style="0"/>
+                    </line>
+                    <label text="2xVASIMR (11.6 N)" scale="12" color="#000000" font="Noto Sans,10,-1,0,50,0,0,0,0,0" fixleft="true" name="Label">
+                        <position x="471.49240855" y="-1.52183264000001" z="500"/>
+                        <rect x="0" y="-26" width="164" height="26"/>
+                        <relativesize width="0.13248098514153" height="0.049667352903926" centerx="0.913540492570765" centery="0.531966323548037" posx="0.8473" posy="0.507132647096074" leftx="0.8473" lefty="0.5568" rightx="0.97978098514153" righty="0.5568" fixaspect="true" lockpostodata="false"/>
+                        <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                            <brush color="#000000" style="1"/>
+                        </pen>
+                        <brush color="#000000" style="0"/>
+                    </label>
+                    <line name="Line">
+                        <position x="613.048549999998" y="114.491150000001" z="500"/>
+                        <rect x="-98.7244184335463" y="-4.5" width="197.448836867093" height="9"/>
+                        <relativesize width="0.169142897275235" height="0.0171925452359744" centerx="0.961650591903229" centery="0.778417605777614" posx="0.936359882600275" posy="0.601457691710572" leftx="0.929586728370523" lefty="0.607706049517171" rightx="0.986941301206182" righty="0.955377519844656" fixaspect="false" lockpostodata="false"/>
+                        <transform m11="0.339089454890497" m12="0.940754134501712" m13="0" m21="-0.940754134501712" m22="0.339089454890497" m23="0" m31="0" m32="0" m33="1"/>
+                        <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                            <brush color="#000000" style="1"/>
+                        </pen>
+                        <brush color="#000000" style="0"/>
+                    </line>
                 </cartesianrender>
                 <plotaxis id="xaxis" visible="true" log="true" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
                     <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="2"/>
@@ -187,7 +247,7 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="thrust (N)" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0.089" y="-70.142275" width="5.711" height="3418.89555"/>
+                <projectionrect x="0.089" y="-68.09195" width="11.511" height="3810.8259"/>
             </plot>
         </view>
     </graphics>
