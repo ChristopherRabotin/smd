@@ -27,11 +27,11 @@ velocity = 0.1 # sigma for Gaussian
 [perturbations]
 J2 = false
 J3 = false
-J4 = false
+J4 = true
 bodies = ["Earth", "Sun", "Venus", "Jupiter"]
 
 [burns.0]
-date = "2015-02-03 15:16:17" # or JDE
+date = "2015-02-10 15:16:17" # or JDE
 V = 1
 N = 2
 C = 3

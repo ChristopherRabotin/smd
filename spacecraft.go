@@ -72,6 +72,13 @@ func (sc *Spacecraft) Accelerate(dt time.Time, o *Orbit) (Δv []float64, fuel fl
 	thrust := 0.0
 	fuel = 0.0
 	Δv = make([]float64, 3)
+	// Check if any impulse burn, and execute them if needed.
+	if maneuver, exists := sc.Maneuvers[dt.Truncate(StepSize)]; exists {
+		sc.logger.Log("level", "info", "subsys", "astro", "date", dt, "thrust", "impulse", "v(km/s)", maneuver.Δv(), "orbit", o, "period", o.Period())
+		Δv[0] += maneuver.V
+		Δv[1] += maneuver.N
+		Δv[2] += maneuver.C
+	}
 	for _, wp := range sc.WayPoints {
 		if sc.EPS == nil {
 			panic("cannot attempt to reach any waypoint without an EPS")

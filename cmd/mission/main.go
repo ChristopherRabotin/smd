@@ -110,6 +110,11 @@ func main() {
 		N := viper.GetFloat64(fmt.Sprintf("burns.%d.N", burnNo))
 		C := viper.GetFloat64(fmt.Sprintf("burns.%d.C", burnNo))
 		sc.Maneuvers[burnDT] = smd.NewManeuver(V, N, C)
+		if burnDT.After(endDT) || burnDT.Before(startDT) {
+			log.Printf("[WARNING] burn scheduled out of propagation time")
+		} else if verbose {
+			log.Printf("added: %s", sc.Maneuvers[burnDT])
+		}
 	}
 
 	smd.NewMission(sc, scOrbit, startDT, endDT, perts, false, smd.ExportConfig{}).Propagate()
