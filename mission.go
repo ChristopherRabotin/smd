@@ -290,6 +290,17 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	bodyAcc := -tmpOrbit.Origin.μ / math.Pow(Norm(R), 3)
 	_, _, i, Ω, _, _, _, _, u := tmpOrbit.Elements()
 	Δv = Rot313Vec(-u, -i, -Ω, Δv)
+	// Check if any impulse burn, and execute them if needed.
+	if maneuver, exists := a.Vehicle.Maneuvers[a.CurrentDT.Truncate(StepSize)]; exists {
+		if !maneuver.done {
+			a.Vehicle.logger.Log("level", "info", "subsys", "astro", "date", a.CurrentDT, "thrust", "impulse", "v(km/s)", maneuver.Δv())
+			Δv[0] += maneuver.V
+			Δv[1] += maneuver.N
+			Δv[2] += maneuver.C
+			maneuver.done = true
+			a.Vehicle.Maneuvers[a.CurrentDT.Truncate(StepSize)] = maneuver
+		}
+	}
 	// d\vec{R}/dt
 	fDot[0] = f[3]
 	fDot[1] = f[4]

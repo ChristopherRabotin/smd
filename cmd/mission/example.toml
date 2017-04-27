@@ -1,7 +1,6 @@
 [mission]
-start = "2015-02-03 15:16:17" # or JDE
-end = "2015-03-03 15:16:17" # or JDE
-step = "10s" # Must be parsable by Go's time.
+start = "2015-02-03 00:00:00" # or JDE
+end = "2015-02-15 00:00:00" # or JDE
 
 [spacecraft]
 name = "MRO"
@@ -10,12 +9,12 @@ dry = 500
 
 [orbit]
 body = "Earth"
-sma = 7000
-ecc = 0.01
-inc = 10.6
-RAAN = 36
-argPeri = 36
-tAnomaly = 1
+sma = 6469
+ecc = 0.0
+inc = 0.0
+RAAN = 0.0
+argPeri = 0.0
+tAnomaly = 90
 #position = [] #[x, y, z]
 #velocity = [] #[xdot ydot zdot]
 
@@ -31,10 +30,16 @@ J4 = true
 bodies = ["Earth", "Sun", "Venus", "Jupiter"]
 
 [burns.0]
-date = "2015-02-10 15:16:17" # or JDE
-V = 1
-N = 2
-C = 3
+date = "2015-02-03 00:30:00" # or JDE
+V = 2.457038
+N = 0
+C = 0
+
+[burns.1]
+date = "2015-02-03 05:45:20"
+V = -1.478187
+N = 0
+C = 0
 
 [measurements]
 output = "meas.csv"

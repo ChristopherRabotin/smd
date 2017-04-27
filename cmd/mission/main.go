@@ -22,7 +22,6 @@ const (
 
 var (
 	scenario string
-	timeStep time.Duration
 	verbose  bool
 )
 
@@ -48,10 +47,6 @@ func main() {
 	// Read Mission parameters
 	startDT := confReadJDEorTime("mission.start")
 	endDT := confReadJDEorTime("mission.end")
-	timeStep = viper.GetDuration("mission.step")
-	if verbose {
-		log.Printf("[conf] time step: %s\n", timeStep)
-	}
 
 	// Read spacecraft
 	scName := viper.GetString("spacecraft.name")
@@ -113,11 +108,11 @@ func main() {
 		if burnDT.After(endDT) || burnDT.Before(startDT) {
 			log.Printf("[WARNING] burn scheduled out of propagation time")
 		} else if verbose {
-			log.Printf("added: %s", sc.Maneuvers[burnDT])
+			log.Printf("Scheduled burn %s @ %s", sc.Maneuvers[burnDT], burnDT)
 		}
 	}
 
-	smd.NewMission(sc, scOrbit, startDT, endDT, perts, false, smd.ExportConfig{}).Propagate()
+	smd.NewMission(sc, scOrbit, startDT, endDT, perts, false, smd.ExportConfig{AsCSV: false, Cosmo: true, Filename: scName}).Propagate()
 }
 
 func confReadJDEorTime(key string) (dt time.Time) {
