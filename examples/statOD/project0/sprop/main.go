@@ -12,7 +12,7 @@ func main() {
 	sc := smd.NewEmptySC("Part2", 0)
 	sc.Drag = 1.0
 	startDT := julian.JDToTime(2456296.25)
-	endDT := julian.JDToTime(2456346.2539)
+	endDT := julian.JDToTime(2456346.2539).AddDate(1, 0, 0)
 	perts := smd.Perturbations{PerturbingBody: &smd.Sun, Drag: true}
 	smd.NewPreciseMission(sc, orbit, startDT, endDT, perts, 5*time.Second, false, smd.ExportConfig{AsCSV: false, Cosmo: true, Filename: "sprop-a"}).Propagate()
 }

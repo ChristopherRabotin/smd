@@ -101,7 +101,7 @@ func createSpacecraft(thruster thrusterType, numThrusters int, dist float64, fur
 			if departEarth {
 				waypoints = []smd.Waypoint{smd.NewOrbitTarget(smd.Mars.HelioOrbit(time.Now()), nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔiCL), smd.NewCruiseToDistance(dist, further, nil)}
 			} else {
-				waypoints = []smd.Waypoint{smd.NewOrbitTarget(smd.Earth.HelioOrbit(time.Now()), nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔiCL, smd.OptiΔeCL), smd.NewCruiseToDistance(dist, further, nil)}
+				waypoints = []smd.Waypoint{smd.NewOrbitTarget(smd.Earth.HelioOrbit(time.Now()), nil, smd.Naasz, smd.OptiΔaCL, smd.OptiΔiCL), smd.NewCruiseToDistance(dist, further, nil)}
 			}
 		} else {
 			if departEarth {
@@ -140,6 +140,7 @@ func main() {
 	}{{1, 1}, {1, 2}, {2, 1}, {2, 2}, {3, 8}, {3, 12}}
 	for _, combin := range combinations {
 		cpuChan <- true
+		wg.Add(1)
 		go run(combin.missionNo, combin.numThrusters)
 	}
 	wg.Wait()
@@ -178,7 +179,7 @@ func run(missionNo, numThrusters int) {
 		fn += "-notopti"
 	}
 	rslts := make(chan string, 10)
-	wg.Add(1)
+	//wg.Add(1)
 	go streamResults(fn, rslts)
 
 	aGTO, eGTO := smd.Radii2ae(39300+smd.Earth.Radius, 290+smd.Earth.Radius)
@@ -239,7 +240,7 @@ func run(missionNo, numThrusters int) {
 			initV := initOrbit.VNorm()
 			initFuel := sc.FuelMass
 			// Propagate
-			export := smd.ExportConfig{Filename: fn + sc.Name, AsCSV: argPeri, Cosmo: false, Timestamp: false}
+			export := smd.ExportConfig{Filename: fn + sc.Name, AsCSV: false, Cosmo: false, Timestamp: false}
 			endDT := startDT.Add(-1)
 			astro := smd.NewPreciseMission(sc, initOrbit, startDT, endDT, smd.Perturbations{}, timeStep, false, export)
 			astro.Propagate()
@@ -269,8 +270,8 @@ func run(missionNo, numThrusters int) {
 				bestTOF = tof
 				bestCSV = csv
 			}
+			rslts <- csv
 			if !argPeri {
-				rslts <- csv
 				break
 			}
 		}

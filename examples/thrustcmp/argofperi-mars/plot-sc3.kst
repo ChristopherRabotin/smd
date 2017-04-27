@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <kst version="2.0">
     <data>
-        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/bht8000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/bht8000.csv">
+        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/bht8000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/bht8000.csv">
             <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-03-26T22:20:23Z" relativeOffset="0" nanValue="0" updateType="0"/>
         </source>
-        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/hermes.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/hermes.csv">
+        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/hermes.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/hermes.csv">
             <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-03-26T22:21:20Z" relativeOffset="0" nanValue="0" updateType="0"/>
         </source>
-        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/pps5000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/pps5000.csv">
+        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/pps5000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/pps5000.csv">
             <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-03-26T22:22:15Z" relativeOffset="0" nanValue="0" updateType="0"/>
         </source>
-        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/vx200.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/vx200.csv">
+        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/vx200.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/vx200.csv">
             <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-03-26T22:22:31Z" relativeOffset="0" nanValue="0" updateType="0"/>
         </source>
     </data>
     <variables>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/bht8000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/bht8000.csv" field="arg. periapsis (deg)" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="2" initialXNum="13"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/bht8000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/bht8000.csv" field="arg. periapsis (deg)" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="4" initialXNum="37"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/bht8000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/bht8000.csv" field="BHT-8k" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="5" initialXNum="49"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/hermes.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/hermes.csv" field="HERMeS" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="6" initialXNum="61"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/pps5000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/pps5000.csv" field="PPS-5k" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="8" initialXNum="85"/>
-        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/vx200.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi/vx200.csv" field="VX200" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="9" initialXNum="97"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/bht8000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/bht8000.csv" field="arg. periapsis (deg)" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="2" initialXNum="13"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/bht8000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/bht8000.csv" field="arg. periapsis (deg)" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="4" initialXNum="37"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/bht8000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/bht8000.csv" field="BHT-8k" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="5" initialXNum="49"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/hermes.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/hermes.csv" field="HERMeS" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="6" initialXNum="61"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/pps5000.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/pps5000.csv" field="PPS-5k" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="8" initialXNum="85"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/vx200.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/examples/thrustcmp/argofperi-mars/vx200.csv" field="VX200" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="9" initialXNum="97"/>
     </variables>
     <objects/>
     <relations>
@@ -41,9 +41,9 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="true" name="Legend">
-                    <position x="-246.45145" y="162.50245" z="500"/>
+                    <position x="96.5485500000001" y="141.50245" z="500"/>
                     <rect x="-74" y="-52" width="148" height="104"/>
-                    <relativesize width="0.118233786942316" height="0.198669411615704" centerx="0.275439986467025" centery="0.872021463173473" posx="0.216323092995866" posy="0.772686757365621" leftx="0.216323092995866" lefty="0.971356168981324" rightx="0.334556879938183" righty="0.971356168981324" fixaspect="false" lockpostodata="false"/>
+                    <relativesize width="0.118233786942316" height="0.198669411615704" centerx="0.549454776475231" centery="0.831905524289532" posx="0.490337883004073" posy="0.73257081848168" leftx="0.490337883004073" lefty="0.931240230097384" rightx="0.608571669946389" righty="0.931240230097384" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                     <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
                         <brush color="#000000" style="1"/>
@@ -68,7 +68,7 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="arg. periapsis (deg)" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="16" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-1.170054325" width="340" height="2.34126165"/>
+                <projectionrect x="0" y="-0.718396375" width="340" height="1.44015375"/>
             </plot>
         </view>
     </graphics>
