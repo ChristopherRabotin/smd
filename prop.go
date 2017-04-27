@@ -497,3 +497,13 @@ func NewHohmannΔv(target Orbit) HohmannΔv {
 	}
 	return HohmannΔv{target, hohmannCompute, 0, 0, 0, time.Duration(-1) * time.Second, newGenericCLFromCL(hohmann)}
 }
+
+// Maneuver stores a maneuver in the VNC frame
+type Maneuver struct {
+	V, N, C float64
+	done    bool
+}
+
+func NewManeuver(V, N, C float64) Maneuver {
+	return Maneuver{V, N, C, false}
+}

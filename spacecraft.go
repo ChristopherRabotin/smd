@@ -11,14 +11,15 @@ import (
 
 // Spacecraft defines a new spacecraft.
 type Spacecraft struct {
-	Name        string       // Name of spacecraft
-	DryMass     float64      // DryMass of spacecraft (in kg)
-	FuelMass    float64      // FuelMass of spacecraft (in kg) (will panic if runs out of fuel)
-	EPS         EPS          // EPS definition, needed for the EPThrusters.
-	EPThrusters []EPThruster // All available EP EPThrusters
-	ChemProp    bool         // Set to true to allow Hohmann Transfers.
-	Cargo       []*Cargo     // All onboard cargo
-	WayPoints   []Waypoint   // All waypoints of the tug
+	Name        string                 // Name of spacecraft
+	DryMass     float64                // DryMass of spacecraft (in kg)
+	FuelMass    float64                // FuelMass of spacecraft (in kg) (will panic if runs out of fuel)
+	EPS         EPS                    // EPS definition, needed for the EPThrusters.
+	EPThrusters []EPThruster           // All available EP EPThrusters
+	ChemProp    bool                   // Set to true to allow Hohmann Transfers.
+	Cargo       []*Cargo               // All onboard cargo
+	WayPoints   []Waypoint             // All waypoints of the tug
+	Maneuvers   map[time.Time]Maneuver // List of maneuvers.
 	FuncQ       []func()
 	logger      kitlog.Logger
 	prevCL      *ControlLaw // Stores the previous control law to follow what is going on.
@@ -182,12 +183,12 @@ func (sc *Spacecraft) ToXCentric(body CelestialObject, dt time.Time, o *Orbit) f
 
 // NewEmptySC returns a spacecraft with no cargo and no EPThrusters.
 func NewEmptySC(name string, mass uint) *Spacecraft {
-	return &Spacecraft{name, float64(mass), 0, NewUnlimitedEPS(), []EPThruster{}, false, []*Cargo{}, []Waypoint{}, []func(){}, SCLogInit(name), nil, 0, false}
+	return &Spacecraft{name, float64(mass), 0, NewUnlimitedEPS(), []EPThruster{}, false, []*Cargo{}, []Waypoint{}, make(map[time.Time]Maneuver), []func(){}, SCLogInit(name), nil, 0, false}
 }
 
 // NewSpacecraft returns a spacecraft with initialized function queue and logger.
 func NewSpacecraft(name string, dryMass, fuelMass float64, eps EPS, prop []EPThruster, impulse bool, payload []*Cargo, wp []Waypoint) *Spacecraft {
-	return &Spacecraft{name, dryMass, fuelMass, eps, prop, impulse, payload, wp, make([]func(), 5), SCLogInit(name), nil, 0, fuelMass > 0}
+	return &Spacecraft{name, dryMass, fuelMass, eps, prop, impulse, payload, wp, make(map[time.Time]Maneuver), make([]func(), 5), SCLogInit(name), nil, 0, fuelMass > 0}
 }
 
 // Cargo defines a piece of cargo with arrival date and destination orbit
