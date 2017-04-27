@@ -75,6 +75,8 @@ func (c *CelestialObject) HelioOrbit(dt time.Time) Orbit {
 // CelestialObjectFromString returns the object from its name
 func CelestialObjectFromString(name string) (CelestialObject, error) {
 	switch strings.ToLower(name) {
+	case "sun":
+		return Sun, nil
 	case "earth":
 		return Earth, nil
 	case "venus":
