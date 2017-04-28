@@ -11,16 +11,16 @@ import (
 
 // Result stores a full valid result.
 type Result struct {
-	launch  time.Time
-	c3      float64
-	flybys  []GAResult
-	arrival time.Time
-	vInf    float64
+	launch       time.Time
+	c3, rla, dla float64
+	flybys       []GAResult
+	arrival      time.Time
+	vInf         float64
 }
 
 // CSV returns the CSV of this result
 func (r Result) CSV() string {
-	rtn := fmt.Sprintf("%.3f (%s),%f,", julian.TimeToJD(r.launch), r.launch.Format(dateFormat), r.c3)
+	rtn := fmt.Sprintf("%.3f (%s),%f,%f,%f,", julian.TimeToJD(r.launch), r.launch.Format(dateFormat), r.c3, r.rla, r.dla)
 	for _, flyby := range r.flybys {
 		rtn += flyby.CSV()
 	}
@@ -30,7 +30,7 @@ func (r Result) CSV() string {
 
 //Clone figure it out
 func (r Result) Clone() Result {
-	newResult := Result{r.launch, r.c3, nil, r.arrival, r.vInf}
+	newResult := Result{r.launch, r.c3, r.rla, r.dla, nil, r.arrival, r.vInf}
 	newResult.flybys = make([]GAResult, len(r.flybys))
 	for i, fb := range r.flybys {
 		newResult.flybys[i] = fb
@@ -39,8 +39,8 @@ func (r Result) Clone() Result {
 }
 
 // NewResult initializes a result.
-func NewResult(launch time.Time, c3 float64, numGA int) Result {
-	return Result{launch, c3, make([]GAResult, numGA), time.Now(), -1}
+func NewResult(launch time.Time, c3, rla, dla float64, numGA int) Result {
+	return Result{launch, c3, rla, dla, make([]GAResult, numGA), time.Now(), -1}
 }
 
 // GAResult stores the result of a gravity assist.
@@ -68,7 +68,7 @@ func StreamResults(prefix string, planets []smd.CelestialObject, rsltChan <-chan
 	if err != nil {
 		panic(err)
 	}
-	hdrs := "launch,c3,"
+	hdrs := "launch,c3,rla,dla,"
 	for pNo, planet := range planets[0 : len(planets)-1] {
 		hdrs += planet.Name + "DT,"
 		hdrs += planet.Name + "DV,"

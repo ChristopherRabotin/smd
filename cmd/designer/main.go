@@ -124,7 +124,7 @@ func main() {
 	if verbose {
 		log.Printf("[info] searching for %s -> %s", launch.planet.Name, flybys[0].planet.Name)
 	}
-	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(launch.planet, flybys[0].planet, launch.from, launch.until, flybys[0].from, flybys[0].until, 24/timeStep.Hours(), 24/timeStep.Hours(), smd.TTypeAuto, true, ultraDebug, false)
+	c3Map, tofMap, _, vInfDepVecs, vInfArriVecs := smd.PCPGenerator(launch.planet, flybys[0].planet, launch.from, launch.until, flybys[0].from, flybys[0].until, 24/timeStep.Hours(), 24/timeStep.Hours(), smd.TTypeAuto, true, ultraDebug, false)
 	if *cpuprofile != "" {
 		return
 	}
@@ -159,8 +159,13 @@ func main() {
 				continue
 			}
 			// Fulfills the launch requirements.
+			// Print the DLA and RLA
+			vInfDepatureVec := vInfDepVecs[launchDT][arrivalIdx]
+			rla := smd.Rad2deg(math.Atan2(vInfDepatureVec.At(0, 0), vInfDepatureVec.At(1, 0)))
+			dla := smd.Rad2deg(math.Asin(vInfDepatureVec.At(2, 0)))
+			fmt.Printf("RLA = %f deg\tDLA = %f \n", rla, dla)
 			vInfIn := []float64{vInfInVec.At(0, 0), vInfInVec.At(1, 0), vInfInVec.At(2, 0)}
-			prevResult := NewResult(launchDT, c3, len(planets)-1)
+			prevResult := NewResult(launchDT, c3, rla, dla, len(planets)-1)
 			wg.Add(1)
 			cpuChan <- true
 			go GAPCP(arrivalDT, flybys[0], 0, vInfIn, prevResult)
