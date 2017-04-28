@@ -161,7 +161,7 @@ func main() {
 			// Fulfills the launch requirements.
 			// Print the DLA and RLA
 			vInfDepatureVec := vInfDepVecs[launchDT][arrivalIdx]
-			rla := smd.Rad2deg(math.Atan2(vInfDepatureVec.At(0, 0), vInfDepatureVec.At(1, 0)))
+			rla := smd.Rad2deg(math.Atan2(vInfDepatureVec.At(1, 0), vInfDepatureVec.At(2, 0)))
 			dla := smd.Rad2deg(math.Asin(vInfDepatureVec.At(2, 0) / mat64.Norm(&vInfDepatureVec, 2)))
 			fmt.Printf("RLA = %f deg\tDLA = %f deg\n", rla, dla)
 			vInfIn := []float64{vInfInVec.At(0, 0), vInfInVec.At(1, 0), vInfInVec.At(2, 0)}
