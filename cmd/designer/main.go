@@ -297,8 +297,8 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 
 			result := prevResult.Clone()
 			// Create both the first flyby for start of resonance and the ending flyby to complete the resonance
-			result.flybys = append(result.flybys, GAResult{launchDT, bestRp.ega1Vout - bestRp.ega1Vin, bestRp.Rp1, 0})
-			result.flybys = append(result.flybys, GAResult{ga2DT, bestRp.ega2Vout - bestRp.ega2Vin, bestRp.Rp2, bestRp.Assocψ})
+			result.flybys = append(result.flybys, GAResult{launchDT, bestRp.ega1Vout - bestRp.ega1Vin, bestRp.Rp1, bestRp.BT1, bestRp.BR1, 0})
+			result.flybys = append(result.flybys, GAResult{ga2DT, bestRp.ega2Vout - bestRp.ega2Vin, bestRp.Rp2, bestRp.BT2, bestRp.BR2, bestRp.Assocψ})
 			if isLastPlanet {
 				vinfArr := mat64.Norm(VfNext, 2)
 				if vinfArr < arrival.maxVinf {
@@ -348,7 +348,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 					// Check if the rP is okay
 					// NOTE: we oppose the vInf in because we are just transfering the vInfOut to the vInfIn via this recursion calling.
 					vInfInBis := []float64{-vInfIn[0], -vInfIn[1], -vInfIn[2]}
-					_, rp, _, _, _, _ := smd.GAFromVinf(vInfInBis, vInfOut, fromPlanet)
+					_, rp, bT, bR, _, _ := smd.GAFromVinf(vInfInBis, vInfOut, fromPlanet)
 					if minRp > 0 && rp < minRp {
 						if ultraDebug {
 							log.Printf("[NOK ] rP @ %s on %s->%s: %f km", fromPlanet.Name, depDT, arrivalDT, rp)
@@ -356,7 +356,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 						continue // Too close, ignore
 					}
 					result := prevResult.Clone()
-					rslt := GAResult{launchDT, flybyDV, rp, 0}
+					rslt := GAResult{launchDT, flybyDV, rp, bT, bR, 0}
 					result.flybys = append(result.flybys, rslt)
 					if isLastPlanet {
 						vinfArr := vinfArr[depDT][arrIdx]
