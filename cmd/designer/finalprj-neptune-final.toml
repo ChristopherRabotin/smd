@@ -2,14 +2,14 @@
 fileprefix = "prj-final"
 outputdir = "outputs"
 verbose = true
-step = "24h"
+step = "1h"
 flybyplanets = "Venus Earth Jupiter"
 
 [launch]
 planet = "Earth"
 from = 2461283.500
 until = 2461284.500
-resolution = 1
+resolution = 24
 maxC3 = 13
 
 [arrival]
@@ -36,7 +36,7 @@ resonance = 2 # TODO: Check with a 3:1 resonance
 
 [flyby.Jupiter]
 position = 3
-deltaV = 0.2
+deltaV = 0.3
 from = 2463434.443
 until = 2463435.443
 periapsis = 1.5
