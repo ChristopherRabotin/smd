@@ -1,6 +1,7 @@
 [mission]
 start = "2015-02-03 00:00:00" # or JDE
 end = "2015-02-15 00:00:00" # or JDE
+step = "10s" # Must be parsable by golang's ParseDuration
 
 [spacecraft]
 name = "MRO"
@@ -42,14 +43,16 @@ N = 0
 C = 0
 
 [measurements]
-output = "meas.csv"
+enabled = true
+output = "output/meas.csv"
 stations = ["builtin.DSS34", "Other"]
 
 [station.Other]
 name = "Other station"
 altitude = 100
-elevation = 0
+elevation = 10
 latitude = 0
 longitude = 0
 range_sigma = 0.1
 rate_sigma = 0.1
+planet = Mars

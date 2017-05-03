@@ -2,15 +2,20 @@ package smd
 
 import (
 	"math"
+	"math/rand"
 	"time"
+
+	"github.com/gonum/matrix/mat64"
+	"github.com/gonum/stat/distmv"
 )
 
 // Perturbations defines how to handle perturbations during the propagation.
 type Perturbations struct {
-	Jn             uint8                   // Factors to be used (only up to 4 supported)
-	PerturbingBody *CelestialObject        // The 3rd body which is perturbating the spacecraft.
-	AutoThirdBody  bool                    // Automatically determine what is the 3rd body based on distance and mass
-	Drag           bool                    // Set to true to use the Spacecraft's Drag for everything including STM computation
+	Jn             uint8            // Factors to be used (only up to 4 supported)
+	PerturbingBody *CelestialObject // The 3rd body which is perturbating the spacecraft.
+	AutoThirdBody  bool             // Automatically determine what is the 3rd body based on distance and mass
+	Drag           bool             // Set to true to use the Spacecraft's Drag for everything including STM computation
+	Noise          OrbitNoise
 	Arbitrary      func(o Orbit) []float64 // Additional arbitrary pertubation.
 }
 
@@ -103,5 +108,48 @@ func (p Perturbations) Perturb(o Orbit, dt time.Time, sc Spacecraft) []float64 {
 			pert[i] += arbs[i]
 		}
 	}
+	if p.Noise != (OrbitNoise{}) {
+		orbitNoise := p.Noise.Generate()
+		for i := 0; i < 6; i++ {
+			pert[i] += orbitNoise[i]
+		}
+	}
 	return pert
+}
+
+// OrbitNoise defines a new orbit noise applied as a perturbations.
+// Use case is for generating datasets for filtering.
+type OrbitNoise struct {
+	probability float64
+	position    *distmv.Normal
+	velocity    *distmv.Normal
+}
+
+func (n OrbitNoise) Generate() (rtn []float64) {
+	rtn = make([]float64, 6)
+	if n.probability < rand.Float64() {
+		return
+	}
+	position := n.position.Rand(nil)
+	velocity := n.velocity.Rand(nil)
+	for i := 0; i < 3; i++ {
+		rtn[i] = position[i]
+		rtn[i+3] = velocity[i]
+	}
+	return
+}
+
+func NewOrbitNoise(probability, sigmaPosition, sigmaVelocity float64) OrbitNoise {
+	posMatrix := mat64.NewSymDense(3, []float64{sigmaPosition, 0, 0, 0, sigmaPosition, 0, 0, 0, sigmaPosition})
+	velMatrix := mat64.NewSymDense(3, []float64{sigmaVelocity, 0, 0, 0, sigmaVelocity, 0, 0, 0, sigmaVelocity})
+	seed := rand.New(rand.NewSource(time.Now().UnixNano()))
+	position, ok := distmv.NewNormal(make([]float64, 3), posMatrix, seed)
+	if !ok {
+		panic("process noise invalid")
+	}
+	velocity, ok := distmv.NewNormal(make([]float64, 3), velMatrix, seed)
+	if !ok {
+		panic("measurement noise invalid")
+	}
+	return OrbitNoise{probability, position, velocity}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/gonum/matrix/mat64"
@@ -15,6 +16,14 @@ const (
 	d2r = 1 / r2d
 )
 
+var (
+	σρ             = math.Pow(5e-3, 2) // m , but all measurements in km.
+	σρDot          = math.Pow(5e-6, 2) // m/s , but all measurements in km/s.
+	DSS34Canberra  = NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 6)
+	DSS65Madrid    = NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 4.250556, σρ, σρDot, 6)
+	DSS13Goldstone = NewSpecialStation("DSS13Goldstone", 1.07114904, 0, 35.247164, 243.205, σρ, σρDot, 6)
+)
+
 // Station defines a ground station.
 type Station struct {
 	Name                       string
@@ -22,7 +31,8 @@ type Station struct {
 	LatΦ, Longθ                float64   // these are stored in radians!
 	Altitude, Elevation        float64
 	RangeNoise, RangeRateNoise *distmv.Normal // Station noise
-	rowsH                      int            // If estimating Cr in addition to position and velocity, this needs to be 7
+	Planet                     CelestialObject
+	rowsH                      int // If estimating Cr in addition to position and velocity, this needs to be 7
 }
 
 // PerformMeasurement returns whether the SC is visible, and if so, the measurement.
@@ -56,6 +66,10 @@ func (s Station) RangeElAz(rECEF []float64) (ρECEF []float64, ρ, el, az float6
 	return
 }
 
+func (s Station) String() string {
+	return fmt.Sprintf("%s (%f,%f); alt = %f km; el = %f deg", s.Name, s.LatΦ, s.Longθ, s.Altitude, s.Elevation)
+}
+
 // NewStation returns a new station. Angles in degrees.
 func NewStation(name string, altitude, elevation, latΦ, longθ, σρ, σρDot float64) Station {
 	return NewSpecialStation(name, altitude, elevation, latΦ, longθ, σρ, σρDot, 6)
@@ -74,7 +88,7 @@ func NewSpecialStation(name string, altitude, elevation, latΦ, longθ, σρ, σ
 	if !ok {
 		panic("NOK in Gaussian")
 	}
-	return Station{name, R, V, latΦ * d2r, longθ * d2r, altitude, elevation, ρNoise, ρDotNoise, rowsH}
+	return Station{name, R, V, latΦ * d2r, longθ * d2r, altitude, elevation, ρNoise, ρDotNoise, Earth, rowsH}
 }
 
 // Measurement stores a measurement of a station.
@@ -135,6 +149,24 @@ func (m Measurement) CSV() string {
 	return fmt.Sprintf("%f,%f,%f,%f,", m.TrueRange, m.TrueRangeRate, m.Range, m.RangeRate)
 }
 
+// ShortCSV returns the noisy data as CSV (does *not* include the new line)
+func (m Measurement) ShortCSV() string {
+	return fmt.Sprintf("%f,%f,", m.Range, m.RangeRate)
+}
+
 func (m Measurement) String() string {
 	return fmt.Sprintf("%s@%s", m.Station.Name, m.State.DT)
+}
+
+func BuiltinStationFromName(name string) Station {
+	switch strings.ToLower(name) {
+	case "dss13":
+		return DSS13Goldstone
+	case "dss34":
+		return DSS34Canberra
+	case "dss65":
+		return DSS65Madrid
+	default:
+		panic(fmt.Errorf("unknown station `%s`", name))
+	}
 }
