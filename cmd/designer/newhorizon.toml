@@ -3,6 +3,7 @@ fileprefix = "nh"
 verbose = true
 step = "24h"
 flybyplanets = "Jupiter"
+outputdir = "outputs"
 
 [launch]
 planet = "Earth"
@@ -22,3 +23,4 @@ from = 2454129.5
 until = 2454239.5
 deltaV = 0.4
 periapsis = 30.0
+#RLA = 95.672728 deg     DLA = 356.499890 deg

@@ -497,3 +497,22 @@ func NewHohmannΔv(target Orbit) HohmannΔv {
 	}
 	return HohmannΔv{target, hohmannCompute, 0, 0, 0, time.Duration(-1) * time.Second, newGenericCLFromCL(hohmann)}
 }
+
+// Maneuver stores a maneuver in the VNC frame
+type Maneuver struct {
+	V, N, C float64
+	done    bool
+}
+
+// Δv returns the Δv in km/s
+func (m Maneuver) Δv() float64 {
+	return math.Sqrt(m.V*m.V + m.N*m.N + m.C*m.C)
+}
+
+func (m Maneuver) String() string {
+	return fmt.Sprintf("burn [%f %f %f] km/s -- executed: %v", m.V, m.N, m.C, m.done)
+}
+
+func NewManeuver(V, N, C float64) Maneuver {
+	return Maneuver{V, N, C, false}
+}

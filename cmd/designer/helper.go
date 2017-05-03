@@ -11,26 +11,26 @@ import (
 
 // Result stores a full valid result.
 type Result struct {
-	launch  time.Time
-	c3      float64
-	flybys  []GAResult
-	arrival time.Time
-	vInf    float64
+	launch       time.Time
+	c3, rla, dla float64
+	flybys       []GAResult
+	arrival      time.Time
+	vInf         float64
 }
 
 // CSV returns the CSV of this result
 func (r Result) CSV() string {
-	rtn := fmt.Sprintf("%.3f (%s),%f,", julian.TimeToJD(r.launch), r.launch.Format(dateFormat), r.c3)
+	rtn := fmt.Sprintf("%.3f (%s),%f,%f,%f,", julian.TimeToJD(r.launch), r.launch.Format(dateFormat), r.c3, r.rla, r.dla)
 	for _, flyby := range r.flybys {
 		rtn += flyby.CSV()
 	}
-	rtn += fmt.Sprintf("%.3f (%s),%f,", julian.TimeToJD(r.arrival), r.arrival.Format(dateFormat), r.vInf)
+	rtn += fmt.Sprintf("%.3f (%s),%f", julian.TimeToJD(r.arrival), r.arrival.Format(dateFormat), r.vInf)
 	return rtn
 }
 
 //Clone figure it out
 func (r Result) Clone() Result {
-	newResult := Result{r.launch, r.c3, nil, r.arrival, r.vInf}
+	newResult := Result{r.launch, r.c3, r.rla, r.dla, nil, r.arrival, r.vInf}
 	newResult.flybys = make([]GAResult, len(r.flybys))
 	for i, fb := range r.flybys {
 		newResult.flybys[i] = fb
@@ -39,8 +39,8 @@ func (r Result) Clone() Result {
 }
 
 // NewResult initializes a result.
-func NewResult(launch time.Time, c3 float64, numGA int) Result {
-	return Result{launch, c3, make([]GAResult, numGA), time.Now(), -1}
+func NewResult(launch time.Time, c3, rla, dla float64, numGA int) Result {
+	return Result{launch, c3, rla, dla, make([]GAResult, numGA), time.Now(), -1}
 }
 
 // GAResult stores the result of a gravity assist.
@@ -48,6 +48,7 @@ type GAResult struct {
 	DT     time.Time
 	deltaV float64
 	radius float64
+	bt, br float64
 	phi    float64 // Only used in the case of a resonant orbit
 }
 
@@ -55,9 +56,9 @@ type GAResult struct {
 func (g GAResult) CSV() string {
 	if g.DT != (time.Time{}) {
 		if g.phi != 0 {
-			return fmt.Sprintf("%.3f (%s),%f,%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius, smd.Rad2deg(g.phi))
+			return fmt.Sprintf("%.3f (%s),%f,%f,%f,%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius, g.bt, g.br, smd.Rad2deg(g.phi))
 		}
-		return fmt.Sprintf("%.3f (%s),%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius)
+		return fmt.Sprintf("%.3f (%s),%f,%f,%f,%f,", julian.TimeToJD(g.DT), g.DT.Format(dateFormat), g.deltaV, g.radius, g.bt, g.br)
 	}
 	return ""
 }
@@ -68,20 +69,24 @@ func StreamResults(prefix string, planets []smd.CelestialObject, rsltChan <-chan
 	if err != nil {
 		panic(err)
 	}
-	hdrs := "launch,c3,"
-	for pNo, planet := range planets[0 : len(planets)-1] {
+	hdrs := "launch,c3,rla,dla,"
+	for pNo, planet := range planets[0:len(planets)] {
 		hdrs += planet.Name + "DT,"
 		hdrs += planet.Name + "DV,"
 		hdrs += planet.Name + "Rp,"
-		if pNo > 0 && pNo < len(flybys)-1 && flybys[pNo].isResonant {
+		hdrs += planet.Name + "Bt,"
+		hdrs += planet.Name + "Br,"
+		if pNo > 0 && pNo < len(flybys) && flybys[pNo].isResonant {
 			// Repeat
-			hdrs += planet.Name + "DT,"
-			hdrs += planet.Name + "DV,"
-			hdrs += planet.Name + "Rp,"
-			hdrs += planet.Name + "Phi,"
+			hdrs += planet.Name + "-ResDT,"
+			hdrs += planet.Name + "-ResDV,"
+			hdrs += planet.Name + "-ResRp,"
+			hdrs += planet.Name + "-ResBt,"
+			hdrs += planet.Name + "-ResBr,"
+			hdrs += planet.Name + "-ResPhi,"
 		}
 	}
-	hdrs += "arrival,vInf\n"
+	hdrs += "arrival,vInf,Bt,Br\n"
 	if _, err := f.WriteString(hdrs); err != nil {
 		panic(err)
 	}

@@ -1,0 +1,48 @@
+[mission]
+start = 2461283.500
+end = 2461448.500
+#end = 2469468.443
+
+[spacecraft]
+name = "CRA"
+fuel = 3000
+dry = 904
+
+[orbit]
+body = "Sun"
+sma = 103484257.75583
+ecc = 0.5507
+inc = 2.9092
+RAAN = 157.305
+argPeri = 341.577
+tAnomaly = 198.39
+
+[error] # To generate datasets only
+probability = 0.1 # i.e. 10% of calls to SetState will have an error
+position = 1.0 # sigma for Gaussian
+velocity = 0.1 # sigma for Gaussian
+
+[perturbations]
+J2 = false
+J3 = false
+J4 = false
+bodies = ["Sun"]
+
+[burns.0]
+date = 2461438.500
+V = 0.0621609
+N = 0.1034233
+C = 0.0805895
+
+[measurements]
+output = "meas.csv"
+stations = ["builtin.DSS34", "Other"]
+
+[station.Other]
+name = "Other station"
+altitude = 100
+elevation = 0
+latitude = 0
+longitude = 0
+range_sigma = 0.1
+rate_sigma = 0.1

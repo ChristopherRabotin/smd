@@ -1,0 +1,58 @@
+[mission]
+start = "2015-02-03 00:00:00" # or JDE
+end = "2015-02-15 00:00:00" # or JDE
+step = "10s" # Must be parsable by golang's ParseDuration
+
+[spacecraft]
+name = "MRO"
+fuel = 500
+dry = 500
+
+[orbit]
+body = "Earth"
+sma = 6469
+ecc = 0.0
+inc = 0.0
+RAAN = 0.0
+argPeri = 0.0
+tAnomaly = 90
+#position = [] #[x, y, z]
+#velocity = [] #[xdot ydot zdot]
+
+[error] # To generate datasets only
+probability = 0.1 # i.e. 10% of calls to SetState will have an error
+position = 1.0 # sigma for Gaussian
+velocity = 0.1 # sigma for Gaussian
+
+[perturbations]
+J2 = false
+J3 = false
+J4 = true
+bodies = ["Earth", "Sun", "Venus", "Jupiter"]
+
+[burns.0]
+date = "2015-02-03 00:30:00" # or JDE
+V = 2.457038
+N = 0
+C = 0
+
+[burns.1]
+date = "2015-02-03 05:45:20"
+V = -1.478187
+N = 0
+C = 0
+
+[measurements]
+enabled = true
+output = "output/meas.csv"
+stations = ["builtin.DSS34", "Other"]
+
+[station.Other]
+name = "Other station"
+altitude = 100
+elevation = 10
+latitude = 0
+longitude = 0
+range_sigma = 0.1
+rate_sigma = 0.1
+planet = Mars

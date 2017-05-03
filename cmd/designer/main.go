@@ -124,7 +124,7 @@ func main() {
 	if verbose {
 		log.Printf("[info] searching for %s -> %s", launch.planet.Name, flybys[0].planet.Name)
 	}
-	c3Map, tofMap, _, _, vInfArriVecs := smd.PCPGenerator(launch.planet, flybys[0].planet, launch.from, launch.until, flybys[0].from, flybys[0].until, 24/timeStep.Hours(), 24/timeStep.Hours(), smd.TTypeAuto, true, ultraDebug, false)
+	c3Map, tofMap, _, vInfDepVecs, vInfArriVecs := smd.PCPGenerator(launch.planet, flybys[0].planet, launch.from, launch.until, flybys[0].from, flybys[0].until, 24/timeStep.Hours(), 24/timeStep.Hours(), smd.TTypeAuto, true, ultraDebug, false)
 	if *cpuprofile != "" {
 		return
 	}
@@ -159,8 +159,15 @@ func main() {
 				continue
 			}
 			// Fulfills the launch requirements.
+			// Print the DLA and RLA
+			vInfDepatureVec := vInfDepVecs[launchDT][arrivalIdx]
+			rla := smd.Rad2deg(math.Atan2(-vInfDepatureVec.At(1, 0), -vInfDepatureVec.At(0, 0)))
+			dla := smd.Rad2deg(math.Atan2(-vInfDepatureVec.At(2, 0), mat64.Norm(&vInfDepatureVec, 2)))
+			if verbose {
+				fmt.Printf("RLA = %f deg\tDLA = %f deg\n", rla, dla)
+			}
 			vInfIn := []float64{vInfInVec.At(0, 0), vInfInVec.At(1, 0), vInfInVec.At(2, 0)}
-			prevResult := NewResult(launchDT, c3, len(planets)-1)
+			prevResult := NewResult(launchDT, c3, rla, dla, len(planets)-1)
 			wg.Add(1)
 			cpuChan <- true
 			go GAPCP(arrivalDT, flybys[0], 0, vInfIn, prevResult)
@@ -292,8 +299,8 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 
 			result := prevResult.Clone()
 			// Create both the first flyby for start of resonance and the ending flyby to complete the resonance
-			result.flybys = append(result.flybys, GAResult{launchDT, bestRp.ega1Vout - bestRp.ega1Vin, bestRp.Rp1, 0})
-			result.flybys = append(result.flybys, GAResult{ga2DT, bestRp.ega2Vout - bestRp.ega2Vin, bestRp.Rp2, bestRp.Assocψ})
+			result.flybys = append(result.flybys, GAResult{launchDT, bestRp.ega1Vout - bestRp.ega1Vin, bestRp.Rp1, bestRp.BT1, bestRp.BR1, 0})
+			result.flybys = append(result.flybys, GAResult{ga2DT, bestRp.ega2Vout - bestRp.ega2Vin, bestRp.Rp2, bestRp.BT2, bestRp.BR2, bestRp.Assocψ})
 			if isLastPlanet {
 				vinfArr := mat64.Norm(VfNext, 2)
 				if vinfArr < arrival.maxVinf {
@@ -343,7 +350,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 					// Check if the rP is okay
 					// NOTE: we oppose the vInf in because we are just transfering the vInfOut to the vInfIn via this recursion calling.
 					vInfInBis := []float64{-vInfIn[0], -vInfIn[1], -vInfIn[2]}
-					_, rp, _, _, _, _ := smd.GAFromVinf(vInfInBis, vInfOut, fromPlanet)
+					_, rp, bT, bR, _, _ := smd.GAFromVinf(vInfInBis, vInfOut, fromPlanet)
 					if minRp > 0 && rp < minRp {
 						if ultraDebug {
 							log.Printf("[NOK ] rP @ %s on %s->%s: %f km", fromPlanet.Name, depDT, arrivalDT, rp)
@@ -351,7 +358,7 @@ func GAPCP(launchDT time.Time, inFlyby Flyby, planetNo int, vInfIn []float64, pr
 						continue // Too close, ignore
 					}
 					result := prevResult.Clone()
-					rslt := GAResult{launchDT, flybyDV, rp, 0}
+					rslt := GAResult{launchDT, flybyDV, rp, bT, bR, 0}
 					result.flybys = append(result.flybys, rslt)
 					if isLastPlanet {
 						vinfArr := vinfArr[depDT][arrIdx]

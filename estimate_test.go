@@ -45,7 +45,7 @@ func TestEstimate(t *testing.T) {
 }
 
 func TestEstimate1DayNoJ2(t *testing.T) {
-	virtObj := CelestialObject{"virtObj", 6378.145, 149598023, 398600.4, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, nil}
+	virtObj := CelestialObject{"virtObj", 6378.145, 149598023, 398600.4, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, 0, nil}
 	orbit := NewOrbitFromRV([]float64{-2436.45, -2436.45, 6891.037}, []float64{5.088611, -5.088611, 0}, virtObj)
 	startDT := time.Now()
 	endDT := startDT.Add(24 * time.Hour)
@@ -63,7 +63,7 @@ func TestEstimate1DayNoJ2(t *testing.T) {
 }
 
 func TestEstimate1DayWithJ2(t *testing.T) {
-	virtObj := CelestialObject{"virtObj", 6378.145, 149598023, 398600.4, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, nil}
+	virtObj := CelestialObject{"virtObj", 6378.145, 149598023, 398600.4, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, 0, nil}
 	orbit := NewOrbitFromRV([]float64{-2436.45, -2436.45, 6891.037}, []float64{5.088611, -5.088611, 0}, virtObj)
 	startDT := time.Now()
 	endDT := startDT.Add(24 * time.Hour)
@@ -111,7 +111,7 @@ func TestEstimateArbitraryPhi(t *testing.T) {
 
 func TestEstimatePhi(t *testing.T) {
 	t.Skip("This example from 5070 does not seem to work. However, all my equations are correct AFAIK and the example isn't precise.")
-	virtObj := CelestialObject{"normalized", 6378.145, 149598023, 1, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, nil}
+	virtObj := CelestialObject{"normalized", 6378.145, 149598023, 1, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, 0, nil}
 	Xsl := []float64{1, 0, 0, 0, 1, 0}
 	X := mat64.NewVector(6, Xsl)
 	δX := mat64.NewVector(6, []float64{1e-6, -1e6, 0, 1e-6, 1e-6, 0})
