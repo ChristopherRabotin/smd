@@ -200,10 +200,11 @@ func main() {
 			}
 			// There is no truth measurement here, let's only predict the KF covariance.
 			kf.Prepare(state.Φ, nil)
-			est, perr := kf.Predict()
+			estI, perr := kf.Predict()
 			if perr != nil {
 				panic(fmt.Errorf("[ERR!] (#%05d)\n%s", measNo, perr))
 			}
+			est := estI.(*gokalman.HybridKFEstimate)
 			prevEst = est
 			// NOTE: The state seems to be all I need, along with Phi maybe (?) because the KF already uses the previous state?!
 			if *debug {
@@ -234,10 +235,11 @@ func main() {
 
 		Htilde := computedObservation.HTilde()
 		kf.Prepare(state.Φ, Htilde)
-		est, err := kf.Update(measurement.StateVector(), computedObservation.StateVector())
+		estI, err := kf.Update(measurement.StateVector(), computedObservation.StateVector())
 		if err != nil {
 			panic(fmt.Errorf("[ERR!] %s", err))
 		}
+		est := estI.(*gokalman.HybridKFEstimate)
 		prevEst = est
 		prevP = est.Covariance().(*mat64.SymDense)
 

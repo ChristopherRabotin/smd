@@ -278,11 +278,11 @@ func main() {
 				kf.PreparePNT(Γ)
 			}
 		}
-		est, err := kf.Update(measurement.StateVector(), computedObservation.StateVector())
+		estI, err := kf.Update(measurement.StateVector(), computedObservation.StateVector())
 		if err != nil {
 			panic(fmt.Errorf("[ERR!] %s", err))
 		}
-
+		est := estI.(*gokalman.HybridKFEstimate)
 		prevP = est.Covariance().(*mat64.SymDense)
 		stateEst := mat64.NewVector(6, nil)
 		stateEst.AddVec(state.Vector(), est.State())
