@@ -16,8 +16,6 @@ inc = 0.0
 RAAN = 0.0
 argPeri = 0.0
 tAnomaly = 90
-#position = [] #[x, y, z]
-#velocity = [] #[xdot ydot zdot]
 
 [error] # To generate datasets only
 probability = 0.1 # i.e. 10% of calls to SetState will have an error

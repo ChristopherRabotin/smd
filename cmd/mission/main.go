@@ -166,7 +166,7 @@ func main() {
 				panic(err)
 			}
 			// Header
-			f.WriteString(fmt.Sprintf("# Creation date (UTC): %s\n\"station name\",\"epoch UTC\",\"Julian day\",\"range (km)\",\"range rate (km/s)\"\n", time.Now()))
+			f.WriteString(fmt.Sprintf("# Creation date (UTC): %s\n\"station name\",\"epoch UTC\",\"Julian day\",\"Theta GST\",\"range (km)\",\"range rate (km/s)\"\n", time.Now()))
 			// Iterate over each state
 			for state := range measChan {
 				Δt := state.DT.Sub(startDT).Seconds()
@@ -174,7 +174,7 @@ func main() {
 				for _, st := range stations {
 					measurement := st.PerformMeasurement(θgst, state)
 					if measurement.Visible {
-						f.WriteString(fmt.Sprintf("\"%s\",\"%s\",%f,%s\n", st.Name, state.DT, julian.TimeToJD(state.DT), measurement.ShortCSV()))
+						f.WriteString(fmt.Sprintf("\"%s\",\"%s\",%f,%f,%s\n", st.Name, state.DT.Format(dateFormat), julian.TimeToJD(state.DT), θgst, measurement.ShortCSV()))
 					}
 				}
 			}

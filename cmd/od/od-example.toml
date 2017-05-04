@@ -1,0 +1,62 @@
+[measurements]
+file = "../mission/output/meas.csv"
+stations = ["builtin.DSS34", "Other"]
+
+[station.Other]
+name = "Other station"
+altitude = 100
+elevation = 10
+latitude = 0
+longitude = 0
+range_sigma = 0.1
+rate_sigma = 0.1
+
+[mission]
+start = "2015-02-03 00:00:00" # or JDE # Allows to ignore all measurements happening before that date
+end = "2015-02-15 00:00:00" # or JDE # Allows to ignore all measurements happening after that date
+autodate = true # Set to false to use the start and end date times
+step = "10s" # Must be parsable by golang's ParseDuration
+
+[filter]
+type = "EKF" # Or `CKF` or `UKF`; defines the section to be read.
+outPrefix = "output/demo" # Prefix used for all filtering.
+
+[noise]
+Q = 1e-12
+range = 1e-3
+rate = 1-6
+
+[covariance]
+position = 100
+velocity = 0.1
+
+[SNC]
+enabled = true # Set to false to disable SNC.
+disableTime = 1200 # Number of seconds between measurements to skip using SNC noise.
+RICframe = false # Set to true if the noise should be considered defined in RIC frame instead of inertial frame.
+
+[CKF]
+smooth = false # Set to true to smooth the CKF.
+
+[EKF]
+trigger = 15 # Number of measurements prior to switching to EKF mode.
+disableTime = -1 # Seconds between measurements to switch back to CKF. Set as negative to ignore.
+
+[SRIF]
+smooth = false # Set to true to smooth the SRIF.
+
+[orbit]
+body = "Earth"
+viaRV = true # Set to False to define as orbital elements
+R1 = -274096790.0
+R2 = -92859240.0
+R3 = -40199490.0
+V1 = 32.67
+V2 = -8.94
+V3 = -3.88
+#sma = 6469
+#ecc = 0.0
+#inc = 0.0
+#RAAN = 0.0
+#argPeri = 0.0
+#tAnomaly = 90
