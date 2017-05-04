@@ -64,10 +64,6 @@ func loadMeasurementFile(filename string, stations map[string]smd.Station) (map[
 			log.Printf("[WARNING] skipping malformatted raneg rate `%s` in measurement file: %s\n", entries[5], ferr1)
 			continue
 		}
-		epoch, err := strconv.ParseFloat(strings.TrimSpace(entries[0]), 64)
-		if err != nil {
-			log.Fatalf("[load:error] could not parse epoch when reading: `%s`", strings.TrimSpace(entries[0]))
-		}
 		measurements[stateDT] = smd.Measurement{Visible: true, Range: stRange, RangeRate: stRate, Timeθgst: Timeθgst, State: smd.State{DT: stateDT}, Station: station}
 		if cnt == 1 {
 			startDT = stateDT
