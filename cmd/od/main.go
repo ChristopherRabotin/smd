@@ -24,7 +24,6 @@ const (
 
 var (
 	kf             gokalman.NLDKF
-	σQExponent     float64
 	scenario       string
 	wg             sync.WaitGroup
 	ekfTrigger     int
@@ -39,7 +38,6 @@ var debug = flag.Bool("debug", false, "verbose debug")
 
 func init() {
 	flag.StringVar(&scenario, "scenario", defaultScenario, "designer scenario TOML file")
-	flag.Float64Var(&σQExponent, "sigmaExp", 6, "exponent for the Q sigma (default is 6, so sigma=1e-6).")
 }
 
 func main() {
@@ -91,8 +89,10 @@ func main() {
 	stationNames := viper.GetStringSlice("measurements.stations")
 	stations := make(map[string]smd.Station)
 	for _, stationName := range stationNames {
+		var st smd.Station
 		if len(stationName) > 8 && stationName[0:8] == "builtin." {
-			stations[stationName] = smd.BuiltinStationFromName(stationName[8:len(stationName)])
+			st = smd.BuiltinStationFromName(stationName[8:len(stationName)])
+			stations[st.Name] = st
 		} else {
 			// Read provided station.
 			stationKey := fmt.Sprintf("station.%s.", stationName)
@@ -103,7 +103,7 @@ func main() {
 			longθ := viper.GetFloat64(stationKey + "longitude")
 			σρ := viper.GetFloat64(stationKey + "range_sigma")
 			σρDot := viper.GetFloat64(stationKey + "rate_sigma")
-			st := smd.NewStation(humanName, altitude, elevation, latΦ, longθ, σρ, σρDot)
+			st = smd.NewStation(humanName, altitude, elevation, latΦ, longθ, σρ, σρDot)
 			if planetName := viper.GetString(stationKey + "planet"); len(planetName) > 0 {
 				// A planet was specified, so it might not be Earth
 				if planet, errp := smd.CelestialObjectFromString(planetName); errp != nil {
@@ -112,9 +112,9 @@ func main() {
 					st.Planet = planet
 				}
 			}
-			stations[stationName] = st
+			stations[humanName] = st
 		}
-		log.Printf("[info] added station %s", stations[stationName])
+		log.Printf("[info] added station %s", st)
 	}
 
 	// Load measurement file

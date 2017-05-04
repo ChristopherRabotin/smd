@@ -53,4 +53,4 @@ latitude = 0
 longitude = 0
 range_sigma = 0.1
 rate_sigma = 0.1
-planet = Mars
+#planet = "Mars"
