@@ -12,13 +12,13 @@ range_sigma = 0.1
 rate_sigma = 0.1
 
 [mission]
-start = "2015-02-03 00:00:00" # or JDE # Allows to ignore all measurements happening before that date
-end = "2015-02-15 00:00:00" # or JDE # Allows to ignore all measurements happening after that date
+start = "2015-02-03 00:00:00" # or JDE
+end = "2015-02-03 00:30:00" # or JDE
 autodate = true # Set to false to use the start and end date times
 step = "10s" # Must be parsable by golang's ParseDuration
 
 [filter]
-type = "EKF" # Or `CKF` or `UKF`; defines the section to be read.
+type = "CKF" # Or `CKF` or `UKF`; defines the section to be read.
 outPrefix = "output/demo" # Prefix used for all filtering.
 
 [noise]
@@ -27,8 +27,8 @@ range = 1e-3
 rate = 1e-6
 
 [covariance]
-position = 100
-velocity = 0.1
+position = 10
+velocity = 0.01
 
 [SNC]
 enabled = true # Set to false to disable SNC.
@@ -47,16 +47,22 @@ smooth = false # Set to true to smooth the SRIF.
 
 [orbit]
 body = "Earth"
-viaRV = true # Set to False to define as orbital elements
-R1 = -274096790.0
-R2 = -92859240.0
-R3 = -40199490.0
-V1 = 32.67
-V2 = -8.94
-V3 = -3.88
-#sma = 6469
-#ecc = 0.0
-#inc = 0.0
-#RAAN = 0.0
-#argPeri = 0.0
-#tAnomaly = 90
+viaRV = false # Set to False to define as orbital elements
+#R1 = -78.49457331593183
+#R2 = 6468.5230056807995
+#R3 = -1.7261709258352725e-06
+#V1 = -7.8490714709967655
+#V2 = -0.09539769697366016
+#V3 = -3.4522675342232137e-07
+sma = 36469
+ecc = 0.0
+inc = 0.0
+RAAN = 0.0
+argPeri = 0.0
+tAnomaly = 90
+
+[perturbations]
+J2 = true
+J3 = false
+J4 = false
+bodies = ["Earth", "Sun", "Venus", "Jupiter"]

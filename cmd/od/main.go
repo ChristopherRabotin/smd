@@ -67,16 +67,22 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not understand body `%s`: %s", centralBodyName, err)
 	}
-	if viper.GetBool("viaRV") {
+	if viper.GetBool("orbit.viaRV") {
 		R := make([]float64, 3)
 		V := make([]float64, 3)
 		for i := 0; i < 3; i++ {
 			R[i] = viper.GetFloat64(fmt.Sprintf("orbit.R%d", i+1))
 			V[i] = viper.GetFloat64(fmt.Sprintf("orbit.V%d", i+1))
 		}
+		if R[0] == 0 && R[1] == 0 && R[2] == 0 {
+			log.Fatalln("[error] radius vector is nil, check where viaRV should be enabled")
+		}
 		scOrbit = smd.NewOrbitFromRV(R, V, centralBody)
 	} else {
 		a := viper.GetFloat64("orbit.sma")
+		if a == 0 {
+			log.Fatalln("[error] semi major axis is nil, check where viaRV should be enabled")
+		}
 		e := viper.GetFloat64("orbit.ecc")
 		i := viper.GetFloat64("orbit.inc")
 		Ω := viper.GetFloat64("orbit.RAAN")
@@ -119,11 +125,14 @@ func main() {
 
 	// Load measurement file
 	measurements, measStartDT, measEndDT := loadMeasurementFile(viper.GetString("measurements.file"), stations)
+	if numMeas := len(measurements); numMeas < 2 {
+		log.Fatalf("[error] Loaded %d measurements, which is not enough for any estimation", numMeas)
+	}
 	log.Printf("[info] Loaded %d measurements from %s to %s", len(measurements), measStartDT, measEndDT)
 
 	// Check overlap between measurement file and the dates of the mission.
 	if viper.GetBool("mission.autodate") {
-		startDT = measStartDT
+		startDT = measStartDT.Add(-timeStep)
 		endDT = measEndDT
 	} else if startDT.After(measEndDT) {
 		log.Fatal("mission start time is after last measurement")
@@ -171,8 +180,33 @@ func main() {
 	numStates := int(endDT.Sub(startDT).Seconds()/timeStep.Seconds()) + 1
 	residuals := make([]*mat64.Vector, numStates)
 
-	// TODO: Perturbations in the estimate
-	estPerts := smd.Perturbations{PerturbingBody: &smd.Sun}
+	// Read perturbations
+	bodies := viper.GetStringSlice("perturbations.bodies")
+	enableJ2 := viper.GetBool("perturbations.J2")
+	enableJ3 := viper.GetBool("perturbations.J3")
+	enableJ4 := viper.GetBool("perturbations.J4")
+	var pertBody *smd.CelestialObject
+	for _, body := range bodies {
+		celObj, cerr := smd.CelestialObjectFromString(body)
+		if cerr != nil {
+			log.Fatalf("could not understand body `%s`: %s", body, cerr)
+		}
+		// XXX: This logic needs work after more bodies are allowed.
+		if !celObj.Equals(smd.Sun) {
+			log.Printf("body `%s` not yet supported, skipping it in perturbations", body)
+		} else {
+			pertBody = &celObj
+		}
+	}
+	var jN uint8 = 0
+	if enableJ4 {
+		jN = 4
+	} else if enableJ3 {
+		jN = 3
+	} else if enableJ2 {
+		jN = 2
+	}
+	estPerts := smd.Perturbations{Jn: jN, PerturbingBody: pertBody}
 
 	stateEstChan := make(chan (smd.State), 1)
 
@@ -221,7 +255,7 @@ func main() {
 	var prevStationName = ""
 	var prevDT time.Time
 	var ckfMeasNo = 0
-	measNo := 1
+	measNo := 0
 	stateNo := 0
 	x0 := mat64.NewVector(6, nil)
 	if fltType == gokalman.EKFType || fltType == gokalman.CKFType {
@@ -273,15 +307,17 @@ func main() {
 		ΔtDuration := measurement.State.DT.Sub(prevDT)
 		Δt := ΔtDuration.Seconds() // Everything is in seconds.
 		// Informational messages.
-		if !kf.EKFEnabled() && ckfMeasNo == ekfTrigger {
-			// Switch KF to EKF mode
-			kf.EnableEKF()
-			fmt.Printf("[info] #%05d EKF now enabled\n", measNo)
-		} else if kf.EKFEnabled() && ekfDisableTime > 0 && Δt > ekfDisableTime {
-			// Switch KF back to CKF mode
-			kf.DisableEKF()
-			ckfMeasNo = 0
-			fmt.Printf("[info] #%05d EKF now disabled (Δt=%s)\n", measNo, ΔtDuration)
+		if fltType == gokalman.EKFType {
+			if !kf.EKFEnabled() && ckfMeasNo == ekfTrigger {
+				// Switch KF to EKF mode
+				kf.EnableEKF()
+				fmt.Printf("[info] #%05d EKF now enabled\n", measNo)
+			} else if kf.EKFEnabled() && ekfDisableTime > 0 && Δt > ekfDisableTime {
+				// Switch KF back to CKF mode
+				kf.DisableEKF()
+				ckfMeasNo = 0
+				fmt.Printf("[info] #%05d EKF now disabled (Δt=%s)\n", measNo, ΔtDuration)
+			}
 		}
 
 		if measurement.Station.Name != prevStationName {
@@ -292,7 +328,7 @@ func main() {
 		// Compute "real" measurement
 		computedObservation := measurement.Station.PerformMeasurement(measurement.Timeθgst, state)
 		if !computedObservation.Visible {
-			fmt.Printf("[WARN] station %s should see the SC but does not\n", measurement.Station.Name)
+			fmt.Printf("[WARN] #%05d station %s should see the SC but does not\n", measNo, measurement.Station.Name)
 			visibilityErrors++
 		}
 
