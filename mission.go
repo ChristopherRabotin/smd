@@ -58,7 +58,7 @@ func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, perts Pert
 			StreamStates(conf, a.histChans[0])
 		}()
 		// Write the first data point.
-		a.histChans[0] <- State{a.CurrentDT, *s, *o, nil, nil}
+		//		a.histChans[0] <- State{a.CurrentDT, *s, *o, nil, nil}
 	}
 
 	if end.Before(start) {
@@ -90,6 +90,8 @@ func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 
 // Propagate starts the propagation.
 func (a *Mission) Propagate() {
+	// Write the first data point
+	a.SetState(0, a.GetState())
 	// Add a ticker status report based on the duration of the simulation.
 	a.LogStatus()
 	ticker := time.NewTicker(10 * time.Second)
@@ -185,6 +187,9 @@ func (a *Mission) GetState() (s []float64) {
 	}
 	s[6] = a.Vehicle.FuelMass
 	if a.computeSTM {
+		if a.Vehicle.Drag > 0 {
+			s[7] = a.Vehicle.Drag
+		}
 		// Add the components of Φ
 		rSTM, cSTM := a.perts.STMSize()
 		sIdx := rSTM + 1
