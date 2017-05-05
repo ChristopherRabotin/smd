@@ -31,6 +31,7 @@ type Mission struct {
 	histChans                  []chan (State)
 	computeSTM, done, collided bool
 	autoChanClosing            bool // Set to False to not automatically close the channels upon end propgation time reached.
+	propuntilCalled            bool // Avoids too many messages if repeated calls to PropagateUntil()
 }
 
 // NewMission is the same as NewPreciseMission with the default step size.
@@ -48,7 +49,7 @@ func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, perts Pert
 		end = end.UTC()
 	}
 	rSTM, _ := perts.STMSize()
-	a := &Mission{s, o, DenseIdentity(rSTM), start, end, start, perts, step, make(chan (bool), 1), nil, computeSTM, false, false, true}
+	a := &Mission{s, o, DenseIdentity(rSTM), start, end, start, perts, step, make(chan (bool), 1), nil, computeSTM, false, false, true, false}
 	// Create a main history channel if there is any exporting
 	if !conf.IsUseless() {
 		a.histChans = []chan (State){make(chan (State), 10)}
@@ -81,6 +82,7 @@ func (a *Mission) LogStatus() {
 
 // PropagateUntil propagates until the given time is reached.
 func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
+	a.propuntilCalled = true
 	a.autoChanClosing = autoClose
 	a.StopDT = dt
 	// For the final propagation report says the exact prop time, we update the start date time.
@@ -92,8 +94,10 @@ func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 func (a *Mission) Propagate() {
 	// Write the first data point
 	a.SetState(0, a.GetState())
+	if !a.propuntilCalled {
+		a.LogStatus()
+	}
 	// Add a ticker status report based on the duration of the simulation.
-	a.LogStatus()
 	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for _ = range ticker.C {
@@ -108,15 +112,23 @@ func (a *Mission) Propagate() {
 	ode.NewRK4(0, a.step.Seconds(), a).Solve() // Blocking.
 	vFinal := Norm(a.Orbit.V())
 	a.done = true
-	duration := a.CurrentDT.Sub(a.StartDT)
-	durStr := duration.String()
-	if duration.Hours() > 24 {
-		durStr += fmt.Sprintf(" (~%.3fd)", duration.Hours()/24)
-	}
-	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "duration", durStr, "Δv(km/s)", math.Abs(vFinal-vInit), "fuel(kg)", initFuel-a.Vehicle.FuelMass)
-	a.LogStatus()
-	if a.Vehicle.handleFuel && a.Vehicle.FuelMass < 0 {
-		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
+	if a.autoChanClosing {
+		// Only print if this is the last call
+		if a.propuntilCalled {
+			// Don't print duration because it isn't relevant
+			a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "Δv(km/s)", math.Abs(vFinal-vInit), "fuel(kg)", initFuel-a.Vehicle.FuelMass)
+		} else {
+			duration := a.CurrentDT.Sub(a.StartDT)
+			durStr := duration.String()
+			if duration.Hours() > 24 {
+				durStr += fmt.Sprintf(" (~%.3fd)", duration.Hours()/24)
+			}
+			a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "duration", durStr, "Δv(km/s)", math.Abs(vFinal-vInit), "fuel(kg)", initFuel-a.Vehicle.FuelMass)
+		}
+		a.LogStatus()
+		if a.Vehicle.handleFuel && a.Vehicle.FuelMass < 0 {
+			a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
+		}
 	}
 	wg.Wait() // Don't return until we're done writing all the files.
 }
