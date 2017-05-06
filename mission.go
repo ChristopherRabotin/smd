@@ -83,7 +83,6 @@ func (a *Mission) LogStatus() {
 // PropagateUntil propagates until the given time is reached.
 func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 	if !a.propuntilCalled {
-		fmt.Println("adding first state")
 		a.CurrentDT = a.CurrentDT.Add(-2 * a.step)
 		a.SetState(0, a.GetState())
 		a.LogStatus()
@@ -98,7 +97,6 @@ func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 	}
 	// For the final propagation report says the exact prop time, we update the start date time.
 	a.StartDT = a.CurrentDT.Add(-a.step)
-	//fmt.Printf("%s -> %s\n", a.StartDT, a.StopDT)
 	a.Propagate()
 }
 
@@ -157,14 +155,8 @@ func (a *Mission) Stop(t float64) bool {
 	var stop bool
 	select {
 	case <-a.stopChan:
-		/*for _, histChan := range a.histChans {
-			close(histChan)
-		}
-		return true // Stop because there is a request to stop.
-		*/
 		stop = true
 	default:
-		//a.CurrentDT = a.CurrentDT.Add(a.step) // XXX: Should this be in SetState?
 		if a.StopDT.Before(a.StartDT) {
 			// A hard limit is set on a ten year propagation.
 			kill := false
@@ -180,26 +172,14 @@ func (a *Mission) Stop(t float64) bool {
 					}
 				}
 			}
-			/*for _, histChan := range a.histChans {
-				close(histChan)
-			}*/
 			stop = true
-			//return true
 		}
 		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() > 0 {
-			/*if a.autoChanClosing {
-				for _, histChan := range a.histChans {
-					close(histChan)
-				}
-			}
-			return true // Stop, we've reached the end of the simulation.*/
 			stop = true
 		}
 	}
 	if stop {
 		if a.autoChanClosing {
-			//fmt.Println("about to stop, saving state")
-			//a.SetState(0, a.GetState())
 			for _, histChan := range a.histChans {
 				close(histChan)
 			}
