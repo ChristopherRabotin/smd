@@ -127,7 +127,7 @@ type OrbitNoise struct {
 
 func (n OrbitNoise) Generate() (rtn []float64) {
 	rtn = make([]float64, 6)
-	if n.probability < rand.Float64() {
+	if randFloat := rand.Float64(); n.probability < randFloat {
 		return
 	}
 	position := n.position.Rand(nil)

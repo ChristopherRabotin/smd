@@ -31,6 +31,7 @@ type Mission struct {
 	histChans                  []chan (State)
 	computeSTM, done, collided bool
 	autoChanClosing            bool // Set to False to not automatically close the channels upon end propgation time reached.
+	propuntilCalled            bool // Avoids too many messages if repeated calls to PropagateUntil()
 }
 
 // NewMission is the same as NewPreciseMission with the default step size.
@@ -48,7 +49,7 @@ func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, perts Pert
 		end = end.UTC()
 	}
 	rSTM, _ := perts.STMSize()
-	a := &Mission{s, o, DenseIdentity(rSTM), start, end, start, perts, step, make(chan (bool), 1), nil, computeSTM, false, false, true}
+	a := &Mission{s, o, DenseIdentity(rSTM), start, end, start, perts, step, make(chan (bool), 1), nil, computeSTM, false, false, true, false}
 	// Create a main history channel if there is any exporting
 	if !conf.IsUseless() {
 		a.histChans = []chan (State){make(chan (State), 10)}
@@ -58,7 +59,6 @@ func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, perts Pert
 			StreamStates(conf, a.histChans[0])
 		}()
 		// Write the first data point.
-		a.histChans[0] <- State{a.CurrentDT, *s, *o, nil, nil}
 	}
 
 	if end.Before(start) {
@@ -81,17 +81,33 @@ func (a *Mission) LogStatus() {
 
 // PropagateUntil propagates until the given time is reached.
 func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
+	if !a.propuntilCalled {
+		a.CurrentDT = a.CurrentDT.Add(-a.step)
+		a.SetState(0, a.GetState())
+		a.LogStatus()
+	}
+	a.propuntilCalled = true
 	a.autoChanClosing = autoClose
-	a.StopDT = dt
+	if !autoClose {
+		a.StopDT = dt.Add(a.step)
+	} else {
+		a.StopDT = dt.Add(-a.step)
+	}
 	// For the final propagation report says the exact prop time, we update the start date time.
-	a.StartDT = a.CurrentDT
+	a.StartDT = a.CurrentDT.Add(-a.step)
 	a.Propagate()
 }
 
 // Propagate starts the propagation.
 func (a *Mission) Propagate() {
+	// Write the first data point
+	if !a.propuntilCalled {
+		a.CurrentDT = a.CurrentDT.Add(-a.step)
+		a.StopDT = a.StopDT.Add(-a.step)
+		a.SetState(0, a.GetState())
+		a.LogStatus()
+	}
 	// Add a ticker status report based on the duration of the simulation.
-	a.LogStatus()
 	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for _ = range ticker.C {
@@ -106,15 +122,23 @@ func (a *Mission) Propagate() {
 	ode.NewRK4(0, a.step.Seconds(), a).Solve() // Blocking.
 	vFinal := Norm(a.Orbit.V())
 	a.done = true
-	duration := a.CurrentDT.Sub(a.StartDT)
-	durStr := duration.String()
-	if duration.Hours() > 24 {
-		durStr += fmt.Sprintf(" (~%.3fd)", duration.Hours()/24)
-	}
-	a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "duration", durStr, "Δv(km/s)", math.Abs(vFinal-vInit), "fuel(kg)", initFuel-a.Vehicle.FuelMass)
-	a.LogStatus()
-	if a.Vehicle.handleFuel && a.Vehicle.FuelMass < 0 {
-		a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
+	if a.autoChanClosing {
+		// Only print if this is the last call
+		if a.propuntilCalled {
+			// Don't print duration because it isn't relevant
+			a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "Δv(km/s)", math.Abs(vFinal-vInit), "fuel(kg)", initFuel-a.Vehicle.FuelMass)
+		} else {
+			duration := a.CurrentDT.Sub(a.StartDT)
+			durStr := duration.String()
+			if duration.Hours() > 24 {
+				durStr += fmt.Sprintf(" (~%.3fd)", duration.Hours()/24)
+			}
+			a.Vehicle.logger.Log("level", "notice", "subsys", "astro", "status", "finished", "duration", durStr, "Δv(km/s)", math.Abs(vFinal-vInit), "fuel(kg)", initFuel-a.Vehicle.FuelMass)
+		}
+		a.LogStatus()
+		if a.Vehicle.handleFuel && a.Vehicle.FuelMass < 0 {
+			a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
+		}
 	}
 	wg.Wait() // Don't return until we're done writing all the files.
 }
@@ -126,14 +150,11 @@ func (a *Mission) StopPropagation() {
 
 // Stop implements the stop call of the integrator. To stop the propagation, call StopPropagation().
 func (a *Mission) Stop(t float64) bool {
+	var stop bool
 	select {
 	case <-a.stopChan:
-		for _, histChan := range a.histChans {
-			close(histChan)
-		}
-		return true // Stop because there is a request to stop.
+		stop = true
 	default:
-		a.CurrentDT = a.CurrentDT.Add(a.step) // XXX: Should this be in SetState?
 		if a.StopDT.Before(a.StartDT) {
 			// A hard limit is set on a ten year propagation.
 			kill := false
@@ -149,21 +170,20 @@ func (a *Mission) Stop(t float64) bool {
 					}
 				}
 			}
+			stop = true
+		}
+		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() > 0 {
+			stop = true
+		}
+	}
+	if stop {
+		if a.autoChanClosing {
 			for _, histChan := range a.histChans {
 				close(histChan)
 			}
-			return true
-		}
-		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() > 0 {
-			if a.autoChanClosing {
-				for _, histChan := range a.histChans {
-					close(histChan)
-				}
-			}
-			return true // Stop, we've reached the end of the simulation.
 		}
 	}
-	return false
+	return stop
 }
 
 // GetState returns the state for the integrator for the Gaussian VOP.
@@ -185,6 +205,9 @@ func (a *Mission) GetState() (s []float64) {
 	}
 	s[6] = a.Vehicle.FuelMass
 	if a.computeSTM {
+		if a.Vehicle.Drag > 0 {
+			s[7] = a.Vehicle.Drag
+		}
 		// Add the components of Φ
 		rSTM, cSTM := a.perts.STMSize()
 		sIdx := rSTM + 1
@@ -200,9 +223,10 @@ func (a *Mission) GetState() (s []float64) {
 
 // SetState sets the updated state.
 func (a *Mission) SetState(t float64, s []float64) {
+	a.CurrentDT = a.CurrentDT.Add(a.step)
 	R := []float64{s[0], s[1], s[2]}
 	V := []float64{s[3], s[4], s[5]}
-	*a.Orbit = *NewOrbitFromRV(R, V, a.Orbit.Origin) // Deref is important (cd. TestMissionSpiral)
+	*a.Orbit = *NewOrbitFromRV(R, V, a.Orbit.Origin) // Deref is important (cf. TestMissionSpiral)
 
 	// Orbit sanity checks and warnings.
 	if !a.collided && a.Orbit.RNorm() < a.Orbit.Origin.Radius {
