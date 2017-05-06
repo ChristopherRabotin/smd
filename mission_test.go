@@ -42,31 +42,6 @@ func TestMissionStop(t *testing.T) {
 	t.Logf("\noInit: %s\noOscu: %s", oInit, o)
 }
 
-func TestMissionNegTime(t *testing.T) {
-	// Define a new orbit.
-	a0 := Earth.Radius - 1 // Collision test
-	e0 := 0.8
-	i0 := 38.0
-	ω0 := 10.0
-	Ω0 := 5.0
-	ν0 := 1.0
-	oInit := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
-	o := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, ν0, Earth)
-	// Define propagation parameters.
-	start, _ := time.Parse(time.RFC822, "01 Jan 15 10:00 UTC")
-	end := start.Add(time.Duration(-1) * time.Hour)
-	sc := NewEmptySC("test", 1500)
-	sc.FuelMass = -1
-	astro := NewMission(sc, o, start, end, Perturbations{}, false, ExportConfig{})
-	astro.Propagate()
-	if astro.CurrentDT.Equal(astro.StartDT) {
-		t.Fatal("astro did *not* propagate time")
-	}
-	if ok, err := oInit.StrictlyEquals(*o); !ok {
-		t.Fatalf("1ms propagation with no waypoints and no end time changes the orbit: %s", err)
-	}
-}
-
 func TestMissionGEO(t *testing.T) {
 	// Define an approximate GEO orbit.
 	a0 := Earth.Radius + 35786
