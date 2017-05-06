@@ -85,7 +85,7 @@ func TestMissionGEO(t *testing.T) {
 	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
 	ξ0 := oOsc.Energyξ()
 	// Define propagation parameters.
-	start := time.Now()
+	start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
 	if diff := geoDur - oTgt.Period(); diff > 100*time.Millisecond {
 		t.Fatalf("invalid period computed: %s", diff)
@@ -94,7 +94,7 @@ func TestMissionGEO(t *testing.T) {
 	astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, Perturbations{}, false, ExportConfig{})
 	// Start propagation.
 	astro.Propagate()
-	// Must find a way to test the stop channel. via a long propagation and a select probably.
+	t.Logf("duration = %s (should be: %s)", astro.CurrentDT.Sub(start), end.Sub(start))
 	// Check the orbital elements.
 	if ok, err := oOsc.StrictlyEquals(*oTgt); !ok {
 		t.Logf("\noOsc: %s\noTgt: %s", oOsc, oTgt)
@@ -120,7 +120,7 @@ func TestMissionGEO(t *testing.T) {
 func TestMission1DayNoJ2(t *testing.T) {
 	virtObj := CelestialObject{"virtObj", 6378.145, 149598023, 398600.4, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, 0, nil}
 	orbit := NewOrbitFromRV([]float64{-2436.45, -2436.45, 6891.037}, []float64{5.088611, -5.088611, 0}, virtObj)
-	startDT := time.Now()
+	startDT := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 	endDT := startDT.Add(24 * time.Hour)
 	NewPreciseMission(NewEmptySC("est", 0), orbit, startDT, endDT, Perturbations{}, time.Second, false, ExportConfig{}).Propagate()
 	expR := []float64{-5971.19544867343, 3945.58315019255, 2864.53021742433}
@@ -136,7 +136,7 @@ func TestMission1DayNoJ2(t *testing.T) {
 func TestMission1DayWithJ2(t *testing.T) {
 	virtObj := CelestialObject{"virtObj", 6378.145, 149598023, 398600.4, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, 0, nil}
 	orbit := NewOrbitFromRV([]float64{-2436.45, -2436.45, 6891.037}, []float64{5.088611, -5.088611, 0}, virtObj)
-	startDT := time.Now()
+	startDT := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 	endDT := startDT.Add(24 * time.Hour)
 	NewPreciseMission(NewEmptySC("est", 0), orbit, startDT, endDT, Perturbations{Jn: 2}, time.Second, false, ExportConfig{}).Propagate()
 	expR := []float64{-5751.49900721589, 4721.14371040552, 2046.03583664311}
@@ -159,7 +159,7 @@ func TestMissionGEOJ4(t *testing.T) {
 
 	oOsc := NewOrbitFromOE(a0, e0, i0, Ω0, ω0, 0, Earth)
 	// Define propagation parameters.
-	start := time.Now()
+	start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 	geoDur := (time.Duration(23) * time.Hour) + (time.Duration(56) * time.Minute) + (time.Duration(4) * time.Second)
 	end := start.Add(time.Duration(geoDur.Nanoseconds() / 2))
 	astro := NewMission(NewEmptySC("test", 1500), oOsc, start, end, Perturbations{Jn: 4}, false, ExportConfig{})
@@ -198,7 +198,7 @@ func TestMissionFrameChg(t *testing.T) {
 	copy(R1[:], o.R())
 	copy(V1[:], o.V())
 	// Define propagation parameters.
-	start := time.Now()
+	start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(time.Duration(2) * time.Hour)
 	astro := NewMission(NewEmptySC("test", 1500), o, start, end, Perturbations{}, false, ExportConfig{})
 	// Start propagation.
@@ -229,7 +229,7 @@ func TestCorrectOEa(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(45*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{Filename: fmt.Sprintf("ruggOEa-%s", meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 		astro.Propagate()
@@ -257,7 +257,7 @@ func TestCorrectOEaNeg(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(45*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{})
 		astro.Propagate()
@@ -284,7 +284,7 @@ func TestCorrectOEi(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(55*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{})
 		astro.Propagate()
@@ -311,7 +311,7 @@ func TestCorrectOEiNeg(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(55*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{})
 		astro.Propagate()
@@ -338,7 +338,7 @@ func TestCorrectOEΩ(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(49*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{})
 		astro.Propagate()
@@ -365,7 +365,7 @@ func TestCorrectOEΩNeg(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(49*24) * time.Hour) // just after the expected time
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{})
 		astro.Propagate()
@@ -394,7 +394,7 @@ func TestCorrectOEΩShortWay(t *testing.T) {
 	dryMass := 300.0
 	fuelMass := 67.0
 	sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔΩCL)})
-	start := time.Now()
+	start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(-1)
 	//end := start.Add(time.Duration(26) * time.Hour)
 	astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{})
@@ -417,7 +417,7 @@ func TestCorrectOEe(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(30*24) * time.Hour) // just after the expected time
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{Filename: fmt.Sprintf("ruggOEe-%s", meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 		astro.Propagate()
@@ -444,7 +444,7 @@ func TestCorrectOEeNeg(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔeCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(30*24) * time.Hour) // just after the expected time
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{})
 		astro.Propagate()
@@ -471,7 +471,7 @@ func TestCorrectOEω(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(2.5*24) * time.Hour) // just after the expected time
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{})
 		astro.Propagate()
@@ -494,7 +494,7 @@ func TestCorrectOEωNeg(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(1*24)*time.Hour + 2*time.Hour)
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{})
 		astro.Propagate()
@@ -527,7 +527,7 @@ func TestCorrectOEωShortWay(t *testing.T) {
 	dryMass := 300.0
 	fuelMass := 67.0
 	sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔωCL)})
-	start := time.Now()
+	start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(time.Duration(27) * time.Hour)
 	astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{})
 	astro.Propagate()
@@ -550,7 +550,7 @@ func TestMultiCorrectOE(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL, OptiΔiCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		var days int
 		var fuel float64
 		if meth == Ruggiero {
@@ -588,7 +588,7 @@ func TestPetropoulosCaseA(t *testing.T) {
 		dryMass := 1.0
 		fuelMass := 299.0
 		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		// With eta=0, the duration is 14.600 days.
 		//end := start.Add(time.Duration(15*24) * time.Hour)
 		end := start.Add(-1)
@@ -612,7 +612,7 @@ func TestPetropoulosCaseB(t *testing.T) {
 		dryMass := 1.0
 		fuelMass := 1999.0
 		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔiCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		// About three months is what is needed without the eccentricity change.
 		end := start.Add(time.Duration(90*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{Filename: fmt.Sprintf("petroB-%s", meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
@@ -634,7 +634,7 @@ func TestPetropoulosCaseC(t *testing.T) {
 		dryMass := 1.0
 		fuelMass := 299.0
 		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(80*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{Filename: fmt.Sprintf("petroC-%s", meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})
 		astro.Propagate()
@@ -658,7 +658,7 @@ func TestPetropoulosCaseE(t *testing.T) {
 		dryMass := 1.0
 		fuelMass := 1999.0
 		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth)})
-		start := time.Now()
+		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		// There is no provided time, but the graph goes all the way to 240 days.
 		//end := start.Add(time.Duration(190*24) * time.Hour)
 		end := start.Add(-1)
@@ -806,8 +806,8 @@ func TestMissionSTM(t *testing.T) {
 			previousState = state.Vector()
 		}
 		t.Logf("real duration = %s", mission.CurrentDT.Sub(startDT))
-		if numStates != 86403 {
-			t.Fatalf("expected 86403 states to be processed, got %d (failed on %d)", numStates, meth)
+		if numStates != 86402 {
+			t.Fatalf("expected 86402 states to be processed, got %d (failed on %d)", numStates, meth)
 		}
 		if meth == 2 {
 			cfgLoaded = false // Unload the modified config file

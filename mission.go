@@ -59,7 +59,6 @@ func NewPreciseMission(s *Spacecraft, o *Orbit, start, end time.Time, perts Pert
 			StreamStates(conf, a.histChans[0])
 		}()
 		// Write the first data point.
-		//		a.histChans[0] <- State{a.CurrentDT, *s, *o, nil, nil}
 	}
 
 	if end.Before(start) {
@@ -83,13 +82,12 @@ func (a *Mission) LogStatus() {
 // PropagateUntil propagates until the given time is reached.
 func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 	if !a.propuntilCalled {
-		a.CurrentDT = a.CurrentDT.Add(-2 * a.step)
+		a.CurrentDT = a.CurrentDT.Add(-a.step)
 		a.SetState(0, a.GetState())
 		a.LogStatus()
 	}
 	a.propuntilCalled = true
 	a.autoChanClosing = autoClose
-	a.StopDT = dt.Add(a.step)
 	if !autoClose {
 		a.StopDT = dt.Add(a.step)
 	} else {
@@ -104,8 +102,7 @@ func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 func (a *Mission) Propagate() {
 	// Write the first data point
 	if !a.propuntilCalled {
-		fmt.Println("first prop, set first state")
-		a.CurrentDT = a.CurrentDT.Add(-2 * a.step)
+		a.CurrentDT = a.CurrentDT.Add(-a.step)
 		a.SetState(0, a.GetState())
 		a.LogStatus()
 	}
