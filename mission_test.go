@@ -704,10 +704,10 @@ func TestMissionSTM(t *testing.T) {
 	// Tests that the STM is a good linearization (norm between truth and linearization less than 0.1)
 	// Also tests that the PropagateUntil and Propagate work the same way.
 	perts := Perturbations{Jn: 3}
-	startDT := time.Now().UTC()
+	startDT := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
 	dragExample := 1.2
-	for meth := 0; meth < 4; meth++ {
+	for meth := 1; meth < 2; meth++ {
 		// Define the orbits
 		leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 		// Initialize the mission and estimates
@@ -753,11 +753,10 @@ func TestMissionSTM(t *testing.T) {
 			sc := NewEmptySC("LEOwithDrag", 0)
 			sc.Drag = dragExample
 			perts.Drag = true
-			mission = NewPreciseMission(sc, leoMission, startDT, endDT, perts, 10*time.Second, true, ExportConfig{})
+			mission = NewPreciseMission(sc, leoMission, startDT, endDT, perts, 1*time.Second, true, ExportConfig{})
 			mission.RegisterStateChan(stateChan)
 			go mission.PropagateUntil(endDT, true)
 		} else {
-			//t.Skip("Multiple calls to PropagateUntil fails, cf. issue #104")
 			go func() {
 				curDT := startDT
 				for {
@@ -772,16 +771,23 @@ func TestMissionSTM(t *testing.T) {
 		}
 		numStates := 0
 		prevDT := time.Now()
+		var prevState *mat64.Vector
 		for state := range stateChan {
 			numStates++
 			if numStates == 1 {
 				prevDT = state.DT
-				//				continue
+				prevState = state.Vector()
 			} else {
 				if prevDT.After(state.DT) {
 					t.Fatal("expected future date")
 				} else {
 					prevDT = state.DT
+				}
+				fmt.Printf("%s \t %+v\n", state.DT, mat64.Formatted(state.Vector().T()))
+				if mat64.Equal(prevState, state.Vector()) {
+					t.Fatal("propagation not happening: previous state is equal to new state")
+				} else {
+					prevState = state.Vector()
 				}
 			}
 			var stmState *mat64.Vector
@@ -800,6 +806,7 @@ func TestMissionSTM(t *testing.T) {
 			}
 			previousState = state.Vector()
 		}
+		t.Logf("real duration = %s", mission.CurrentDT.Sub(startDT))
 		if numStates != 86401 {
 			t.Fatalf("expected 86401 states to be processed, got %d (failed on %d)", numStates, meth)
 		}

@@ -82,6 +82,10 @@ func (a *Mission) LogStatus() {
 
 // PropagateUntil propagates until the given time is reached.
 func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
+	if !a.propuntilCalled {
+		fmt.Println("adding first state")
+		a.SetState(0, a.GetState())
+	}
 	a.propuntilCalled = true
 	a.autoChanClosing = autoClose
 	a.StopDT = dt
@@ -93,8 +97,9 @@ func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 // Propagate starts the propagation.
 func (a *Mission) Propagate() {
 	// Write the first data point
-	a.SetState(0, a.GetState())
 	if !a.propuntilCalled {
+		fmt.Println("first prop, set first state")
+		a.SetState(0, a.GetState())
 		a.LogStatus()
 	}
 	// Add a ticker status report based on the duration of the simulation.
@@ -140,12 +145,15 @@ func (a *Mission) StopPropagation() {
 
 // Stop implements the stop call of the integrator. To stop the propagation, call StopPropagation().
 func (a *Mission) Stop(t float64) bool {
+	var stop bool
 	select {
 	case <-a.stopChan:
-		for _, histChan := range a.histChans {
+		/*for _, histChan := range a.histChans {
 			close(histChan)
 		}
 		return true // Stop because there is a request to stop.
+		*/
+		stop = true
 	default:
 		a.CurrentDT = a.CurrentDT.Add(a.step) // XXX: Should this be in SetState?
 		if a.StopDT.Before(a.StartDT) {
@@ -163,21 +171,32 @@ func (a *Mission) Stop(t float64) bool {
 					}
 				}
 			}
-			for _, histChan := range a.histChans {
+			/*for _, histChan := range a.histChans {
 				close(histChan)
-			}
-			return true
+			}*/
+			stop = true
+			//return true
 		}
 		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() > 0 {
-			if a.autoChanClosing {
+			/*if a.autoChanClosing {
 				for _, histChan := range a.histChans {
 					close(histChan)
 				}
 			}
-			return true // Stop, we've reached the end of the simulation.
+			return true // Stop, we've reached the end of the simulation.*/
+			stop = true
 		}
 	}
-	return false
+	if stop {
+		if a.autoChanClosing {
+			//fmt.Println("about to stop, saving state")
+			//a.SetState(0, a.GetState())
+			for _, histChan := range a.histChans {
+				close(histChan)
+			}
+		}
+	}
+	return stop
 }
 
 // GetState returns the state for the integrator for the Gaussian VOP.
