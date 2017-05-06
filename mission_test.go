@@ -806,8 +806,8 @@ func TestMissionSTM(t *testing.T) {
 			previousState = state.Vector()
 		}
 		t.Logf("real duration = %s", mission.CurrentDT.Sub(startDT))
-		if numStates != 86402 {
-			t.Fatalf("expected 86402 states to be processed, got %d (failed on %d)", numStates, meth)
+		if numStates != 86401 {
+			t.Fatalf("expected 86401 states to be processed, got %d (failed on %d)", numStates, meth)
 		}
 		if meth == 2 {
 			cfgLoaded = false // Unload the modified config file

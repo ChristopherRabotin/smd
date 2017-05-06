@@ -91,7 +91,7 @@ func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 	if !autoClose {
 		a.StopDT = dt.Add(a.step)
 	} else {
-		a.StopDT = dt
+		a.StopDT = dt.Add(-a.step)
 	}
 	// For the final propagation report says the exact prop time, we update the start date time.
 	a.StartDT = a.CurrentDT.Add(-a.step)
@@ -103,6 +103,7 @@ func (a *Mission) Propagate() {
 	// Write the first data point
 	if !a.propuntilCalled {
 		a.CurrentDT = a.CurrentDT.Add(-a.step)
+		a.StopDT = a.StopDT.Add(-a.step)
 		a.SetState(0, a.GetState())
 		a.LogStatus()
 	}
