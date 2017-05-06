@@ -707,7 +707,7 @@ func TestMissionSTM(t *testing.T) {
 	startDT := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 	endDT := startDT.Add(time.Duration(24) * time.Hour)
 	dragExample := 1.2
-	for meth := 1; meth < 2; meth++ {
+	for meth := 3; meth < 4; meth++ {
 		// Define the orbits
 		leoMission := NewOrbitFromOE(7000, 0.00001, 30, 80, 40, 0, Earth)
 		// Initialize the mission and estimates
@@ -807,7 +807,7 @@ func TestMissionSTM(t *testing.T) {
 			previousState = state.Vector()
 		}
 		t.Logf("real duration = %s", mission.CurrentDT.Sub(startDT))
-		if numStates != 86401 {
+		if numStates != 86403 {
 			t.Fatalf("expected 86401 states to be processed, got %d (failed on %d)", numStates, meth)
 		}
 		if meth == 2 {

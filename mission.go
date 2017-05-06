@@ -84,13 +84,21 @@ func (a *Mission) LogStatus() {
 func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 	if !a.propuntilCalled {
 		fmt.Println("adding first state")
+		a.CurrentDT = a.CurrentDT.Add(-2 * a.step)
 		a.SetState(0, a.GetState())
+		a.LogStatus()
 	}
 	a.propuntilCalled = true
 	a.autoChanClosing = autoClose
-	a.StopDT = dt
+	a.StopDT = dt.Add(a.step)
+	if !autoClose {
+		a.StopDT = dt.Add(a.step)
+	} else {
+		a.StopDT = dt
+	}
 	// For the final propagation report says the exact prop time, we update the start date time.
-	a.StartDT = a.CurrentDT
+	a.StartDT = a.CurrentDT.Add(-a.step)
+	//fmt.Printf("%s -> %s\n", a.StartDT, a.StopDT)
 	a.Propagate()
 }
 
@@ -99,6 +107,7 @@ func (a *Mission) Propagate() {
 	// Write the first data point
 	if !a.propuntilCalled {
 		fmt.Println("first prop, set first state")
+		a.CurrentDT = a.CurrentDT.Add(-2 * a.step)
 		a.SetState(0, a.GetState())
 		a.LogStatus()
 	}
@@ -155,7 +164,7 @@ func (a *Mission) Stop(t float64) bool {
 		*/
 		stop = true
 	default:
-		a.CurrentDT = a.CurrentDT.Add(a.step) // XXX: Should this be in SetState?
+		//a.CurrentDT = a.CurrentDT.Add(a.step) // XXX: Should this be in SetState?
 		if a.StopDT.Before(a.StartDT) {
 			// A hard limit is set on a ten year propagation.
 			kill := false
@@ -236,9 +245,10 @@ func (a *Mission) GetState() (s []float64) {
 
 // SetState sets the updated state.
 func (a *Mission) SetState(t float64, s []float64) {
+	a.CurrentDT = a.CurrentDT.Add(a.step)
 	R := []float64{s[0], s[1], s[2]}
 	V := []float64{s[3], s[4], s[5]}
-	*a.Orbit = *NewOrbitFromRV(R, V, a.Orbit.Origin) // Deref is important (cd. TestMissionSpiral)
+	*a.Orbit = *NewOrbitFromRV(R, V, a.Orbit.Origin) // Deref is important (cf. TestMissionSpiral)
 
 	// Orbit sanity checks and warnings.
 	if !a.collided && a.Orbit.RNorm() < a.Orbit.Origin.Radius {
