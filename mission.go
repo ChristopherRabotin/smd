@@ -89,7 +89,7 @@ func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 	a.propuntilCalled = true
 	a.autoChanClosing = autoClose
 	if !autoClose {
-		a.StopDT = dt.Add(a.step)
+		a.StopDT = dt
 	} else {
 		a.StopDT = dt.Add(-a.step)
 	}
@@ -172,7 +172,7 @@ func (a *Mission) Stop(t float64) bool {
 			}
 			stop = true
 		}
-		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() > 0 {
+		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() >= 0 {
 			stop = true
 		}
 	}
