@@ -669,7 +669,7 @@ func TestMissionSpiral(t *testing.T) {
 		t.Fatalf("fuel = %f instead of ~3880", sc.FuelMass)
 	}
 	// NOTE: Meeus/VSOP87 fail on this test. Must use either SPICE via Python or via CSV files.
-	exp := NewOrbitFromOE(153996645.4, 0.0472, 0.310, 290.149, 139.622, 34.434, Sun)
+	exp := NewOrbitFromOE(153988994.8, 0.0472, 0.310, 290.151, 139.587, 34.466, Sun)
 	if ok, err := exp.StrictlyEquals(*astro.Orbit); !ok {
 		t.Fatalf("final orbit invalid (expected / got): %s\n%s\n%s", err, exp, astro.Orbit)
 	}
