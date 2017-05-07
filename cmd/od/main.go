@@ -233,9 +233,9 @@ func main() {
 	// KF filter initialization stuff.
 
 	// Take care of measurements.
-	var estHistory []gokalman.Estimate
-	estChan := make(chan (gokalman.Estimate), 1)
-	go processEst(fltFilePrefix, estChan)
+	var estHistory []timedEstimate
+	estChan := make(chan (timedEstimate), 1)
+	go processEst(fltFilePrefix, estChan, startDT)
 
 	prevP := mat64.NewSymDense(6, nil)
 	var covarDistance = viper.GetFloat64("covariance.position")
@@ -303,10 +303,10 @@ func main() {
 			}
 			if smoothing {
 				// Save to history in order to perform smoothing.
-				estHistory[stateNo-1] = estI
+				estHistory[stateNo-1] = timedEstimate{state.DT, estI}
 			} else {
 				// Stream to CSV file
-				estChan <- est
+				estChan <- timedEstimate{state.DT, est}
 			}
 			continue
 		}
@@ -397,10 +397,10 @@ func main() {
 		// Stream to CSV file
 		if smoothing {
 			// Save to history in order to perform smoothing.
-			estHistory[stateNo-1] = est
+			estHistory[stateNo-1] = timedEstimate{state.DT, est}
 		} else {
 			// Stream to CSV file
-			estChan <- est
+			estChan <- timedEstimate{state.DT, est}
 		}
 		// If in EKF, update the reference trajectory.
 		if kf.EKFEnabled() {
@@ -438,7 +438,7 @@ func main() {
 			// Create another list of history for smoothing (cannot cast slice)
 			estHistoryClone := make([]*gokalman.SRIFEstimate, numStates)
 			for i := 0; i < numStates; i++ {
-				estHistoryClone[i] = estHistory[i].(*gokalman.SRIFEstimate)
+				estHistoryClone[i] = estHistory[i].est.(*gokalman.SRIFEstimate)
 			}
 			if err := kf.(*gokalman.SRIF).SmoothAll(estHistoryClone); err != nil {
 				panic(err)
@@ -447,7 +447,7 @@ func main() {
 			// Create another list of history for smoothing (cannot cast slice)
 			estHistoryClone := make([]*gokalman.HybridKFEstimate, numStates)
 			for i := 0; i < numStates; i++ {
-				estHistoryClone[i] = estHistory[i].(*gokalman.HybridKFEstimate)
+				estHistoryClone[i] = estHistory[i].est.(*gokalman.HybridKFEstimate)
 			}
 			if err := kf.(*gokalman.HybridKF).SmoothAll(estHistoryClone); err != nil {
 				panic(err)
@@ -486,19 +486,23 @@ func main() {
 	}
 }
 
-func processEst(fn string, estChan chan (gokalman.Estimate)) {
+func processEst(fn string, timeEstChan chan (timedEstimate), startDT time.Time) {
 	wg.Add(1)
 	numMeasurements := 0
 	rmsPosition := 0.0
 	rmsVelocity := 0.0
-	ce, _ := gokalman.NewCustomCSVExporter([]string{"x", "y", "z", "xDot", "yDot", "zDot", "Cr"}, ".", fn+".csv", 3)
+	ce, _ := gokalman.NewCustomCSVExporter([]string{"_epoch", "_seconds", "_minutes", "_hours", "_days", "x", "y", "z", "xDot", "yDot", "zDot"}, ".", fn+".csv", 3)
 	for {
-		est, more := <-estChan
+		timedEst, more := <-timeEstChan
 		if !more {
 			ce.Close()
 			wg.Done()
 			break
 		}
+		// Compute time delta
+		deltaT := timedEst.dt.Sub(startDT)
+		ce.WriteRaw(fmt.Sprintf("\"%s\",%f,%f,%f,%f,", timedEst.dt.Format(dateFormat), deltaT.Seconds(), deltaT.Minutes(), deltaT.Hours(), deltaT.Hours()/24))
+		est := timedEst.est
 		ce.Write(est)
 		for i := 0; i < 3; i++ {
 			rmsPosition += math.Pow(est.State().At(i, 0), 2)
@@ -512,4 +516,9 @@ func processEst(fn string, estChan chan (gokalman.Estimate)) {
 	rmsPosition = math.Sqrt(rmsPosition)
 	rmsVelocity = math.Sqrt(rmsVelocity)
 	fmt.Printf("=== RMS ===\nPosition = %f\tVelocity = %f\n", rmsPosition, rmsVelocity)
+}
+
+type timedEstimate struct {
+	dt  time.Time
+	est gokalman.Estimate
 }
