@@ -74,8 +74,6 @@ func TestMissionGEO(t *testing.T) {
 	if ok, err := oOsc.StrictlyEquals(*oTgt); !ok {
 		t.Logf("\noOsc: %s\noTgt: %s", oOsc, oTgt)
 		t.Fatalf("GEO 1.5 day propagation leads to incorrect orbit: %s", err)
-	} else {
-		t.Logf("NO FAIL\noOsc: %s\noTgt: %s", oOsc, oTgt)
 	}
 	// Check that all angular orbital elements are within 2 pi.
 	_, _, i, Ω, ω, ν, λ, tildeω, u := oOsc.Elements()
@@ -96,7 +94,7 @@ func TestMission1DayNoJ2(t *testing.T) {
 	virtObj := CelestialObject{"virtObj", 6378.145, 149598023, 398600.4, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, 0, nil}
 	orbit := NewOrbitFromRV([]float64{-2436.45, -2436.45, 6891.037}, []float64{5.088611, -5.088611, 0}, virtObj)
 	startDT := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
-	endDT := startDT.Add(24 * time.Hour)
+	endDT := startDT.Add(24 * time.Hour).Add(time.Second)
 	NewPreciseMission(NewEmptySC("est", 0), orbit, startDT, endDT, Perturbations{}, time.Second, false, ExportConfig{}).Propagate()
 	expR := []float64{-5971.19544867343, 3945.58315019255, 2864.53021742433}
 	expV := []float64{0.049002818030, -4.185030861883, 5.848985672439}
@@ -112,7 +110,7 @@ func TestMission1DayWithJ2(t *testing.T) {
 	virtObj := CelestialObject{"virtObj", 6378.145, 149598023, 398600.4, 23.4, 0.00005, 924645.0, 0.00108248, -2.5324e-6, -1.6204e-6, 0, nil}
 	orbit := NewOrbitFromRV([]float64{-2436.45, -2436.45, 6891.037}, []float64{5.088611, -5.088611, 0}, virtObj)
 	startDT := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
-	endDT := startDT.Add(24 * time.Hour)
+	endDT := startDT.Add(24 * time.Hour).Add(time.Second)
 	NewPreciseMission(NewEmptySC("est", 0), orbit, startDT, endDT, Perturbations{Jn: 2}, time.Second, false, ExportConfig{}).Propagate()
 	expR := []float64{-5751.49900721589, 4721.14371040552, 2046.03583664311}
 	expV := []float64{-0.797658631074, -3.656513108387, 6.139612016678}
