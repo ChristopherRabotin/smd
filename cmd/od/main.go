@@ -61,6 +61,7 @@ func main() {
 
 	// Read orbit
 	sc := smd.NewEmptySC("fltr", 0)
+
 	var scOrbit *smd.Orbit
 	centralBodyName := viper.GetString("orbit.body")
 	centralBody, err := smd.CelestialObjectFromString(centralBodyName)
@@ -138,6 +139,18 @@ func main() {
 		endDT = measEndDT
 	} else if startDT.After(measEndDT) {
 		log.Fatal("mission start time is after last measurement")
+	}
+
+	// Maneuvers (after loading files because we need to check startDT and endDT if auto date)
+	for burnNo := 0; viper.IsSet(fmt.Sprintf("burns.%d", burnNo)); burnNo++ {
+		burnDT := confReadJDEorTime(fmt.Sprintf("burns.%d.date", burnNo))
+		V := viper.GetFloat64(fmt.Sprintf("burns.%d.V", burnNo))
+		N := viper.GetFloat64(fmt.Sprintf("burns.%d.N", burnNo))
+		C := viper.GetFloat64(fmt.Sprintf("burns.%d.C", burnNo))
+		sc.Maneuvers[burnDT] = smd.NewManeuver(V, N, C)
+		if burnDT.After(endDT) || burnDT.Before(startDT) {
+			log.Printf("[WARNING] burn scheduled out of propagation time")
+		}
 	}
 
 	// Read SNC
