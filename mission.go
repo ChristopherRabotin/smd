@@ -89,11 +89,10 @@ func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 	a.propuntilCalled = true
 	a.autoChanClosing = autoClose
 	if !autoClose {
-		a.StopDT = dt.Add(a.step)
+		a.StopDT = dt
 	} else {
 		a.StopDT = dt.Add(-a.step)
 	}
-	// For the final propagation report says the exact prop time, we update the start date time.
 	a.StartDT = a.CurrentDT.Add(-a.step)
 	a.Propagate()
 }
@@ -102,9 +101,9 @@ func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 func (a *Mission) Propagate() {
 	// Write the first data point
 	if !a.propuntilCalled {
-		a.CurrentDT = a.CurrentDT.Add(-a.step)
 		a.StopDT = a.StopDT.Add(-a.step)
 		a.SetState(0, a.GetState())
+		a.CurrentDT = a.CurrentDT.Add(-a.step) // Reset after first SetState call
 		a.LogStatus()
 	}
 	// Add a ticker status report based on the duration of the simulation.
@@ -172,7 +171,7 @@ func (a *Mission) Stop(t float64) bool {
 			}
 			stop = true
 		}
-		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() > 0 {
+		if a.CurrentDT.Sub(a.StopDT).Nanoseconds() >= 0 {
 			stop = true
 		}
 	}
