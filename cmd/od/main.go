@@ -124,7 +124,9 @@ func main() {
 	}
 
 	// Load measurement file
-	measurements, measStartDT, measEndDT := loadMeasurementFile(viper.GetString("measurements.file"), stations)
+	measurements, measurementTimes := loadMeasurementFile(viper.GetString("measurements.file"), stations)
+	measStartDT := measurementTimes[0]
+	measEndDT := measurementTimes[len(measurementTimes)-1]
 	if numMeas := len(measurements); numMeas < 2 {
 		log.Fatalf("[error] Loaded %d measurements, which is not enough for any estimation", numMeas)
 	}
@@ -210,7 +212,7 @@ func main() {
 
 	stateEstChan := make(chan (smd.State), 1)
 
-	mEst := smd.NewPreciseMission(sc, scOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{Filename: "prj0", Cosmo: true})
+	mEst := smd.NewPreciseMission(sc, scOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
 	mEst.RegisterStateChan(stateEstChan)
 
 	var ekfWG sync.WaitGroup
@@ -220,11 +222,14 @@ func main() {
 	} else {
 		// Go step by step because the orbit pointer needs to be updated.
 		go func() {
-			for measurementTime := range measurements {
+			for i, measurementTime := range measurementTimes {
 				fmt.Printf("waiting : %s\n", measurementTime)
 				ekfWG.Wait()
+				fmt.Printf("moving on : %s\n", measurementTime)
 				ekfWG.Add(1)
-				mEst.PropagateUntil(measurementTime, measurementTime == endDT)
+				mEst.PropagateUntil(measurementTime, i == len(measurementTimes)-1)
+				fmt.Printf("done with : %s\n", measurementTime)
+				//ekfWG.Done()
 			}
 		}()
 	}

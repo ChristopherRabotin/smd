@@ -15,7 +15,7 @@ rate_sigma = 0.1
 start = "2015-02-03 00:00:00" # or JDE
 end = "2015-02-03 00:30:00" # or JDE
 autodate = true # Set to false to use the start and end date times
-step = "30s" # Must be parsable by golang's ParseDuration
+step = "10s" # Must be parsable by golang's ParseDuration
 
 [filter]
 type = "EKF" # Or `CKF` or `UKF`; defines the section to be read.
