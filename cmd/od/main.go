@@ -132,7 +132,7 @@ func main() {
 
 	// Check overlap between measurement file and the dates of the mission.
 	if viper.GetBool("mission.autodate") {
-		startDT = measStartDT.Add(-timeStep)
+		startDT = measStartDT
 		endDT = measEndDT
 	} else if startDT.After(measEndDT) {
 		log.Fatal("mission start time is after last measurement")
@@ -213,8 +213,21 @@ func main() {
 	mEst := smd.NewPreciseMission(sc, scOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{Filename: "prj0", Cosmo: true})
 	mEst.RegisterStateChan(stateEstChan)
 
+	var ekfWG sync.WaitGroup
 	// Go-routine to advance propagation.
-	go mEst.PropagateUntil(endDT.Add(timeStep), true)
+	if fltType != gokalman.EKFType {
+		go mEst.PropagateUntil(endDT.Add(timeStep), true)
+	} else {
+		// Go step by step because the orbit pointer needs to be updated.
+		go func() {
+			for measurementTime := range measurements {
+				fmt.Printf("waiting : %s\n", measurementTime)
+				ekfWG.Wait()
+				ekfWG.Add(1)
+				mEst.PropagateUntil(measurementTime, measurementTime == endDT)
+			}
+		}()
+	}
 
 	// KF filter initialization stuff.
 
@@ -237,18 +250,16 @@ func main() {
 		log.Println("[info] Smoothing enabled")
 	}
 
+	log.Printf("[info] Filtering with %s", fltType)
+
 	if fltType == gokalman.EKFType {
-		if ekfTrigger < 0 {
-			log.Println("[WARNING] EKF disabled")
+		if smoothing {
+			log.Println("[ERROR] Enabling smooth has NO effect because EKF is enabled")
+		}
+		if ekfTrigger < 10 {
+			log.Println("[WARNING] EKF may be turned on too early")
 		} else {
-			if smoothing {
-				log.Println("[ERROR] Enabling smooth has NO effect because EKF is enabled")
-			}
-			if ekfTrigger < 10 {
-				log.Println("[WARNING] EKF may be turned on too early")
-			} else {
-				fmt.Printf("[info] EKF will turn on after %d measurements\n", ekfTrigger)
-			}
+			log.Printf("[info] EKF will turn on after %d measurements\n", ekfTrigger)
 		}
 	}
 
@@ -413,6 +424,10 @@ func main() {
 		}
 		ckfMeasNo++
 		measNo++
+		if fltType == gokalman.EKFType {
+			fmt.Printf("releasing: %s\n", state.DT)
+			ekfWG.Done()
+		}
 	} // end while true
 
 	if smoothing {

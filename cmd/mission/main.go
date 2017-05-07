@@ -193,7 +193,7 @@ func main() {
 		}()
 	}
 
-	mission.Propagate()
+	mission.PropagateUntil(endDT, true)
 	wg.Wait()
 }
 
