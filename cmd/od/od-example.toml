@@ -18,7 +18,7 @@ autodate = true # Set to false to use the start and end date times
 step = "10s" # Must be parsable by golang's ParseDuration
 
 [filter]
-type = "CKF" # Or `CKF` or `UKF`; defines the section to be read.
+type = "EKF" # Or `CKF` or `UKF`; defines the section to be read.
 outPrefix = "output/demo" # Prefix used for all filtering.
 
 [noise]

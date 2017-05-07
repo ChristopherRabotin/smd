@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func loadMeasurementFile(filename string, stations map[string]smd.Station) (map[time.Time]smd.Measurement, time.Time, time.Time) {
+func loadMeasurementFile(filename string, stations map[string]smd.Station) (map[time.Time]smd.Measurement, []time.Time) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatalf("%s", err)
@@ -21,9 +21,9 @@ func loadMeasurementFile(filename string, stations map[string]smd.Station) (map[
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
-	var startDT, endDT time.Time
 	cnt := 0
 	measurements := make(map[time.Time]smd.Measurement)
+	measurementTimes := make([]time.Time, 0)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		// Remove double quotes
@@ -64,14 +64,11 @@ func loadMeasurementFile(filename string, stations map[string]smd.Station) (map[
 			log.Printf("[WARNING] skipping malformatted raneg rate `%s` in measurement file: %s\n", entries[5], ferr1)
 			continue
 		}
+		measurementTimes = append(measurementTimes, stateDT)
 		measurements[stateDT] = smd.Measurement{Visible: true, Range: stRange, RangeRate: stRate, Timeθgst: Timeθgst, State: smd.State{DT: stateDT}, Station: station}
-		if cnt == 1 {
-			startDT = stateDT
-		}
-		endDT = stateDT
 		cnt++
 	}
-	return measurements, startDT, endDT
+	return measurements, measurementTimes
 }
 
 func confReadJDEorTime(key string) (dt time.Time) {

@@ -61,6 +61,7 @@ func main() {
 
 	// Read orbit
 	sc := smd.NewEmptySC("fltr", 0)
+
 	var scOrbit *smd.Orbit
 	centralBodyName := viper.GetString("orbit.body")
 	centralBody, err := smd.CelestialObjectFromString(centralBodyName)
@@ -124,7 +125,9 @@ func main() {
 	}
 
 	// Load measurement file
-	measurements, measStartDT, measEndDT := loadMeasurementFile(viper.GetString("measurements.file"), stations)
+	measurements, measurementTimes := loadMeasurementFile(viper.GetString("measurements.file"), stations)
+	measStartDT := measurementTimes[0]
+	measEndDT := measurementTimes[len(measurementTimes)-1]
 	if numMeas := len(measurements); numMeas < 2 {
 		log.Fatalf("[error] Loaded %d measurements, which is not enough for any estimation", numMeas)
 	}
@@ -132,10 +135,22 @@ func main() {
 
 	// Check overlap between measurement file and the dates of the mission.
 	if viper.GetBool("mission.autodate") {
-		startDT = measStartDT.Add(-timeStep)
+		startDT = measStartDT
 		endDT = measEndDT
 	} else if startDT.After(measEndDT) {
 		log.Fatal("mission start time is after last measurement")
+	}
+
+	// Maneuvers (after loading files because we need to check startDT and endDT if auto date)
+	for burnNo := 0; viper.IsSet(fmt.Sprintf("burns.%d", burnNo)); burnNo++ {
+		burnDT := confReadJDEorTime(fmt.Sprintf("burns.%d.date", burnNo))
+		V := viper.GetFloat64(fmt.Sprintf("burns.%d.V", burnNo))
+		N := viper.GetFloat64(fmt.Sprintf("burns.%d.N", burnNo))
+		C := viper.GetFloat64(fmt.Sprintf("burns.%d.C", burnNo))
+		sc.Maneuvers[burnDT] = smd.NewManeuver(V, N, C)
+		if burnDT.After(endDT) || burnDT.Before(startDT) {
+			log.Printf("[WARNING] burn scheduled out of propagation time")
+		}
 	}
 
 	// Read SNC
@@ -210,18 +225,30 @@ func main() {
 
 	stateEstChan := make(chan (smd.State), 1)
 
-	mEst := smd.NewPreciseMission(sc, scOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{Filename: "prj0", Cosmo: true})
+	mEst := smd.NewPreciseMission(sc, scOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
 	mEst.RegisterStateChan(stateEstChan)
 
+	var ekfWG sync.WaitGroup
 	// Go-routine to advance propagation.
-	go mEst.PropagateUntil(endDT.Add(timeStep), true)
+	if fltType != gokalman.EKFType {
+		go mEst.PropagateUntil(endDT.Add(timeStep), true)
+	} else {
+		// Go step by step because the orbit pointer needs to be updated.
+		go func() {
+			for i, measurementTime := range measurementTimes {
+				ekfWG.Wait()
+				ekfWG.Add(1)
+				mEst.PropagateUntil(measurementTime, i == len(measurementTimes)-1)
+			}
+		}()
+	}
 
 	// KF filter initialization stuff.
 
 	// Take care of measurements.
-	var estHistory []gokalman.Estimate
-	estChan := make(chan (gokalman.Estimate), 1)
-	go processEst(fltFilePrefix, estChan)
+	var estHistory []timedEstimate
+	estChan := make(chan (timedEstimate), 1)
+	go processEst(fltFilePrefix, estChan, startDT)
 
 	prevP := mat64.NewSymDense(6, nil)
 	var covarDistance = viper.GetFloat64("covariance.position")
@@ -237,18 +264,16 @@ func main() {
 		log.Println("[info] Smoothing enabled")
 	}
 
+	log.Printf("[info] Filtering with %s", fltType)
+
 	if fltType == gokalman.EKFType {
-		if ekfTrigger < 0 {
-			log.Println("[WARNING] EKF disabled")
+		if smoothing {
+			log.Println("[ERROR] Enabling smooth has NO effect because EKF is enabled")
+		}
+		if ekfTrigger < 10 {
+			log.Println("[WARNING] EKF may be turned on too early")
 		} else {
-			if smoothing {
-				log.Println("[ERROR] Enabling smooth has NO effect because EKF is enabled")
-			}
-			if ekfTrigger < 10 {
-				log.Println("[WARNING] EKF may be turned on too early")
-			} else {
-				fmt.Printf("[info] EKF will turn on after %d measurements\n", ekfTrigger)
-			}
+			log.Printf("[info] EKF will turn on after %d measurements\n", ekfTrigger)
 		}
 	}
 
@@ -291,10 +316,10 @@ func main() {
 			}
 			if smoothing {
 				// Save to history in order to perform smoothing.
-				estHistory[stateNo-1] = estI
+				estHistory[stateNo-1] = timedEstimate{state.DT, estI}
 			} else {
 				// Stream to CSV file
-				estChan <- est
+				estChan <- timedEstimate{state.DT, est}
 			}
 			continue
 		}
@@ -385,10 +410,10 @@ func main() {
 		// Stream to CSV file
 		if smoothing {
 			// Save to history in order to perform smoothing.
-			estHistory[stateNo-1] = est
+			estHistory[stateNo-1] = timedEstimate{state.DT, est}
 		} else {
 			// Stream to CSV file
-			estChan <- est
+			estChan <- timedEstimate{state.DT, est}
 		}
 		// If in EKF, update the reference trajectory.
 		if kf.EKFEnabled() {
@@ -413,6 +438,9 @@ func main() {
 		}
 		ckfMeasNo++
 		measNo++
+		if fltType == gokalman.EKFType {
+			ekfWG.Done()
+		}
 	} // end while true
 
 	if smoothing {
@@ -423,7 +451,7 @@ func main() {
 			// Create another list of history for smoothing (cannot cast slice)
 			estHistoryClone := make([]*gokalman.SRIFEstimate, numStates)
 			for i := 0; i < numStates; i++ {
-				estHistoryClone[i] = estHistory[i].(*gokalman.SRIFEstimate)
+				estHistoryClone[i] = estHistory[i].est.(*gokalman.SRIFEstimate)
 			}
 			if err := kf.(*gokalman.SRIF).SmoothAll(estHistoryClone); err != nil {
 				panic(err)
@@ -432,7 +460,7 @@ func main() {
 			// Create another list of history for smoothing (cannot cast slice)
 			estHistoryClone := make([]*gokalman.HybridKFEstimate, numStates)
 			for i := 0; i < numStates; i++ {
-				estHistoryClone[i] = estHistory[i].(*gokalman.HybridKFEstimate)
+				estHistoryClone[i] = estHistory[i].est.(*gokalman.HybridKFEstimate)
 			}
 			if err := kf.(*gokalman.HybridKF).SmoothAll(estHistoryClone); err != nil {
 				panic(err)
@@ -471,34 +499,29 @@ func main() {
 	}
 }
 
-func processEst(fn string, estChan chan (gokalman.Estimate)) {
+func processEst(fn string, timeEstChan chan (timedEstimate), startDT time.Time) {
 	wg.Add(1)
-	// We also compute the RMS here and write the pre-fit residuals.
-	// Write BPlane
-	f, ferr := os.Create(fmt.Sprintf("./%s-prefit.csv", fn))
-	if ferr != nil {
-		panic(ferr)
-	}
-	defer f.Close()
-	f.WriteString("rho,rhoDot\n")
 	numMeasurements := 0
 	rmsPosition := 0.0
 	rmsVelocity := 0.0
-	ce, _ := gokalman.NewCustomCSVExporter([]string{"x", "y", "z", "xDot", "yDot", "zDot", "Cr"}, ".", fn+".csv", 3)
+	ce, _ := gokalman.NewCustomCSVExporter([]string{"_epoch", "_seconds", "_minutes", "_hours", "_days", "x", "y", "z", "xDot", "yDot", "zDot"}, ".", fn+".csv", 3)
 	for {
-		est, more := <-estChan
+		timedEst, more := <-timeEstChan
 		if !more {
 			ce.Close()
 			wg.Done()
 			break
 		}
-		f.WriteString(fmt.Sprintf("%f,%f\n", est.Innovation().At(0, 0), est.Innovation().At(1, 0)))
-		numMeasurements++
+		// Compute time delta
+		deltaT := timedEst.dt.Sub(startDT)
+		ce.WriteRaw(fmt.Sprintf("\"%s\",%f,%f,%f,%f,", timedEst.dt.Format(dateFormat), deltaT.Seconds(), deltaT.Minutes(), deltaT.Hours(), deltaT.Hours()/24))
+		est := timedEst.est
+		ce.Write(est)
 		for i := 0; i < 3; i++ {
 			rmsPosition += math.Pow(est.State().At(i, 0), 2)
 			rmsVelocity += math.Pow(est.State().At(i+3, 0), 2)
 		}
-		ce.Write(est)
+		numMeasurements++
 	}
 	// Compute RMS.
 	rmsPosition /= float64(numMeasurements)
@@ -506,4 +529,9 @@ func processEst(fn string, estChan chan (gokalman.Estimate)) {
 	rmsPosition = math.Sqrt(rmsPosition)
 	rmsVelocity = math.Sqrt(rmsVelocity)
 	fmt.Printf("=== RMS ===\nPosition = %f\tVelocity = %f\n", rmsPosition, rmsVelocity)
+}
+
+type timedEstimate struct {
+	dt  time.Time
+	est gokalman.Estimate
 }
