@@ -223,13 +223,9 @@ func main() {
 		// Go step by step because the orbit pointer needs to be updated.
 		go func() {
 			for i, measurementTime := range measurementTimes {
-				fmt.Printf("waiting : %s\n", measurementTime)
 				ekfWG.Wait()
-				fmt.Printf("moving on : %s\n", measurementTime)
 				ekfWG.Add(1)
 				mEst.PropagateUntil(measurementTime, i == len(measurementTimes)-1)
-				fmt.Printf("done with : %s\n", measurementTime)
-				//ekfWG.Done()
 			}
 		}()
 	}
@@ -430,7 +426,6 @@ func main() {
 		ckfMeasNo++
 		measNo++
 		if fltType == gokalman.EKFType {
-			fmt.Printf("releasing: %s\n", state.DT)
 			ekfWG.Done()
 		}
 	} // end while true
@@ -493,14 +488,6 @@ func main() {
 
 func processEst(fn string, estChan chan (gokalman.Estimate)) {
 	wg.Add(1)
-	// We also compute the RMS here and write the pre-fit residuals.
-	// Write BPlane
-	f, ferr := os.Create(fmt.Sprintf("./%s-prefit.csv", fn))
-	if ferr != nil {
-		panic(ferr)
-	}
-	defer f.Close()
-	f.WriteString("rho,rhoDot\n")
 	numMeasurements := 0
 	rmsPosition := 0.0
 	rmsVelocity := 0.0
@@ -512,13 +499,12 @@ func processEst(fn string, estChan chan (gokalman.Estimate)) {
 			wg.Done()
 			break
 		}
-		f.WriteString(fmt.Sprintf("%f,%f\n", est.Innovation().At(0, 0), est.Innovation().At(1, 0)))
-		numMeasurements++
+		ce.Write(est)
 		for i := 0; i < 3; i++ {
 			rmsPosition += math.Pow(est.State().At(i, 0), 2)
 			rmsVelocity += math.Pow(est.State().At(i+3, 0), 2)
 		}
-		ce.Write(est)
+		numMeasurements++
 	}
 	// Compute RMS.
 	rmsPosition /= float64(numMeasurements)
