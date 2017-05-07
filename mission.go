@@ -88,11 +88,7 @@ func (a *Mission) PropagateUntil(dt time.Time, autoClose bool) {
 	}
 	a.propuntilCalled = true
 	a.autoChanClosing = autoClose
-	if !autoClose {
-		a.StopDT = dt
-	} else {
-		a.StopDT = dt.Add(-a.step)
-	}
+	a.StopDT = dt
 	a.StartDT = a.CurrentDT.Add(-a.step)
 	a.Propagate()
 }
