@@ -112,10 +112,10 @@ func main() {
 	// Maneuvers
 	for burnNo := 0; viper.IsSet(fmt.Sprintf("burns.%d", burnNo)); burnNo++ {
 		burnDT := confReadJDEorTime(fmt.Sprintf("burns.%d.date", burnNo))
-		V := viper.GetFloat64(fmt.Sprintf("burns.%d.V", burnNo))
+		R := viper.GetFloat64(fmt.Sprintf("burns.%d.R", burnNo))
 		N := viper.GetFloat64(fmt.Sprintf("burns.%d.N", burnNo))
 		C := viper.GetFloat64(fmt.Sprintf("burns.%d.C", burnNo))
-		sc.Maneuvers[burnDT] = smd.NewManeuver(V, N, C)
+		sc.Maneuvers[burnDT] = smd.NewManeuver(R, N, C)
 		if burnDT.After(endDT) || burnDT.Before(startDT) {
 			log.Printf("[WARNING] burn scheduled out of propagation time")
 		} else if verbose {
