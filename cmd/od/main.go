@@ -236,6 +236,7 @@ func main() {
 		// Go step by step because the orbit pointer needs to be updated.
 		go func() {
 			for i, measurementTime := range measurementTimes {
+				fmt.Printf("waiting for %d\n", i)
 				ekfWG.Wait()
 				ekfWG.Add(1)
 				mEst.PropagateUntil(measurementTime, i == len(measurementTimes)-1)
@@ -434,12 +435,13 @@ func main() {
 				}
 				log.Printf("[ekf+] (%04d) %+v\n", measNo, mat64.Formatted(vec.T()))
 			}
-			mEst.Orbit = smd.NewOrbitFromRV(R, V, smd.Earth)
+			mEst.Orbit = smd.NewOrbitFromRV(R, V, mEst.Orbit.Origin)
 		}
 		ckfMeasNo++
 		measNo++
 		if fltType == gokalman.EKFType {
 			ekfWG.Done()
+			fmt.Printf("releasing for %d\n", measNo)
 		}
 	} // end while true
 
