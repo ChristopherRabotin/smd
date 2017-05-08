@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func loadMeasurementFile(filename string, stations map[string]smd.Station) (map[time.Time]smd.Measurement, []time.Time) {
+func loadMeasurementFile(filename string, stations map[string]smd.Station) (map[time.Time][]smd.Measurement, []time.Time) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatalf("%s", err)
@@ -22,7 +22,7 @@ func loadMeasurementFile(filename string, stations map[string]smd.Station) (map[
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 	cnt := 0
-	measurements := make(map[time.Time]smd.Measurement)
+	measurements := make(map[time.Time][]smd.Measurement)
 	measurementTimes := make([]time.Time, 0)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -65,7 +65,14 @@ func loadMeasurementFile(filename string, stations map[string]smd.Station) (map[
 			continue
 		}
 		measurementTimes = append(measurementTimes, stateDT)
-		measurements[stateDT] = smd.Measurement{Visible: true, Range: stRange, RangeRate: stRate, Timeθgst: Timeθgst, State: smd.State{DT: stateDT}, Station: station}
+		measurement := smd.Measurement{Visible: true, Range: stRange, RangeRate: stRate, Timeθgst: Timeθgst, State: smd.State{DT: stateDT}, Station: station}
+		if measList, exists := measurements[stateDT]; !exists {
+			measurements[stateDT] = []smd.Measurement{measurement}
+		} else {
+			// Append the measurement
+			measList = append(measList, measurement)
+			measurements[stateDT] = measList
+		}
 		cnt++
 	}
 	return measurements, measurementTimes

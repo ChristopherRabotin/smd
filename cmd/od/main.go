@@ -96,7 +96,7 @@ func main() {
 	}
 
 	// Read stations
-	stationNames := viper.GetStringSlice("measurements.stations")
+	stationNames := viper.GetStringSlice("measurements.stations") // stationNames is also used for ordering for H matrix
 	stations := make(map[string]smd.Station)
 	for _, stationName := range stationNames {
 		var st smd.Station
@@ -191,7 +191,7 @@ func main() {
 		σQz = σQx
 	}
 	noiseQ := mat64.NewSymDense(3, []float64{σQx, 0, 0, 0, σQy, 0, 0, 0, σQz})
-	noiseR := mat64.NewSymDense(2, []float64{viper.GetFloat64("noise.range"), 0, 0, viper.GetFloat64("noise.rate")})
+	noiseR := mat64.NewSymDense(4, []float64{viper.GetFloat64("noise.range"), 0, 0, 0, 0, viper.GetFloat64("noise.rate"), 0, 0, 0, 0, viper.GetFloat64("noise.range"), 0, 0, 0, 0, viper.GetFloat64("noise.rate")})
 	noiseKF := gokalman.NewNoiseless(noiseQ, noiseR)
 
 	// Compute number of states which will be generated.
@@ -290,12 +290,12 @@ func main() {
 	stateNo := 0
 	x0 := mat64.NewVector(6, nil)
 	if fltType == gokalman.EKFType || fltType == gokalman.CKFType {
-		kf, _, err = gokalman.NewHybridKF(x0, prevP, noiseKF, 2)
+		kf, _, err = gokalman.NewHybridKF(x0, prevP, noiseKF, len(stationNames))
 		if err != nil {
 			panic(fmt.Errorf("%s", err))
 		}
 	} else if fltType == gokalman.SRIFType {
-		kf, _, err = gokalman.NewSRIF(x0, prevP, 2, false, noiseKF)
+		kf, _, err = gokalman.NewSRIF(x0, prevP, len(stationNames), false, noiseKF)
 		if err != nil {
 			panic(fmt.Errorf("%s", err))
 		}
@@ -331,11 +331,11 @@ func main() {
 		}
 
 		if measNo == 0 {
-			prevDT = measurement.State.DT
+			prevDT = measurement[0].State.DT
 		}
-
+		thisMeasTime := measurement[0].State.DT
 		// Let's perform a full update since there is a measurement.
-		ΔtDuration := measurement.State.DT.Sub(prevDT)
+		ΔtDuration := thisMeasTime.Sub(prevDT)
 		Δt := ΔtDuration.Seconds() // Everything is in seconds.
 		// Informational messages.
 		if fltType == gokalman.EKFType {
@@ -351,20 +351,51 @@ func main() {
 			}
 		}
 
-		if measurement.Station.Name != prevStationName {
-			fmt.Printf("[info] #%05d %s in visibility (T+%s)\n", measNo, measurement.Station.Name, measurement.State.DT.Sub(startDT))
-			prevStationName = measurement.Station.Name
+		if measurement[0].Station.Name != prevStationName {
+			fmt.Printf("[info] #%05d %s in visibility (T+%s)\n", measNo, measurement[0].Station.Name, thisMeasTime.Sub(startDT))
+			prevStationName = measurement[0].Station.Name
 		}
 
 		// Compute "real" measurement
-		computedObservation := measurement.Station.PerformMeasurement(measurement.Timeθgst, state)
-		if !computedObservation.Visible {
-			fmt.Printf("[WARN] #%05d station %s should see the SC but does not\n", measNo, measurement.Station.Name)
+		computedObservation0 := measurement[0].Station.PerformMeasurement(measurement[0].Timeθgst, state)
+		if !computedObservation0.Visible {
+			fmt.Printf("[WARN] #%05d station %s should see the SC but does not\n", measNo, measurement[0].Station.Name)
 			visibilityErrors++
 		}
 
-		Htilde := computedObservation.HTilde()
-		kf.Prepare(state.Φ, Htilde)
+		// Create the stacked measurement and Htilde.
+		thisHtilde := computedObservation0.HTilde()
+		hR, hC := thisHtilde.Dims()
+		stateSize, _ := measurement[0].StateVector().Dims()
+		stkdMeasVector := mat64.NewVector(2*stateSize, nil)
+		stkdCpmtdVector := mat64.NewVector(2*stateSize, nil)
+		stkdHtilde := mat64.NewDense(2*hR, hC, nil) // TODO: Support more than two stations simultaneously.
+
+		// Ensure that the stacked states and H tilde are always in the same order.
+		posSecondObs := 0 // Also allows to nullify components if not available.
+		if len(measurement) == 2 {
+			posSecondObs = 1
+		}
+		computedObservation1 := measurement[posSecondObs].Station.PerformMeasurement(measurement[0].Timeθgst, state)
+		if measurement[0].Station.Name == stationNames[0] {
+			stkdHtilde.Stack(thisHtilde, computedObservation1.HTilde())
+			for i := 0; i < stateSize; i++ {
+				stkdMeasVector.SetVec(i, measurement[0].StateVector().At(i, 0))
+				stkdMeasVector.SetVec(i+2, float64(posSecondObs)*measurement[posSecondObs].StateVector().At(i, 0))
+				stkdCpmtdVector.SetVec(i, computedObservation0.StateVector().At(i, 0))
+				stkdCpmtdVector.SetVec(i+2, float64(posSecondObs)*computedObservation1.StateVector().At(i, 0))
+			}
+		} else {
+			stkdHtilde.Stack(computedObservation1.HTilde(), thisHtilde)
+			for i := 0; i < stateSize; i++ {
+				stkdMeasVector.SetVec(i+2, measurement[0].StateVector().At(i, 0))
+				stkdMeasVector.SetVec(i, float64(posSecondObs)*measurement[posSecondObs].StateVector().At(i, 0))
+				stkdCpmtdVector.SetVec(i+2, computedObservation0.StateVector().At(i, 0))
+				stkdCpmtdVector.SetVec(i, float64(posSecondObs)*computedObservation1.StateVector().At(i, 0))
+			}
+		}
+
+		kf.Prepare(state.Φ, stkdHtilde)
 		if sncEnabled {
 			if Δt < sncDisableTime {
 				if sncRIC {
@@ -398,7 +429,7 @@ func main() {
 				kf.PreparePNT(Γ)
 			}
 		}
-		estI, err := kf.Update(measurement.StateVector(), computedObservation.StateVector())
+		estI, err := kf.Update(stkdMeasVector, stkdCpmtdVector)
 		if err != nil {
 			panic(fmt.Errorf("[ERR!] %s", err))
 		}
@@ -406,13 +437,16 @@ func main() {
 		prevP = est.Covariance().(*mat64.SymDense)
 
 		// Compute residual
-		residual := mat64.NewVector(2, nil)
-		residual.MulVec(Htilde, est.State())
+		if *debug {
+			fmt.Printf("%+v\n%+v", mat64.Formatted(est.State().T()), mat64.Formatted(stkdHtilde))
+		}
+		residual := mat64.NewVector(4, nil)
+		residual.MulVec(stkdHtilde, est.State())
 		residual.AddScaledVec(residual, -1, est.ObservationDev())
 		residual.ScaleVec(-1, residual)
 		residuals[stateNo-1] = residual
 
-		prevDT = measurement.State.DT
+		prevDT = measurement[0].State.DT
 		// Stream to CSV file
 		if smoothing {
 			// Save to history in order to perform smoothing.

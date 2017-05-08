@@ -30,7 +30,7 @@ step = "1s"
 
 [filter]
 type = "EKF" # Or `CKF` or `UKF`; defines the section to be read.
-outPrefix = "output/prj30s" # Prefix used for all filtering.
+outPrefix = "output/prj10s" # Prefix used for all filtering.
 
 [noise]
 Q = 1e-12
