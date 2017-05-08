@@ -156,8 +156,8 @@ C = 0
 
 [measurements]
 enabled = true
-sampling = "10s"
-output = "output/sampling10s.csv"
+sampling = "30s"
+output = "output/sampling30s.csv"
 stations = ["MSLCuriosity", "ExoMars"]
 
 [station.MSLCuriosity]
