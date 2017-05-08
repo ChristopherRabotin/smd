@@ -1,0 +1,187 @@
+[mission]
+start = "2016-10-16 16:20:06" # or JDE
+end = "2016-10-20 00:00:00" # or JDE
+step = "1s" # Must be parsable by golang's ParseDuration
+
+[spacecraft]
+name = "TGO"
+fuel = 500
+dry = 500
+
+[orbit]
+body = "Mars"
+sma = 55855.7
+ecc = 0.8690
+inc = 74.0
+RAAN = 0.0
+argPeri = 0.0
+tAnomaly = 180
+
+[error] # To generate datasets only
+probability = 0 # i.e. 1% of calls to SetState will have an error
+position = 1.0 # sigma for Gaussian
+velocity = 0.1 # sigma for Gaussian
+
+[perturbations]
+J2 = true
+J3 = true
+J4 = true
+bodies = ["Earth", "Sun", "Venus", "Jupiter"]
+
+[burns.0]
+date = "2016-10-19 00:00:00"
+R = 0
+N = -0.10
+C = 0
+
+[burns.1]
+date = "2016-10-19 00:00:01"
+R = 0
+N = -0.15
+C = 0
+
+[burns.2]
+date = "2016-10-19 00:00:02"
+R = 0
+N = -0.35
+C = 0
+
+[burns.3]
+date = "2016-10-19 00:00:03"
+R = 0
+N = -0.35
+C = 0
+
+[burns.4]
+date = "2016-10-19 00:00:04"
+R = 0
+N = -0.35
+C = 0
+
+[burns.5]
+date = "2016-10-19 00:00:05"
+R = 0
+N = -0.35
+C = 0
+
+[burns.6]
+date = "2016-10-19 00:00:06"
+R = 0
+N = -0.35
+C = 0
+
+[burns.7]
+date = "2016-10-19 00:00:07"
+R = 0
+N = -0.35
+C = 0
+
+[burns.8]
+date = "2016-10-19 00:00:08"
+R = 0
+N = -0.35
+C = 0
+
+[burns.9]
+date = "2016-10-19 00:00:09"
+R = 0
+N = -0.35
+C = 0
+
+[burns.10]
+date = "2016-10-19 00:00:10"
+R = 0
+N = -0.35
+C = 0
+
+[burns.11]
+date = "2016-10-19 00:00:11"
+R = 0
+N = -0.35
+C = 0
+
+[burns.12]
+date = "2016-10-19 00:00:12"
+R = 0
+N = -0.35
+C = 0
+
+[burns.13]
+date = "2016-10-19 00:00:13"
+R = 0
+N = -0.35
+C = 0
+
+[burns.14]
+date = "2016-10-19 00:00:14"
+R = 0
+N = -0.35
+C = 0
+
+[burns.15]
+date = "2016-10-19 00:00:15"
+R = 0
+N = -0.35
+C = 0
+
+[burns.16]
+date = "2016-10-19 00:00:16"
+R = 0
+N = -0.35
+C = 0
+
+[burns.17]
+date = "2016-10-19 00:00:17"
+R = 0
+N = -0.35
+C = 0
+
+[burns.18]
+date = "2016-10-19 00:00:18"
+R = 0
+N = -0.35
+C = 0
+
+[burns.19]
+date = "2016-10-19 00:00:19"
+R = 0
+N = -0.35
+C = 0
+
+[burns.20]
+date = "2016-10-19 00:00:20"
+R = 0
+N = -0.10
+C = 0
+
+[burns.21]
+date = "2016-10-19 00:00:21"
+R = 0
+N = -0.10
+C = 0
+
+[measurements]
+enabled = true
+sampling = "30s"
+output = "output/sampling30s.csv"
+stations = ["MSLCuriosity", "ExoMars"]
+
+[station.MSLCuriosity]
+name = "MSL Curiosity"
+altitude = 5.5
+elevation = 20
+latitude = -4.6
+longitude = 137.4
+range_sigma = 10e-3
+rate_sigma = 10e-6
+planet = "Mars"
+
+[station.ExoMars]
+name = "ExoMars"
+altitude = -0.5
+elevation = 15
+latitude = -2.7
+longitude = 16.7
+range_sigma = 5e-3
+rate_sigma = 5e-6
+planet = "Mars"

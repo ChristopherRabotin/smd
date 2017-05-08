@@ -24,8 +24,8 @@ velocity = 0.1 # sigma for Gaussian
 
 [perturbations]
 J2 = true
-J3 = false
-J4 = false
+J3 = true
+J4 = true
 bodies = ["Earth", "Sun", "Venus", "Jupiter"]
 
 [burns.0]
@@ -151,23 +151,29 @@ C = 0
 [burns.20]
 date = "2016-10-19 00:00:20"
 R = 0
-N = -0.05
+N = -0.10
+C = 0
+
+[burns.21]
+date = "2016-10-19 00:00:21"
+R = 0
+N = -0.10
 C = 0
 
 [measurements]
 enabled = true
-sampling = "30s"
-output = "output/sampling30s.csv"
+sampling = "5s"
+output = "output/sampling5s.csv"
 stations = ["MSLCuriosity", "ExoMars"]
 
 [station.MSLCuriosity]
 name = "MSL Curiosity"
 altitude = 5.5
 elevation = 20
-latitude = -4.5895
-longitude = 137.4417
-range_sigma = 0.5
-rate_sigma = 0.5
+latitude = -4.6
+longitude = 137.4
+range_sigma = 10e-3
+rate_sigma = 10e-6
 planet = "Mars"
 
 [station.ExoMars]
@@ -176,6 +182,6 @@ altitude = -0.5
 elevation = 15
 latitude = -2.7
 longitude = 16.7
-range_sigma = 0.1
-rate_sigma = 0.1
+range_sigma = 5e-3
+rate_sigma = 5e-6
 planet = "Mars"

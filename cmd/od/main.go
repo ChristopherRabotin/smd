@@ -59,8 +59,11 @@ func main() {
 	endDT := confReadJDEorTime("mission.end")
 	timeStep := viper.GetDuration("mission.step")
 
-	// Read orbit
-	sc := smd.NewEmptySC("fltr", 0)
+	// Read spacecraft
+	scName := viper.GetString("spacecraft.name")
+	fuelMass := viper.GetFloat64("spacecraft.fuel")
+	dryMass := viper.GetFloat64("spacecraft.dry")
+	sc := smd.NewSpacecraft(scName, dryMass, fuelMass, smd.NewUnlimitedEPS(), []smd.EPThruster{}, true, []*smd.Cargo{}, []smd.Waypoint{})
 
 	var scOrbit *smd.Orbit
 	centralBodyName := viper.GetString("orbit.body")
@@ -236,7 +239,9 @@ func main() {
 		// Go step by step because the orbit pointer needs to be updated.
 		go func() {
 			for i, measurementTime := range measurementTimes {
-				fmt.Printf("waiting for %d\n", i)
+				if i > 1 && measurementTimes[i-1] == measurementTime {
+					continue // Skip propagation for whichever times are duplicated.
+				}
 				ekfWG.Wait()
 				ekfWG.Add(1)
 				mEst.PropagateUntil(measurementTime, i == len(measurementTimes)-1)
@@ -441,7 +446,6 @@ func main() {
 		measNo++
 		if fltType == gokalman.EKFType {
 			ekfWG.Done()
-			fmt.Printf("releasing for %d\n", measNo)
 		}
 	} // end while true
 
