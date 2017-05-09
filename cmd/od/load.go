@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func loadMeasurementFile(filename string, stations map[string]smd.Station) (map[time.Time][]smd.Measurement, []time.Time) {
+func loadMeasurementFile(filename string, stations map[string]smd.Station, ordering map[string]int) (map[time.Time][]smd.Measurement, []time.Time) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatalf("%s", err)
@@ -66,13 +66,11 @@ func loadMeasurementFile(filename string, stations map[string]smd.Station) (map[
 		}
 		measurementTimes = append(measurementTimes, stateDT)
 		measurement := smd.Measurement{Visible: true, Range: stRange, RangeRate: stRate, Timeθgst: Timeθgst, State: smd.State{DT: stateDT}, Station: station}
-		if measList, exists := measurements[stateDT]; !exists {
-			measurements[stateDT] = []smd.Measurement{measurement}
-		} else {
-			// Append the measurement
-			measList = append(measList, measurement)
-			measurements[stateDT] = measList
+		if _, exists := measurements[stateDT]; !exists {
+			measurements[stateDT] = make([]smd.Measurement, len(stations))
 		}
+		// Set the measurement in the right position
+		measurements[stateDT][ordering[measurement.Station.Name]] = measurement
 		cnt++
 	}
 	return measurements, measurementTimes
