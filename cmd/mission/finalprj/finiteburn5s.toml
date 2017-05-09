@@ -169,19 +169,19 @@ stations = ["MSLCuriosity", "ExoMars"]
 [station.MSLCuriosity]
 name = "MSL Curiosity"
 altitude = 5.5
-elevation = 20
+elevation = 25
 latitude = -4.6
 longitude = 137.4
-range_sigma = 10e-3
-rate_sigma = 10e-6
+range_sigma = 5e-3
+rate_sigma = 5e-6
 planet = "Mars"
 
 [station.ExoMars]
 name = "ExoMars"
 altitude = -0.5
-elevation = 15
+elevation = 5
 latitude = -2.7
-longitude = 16.7
+longitude = 255.0
 range_sigma = 5e-3
 rate_sigma = 5e-6
 planet = "Mars"

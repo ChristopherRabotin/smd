@@ -146,6 +146,16 @@ func main() {
 		endDT = measEndDT
 	} else if startDT.After(measEndDT) {
 		log.Fatal("mission start time is after last measurement")
+	} else {
+		// Dates are provided, let's remove any measurement time which happens before or after the boundaries.
+		trimmedMeas := []time.Time{}
+		for _, dt := range measurementTimes {
+			if dt.Before(startDT) || dt.After(endDT) {
+				continue
+			}
+			trimmedMeas = append(trimmedMeas, dt)
+		}
+		measurementTimes = trimmedMeas
 	}
 
 	// Maneuvers (after loading files because we need to check startDT and endDT if auto date)
@@ -240,6 +250,10 @@ func main() {
 
 	mEst := smd.NewPreciseMission(sc, scOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
 	mEst.RegisterStateChan(stateEstChan)
+	if viper.GetBool("mission.proptostart") {
+		// Propagate until the desired startDT
+		mEst.PropagateUntil(startDT.Add(-timeStep), false)
+	}
 
 	var ekfWG sync.WaitGroup
 	// Go-routine to advance propagation.
@@ -249,7 +263,7 @@ func main() {
 		// Go step by step because the orbit pointer needs to be updated.
 		go func() {
 			for i, measurementTime := range measurementTimes {
-				if i > 1 && measurementTimes[i-1] == measurementTime {
+				if i > 0 && measurementTimes[i-1] == measurementTime {
 					continue // Skip propagation for whichever times are duplicated.
 				}
 				ekfWG.Wait()
@@ -293,14 +307,12 @@ func main() {
 		}
 	}
 
-	//	var prevStationName = ""
 	var prevDT time.Time
 	var ckfMeasNo = 0
 	measNo := 0
 	stateNo := 0
 	stateSize := 6
 	x0 := mat64.NewVector(stateSize, nil)
-	//hR := 2 * len(stationNames)
 	hC := stateSize
 	if fltType == gokalman.EKFType || fltType == gokalman.CKFType {
 		kf, _, err = gokalman.NewHybridKF(x0, prevP, noiseKF, len(stationNames)) // XXX: should this be 2*len(stationNames) ? Seems like so, but this doesn't crash.
@@ -363,12 +375,7 @@ func main() {
 				fmt.Printf("[info] #%05d EKF now disabled (Δt=%s)\n", measNo, ΔtDuration)
 			}
 		}
-		/*
-			if measurement[0].Station.Name != prevStationName {
-				fmt.Printf("[info] #%05d %s in visibility (T+%s)\n", measNo, measurement[0].Station.Name, thisMeasTime.Sub(startDT))
-				prevStationName = measurement[0].Station.Name
-			}
-		*/
+
 		stkdMeasVector := mat64.NewVector(len(stationNames)*2, nil)
 		stkdCmpdVector := mat64.NewVector(len(stationNames)*2, nil)
 		tbStkdH := make([]*mat64.Dense, len(stationNames))
