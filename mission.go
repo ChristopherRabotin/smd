@@ -134,8 +134,8 @@ func (a *Mission) Propagate() {
 		if a.Vehicle.handleFuel && a.Vehicle.FuelMass < 0 {
 			a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
 		}
+		wg.Wait() // Don't return until we're done writing all the files.
 	}
-	wg.Wait() // Don't return until we're done writing all the files.
 }
 
 // StopPropagation is used to stop the propagation before it is completed.

@@ -248,7 +248,7 @@ func main() {
 
 	stateEstChan := make(chan (smd.State), 1)
 
-	mEst := smd.NewPreciseMission(sc, scOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
+	mEst := smd.NewPreciseMission(sc, scOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{Cosmo: true, Filename: strings.Replace(fltFilePrefix, "/", "-", -1)})
 	mEst.RegisterStateChan(stateEstChan)
 	if viper.GetBool("mission.proptostart") {
 		// Propagate until the desired startDT
