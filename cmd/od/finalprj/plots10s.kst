@@ -4,6 +4,12 @@
         <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s.csv">
             <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="2" fields="1" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-05-07T14:10:01Z" relativeOffset="0" nanValue="0" updateType="0"/>
         </source>
+        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/mission/output/sampling5s.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/mission/output/sampling5s.csv">
+            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="2" fields="1" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-05-08T21:41:59Z" relativeOffset="0" nanValue="0" updateType="0"/>
+        </source>
+        <source reader="ASCII file" updateType="0" file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s-residuals.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s-residuals.csv">
+            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0" limitFileBuffer="false" limitFileBufferSize="0" useThreads="0" asciiTimeFormat="hh:mm:ss.zzz" dataRate="1" offsetDateTime="false" offsetFileDate="false" offsetRelavive="true" dateTimeOffset="2017-05-09T14:15:57Z" relativeOffset="0" nanValue="0" updateType="0"/>
+        </source>
     </data>
     <variables>
         <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="1" initialXNum="1"/>
@@ -30,6 +36,13 @@
         <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s.csv" field="zDot" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="22" initialXNum="253"/>
         <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s.csv" field="zDot+3s" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="23" initialXNum="265"/>
         <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s.csv" field="zDot-3s" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="24" initialXNum="277"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/mission/output/sampling5s.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/mission/output/sampling5s.csv" field="&quot;Julian day&quot;" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="25" initialXNum="289"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/mission/output/sampling5s.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/mission/output/sampling5s.csv" field="&quot;range (km)&quot;" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="26" initialXNum="301"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/mission/output/sampling5s.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/mission/output/sampling5s.csv" field="&quot;range rate (km/s)&quot;" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="27" initialXNum="313"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/mission/output/sampling5s.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/mission/output/sampling5s.csv" field="&quot;Julian day&quot;" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="28" initialXNum="325"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s-residuals.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s-residuals.csv" field="INDEX" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="29" initialXNum="337"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s-residuals.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s-residuals.csv" field="rho" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="30" initialXNum="349"/>
+        <datavector file="/home/chris/go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s-residuals.csv" fileRelative="go/src/github.com/ChristopherRabotin/smd/cmd/od/output/prj10s-residuals.csv" field="rhoDot" start="0" count="-1" skip="-1" doAve="false" startUnits="" rangeUnits="" initialVNum="31" initialXNum="361"/>
     </variables>
     <objects/>
     <relations>
@@ -92,12 +105,18 @@
         <curve xvector="days (V6)" yvector="zDot (V22)" color="#0000ff" alpha="255" headcolor="#0000ff" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="0" haspoints="false" pointtype="7" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="61"/>
         <curve xvector="days (V6)" yvector="zDot+3s (V23)" color="#ff0000" alpha="255" headcolor="#ff0000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="2" haspoints="false" pointtype="8" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="62"/>
         <curve xvector="days (V6)" yvector="zDot-3s (V24)" color="#ff0000" alpha="255" headcolor="#ff0000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="2" haspoints="false" pointtype="9" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="63"/>
+        <curve xvector="&quot;Julian day&quot; (V25)" yvector="&quot;range (km)&quot; (V26)" color="#008000" alpha="255" headcolor="#008000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="64"/>
+        <curve xvector="&quot;Julian day&quot; (V25)" yvector="&quot;range rate (km/s)&quot; (V27)" color="#000000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="0" haspoints="false" pointtype="1" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="65"/>
+        <curve xvector="&quot;Julian day&quot; (V25)" yvector="&quot;Julian day&quot; (V28)" color="#ff00ff" alpha="255" headcolor="#ff00ff" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="0" haspoints="false" pointtype="2" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="66"/>
+        <curve xvector="hours (V5)" yvector="INDEX (V29)" color="#000000" alpha="255" headcolor="#000000" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="67"/>
+        <curve xvector="hours (V5)" yvector="rho (V30)" color="#ff00ff" alpha="255" headcolor="#ff00ff" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="0" haspoints="false" pointtype="1" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="1667330159" initialCNum="68"/>
+        <curve xvector="hours (V5)" yvector="rhoDot (V31)" color="#4682b4" alpha="255" headcolor="#4682b4" headalpha="255" barfillcolor="#000000" barfillalpha="255" haslines="true" linewidth="0" linestyle="0" haspoints="false" pointtype="2" pointdensity="0" pointsize="5" hasbars="false" ignoreautoscale="false" hashead="false" headtype="6881396" initialCNum="69"/>
     </relations>
     <graphics>
-        <view name="Position (minutes)" width="1357" height="586" color="#ffffff" style="1">
+        <view name="Position (minutes)" width="1365" height="621" color="#ffffff" style="1">
             <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="4" name="Plot">
-                <position x="678.4568" y="486.5056" z="500"/>
-                <rect x="-675.5371" y="-96.7376" width="1351.0742" height="193.4752"/>
+                <position x="678.47185" y="509.0816" z="500"/>
+                <rect x="-675.5371" y="-96.7376" width="1358.0385" height="204.6816"/>
                 <relativesize width="0.9949" height="0.3296" centerx="0.4996" centery="0.8288" posx="0.00214999999999994" posy="0.664" leftx="0.00214999999999994" lefty="0.9936" rightx="0.99705" righty="0.9936" fixaspect="false" lockpostodata="false"/>
                 <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                 <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
@@ -105,7 +124,7 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="12" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-584.612735191651" y="-9.76151697530868" z="500"/>
+                    <position x="-640.30563692802" y="20.8354083333333" z="500"/>
                     <rect x="0" y="0" width="0" height="0"/>
                     <relativesize width="0" height="0" centerx="0.026203387312435" centery="0.544367283950617" posx="0.026203387312435" posy="0.544367283950617" leftx="0.026203387312435" lefty="0.544367283950617" rightx="0.026203387312435" righty="0.544367283950617" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -130,11 +149,11 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="minutes" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-346.9854087" width="30" height="693.9708174"/>
+                <projectionrect x="0" y="-19873592.2654658" width="7140.5" height="25147337.9016216"/>
             </plot>
             <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="2" name="Plot">
-                <position x="678.4568" y="99.5552" z="500"/>
-                <rect x="-675.5371" y="-96.7376" width="1351.0742" height="193.4752"/>
+                <position x="678.47185" y="99.7184" z="500"/>
+                <rect x="-675.5371" y="-96.7376" width="1358.0385" height="204.6816"/>
                 <relativesize width="0.9949" height="0.3296" centerx="0.4996" centery="0.1696" posx="0.00214999999999994" posy="0.0048" leftx="0.00214999999999994" lefty="0.3344" rightx="0.99705" righty="0.3344" fixaspect="false" lockpostodata="false"/>
                 <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                 <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
@@ -142,7 +161,7 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="12" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-578.913029463096" y="-64.9895458139168" z="500"/>
+                    <position x="-634.297774907361" y="-57.3906874102644" z="500"/>
                     <rect x="0" y="0" width="0" height="0"/>
                     <relativesize width="0" height="0" centerx="0.0306717324142365" centery="0.13519560768262" posx="0.0306717324142365" posy="0.13519560768262" leftx="0.0306717324142365" lefty="0.13519560768262" rightx="0.0306717324142365" righty="0.13519560768262" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -167,11 +186,11 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="minutes" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-17.0195256" width="30" height="34.0390512"/>
+                <projectionrect x="0" y="-30393465.3575207" width="7140.5" height="62092647.6966075"/>
             </plot>
             <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="3" name="Plot">
-                <position x="678.4568" y="293.0304" z="501"/>
-                <rect x="-675.5371" y="-96.7376" width="1351.0742" height="193.4752"/>
+                <position x="678.47185" y="304.4" z="501"/>
+                <rect x="-675.5371" y="-96.7376" width="1358.0385" height="204.6816"/>
                 <relativesize width="0.9949" height="0.3296" centerx="0.4996" centery="0.4992" posx="0.00214999999999994" posy="0.3344" leftx="0.00214999999999994" lefty="0.664" rightx="0.99705" righty="0.664" fixaspect="false" lockpostodata="false"/>
                 <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                 <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
@@ -179,7 +198,7 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="12" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-578.128234376248" y="-66.4450942846737" z="500"/>
+                    <position x="-633.470549639808" y="-59.4523556687063" z="500"/>
                     <rect x="0" y="0" width="0" height="0"/>
                     <relativesize width="0" height="0" centerx="0.0312869808935866" centery="0.124411786130536" posx="0.0312869808935866" posy="0.124411786130536" leftx="0.0312869808935866" lefty="0.124411786130536" rightx="0.0312869808935866" righty="0.124411786130536" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -204,13 +223,13 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="minutes" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-37.6433022" width="30" height="75.2866044"/>
+                <projectionrect x="0" y="-13412252.4779868" width="7140.5" height="27259737.0658536"/>
             </plot>
         </view>
         <view name="Velocity (minutes)" width="1357" height="586" color="#ffffff" style="1">
             <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="5" name="Plot">
-                <position x="678.4568" y="486.3295" z="500"/>
-                <rect x="-675.4692" y="-96.6789" width="1350.9384" height="193.3578"/>
+                <position x="678.4546" y="485.6657" z="500"/>
+                <rect x="-675.4692" y="-96.6789" width="1349.9436" height="193.0284"/>
                 <relativesize width="0.9948" height="0.3294" centerx="0.4996" centery="0.8285" posx="0.00219999999999995" posy="0.6638" leftx="0.00219999999999995" lefty="0.9932" rightx="0.997" righty="0.9932" fixaspect="false" lockpostodata="false"/>
                 <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                 <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
@@ -218,7 +237,7 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="12" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-581.287530412619" y="-68.1175623496911" z="500"/>
+                    <position x="-632.4221231099" y="-63.1286111014734" z="500"/>
                     <rect x="0" y="0" width="0" height="0"/>
                     <relativesize width="0" height="0" centerx="0.0322101710016792" centery="0.111683103612167" posx="0.0322101710016792" posy="0.111683103612167" leftx="0.0322101710016792" lefty="0.111683103612167" rightx="0.0322101710016792" righty="0.111683103612167" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -243,7 +262,7 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="minutes" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-0.31316565" width="30" height="0.6263313"/>
+                <projectionrect x="0" y="-367.67509475" width="7140.5" height="467.2575915"/>
             </plot>
             <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,10,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="4" name="Plot">
                 <position x="678.4546" y="292.6373" z="500"/>
@@ -255,7 +274,7 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="12" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-574.872240202475" y="-65.2243470933014" z="500"/>
+                    <position x="-634.357070231596" y="-59.2185157535885" z="500"/>
                     <rect x="0" y="0" width="0" height="0"/>
                     <relativesize width="0" height="0" centerx="0.0307623380204025" centery="0.133462918660287" posx="0.0307623380204025" posy="0.133462918660287" leftx="0.0307623380204025" lefty="0.133462918660287" rightx="0.0307623380204025" righty="0.133462918660287" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -280,11 +299,11 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="minutes" autolabel="true" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-0.05328855" width="30" height="0.1065771"/>
+                <projectionrect x="0" y="-248.43262235" width="7140.5" height="505.2842487"/>
             </plot>
             <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="3" name="Plot">
-                <position x="678.4568" y="99.6726" z="500"/>
-                <rect x="-675.4692" y="-96.6789" width="1350.9384" height="193.3578"/>
+                <position x="678.4546" y="99.6675" z="500"/>
+                <rect x="-675.4692" y="-96.6789" width="1349.9436" height="193.0284"/>
                 <relativesize width="0.9948" height="0.3294" centerx="0.4996" centery="0.1698" posx="0.00219999999999995" posy="0.00509999999999998" leftx="0.00219999999999995" lefty="0.3345" rightx="0.997" righty="0.3345" fixaspect="false" lockpostodata="false"/>
                 <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                 <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
@@ -292,7 +311,7 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="12" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-580.810017608044" y="-68.6926528827486" z="500"/>
+                    <position x="-631.923547896531" y="-63.894195911955" z="500"/>
                     <rect x="0" y="0" width="0" height="0"/>
                     <relativesize width="0" height="0" centerx="0.0325832321719141" centery="0.107418681880109" posx="0.0325832321719141" posy="0.107418681880109" leftx="0.0325832321719141" lefty="0.107418681880109" rightx="0.0325832321719141" righty="0.107418681880109" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -317,7 +336,7 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="minutes" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-0.31232775" width="30" height="0.6246555"/>
+                <projectionrect x="0" y="-562.605629125" width="7140.5" height="1148.48677125"/>
             </plot>
         </view>
         <view name="Position (hours)" width="1357" height="586" color="#ffffff" style="1">
@@ -331,7 +350,7 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="12" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-580.271242489688" y="-61.310929455819" z="500"/>
+                    <position x="-584.683726130172" y="-61.310929455819" z="500"/>
                     <rect x="0" y="0" width="0" height="0"/>
                     <relativesize width="0" height="0" centerx="0.029556862573929" centery="0.162155771072797" posx="0.029556862573929" posy="0.162155771072797" leftx="0.029556862573929" lefty="0.162155771072797" rightx="0.029556862573929" righty="0.162155771072797" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -356,7 +375,7 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="hours" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-346.9854087" width="0.5" height="693.9708174"/>
+                <projectionrect x="0" y="-19873592.2654658" width="119.008333" height="25147337.9016216"/>
             </plot>
             <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="5" name="Plot">
                 <position x="678.4568" y="292.9717" z="500"/>
@@ -368,7 +387,7 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="12" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-582.049440412371" y="-53.1572067472376" z="500"/>
+                    <position x="-586.468263240761" y="-53.1572067472376" z="500"/>
                     <rect x="0" y="0" width="0" height="0"/>
                     <relativesize width="0" height="0" centerx="0.0281626769177005" centery="0.222617403314917" posx="0.0281626769177005" posy="0.222617403314917" leftx="0.0281626769177005" lefty="0.222617403314917" rightx="0.0281626769177005" righty="0.222617403314917" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -393,7 +412,7 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="hours" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-37.6433022" width="0.5" height="75.2866044"/>
+                <projectionrect x="0" y="-13412252.4779868" width="119.008333" height="27259737.0658536"/>
             </plot>
             <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="4" name="Plot">
                 <position x="678.4568" y="99.6726" z="501"/>
@@ -405,8 +424,8 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="7.8" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-581.622423601879" y="-55.7083325932836" z="500"/>
-                    <rect x="0" y="0" width="269.350137529613" height="27.2307513684419"/>
+                    <position x="-586.039724136397" y="-55.7083325932836" z="500"/>
+                    <rect x="0" y="0" width="270.310357487378" height="27.2307513684419"/>
                     <relativesize width="0.211182396209502" height="0.201921960527622" centerx="0.134088675049244" centery="0.30466122902003" posx="0.0284974769444928" posy="0.203700248756219" leftx="0.0284974769444928" lefty="0.405622209283841" rightx="0.239679873153995" righty="0.405622209283841" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
                     <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
@@ -430,11 +449,11 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="hours" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-17.0195256" width="0.5" height="34.0390512"/>
+                <projectionrect x="0" y="-30393465.3575207" width="119.008333" height="62092647.6966075"/>
             </plot>
         </view>
         <view name="Velocity (hours)" width="1357" height="586" color="#ffffff" style="1">
-            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="5" name="Plot">
+            <plot tiedxzoom="true" tiedyzoom="true" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="5" name="Plot">
                 <position x="678.4568" y="486.3295" z="500"/>
                 <rect x="-675.4692" y="-96.6789" width="1350.9384" height="193.3578"/>
                 <relativesize width="0.9948" height="0.3294" centerx="0.4996" centery="0.8285" posx="0.00220000000000003" posy="0.6638" leftx="0.00220000000000003" lefty="0.9932" rightx="0.997" righty="0.9932" fixaspect="false" lockpostodata="false"/>
@@ -444,7 +463,7 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="12" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-573.000830001821" y="-68.1175623496911" z="500"/>
+                    <position x="-576.742165264384" y="-68.1175623496911" z="500"/>
                     <rect x="0" y="0" width="0" height="0"/>
                     <relativesize width="0" height="0" centerx="0.0322101710016792" centery="0.111683103612167" posx="0.0322101710016792" posy="0.111683103612167" leftx="0.0322101710016792" lefty="0.111683103612167" rightx="0.0322101710016792" righty="0.111683103612167" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -469,9 +488,9 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="hours" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-0.31316565" width="0.5" height="0.6263313"/>
+                <projectionrect x="0" y="-367.67509475" width="119.008333" height="467.2575915"/>
             </plot>
-            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="4" name="Plot">
+            <plot tiedxzoom="true" tiedyzoom="true" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="4" name="Plot">
                 <position x="678.4568" y="292.9717" z="500"/>
                 <rect x="-675.4692" y="-96.6789" width="1350.9384" height="193.3578"/>
                 <relativesize width="0.9948" height="0.3294" centerx="0.4996" centery="0.4991" posx="0.00220000000000003" posy="0.3344" leftx="0.00220000000000003" lefty="0.6638" rightx="0.997" righty="0.6638" fixaspect="false" lockpostodata="false"/>
@@ -481,7 +500,7 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="12" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-574.841637828612" y="-65.1803844078947" z="500"/>
+                    <position x="-578.595302293907" y="-65.1803844078947" z="500"/>
                     <rect x="0" y="0" width="0" height="0"/>
                     <relativesize width="0" height="0" centerx="0.0307623380204025" centery="0.133462918660287" posx="0.0307623380204025" posy="0.133462918660287" leftx="0.0307623380204025" lefty="0.133462918660287" rightx="0.0307623380204025" righty="0.133462918660287" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -506,9 +525,9 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="hours" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-0.05328855" width="0.5" height="0.1065771"/>
+                <projectionrect x="0" y="-248.43262235" width="119.008333" height="505.2842487"/>
             </plot>
-            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="3" name="Plot">
+            <plot tiedxzoom="true" tiedyzoom="true" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="3" name="Plot">
                 <position x="678.4568" y="99.6726" z="500"/>
                 <rect x="-675.4692" y="-96.6789" width="1350.9384" height="193.3578"/>
                 <relativesize width="0.9948" height="0.3294" centerx="0.4996" centery="0.1698" posx="0.00220000000000003" posy="0.00510000000000001" leftx="0.00220000000000003" lefty="0.3345" rightx="0.997" righty="0.3345" fixaspect="false" lockpostodata="false"/>
@@ -518,7 +537,7 @@
                 </pen>
                 <brush color="#ffffff" style="1"/>
                 <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="12" color="#000000" verticaldisplay="false" name="Legend">
-                    <position x="-572.526511533516" y="-68.6926528827486" z="500"/>
+                    <position x="-576.264669947052" y="-68.6926528827486" z="500"/>
                     <rect x="0" y="0" width="0" height="0"/>
                     <relativesize width="0" height="0" centerx="0.0325832321719141" centery="0.107418681880109" posx="0.0325832321719141" posy="0.107418681880109" leftx="0.0325832321719141" lefty="0.107418681880109" rightx="0.0325832321719141" righty="0.107418681880109" fixaspect="false" lockpostodata="false"/>
                     <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
@@ -543,7 +562,151 @@
                 <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="hours" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
-                <projectionrect x="0" y="-0.31232775" width="0.5" height="0.6246555"/>
+                <projectionrect x="0" y="-562.605629125" width="119.008333" height="1148.48677125"/>
+            </plot>
+        </view>
+        <view name="Residuals (hours)" width="1357" height="586" color="#ffffff" style="1">
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="7" name="Plot">
+                <position x="678.4568" y="147.9827" z="500"/>
+                <rect x="-675.4692" y="-144.989" width="1350.9384" height="289.978"/>
+                <relativesize width="0.9948" height="0.494" centerx="0.4996" centery="0.2521" posx="0.00219999999999995" posy="0.00509999999999998" leftx="0.00219999999999995" lefty="0.4991" rightx="0.997" righty="0.4991" fixaspect="false" lockpostodata="false"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="false" name="Legend">
+                    <position x="-571.051546680374" y="-97.7091182640146" z="500"/>
+                    <rect x="0" y="0" width="114" height="29"/>
+                    <relativesize width="0.0896666359650203" height="0.125281884239539" centerx="0.0750015422815756" centery="0.208572226025736" posx="0.0301682242990654" posy="0.145931283905967" leftx="0.0301682242990654" lefty="0.271213168145506" rightx="0.119834860264086" righty="0.271213168145506" fixaspect="false" lockpostodata="false"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="rho vs hours (C68)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="range residuals (km)" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="hours" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="0" y="-8865.153969725" width="119.008333" height="9261.78832845"/>
+            </plot>
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="6" name="Plot">
+                <position x="678.4568" y="438.0194" z="500"/>
+                <rect x="-675.4692" y="-144.989" width="1350.9384" height="289.978"/>
+                <relativesize width="0.9948" height="0.494" centerx="0.4996" centery="0.7462" posx="0.00219999999999995" posy="0.4992" leftx="0.00219999999999995" lefty="0.9932" rightx="0.997" righty="0.9932" fixaspect="false" lockpostodata="false"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="false" name="Legend">
+                    <position x="-571.051546680374" y="-97.7091182640146" z="500"/>
+                    <rect x="0" y="0" width="139" height="29"/>
+                    <relativesize width="0.109330371922262" height="0.125281884239539" centerx="0.0848334102601962" centery="0.208572226025736" posx="0.0301682242990654" posy="0.145931283905967" leftx="0.0301682242990654" lefty="0.271213168145506" rightx="0.139498596221327" righty="0.271213168145506" fixaspect="false" lockpostodata="false"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="rhoDot vs hours (C69)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="rate residuals (km/s)" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="hours" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="0" y="-35.25549235" width="119.008333" height="1289.8096827"/>
+            </plot>
+        </view>
+        <view name="Data" width="1357" height="586" color="#ffffff" style="1">
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="4" name="Plot">
+                <position x="678.4568" y="147.9827" z="500"/>
+                <rect x="-675.4692" y="-144.989" width="1350.9384" height="289.978"/>
+                <relativesize width="0.9948" height="0.494" centerx="0.4996" centery="0.2521" posx="0.00219999999999995" posy="0.00509999999999998" leftx="0.00219999999999995" lefty="0.4991" rightx="0.997" righty="0.4991" fixaspect="false" lockpostodata="false"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="false" name="Legend">
+                    <position x="-559.246249951402" y="-97.7091182640143" z="500"/>
+                    <rect x="0" y="0" width="178" height="29"/>
+                    <relativesize width="0.141882028441129" height="0.125281884239539" centerx="0.10110923851963" centery="0.208572226025737" posx="0.0301682242990654" posy="0.145931283905968" leftx="0.0301682242990654" lefty="0.271213168145507" rightx="0.172050252740195" righty="0.271213168145507" fixaspect="false" lockpostodata="false"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="&quot;range (km)&quot; vs &quot;Julian day&quot; (C64)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="&quot;range (km)&quot;" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="&quot;Julian day&quot;" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="2457678.180625" y="-1617.673696325" width="4.95868099993095" height="107813.23368165"/>
+            </plot>
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Noto Sans,12,-1,5,50,0,0,0,0,0" globalfontscale="10" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" numberaxislabelscale="true" initialPlotNum="5" name="Plot">
+                <position x="678.4568" y="438.0194" z="500"/>
+                <rect x="-675.4692" y="-144.989" width="1350.9384" height="289.978"/>
+                <relativesize width="0.9948" height="0.494" centerx="0.4996" centery="0.7462" posx="0.00219999999999995" posy="0.4992" leftx="0.00219999999999995" lefty="0.9932" rightx="0.997" righty="0.9932" fixaspect="false" lockpostodata="false"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Noto Sans,10,-1,5,50,0,0,0,0,0" fontscale="9.6" color="#000000" verticaldisplay="false" name="Legend">
+                    <position x="-559.246249951402" y="-97.7091182640146" z="500"/>
+                    <rect x="0" y="0" width="223" height="29"/>
+                    <relativesize width="0.177751080575123" height="0.125281884239539" centerx="0.119043764586627" centery="0.208572226025736" posx="0.0301682242990654" posy="0.145931283905967" leftx="0.0301682242990654" lefty="0.271213168145506" rightx="0.207919304874188" righty="0.271213168145506" fixaspect="false" lockpostodata="false"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="1" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="&quot;range rate (km/s)&quot; vs &quot;Julian day&quot; (C65)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1" timezonename="GMT" timezoneoffset="0">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="&quot;range rate (km/s)&quot;" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="&quot;Julian day&quot;" autolabel="true" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Noto Sans,12,-1,5,50,0,0,0,0,0" fontscale="10" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="2457678.180625" y="-2.56699785" width="4.95868099993095" height="4.4388897"/>
             </plot>
         </view>
     </graphics>
