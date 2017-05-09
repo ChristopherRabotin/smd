@@ -140,17 +140,20 @@ func main() {
 	}
 	log.Printf("[info] Loaded %d measurements from %s to %s", len(measurements), measStartDT, measEndDT)
 
+	filterStartDT := confReadJDEorTime("filter.start")
+	filterEndDT := confReadJDEorTime("filter.end")
+
 	// Check overlap between measurement file and the dates of the mission.
 	if viper.GetBool("mission.autodate") {
 		startDT = measStartDT
 		endDT = measEndDT
 	} else if startDT.After(measEndDT) {
 		log.Fatal("mission start time is after last measurement")
-	} else {
+	} else if viper.GetBool("mission.proptostart") {
 		// Dates are provided, let's remove any measurement time which happens before or after the boundaries.
 		trimmedMeas := []time.Time{}
 		for _, dt := range measurementTimes {
-			if dt.Before(startDT) || dt.After(endDT) {
+			if dt.Before(filterStartDT) || dt.After(filterEndDT) {
 				continue
 			}
 			trimmedMeas = append(trimmedMeas, dt)
@@ -252,7 +255,8 @@ func main() {
 	mEst.RegisterStateChan(stateEstChan)
 	if viper.GetBool("mission.proptostart") {
 		// Propagate until the desired startDT
-		mEst.PropagateUntil(startDT, false)
+		mEst.PropagateUntil(filterStartDT, false)
+		log.Printf("orbit @ %s:\n%s", filterStartDT, mEst.Orbit)
 	}
 
 	var ekfWG sync.WaitGroup
@@ -332,7 +336,7 @@ func main() {
 		measurements, exists := measurements[roundedDT]
 		if !exists {
 			if measNo == 0 {
-				panic(fmt.Errorf("should start KF at first measurement: \n%s (got)\n%s (exp)", roundedDT, startDT))
+				panic(fmt.Errorf("should start KF at first measurement: \n%s (got)\n%s (exp)", roundedDT, measurementTimes[0]))
 			}
 			// There is no truth measurement here, let's only predict the KF covariance.
 			kf.Prepare(state.Φ, nil)

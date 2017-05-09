@@ -1,5 +1,5 @@
 [measurements]
-file = "../mission/output/sampling2s.csv"
+file = "../mission/output/sampling2s-burn.csv"
 stations = ["MSLCuriosity", "ExoMars"]
 
 [station.MSLCuriosity]
@@ -23,10 +23,12 @@ rate_sigma = 5e-6
 planet = "Mars"
 
 [mission]
-autodate = true
+autodate = false
 proptostart = false
-start = "2016-10-18 18:59:59"
-end = "2016-10-19 00:15:00"
+start = "2016-10-18 23:59:58" # or JDE
+end = "2016-10-20 00:00:00" # or JDE
+#start = "2016-10-16 16:20:06" # or JDE
+#end = "2016-10-22 00:00:00" # or JDE
 step = "1s"
 
 [spacecraft]
@@ -37,6 +39,8 @@ dry = 500
 [filter]
 type = "EKF" # Or `CKF` or `UKF`; defines the section to be read.
 outPrefix = "output/prj2s" # Prefix used for all filtering.
+start = "2016-10-18 18:59:59"
+end = "2016-10-19 00:15:00"
 
 [noise]
 Q = 1e-12
@@ -176,12 +180,19 @@ C = 0
 
 [orbit]
 body = "Mars"
-sma = 55855.7
-ecc = 0.8690
-inc = 74.0
-RAAN = 0.0
-argPeri = 0.0
-tAnomaly = 180
+#a=55839.0 e=0.8692 i=74.040 Ω=0.007 ω=0.019 ν=230.325
+sma = 55839.7
+ecc = 0.8692
+inc = 74.0040
+RAAN = 0.007
+argPeri = 0.019
+tAnomaly = 230.325
+#sma = 55855.7
+#ecc = 0.8690
+#inc = 74.0
+#RAAN = 0.0
+#argPeri = 0.0
+#tAnomaly = 180
 
 [perturbations]
 J2 = true
