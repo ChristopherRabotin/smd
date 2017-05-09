@@ -1,6 +1,6 @@
 [mission]
 start = "2016-10-16 16:20:06" # or JDE
-end = "2016-10-20 00:00:00" # or JDE
+end = "2016-10-22 00:00:00" # or JDE
 step = "1s" # Must be parsable by golang's ParseDuration
 
 [spacecraft]
@@ -31,13 +31,13 @@ bodies = ["Earth", "Sun", "Venus", "Jupiter"]
 [burns.0]
 date = "2016-10-19 00:00:00"
 R = 0
-N = -0.10
+N = -0.20
 C = 0
 
 [burns.1]
 date = "2016-10-19 00:00:01"
 R = 0
-N = -0.15
+N = -0.35
 C = 0
 
 [burns.2]
@@ -151,13 +151,13 @@ C = 0
 [burns.20]
 date = "2016-10-19 00:00:20"
 R = 0
-N = -0.10
+N = -0.05
 C = 0
 
 [burns.21]
 date = "2016-10-19 00:00:21"
 R = 0
-N = -0.10
+N = -0.05
 C = 0
 
 [measurements]
@@ -169,19 +169,19 @@ stations = ["MSLCuriosity", "ExoMars"]
 [station.MSLCuriosity]
 name = "MSL Curiosity"
 altitude = 5.5
-elevation = 20
+elevation = 25
 latitude = -4.6
 longitude = 137.4
-range_sigma = 10e-3
-rate_sigma = 10e-6
+range_sigma = 5e-3
+rate_sigma = 5e-6
 planet = "Mars"
 
 [station.ExoMars]
 name = "ExoMars"
 altitude = -0.5
-elevation = 15
+elevation = 5
 latitude = -2.7
-longitude = 16.7
+longitude = 255.0
 range_sigma = 5e-3
 rate_sigma = 5e-6
 planet = "Mars"

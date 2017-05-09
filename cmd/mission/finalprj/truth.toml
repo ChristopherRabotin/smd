@@ -1,6 +1,6 @@
 [mission]
 start = "2016-10-16 16:20:06" # or JDE
-end = "2016-10-20 00:00:00" # or JDE
+end = "2016-10-22 00:00:00" # or JDE
 step = "1s" # Must be parsable by golang's ParseDuration
 
 [spacecraft]

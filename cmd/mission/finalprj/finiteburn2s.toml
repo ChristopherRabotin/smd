@@ -4,7 +4,7 @@ end = "2016-10-22 00:00:00" # or JDE
 step = "1s" # Must be parsable by golang's ParseDuration
 
 [spacecraft]
-name = "TGO-expected"
+name = "TGO"
 fuel = 500
 dry = 500
 
@@ -24,14 +24,14 @@ velocity = 0.1 # sigma for Gaussian
 
 [perturbations]
 J2 = true
-J3 = false
-J4 = false
-bodies = ["Sun"]
+J3 = true
+J4 = true
+bodies = ["Earth", "Sun", "Venus", "Jupiter"]
 
 [burns.0]
 date = "2016-10-19 00:00:00"
 R = 0
-N = -0.35
+N = -0.20
 C = 0
 
 [burns.1]
@@ -148,5 +148,40 @@ R = 0
 N = -0.35
 C = 0
 
+[burns.20]
+date = "2016-10-19 00:00:20"
+R = 0
+N = -0.05
+C = 0
+
+[burns.21]
+date = "2016-10-19 00:00:21"
+R = 0
+N = -0.05
+C = 0
+
 [measurements]
-enabled = false
+enabled = true
+sampling = "2s"
+output = "output/sampling2s.csv"
+stations = ["MSLCuriosity", "ExoMars"]
+
+[station.MSLCuriosity]
+name = "MSL Curiosity"
+altitude = 5.5
+elevation = 25
+latitude = -4.6
+longitude = 137.4
+range_sigma = 5e-3
+rate_sigma = 5e-6
+planet = "Mars"
+
+[station.ExoMars]
+name = "ExoMars"
+altitude = -0.5
+elevation = 5
+latitude = -2.7
+longitude = 255.0
+range_sigma = 5e-3
+rate_sigma = 5e-6
+planet = "Mars"
