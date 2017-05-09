@@ -252,7 +252,7 @@ func main() {
 	mEst.RegisterStateChan(stateEstChan)
 	if viper.GetBool("mission.proptostart") {
 		// Propagate until the desired startDT
-		mEst.PropagateUntil(startDT.Add(-timeStep), false)
+		mEst.PropagateUntil(startDT, false)
 	}
 
 	var ekfWG sync.WaitGroup
@@ -536,7 +536,7 @@ func main() {
 	if visibilityErrors > 0 {
 		severity = "WARNING"
 	}
-	log.Printf("[%s] %d visibility errors\n", severity, visibilityErrors)
+	log.Printf("[%s] %d visibility errors (%2.2f%%)\n", severity, visibilityErrors, float64(visibilityErrors)/float64(measNo)*100)
 	// Write the residuals to a CSV file
 	f, ferr := os.Create(fmt.Sprintf("%s-residuals.csv", fltFilePrefix))
 	if ferr != nil {
