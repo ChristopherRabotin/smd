@@ -1,5 +1,5 @@
 [measurements]
-file = "../mission/output/sampling2s-burn.csv"
+file = "../mission/output/sampling5s-burn.csv"
 stations = ["MSLCuriosity", "ExoMars"]
 
 [station.MSLCuriosity]
@@ -38,7 +38,7 @@ dry = 500
 
 [filter]
 type = "EKF" # Or `CKF` or `UKF`; defines the section to be read.
-outPrefix = "output/prj2s" # Prefix used for all filtering.
+outPrefix = "output/prj5s" # Prefix used for all filtering.
 start = "2016-10-18 11:59:58"
 end = "2016-10-19 00:15:00"
 

@@ -1,6 +1,6 @@
 [mission]
-start = "2016-10-16 16:20:06" # or JDE
-end = "2016-10-22 00:00:00" # or JDE
+start = "2016-10-18 11:59:58" # or JDE
+end = "2016-10-20 00:00:00" # or JDE
 step = "1s" # Must be parsable by golang's ParseDuration
 
 [spacecraft]
@@ -10,12 +10,12 @@ dry = 500
 
 [orbit]
 body = "Mars"
-sma = 55855.7
-ecc = 0.8690
-inc = 74.0
-RAAN = 0.0
-argPeri = 0.0
-tAnomaly = 180
+sma = 55841.3
+ecc = 0.8692
+inc = 74.04
+RAAN = 0.006
+argPeri = 0.016
+tAnomaly = 210.326
 
 [error] # To generate datasets only
 probability = 0 # i.e. 1% of calls to SetState will have an error
@@ -163,7 +163,7 @@ C = 0
 [measurements]
 enabled = true
 sampling = "2s"
-output = "output/sampling2s.csv"
+output = "output/sampling30s-burn.csv"
 stations = ["MSLCuriosity", "ExoMars"]
 
 [station.MSLCuriosity]
