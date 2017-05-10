@@ -24,7 +24,7 @@ planet = "Mars"
 
 [mission]
 autodate = true
-proptostart = true
+proptostart = false
 start = "2016-10-16 16:20:06"
 end = "2016-10-19 00:00:00"
 #start = "2016-10-18 18:59:56"
