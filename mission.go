@@ -134,8 +134,8 @@ func (a *Mission) Propagate() {
 		if a.Vehicle.handleFuel && a.Vehicle.FuelMass < 0 {
 			a.Vehicle.logger.Log("level", "critical", "subsys", "prop", "fuel(kg)", a.Vehicle.FuelMass)
 		}
+		wg.Wait() // Don't return until we're done writing all the files.
 	}
-	wg.Wait() // Don't return until we're done writing all the files.
 }
 
 // StopPropagation is used to stop the propagation before it is completed.
@@ -308,18 +308,18 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 	tmpOrbit = NewOrbitFromRV(R, V, a.Orbit.Origin)
 	bodyAcc := -tmpOrbit.Origin.μ / math.Pow(Norm(R), 3)
 	_, _, i, Ω, _, _, _, _, u := tmpOrbit.Elements()
-	Δv = Rot313Vec(-u, -i, -Ω, Δv)
 	// Check if any impulse burn, and execute them if needed.
-	if maneuver, exists := a.Vehicle.Maneuvers[a.CurrentDT.Truncate(StepSize)]; exists {
+	if maneuver, exists := a.Vehicle.Maneuvers[a.CurrentDT.Truncate(a.step)]; exists {
 		if !maneuver.done {
 			a.Vehicle.logger.Log("level", "info", "subsys", "astro", "date", a.CurrentDT, "thrust", "impulse", "v(km/s)", maneuver.Δv())
-			Δv[0] += maneuver.V
+			Δv[0] += maneuver.R
 			Δv[1] += maneuver.N
 			Δv[2] += maneuver.C
 			maneuver.done = true
-			a.Vehicle.Maneuvers[a.CurrentDT.Truncate(StepSize)] = maneuver
+			a.Vehicle.Maneuvers[a.CurrentDT.Truncate(a.step)] = maneuver
 		}
 	}
+	Δv = Rot313Vec(-u, -i, -Ω, Δv)
 	// d\vec{R}/dt
 	fDot[0] = f[3]
 	fDot[1] = f[4]

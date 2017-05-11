@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "name": "Martian Ground Stations",
+  "items":
+  [
+    {
+      "type": "FeatureLabels",
+      "name": "Mars Surface Features",
+      "body": "Mars",
+      "features": [
+        {
+          "origin": "MSL Curiosity",
+          "diameter": 100.0,
+          "code": "MSL",
+          "name": "MSL Curiosity",
+          "latitude": 355.4105,
+          "longitude": 137.4417,
+          "link": "https://tools.wmflabs.org/geohack/geohack.php?pagename=Gale_%28crater%29&params=5.4_S_137.8_E_globe:Mars_type:landmark"
+        },
+        {
+          "origin": "ExoMars Landing",
+          "diameter": 100.0,
+          "code": "EML",
+          "name": "ExoMars",
+          "latitude": 357.3,
+          "longitude": 16.7,
+          "link": "https://tools.wmflabs.org/geohack/geohack.php?pagename=Schiaparelli_%28Martian_crater%29&params=2.7_S_16.7_E_globe:Mars_type:landmark"
+        }
+      ]
+    }
+  ]
+}

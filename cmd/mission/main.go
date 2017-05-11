@@ -112,10 +112,10 @@ func main() {
 	// Maneuvers
 	for burnNo := 0; viper.IsSet(fmt.Sprintf("burns.%d", burnNo)); burnNo++ {
 		burnDT := confReadJDEorTime(fmt.Sprintf("burns.%d.date", burnNo))
-		V := viper.GetFloat64(fmt.Sprintf("burns.%d.V", burnNo))
+		R := viper.GetFloat64(fmt.Sprintf("burns.%d.R", burnNo))
 		N := viper.GetFloat64(fmt.Sprintf("burns.%d.N", burnNo))
 		C := viper.GetFloat64(fmt.Sprintf("burns.%d.C", burnNo))
-		sc.Maneuvers[burnDT] = smd.NewManeuver(V, N, C)
+		sc.Maneuvers[burnDT] = smd.NewManeuver(R, N, C)
 		if burnDT.After(endDT) || burnDT.Before(startDT) {
 			log.Printf("[WARNING] burn scheduled out of propagation time")
 		} else if verbose {
@@ -127,6 +127,7 @@ func main() {
 	mission := smd.NewPreciseMission(sc, scOrbit, startDT, endDT, perts, timeStep, false, exportConf)
 
 	// Stations
+	measurementSampling := viper.GetDuration("measurements.sampling")
 	if viper.GetBool("measurements.enabled") {
 		// Read stations
 		stationNames := viper.GetStringSlice("measurements.stations")
@@ -172,6 +173,10 @@ func main() {
 			f.WriteString(fmt.Sprintf("# Creation date (UTC): %s\n\"station name\",\"epoch UTC\",\"Julian day\",\"Theta GST\",\"range (km)\",\"range rate (km/s)\"\n", time.Now()))
 			// Iterate over each state
 			numVis := 0
+			stationSampling := make(map[string]time.Time)
+			for _, st := range stations {
+				stationSampling[st.Name] = time.Time{}
+			}
 			for {
 				state, more := <-measChan
 				if !more {
@@ -180,10 +185,13 @@ func main() {
 				Δt := state.DT.Sub(startDT).Seconds()
 				θgst := Δt * scOrbit.Origin.RotRate
 				for _, st := range stations {
-					measurement := st.PerformMeasurement(θgst, state)
-					if measurement.Visible {
-						f.WriteString(fmt.Sprintf("\"%s\",\"%s\",%f,%f,%s\n", st.Name, state.DT.Format(dateFormat), julian.TimeToJD(state.DT), θgst, measurement.ShortCSV()))
-						numVis++
+					if state.DT.Sub(stationSampling[st.Name]).Seconds() >= measurementSampling.Seconds() {
+						stationSampling[st.Name] = state.DT
+						measurement := st.PerformMeasurement(θgst, state)
+						if measurement.Visible {
+							f.WriteString(fmt.Sprintf("\"%s\",\"%s\",%f,%f,%s\n", st.Name, state.DT.Format(dateFormat), julian.TimeToJD(state.DT), θgst, measurement.ShortCSV()))
+							numVis++
+						}
 					}
 				}
 			}

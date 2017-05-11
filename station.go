@@ -67,7 +67,7 @@ func (s Station) RangeElAz(rECEF []float64) (ρECEF []float64, ρ, el, az float6
 }
 
 func (s Station) String() string {
-	return fmt.Sprintf("%s (%f,%f); alt = %f km; el = %f deg", s.Name, s.LatΦ, s.Longθ, s.Altitude, s.Elevation)
+	return fmt.Sprintf("%s (%f,%f); alt = %f km; el = %f deg", s.Name, s.LatΦ/d2r, s.Longθ/d2r, s.Altitude, s.Elevation)
 }
 
 // NewStation returns a new station. Angles in degrees.

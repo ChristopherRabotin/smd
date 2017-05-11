@@ -59,8 +59,11 @@ func main() {
 	endDT := confReadJDEorTime("mission.end")
 	timeStep := viper.GetDuration("mission.step")
 
-	// Read orbit
-	sc := smd.NewEmptySC("fltr", 0)
+	// Read spacecraft
+	scName := viper.GetString("spacecraft.name")
+	fuelMass := viper.GetFloat64("spacecraft.fuel")
+	dryMass := viper.GetFloat64("spacecraft.dry")
+	sc := smd.NewSpacecraft(scName, dryMass, fuelMass, smd.NewUnlimitedEPS(), []smd.EPThruster{}, true, []*smd.Cargo{}, []smd.Waypoint{})
 
 	var scOrbit *smd.Orbit
 	centralBodyName := viper.GetString("orbit.body")
@@ -93,7 +96,7 @@ func main() {
 	}
 
 	// Read stations
-	stationNames := viper.GetStringSlice("measurements.stations")
+	stationNames := viper.GetStringSlice("measurements.stations") // stationNames is also used for ordering for H matrix
 	stations := make(map[string]smd.Station)
 	for _, stationName := range stationNames {
 		var st smd.Station
@@ -124,8 +127,12 @@ func main() {
 		log.Printf("[info] added station %s", st)
 	}
 
+	stationOrdering := make(map[string]int)
+	for pos, station := range stationNames {
+		stationOrdering[station] = pos
+	}
 	// Load measurement file
-	measurements, measurementTimes := loadMeasurementFile(viper.GetString("measurements.file"), stations)
+	measurements, measurementTimes := loadMeasurementFile(viper.GetString("measurements.file"), stations, stationOrdering)
 	measStartDT := measurementTimes[0]
 	measEndDT := measurementTimes[len(measurementTimes)-1]
 	if numMeas := len(measurements); numMeas < 2 {
@@ -133,12 +140,25 @@ func main() {
 	}
 	log.Printf("[info] Loaded %d measurements from %s to %s", len(measurements), measStartDT, measEndDT)
 
+	filterStartDT := confReadJDEorTime("filter.start")
+	filterEndDT := confReadJDEorTime("filter.end")
+
 	// Check overlap between measurement file and the dates of the mission.
 	if viper.GetBool("mission.autodate") {
 		startDT = measStartDT
 		endDT = measEndDT
 	} else if startDT.After(measEndDT) {
 		log.Fatal("mission start time is after last measurement")
+	} else if viper.GetBool("mission.proptostart") {
+		// Dates are provided, let's remove any measurement time which happens before or after the boundaries.
+		trimmedMeas := []time.Time{}
+		for _, dt := range measurementTimes {
+			if dt.Before(filterStartDT) || dt.After(filterEndDT) {
+				continue
+			}
+			trimmedMeas = append(trimmedMeas, dt)
+		}
+		measurementTimes = trimmedMeas
 	}
 
 	// Maneuvers (after loading files because we need to check startDT and endDT if auto date)
@@ -188,7 +208,13 @@ func main() {
 		σQz = σQx
 	}
 	noiseQ := mat64.NewSymDense(3, []float64{σQx, 0, 0, 0, σQy, 0, 0, 0, σQz})
-	noiseR := mat64.NewSymDense(2, []float64{viper.GetFloat64("noise.range"), 0, 0, viper.GetFloat64("noise.rate")})
+	rangeNoise := viper.GetFloat64("noise.range")
+	rateNoise := viper.GetFloat64("noise.rate")
+	noiseR := mat64.NewSymDense(2*len(stationNames), nil)
+	for i := 0; i < len(stationNames); i++ {
+		noiseR.SetSym(2*i, 2*i, rangeNoise)
+		noiseR.SetSym(2*i+1, 2*i+1, rateNoise)
+	}
 	noiseKF := gokalman.NewNoiseless(noiseQ, noiseR)
 
 	// Compute number of states which will be generated.
@@ -225,7 +251,12 @@ func main() {
 
 	stateEstChan := make(chan (smd.State), 1)
 
-	mEst := smd.NewPreciseMission(sc, scOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{})
+	mEst := smd.NewPreciseMission(sc, scOrbit, startDT, startDT.Add(-1), estPerts, timeStep, true, smd.ExportConfig{Cosmo: true, Filename: strings.Replace(fltFilePrefix, "/", "-", -1)})
+	if viper.GetBool("mission.proptostart") {
+		// Propagate until the desired startDT
+		mEst.PropagateUntil(filterStartDT, false)
+		log.Printf("orbit @ %s:\n%s", filterStartDT, mEst.Orbit)
+	}
 	mEst.RegisterStateChan(stateEstChan)
 
 	var ekfWG sync.WaitGroup
@@ -236,6 +267,9 @@ func main() {
 		// Go step by step because the orbit pointer needs to be updated.
 		go func() {
 			for i, measurementTime := range measurementTimes {
+				if i > 0 && measurementTimes[i-1] == measurementTime {
+					continue // Skip propagation for whichever times are duplicated.
+				}
 				ekfWG.Wait()
 				ekfWG.Add(1)
 				mEst.PropagateUntil(measurementTime, i == len(measurementTimes)-1)
@@ -277,19 +311,20 @@ func main() {
 		}
 	}
 
-	var prevStationName = ""
 	var prevDT time.Time
 	var ckfMeasNo = 0
 	measNo := 0
 	stateNo := 0
-	x0 := mat64.NewVector(6, nil)
+	stateSize := 6
+	x0 := mat64.NewVector(stateSize, nil)
+	hC := stateSize
 	if fltType == gokalman.EKFType || fltType == gokalman.CKFType {
-		kf, _, err = gokalman.NewHybridKF(x0, prevP, noiseKF, 2)
+		kf, _, err = gokalman.NewHybridKF(x0, prevP, noiseKF, len(stationNames)) // XXX: should this be 2*len(stationNames) ? Seems like so, but this doesn't crash.
 		if err != nil {
 			panic(fmt.Errorf("%s", err))
 		}
 	} else if fltType == gokalman.SRIFType {
-		kf, _, err = gokalman.NewSRIF(x0, prevP, 2, false, noiseKF)
+		kf, _, err = gokalman.NewSRIF(x0, prevP, len(stationNames), false, noiseKF)
 		if err != nil {
 			panic(fmt.Errorf("%s", err))
 		}
@@ -298,10 +333,10 @@ func main() {
 	for state := range stateEstChan {
 		stateNo++
 		roundedDT := state.DT.Truncate(time.Second)
-		measurement, exists := measurements[roundedDT]
+		measurements, exists := measurements[roundedDT]
 		if !exists {
 			if measNo == 0 {
-				panic(fmt.Errorf("should start KF at first measurement: \n%s (got)\n%s (exp)", roundedDT, startDT))
+				panic(fmt.Errorf("should start KF at first measurement: \n%s (got)\n%s (exp)", roundedDT, measurementTimes[0]))
 			}
 			// There is no truth measurement here, let's only predict the KF covariance.
 			kf.Prepare(state.Φ, nil)
@@ -325,11 +360,11 @@ func main() {
 		}
 
 		if measNo == 0 {
-			prevDT = measurement.State.DT
+			prevDT = measurements[0].State.DT
 		}
-
+		thisMeasTime := measurements[0].State.DT
 		// Let's perform a full update since there is a measurement.
-		ΔtDuration := measurement.State.DT.Sub(prevDT)
+		ΔtDuration := thisMeasTime.Sub(prevDT)
 		Δt := ΔtDuration.Seconds() // Everything is in seconds.
 		// Informational messages.
 		if fltType == gokalman.EKFType {
@@ -345,20 +380,42 @@ func main() {
 			}
 		}
 
-		if measurement.Station.Name != prevStationName {
-			fmt.Printf("[info] #%05d %s in visibility (T+%s)\n", measNo, measurement.Station.Name, measurement.State.DT.Sub(startDT))
-			prevStationName = measurement.Station.Name
+		stkdMeasVector := mat64.NewVector(len(stationNames)*2, nil)
+		stkdCmpdVector := mat64.NewVector(len(stationNames)*2, nil)
+		tbStkdH := make([]*mat64.Dense, len(stationNames))
+		for measPos, measurement := range measurements {
+			if measurement.Range == 0 {
+				continue
+			}
+			// Compute "real" measurement
+			computedObservation := measurement.Station.PerformMeasurement(measurement.Timeθgst, state)
+			if !computedObservation.Visible {
+				fmt.Printf("[WARN] #%05d station %s should see the SC but does not\n", measNo, measurement.Station.Name)
+				visibilityErrors++
+			}
+			tbStkdH[measPos] = computedObservation.HTilde()
+			for i := 0; i < 2; i++ {
+				stkdMeasVector.SetVec(i+(measPos*2), measurement.StateVector().At(i, 0))
+				stkdCmpdVector.SetVec(i+(measPos*2), computedObservation.StateVector().At(i, 0))
+			}
 		}
 
-		// Compute "real" measurement
-		computedObservation := measurement.Station.PerformMeasurement(measurement.Timeθgst, state)
-		if !computedObservation.Visible {
-			fmt.Printf("[WARN] #%05d station %s should see the SC but does not\n", measNo, measurement.Station.Name)
-			visibilityErrors++
+		// Create the stacked measurement and Htilde.
+		var stkdHtilde *mat64.Dense
+		stkdHtilde = tbStkdH[0]
+		if stkdHtilde == nil {
+			stkdHtilde = mat64.NewDense(2, hC, nil)
+		}
+		for HPos, Htilde := range tbStkdH[1:len(tbStkdH)] {
+			if Htilde == nil {
+				Htilde = mat64.NewDense(2, hC, nil)
+			}
+			tmpStkdHtilde2 := mat64.NewDense(2*(HPos+2), hC, nil)
+			tmpStkdHtilde2.Stack(stkdHtilde, Htilde)
+			stkdHtilde = tmpStkdHtilde2
 		}
 
-		Htilde := computedObservation.HTilde()
-		kf.Prepare(state.Φ, Htilde)
+		kf.Prepare(state.Φ, stkdHtilde)
 		if sncEnabled {
 			if Δt < sncDisableTime {
 				if sncRIC {
@@ -392,7 +449,7 @@ func main() {
 				kf.PreparePNT(Γ)
 			}
 		}
-		estI, err := kf.Update(measurement.StateVector(), computedObservation.StateVector())
+		estI, err := kf.Update(stkdMeasVector, stkdCmpdVector)
 		if err != nil {
 			panic(fmt.Errorf("[ERR!] %s", err))
 		}
@@ -400,13 +457,16 @@ func main() {
 		prevP = est.Covariance().(*mat64.SymDense)
 
 		// Compute residual
-		residual := mat64.NewVector(2, nil)
-		residual.MulVec(Htilde, est.State())
+		if *debug {
+			fmt.Printf("%+v\n%+v", mat64.Formatted(est.State().T()), mat64.Formatted(stkdHtilde))
+		}
+		residual := mat64.NewVector(4, nil)
+		residual.MulVec(stkdHtilde, est.State())
 		residual.AddScaledVec(residual, -1, est.ObservationDev())
 		residual.ScaleVec(-1, residual)
 		residuals[stateNo-1] = residual
 
-		prevDT = measurement.State.DT
+		prevDT = measurements[0].State.DT
 		// Stream to CSV file
 		if smoothing {
 			// Save to history in order to perform smoothing.
@@ -434,7 +494,7 @@ func main() {
 				}
 				log.Printf("[ekf+] (%04d) %+v\n", measNo, mat64.Formatted(vec.T()))
 			}
-			mEst.Orbit = smd.NewOrbitFromRV(R, V, smd.Earth)
+			mEst.Orbit = smd.NewOrbitFromRV(R, V, mEst.Orbit.Origin)
 		}
 		ckfMeasNo++
 		measNo++
@@ -480,7 +540,7 @@ func main() {
 	if visibilityErrors > 0 {
 		severity = "WARNING"
 	}
-	log.Printf("[%s] %d visibility errors\n", severity, visibilityErrors)
+	log.Printf("[%s] %d visibility errors (%2.2f%%)\n", severity, visibilityErrors, float64(visibilityErrors)/float64(measNo)*100)
 	// Write the residuals to a CSV file
 	f, ferr := os.Create(fmt.Sprintf("%s-residuals.csv", fltFilePrefix))
 	if ferr != nil {
