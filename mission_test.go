@@ -514,9 +514,9 @@ func TestCorrectOEωShortWay(t *testing.T) {
 
 // TestMultiCorrectOE runs the test case from the Ruggiero 2012 conference paper.
 func TestMultiCorrectOE(t *testing.T) {
-	for _, meth := range []ControlLawType{Ruggiero, Naasz} {
-		oInit := NewOrbitFromOE(24396, 0.001, 7, 1, 1, 1, Earth)
-		oTarget := NewOrbitFromOE(42164, 0.7283, 0.001, 1, 1, 1, Earth)
+	for _, meth := range []ControlLawType{Ruggiero} {
+		oInit := NewOrbitFromOE(24396, 0.7283, 7, 1, 1, 1, Earth)
+		oTarget := NewOrbitFromOE(42164, 0.001, 0.001, 1, 1, 1, Earth)
 		aTgt, eTgt, iTgt, _, _, _, _, _, _ := oTarget.Elements()
 		eps := NewUnlimitedEPS()
 		EPThrusters := []EPThruster{new(PPS1350)}
@@ -528,7 +528,7 @@ func TestMultiCorrectOE(t *testing.T) {
 		var fuel float64
 		if meth == Ruggiero {
 			days = 113
-			fuel = 51
+			fuel = 49
 		} else {
 			days = 120
 			fuel = 53
