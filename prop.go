@@ -253,6 +253,7 @@ type OptimalΔOrbit struct {
 	// local copy of the OEs of the inital and target orbits
 	oInita, oInite, oIniti, oInitΩ, oInitω, oInitν float64
 	oTgta, oTgte, oTgti, oTgtΩ, oTgtω, oTgtν       float64
+	distanceε, eccentricityε, angleε               float64
 	GenericCL
 }
 
@@ -262,6 +263,9 @@ func NewOptimalΔOrbit(target Orbit, method ControlLawType, laws []ControlLaw) *
 	cl.cleared = false
 	cl.method = method
 	cl.oTgta, cl.oTgte, cl.oTgti, cl.oTgtΩ, cl.oTgtω, cl.oTgtν, _, _, _ = target.Elements()
+	cl.distanceε = distanceε
+	cl.eccentricityε = eccentricityε
+	cl.angleε = angleε
 	if len(laws) == 0 {
 		laws = []ControlLaw{OptiΔaCL, OptiΔeCL, OptiΔiCL, OptiΔΩCL, OptiΔωCL}
 	}
@@ -275,6 +279,18 @@ func NewOptimalΔOrbit(target Orbit, method ControlLawType, laws []ControlLaw) *
 		cl.GenericCL = GenericCL{"ΔOrbit", cl.controls[0].Type()}
 	}
 	return &cl
+}
+
+// SetTarget changes the target of this optimal control
+func (cl *OptimalΔOrbit) SetTarget(target Orbit) {
+	cl.oTgta, cl.oTgte, cl.oTgti, cl.oTgtΩ, cl.oTgtω, cl.oTgtν, _, _, _ = target.Elements()
+}
+
+// SetEpsilons changes the target of this optimal control
+func (cl *OptimalΔOrbit) SetEpsilons(distanceε, eccentricityε, angleε float64) {
+	cl.distanceε = distanceε
+	cl.eccentricityε = eccentricityε
+	cl.angleε = angleε
 }
 
 func (cl *OptimalΔOrbit) String() string {

@@ -12,3 +12,5 @@ env.sh
 *.csv
 *.tsv
 *.xyzv
+.venv
+vendor

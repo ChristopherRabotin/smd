@@ -257,7 +257,7 @@ func (o Orbit) hashValid() bool {
 // String implements the stringer interface (hence the value receiver)
 func (o Orbit) String() string {
 	a, e, i, Ω, ω, ν, λ, _, u := o.Elements()
-	return fmt.Sprintf("r=%.1f a=%.1f e=%.4f i=%.3f Ω=%.3f ω=%.3f ν=%.3f λ=%.3f u=%.3f", Norm(o.rVec), a, e, Rad2deg(i), Rad2deg(Ω), Rad2deg(ω), Rad2deg(ν), Rad2deg(λ), Rad2deg(u))
+	return fmt.Sprintf("r=%.1f a=%.3f e=%.6f i=%.4f Ω=%.4f ω=%.4f ν=%.4f λ=%.4f u=%.4f", Norm(o.rVec), a, e, Rad2deg(i), Rad2deg(Ω), Rad2deg(ω), Rad2deg(ν), Rad2deg(λ), Rad2deg(u))
 }
 
 // epsilons returns the epsilons used to determine equality.
