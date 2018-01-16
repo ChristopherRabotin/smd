@@ -184,8 +184,8 @@ func createInterpolatedFile(filename string, stamped bool, stateDT time.Time) *o
 	return f
 }
 
-// createAsCSVCSVFile returns a file which requires a defer close statement!
-func createAsCSVCSVFile(filename string, conf ExportConfig, stateDT time.Time) *os.File {
+// createAsCSVFile returns a file which requires a defer close statement!
+func createAsCSVFile(filename string, conf ExportConfig, stateDT time.Time) *os.File {
 	if conf.Timestamp {
 		t := time.Now()
 		filename = fmt.Sprintf("%s/orbital-elements-%s-%d-%02d-%02dT%02d.%02d.%02d.csv", smdConfig().outputDir, filename, t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
@@ -258,7 +258,7 @@ func StreamStates(conf ExportConfig, stateChan <-chan (State)) {
 					}
 				}
 				if conf.AsCSV {
-					fAsCSV = createAsCSVCSVFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf, state.DT)
+					fAsCSV = createAsCSVFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf, state.DT)
 				}
 				fileNo++
 			} else {
@@ -283,7 +283,7 @@ func StreamStates(conf ExportConfig, stateChan <-chan (State)) {
 					}
 					if conf.AsCSV {
 						fAsCSV.WriteString(fmt.Sprintf("\n# Simulation time end (UTC): %s\n", state.DT.UTC()))
-						fAsCSV = createAsCSVCSVFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf, state.DT)
+						fAsCSV = createAsCSVFile(fmt.Sprintf("%s-%d", conf.Filename, fileNo), conf, state.DT)
 					}
 					fileNo++
 					// Force writing this data point now instead of creating N new files.
@@ -379,4 +379,50 @@ type ExportConfig struct {
 // IsUseless returns whether this config doesn't actually do anything.
 func (c ExportConfig) IsUseless() bool {
 	return !c.Cosmo && !c.AsCSV
+}
+
+// ThurstAngleExport configures the exporting of the simulation. Exports in CSV
+// in the format of "datetime,alpha,beta"
+type ThurstAngleExport struct {
+	enabled   bool
+	timestamp bool
+	latestDT  time.Time
+	fhdl      *os.File
+}
+
+func (t *ThurstAngleExport) createFile() {
+	if !t.enabled {
+		return
+	}
+	var filename string
+	if t.timestamp {
+		dt := time.Now()
+		filename = fmt.Sprintf("%s/thrusting-angles-%d-%02d-%02dT%02d.%02d.%02d.csv", smdConfig().outputDir, dt.Year(), dt.Month(), dt.Day(), dt.Hour(), dt.Minute(), dt.Second())
+	} else {
+		filename = fmt.Sprintf("%s/thrusting-angles.csv", smdConfig().outputDir)
+	}
+	f, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	// Header
+	f.WriteString(fmt.Sprintf(`# Creation date (UTC): %s
+# Records are datetime, angle, beta. All angles are in degrees.
+datetime,alpha,beta,\n`, time.Now()))
+	t.fhdl = f
+}
+
+// Store appends a new tuple of values for the given time. Note that if the previous time is the same as the new one, the new entry is *ignored*.
+func (t *ThurstAngleExport) Store(dt time.Time, alpha, beta float64) {
+	if t.latestDT == dt {
+		return
+	}
+	t.fhdl.WriteString(fmt.Sprintf("\"%s\",%3.6f,%3.6f,\n", dt, alpha, beta))
+	t.latestDT = dt
+}
+
+func NewThurstAngleExport(timestamped bool) *ThurstAngleExport {
+	txp := ThurstAngleExport{true, timestamped, time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC), nil}
+	txp.createFile()
+	return &txp
 }
