@@ -59,7 +59,7 @@ func TestRot313(t *testing.T) {
 	R1R3.Mul(R1(θ2), R3(θ1))
 	R3R1R3m.Mul(R3(θ3), &R1R3)
 	R3R1R3m.Sub(&R3R1R3m, R3R1R3(θ1, θ2, θ3))
-	if !mat64.Equal(&R3R1R3m, mat64.NewDense(3, 3, nil)) {
+	if !mat64.EqualApprox(&R3R1R3m, mat64.NewDense(3, 3, nil), 1e-16) {
 		t.Logf("\n%+v", mat64.Formatted(&R3R1R3m))
 		t.Logf("\n%+v", mat64.Formatted(R3R1R3(θ1, θ2, θ3)))
 		t.Fatal("failed")

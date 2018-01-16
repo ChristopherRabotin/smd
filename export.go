@@ -394,12 +394,17 @@ func (t *ThurstAngleExport) createFile(filename string) {
 	if !t.enabled {
 		return
 	}
-	var osfn string
+	osfn := smdConfig().outputDir
+	if osfn == "" {
+		fmt.Println("\nWARNING: SMD_CONFIG outputDir undefined. Forced to `./`")
+		osfn = "./"
+	}
+
 	if t.timestamp {
 		dt := time.Now()
-		osfn = fmt.Sprintf("%s/thrusting-angles-%s-%d-%02d-%02dT%02d.%02d.%02d.csv", smdConfig().outputDir, filename, dt.Year(), dt.Month(), dt.Day(), dt.Hour(), dt.Minute(), dt.Second())
+		osfn += fmt.Sprintf("/thrusting-angles-%s-%d-%02d-%02dT%02d.%02d.%02d.csv", filename, dt.Year(), dt.Month(), dt.Day(), dt.Hour(), dt.Minute(), dt.Second())
 	} else {
-		osfn = fmt.Sprintf("%s/thrusting-angles-%s.csv", smdConfig().outputDir, filename)
+		osfn += fmt.Sprintf("/thrusting-angles-%s.csv", filename)
 	}
 	f, err := os.Create(osfn)
 	if err != nil {

@@ -260,6 +260,7 @@ type OptimalΔOrbit struct {
 	// local copy of the OEs of the inital and target orbits
 	oInita, oInite, oIniti, oInitΩ, oInitω, oInitν float64
 	oTgta, oTgte, oTgti, oTgtΩ, oTgtω, oTgtν       float64
+	Distanceε, Eccentricityε, Angleε               float64
 	GenericCL
 }
 
@@ -269,6 +270,9 @@ func NewOptimalΔOrbit(target Orbit, method ControlLawType, laws []ControlLaw) *
 	cl.cleared = false
 	cl.method = method
 	cl.oTgta, cl.oTgte, cl.oTgti, cl.oTgtΩ, cl.oTgtω, cl.oTgtν, _, _, _ = target.Elements()
+	cl.Distanceε = distanceε
+	cl.Eccentricityε = eccentricityε
+	cl.Angleε = angleε
 	if len(laws) == 0 {
 		laws = []ControlLaw{OptiΔaCL, OptiΔeCL, OptiΔiCL, OptiΔΩCL, OptiΔωCL}
 	}
@@ -284,6 +288,18 @@ func NewOptimalΔOrbit(target Orbit, method ControlLawType, laws []ControlLaw) *
 	return &cl
 }
 
+// SetTarget changes the target of this optimal control
+func (cl *OptimalΔOrbit) SetTarget(target Orbit) {
+	cl.oTgta, cl.oTgte, cl.oTgti, cl.oTgtΩ, cl.oTgtω, cl.oTgtν, _, _, _ = target.Elements()
+}
+
+// SetEpsilons changes the target of this optimal control
+func (cl *OptimalΔOrbit) SetEpsilons(distanceε, eccentricityε, angleε float64) {
+	cl.Distanceε = distanceε
+	cl.Eccentricityε = eccentricityε
+	cl.Angleε = angleε
+}
+
 func (cl *OptimalΔOrbit) String() string {
 	return "OptimalΔOrbit"
 }
@@ -297,19 +313,19 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		if len(cl.controls) == 5 {
 			// Let's populate this with the appropriate laws, so we're resetting it.
 			cl.controls = make([]ThrustControl, 0)
-			if !floats.EqualWithinAbs(cl.oInita, cl.oTgta, distanceε) {
+			if !floats.EqualWithinAbs(cl.oInita, cl.oTgta, cl.Distanceε) {
 				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔaCL, "Δa"))
 			}
-			if !floats.EqualWithinAbs(cl.oInite, cl.oTgte, eccentricityε) {
+			if !floats.EqualWithinAbs(cl.oInite, cl.oTgte, cl.Eccentricityε) {
 				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔeCL, "Δe"))
 			}
-			if !floats.EqualWithinAbs(cl.oIniti, cl.oTgti, angleε) {
+			if !floats.EqualWithinAbs(cl.oIniti, cl.oTgti, cl.Angleε) {
 				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔiCL, "Δi"))
 			}
-			if !floats.EqualWithinAbs(cl.oInitΩ, cl.oTgtΩ, angleε) {
+			if !floats.EqualWithinAbs(cl.oInitΩ, cl.oTgtΩ, cl.Angleε) {
 				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔΩCL, "ΔΩ"))
 			}
-			if !floats.EqualWithinAbs(cl.oInitω, cl.oTgtω, angleε) {
+			if !floats.EqualWithinAbs(cl.oInitω, cl.oTgtω, cl.Angleε) {
 				cl.controls = append(cl.controls, NewOptimalThrust(OptiΔωCL, "Δω"))
 			}
 		}
@@ -321,8 +337,11 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	switch cl.method {
 	case Ruggiero:
 		factor := func(oscul, init, target, tol float64) float64 {
-			if floats.EqualWithinAbs(init, target, tol) || floats.EqualWithinAbs(oscul, target, tol) {
-				return 0 // Don't want no NaNs now.
+			if floats.EqualWithinAbs(oscul, target, tol) {
+				return 0
+			}
+			if floats.EqualWithinAbs(init, target, tol) {
+				init += tol // Adding a small error to avoid NaN while still making the correction
 			}
 			return (target - oscul) / math.Abs(target-init)
 		}
@@ -334,27 +353,27 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 				oscul = a
 				init = cl.oInita
 				target = cl.oTgta
-				tol = distanceε
+				tol = cl.Distanceε
 			case OptiΔeCL:
 				oscul = e
 				init = cl.oInite
 				target = cl.oTgte
-				tol = eccentricityε
+				tol = cl.Eccentricityε
 			case OptiΔiCL:
 				oscul = i
 				init = cl.oIniti
 				target = cl.oTgti
-				tol = angleε
+				tol = cl.Angleε
 			case OptiΔΩCL:
 				oscul = Ω
 				init = cl.oInitΩ
 				target = cl.oTgtΩ
-				tol = angleε
+				tol = cl.Angleε
 			case OptiΔωCL:
 				oscul = ω
 				init = cl.oInitω
 				target = cl.oTgtω
-				tol = angleε
+				tol = cl.Angleε
 			}
 			// XXX: This summation may be wrong: |\sum x_i| != \sum |x_i|.
 			if fact := factor(oscul, init, target, tol); fact != 0 {
@@ -369,7 +388,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 		// Note that, as described in Hatten MSc. thesis, the summing method only
 		// works one way (because of the δO^2) per OE. So I added the sign function
 		// to fix it.
-		dε, eε, aε := o.epsilons()
+		//dε, eε, aε := o.epsilons()
 		for _, ctrl := range cl.controls {
 			var weight, δO float64
 			p := o.SemiParameter()
@@ -378,19 +397,19 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 			switch ctrl.Type() {
 			case OptiΔaCL:
 				δO = cl.oTgta - a
-				if math.Abs(δO) < dε {
+				if math.Abs(δO) < cl.Distanceε {
 					δO = 0
 				}
 				weight = Sign(δO) * math.Pow(h, 2) / (4 * math.Pow(a, 4) * math.Pow(1+e, 2))
 			case OptiΔeCL:
 				δO = cl.oTgte - e
-				if math.Abs(δO) < eε {
+				if math.Abs(δO) < cl.Eccentricityε {
 					δO = 0
 				}
 				weight = Sign(δO) * math.Pow(h, 2) / (4 * math.Pow(p, 2))
 			case OptiΔiCL:
 				δO = cl.oTgti - i
-				if math.Abs(δO) < aε {
+				if math.Abs(δO) < cl.Angleε {
 					δO = 0
 				}
 				weight = Sign(δO) * math.Pow((h+e*h*math.Cos(ω+math.Asin(e*sinω)))/(p*(math.Pow(e*sinω, 2)-1)), 2)
@@ -400,7 +419,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 					// Enforce short path to correct angle.
 					δO *= -1
 				}
-				if math.Abs(δO) < aε {
+				if math.Abs(δO) < cl.Angleε {
 					δO = 0
 				}
 				weight = Sign(δO) * math.Pow((h*math.Sin(i)*(e*math.Sin(ω+math.Asin(e*cosω))-1))/(p*(1-math.Pow(e*cosω, 2))), 2)
@@ -410,7 +429,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 					// Enforce short path to correct angle.
 					δO *= -1
 				}
-				if math.Abs(δO) < aε {
+				if math.Abs(δO) < cl.Angleε {
 					δO = 0
 				}
 				weight = Sign(δO) * (math.Pow(e*h, 2) / (4 * math.Pow(p, 2))) * (1 - math.Pow(e, 2)/4)
