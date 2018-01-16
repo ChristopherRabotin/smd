@@ -201,7 +201,9 @@ func TestCorrectOEa(t *testing.T) {
 		EPThrusters := []EPThruster{new(PPS1350)}
 		dryMass := 300.0
 		fuelMass := 67.0
-		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)})
+		otgt := NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)
+		otgt.SetEpsilons(1e-1, 1e-5, Deg2rad(0.001))
+		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{otgt})
 		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(45*24) * time.Hour)
 		astro := NewMission(sc, oInit, start, end, Perturbations{}, false, ExportConfig{Filename: fmt.Sprintf("ruggOEa-%s", meth), Cosmo: smdConfig().testExport, AsCSV: smdConfig().testExport})

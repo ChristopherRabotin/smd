@@ -164,6 +164,11 @@ func (wp *OrbitTarget) Action() *WaypointAction {
 	return nil
 }
 
+// SetEpsilons allows to set the epsilons of the control law
+func (wp *OrbitTarget) SetEpsilons(distanceε, eccentricityε, angleε float64) {
+	wp.ctrl.SetEpsilons(distanceε, eccentricityε, angleε)
+}
+
 // ThrustDirection implements the optimal orbit target.
 func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
 	if ok, err := wp.target.Equals(o); ok {
