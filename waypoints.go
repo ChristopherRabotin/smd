@@ -171,7 +171,7 @@ func (wp *OrbitTarget) SetEpsilons(distanceε, eccentricityε, angleε float64) 
 
 // ThrustDirection implements the optimal orbit target.
 func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
-	if ok, err := wp.target.Equals(o); ok {
+	if ok, err := wp.target.EqualsWithin(o, wp.ctrl.Distanceε, wp.ctrl.Eccentricityε, wp.ctrl.Angleε); ok {
 		wp.cleared = true
 	} else if wp.ctrl.cleared {
 		fmt.Printf("[WARNING] OrbitTarget reached @%s *but* %s: %s\n", dt, err, o.String())

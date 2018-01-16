@@ -554,15 +554,18 @@ func TestMultiCorrectOE(t *testing.T) {
 }
 
 func TestPetropoulosCaseA(t *testing.T) {
-	t.Log("Case A fails with Ruggiero: stops although the eccenticity is not good)")
-	for _, meth := range []ControlLawType{Naasz} {
+	t.Log("Case A duration with Ruggiero is incorrect: it should be 14.6 days, but takes 31.19")
+	distanceε := 1.0
+	for _, meth := range []ControlLawType{Ruggiero, Naasz} {
 		oInit := NewOrbitFromOE(Earth.Radius+1000, 0.01, 0.05, 0, 0, 1, Earth)
 		oTarget := NewOrbitFromOE(42164, 0.01, 0.05, 0, 0, 1, Earth)
 		eps := NewUnlimitedEPS()
 		EPThrusters := []EPThruster{NewGenericEP(1, 3100)}
 		dryMass := 1.0
 		fuelMass := 299.0
-		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)})
+		orbitTgt := NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL, OptiΔeCL)
+		orbitTgt.SetEpsilons(distanceε, eccentricityε, angleε)
+		sc := NewSpacecraft("Petro", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{orbitTgt})
 		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		// With eta=0, the duration is 14.600 days.
 		//end := start.Add(time.Duration(15*24) * time.Hour)

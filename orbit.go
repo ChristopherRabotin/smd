@@ -271,6 +271,11 @@ func (o Orbit) epsilons() (float64, float64, float64) {
 // Equals returns whether two orbits are identical with free true anomaly.
 // Use StrictlyEquals to also check true anomaly.
 func (o Orbit) Equals(o1 Orbit) (bool, error) {
+	return o.EqualsWithin(o1, distanceε, eccentricityε, angleε)
+}
+
+// EqualsWithin returns whether two orbits are identical with free true anomaly and within provided bounds.
+func (o Orbit) EqualsWithin(o1 Orbit, distanceε, eccentricityε, angleε float64) (bool, error) {
 	if !o.Origin.Equals(o1.Origin) {
 		return false, errors.New("different origin")
 	}
