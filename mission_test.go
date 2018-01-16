@@ -202,7 +202,7 @@ func TestCorrectOEa(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		wpOrbitTgt := NewOrbitTarget(*oTarget, nil, meth, OptiΔaCL)
-		wpOrbitTgt.SetExport(NewThurstAngleExport(true))
+		wpOrbitTgt.SetExport(NewThurstAngleExport("correctOE-sma", true))
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{wpOrbitTgt})
 		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(45*24) * time.Hour)
@@ -259,7 +259,7 @@ func TestCorrectOEi(t *testing.T) {
 		dryMass := 300.0
 		fuelMass := 67.0
 		wpOrbitTgt := NewOrbitTarget(*oTarget, nil, meth, OptiΔiCL)
-		wpOrbitTgt.SetExport(NewThurstAngleExport(true))
+		wpOrbitTgt.SetExport(NewThurstAngleExport("correctOE-inc", false))
 		sc := NewSpacecraft("COE", dryMass, fuelMass, eps, EPThrusters, false, []*Cargo{}, []Waypoint{wpOrbitTgt})
 		start := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
 		end := start.Add(time.Duration(55*24) * time.Hour)

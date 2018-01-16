@@ -390,25 +390,26 @@ type ThurstAngleExport struct {
 	fhdl      *os.File
 }
 
-func (t *ThurstAngleExport) createFile() {
+func (t *ThurstAngleExport) createFile(filename string) {
 	if !t.enabled {
 		return
 	}
-	var filename string
+	var osfn string
 	if t.timestamp {
 		dt := time.Now()
-		filename = fmt.Sprintf("%s/thrusting-angles-%d-%02d-%02dT%02d.%02d.%02d.csv", smdConfig().outputDir, dt.Year(), dt.Month(), dt.Day(), dt.Hour(), dt.Minute(), dt.Second())
+		osfn = fmt.Sprintf("%s/thrusting-angles-%s-%d-%02d-%02dT%02d.%02d.%02d.csv", smdConfig().outputDir, filename, dt.Year(), dt.Month(), dt.Day(), dt.Hour(), dt.Minute(), dt.Second())
 	} else {
-		filename = fmt.Sprintf("%s/thrusting-angles.csv", smdConfig().outputDir)
+		osfn = fmt.Sprintf("%s/thrusting-angles-%s.csv", smdConfig().outputDir, filename)
 	}
-	f, err := os.Create(filename)
+	f, err := os.Create(osfn)
 	if err != nil {
 		panic(err)
 	}
 	// Header
 	f.WriteString(fmt.Sprintf(`# Creation date (UTC): %s
 # Records are datetime, angle, beta. All angles are in degrees.
-datetime,alpha,beta,\n`, time.Now()))
+datetime,alpha,beta,`, time.Now()))
+	f.WriteString("\n")
 	t.fhdl = f
 }
 
@@ -421,8 +422,8 @@ func (t *ThurstAngleExport) Store(dt time.Time, alpha, beta float64) {
 	t.latestDT = dt
 }
 
-func NewThurstAngleExport(timestamped bool) *ThurstAngleExport {
+func NewThurstAngleExport(filename string, timestamped bool) *ThurstAngleExport {
 	txp := ThurstAngleExport{true, timestamped, time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC), nil}
-	txp.createFile()
+	txp.createFile(filename)
 	return &txp
 }
