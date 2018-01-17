@@ -143,6 +143,7 @@ type OrbitTarget struct {
 	target  Orbit
 	ctrl    *OptimalΔOrbit
 	action  *WaypointAction
+	xprt    *ThurstAngleExport
 	cleared bool
 }
 
@@ -177,7 +178,16 @@ func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 		fmt.Printf("[WARNING] OrbitTarget reached @%s *but* %s: %s\n", dt, err, o.String())
 		wp.cleared = true
 	}
+	if wp.xprt != nil {
+		α, β := anglesFromUnitΔv(Unit(wp.ctrl.Control(o)))
+		wp.xprt.Store(dt, Rad2deg(α), Rad2deg(β))
+	}
 	return wp.ctrl, wp.cleared
+}
+
+// ThrustDirection implements the optimal orbit target.
+func (wp *OrbitTarget) SetExport(t *ThurstAngleExport) {
+	wp.xprt = t
 }
 
 // NewOrbitTarget defines a new orbit target.
@@ -185,7 +195,7 @@ func NewOrbitTarget(target Orbit, action *WaypointAction, meth ControlLawType, l
 	if target.Periapsis() < target.Origin.Radius || target.Apoapsis() < target.Origin.Radius {
 		fmt.Printf("[WARNING] Target orbit on collision course with %s\n", target.Origin)
 	}
-	return &OrbitTarget{target, NewOptimalΔOrbit(target, meth, laws), action, false}
+	return &OrbitTarget{target, NewOptimalΔOrbit(target, meth, laws), action, nil, false}
 }
 
 // HohmannTransfer allows to perform an Hohmann transfer.

@@ -178,6 +178,13 @@ func unitΔvFromAngles(α, β float64) []float64 {
 	return []float64{sinα * cosβ, cosα * cosβ, sinβ}
 }
 
+func anglesFromUnitΔv(Δv []float64) (α, β float64) {
+	β = math.Asin(Δv[2])
+	cosβ := math.Cos(β)
+	α = math.Asin(Δv[0] / cosβ)
+	return
+}
+
 // OptimalThrust is an optimal thrust.
 type OptimalThrust struct {
 	ctrl func(o Orbit) []float64
