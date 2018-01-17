@@ -261,6 +261,8 @@ type OptimalΔOrbit struct {
 	oInita, oInite, oIniti, oInitΩ, oInitω, oInitν float64
 	oTgta, oTgte, oTgti, oTgtΩ, oTgtω, oTgtν       float64
 	Distanceε, Eccentricityε, Angleε               float64
+	smoothOscil                                    bool
+	oCcΩ, oCcω, oCca, oCce, oCci                   float64
 	GenericCL
 }
 
@@ -300,6 +302,11 @@ func (cl *OptimalΔOrbit) SetEpsilons(distanceε, eccentricityε, angleε float6
 	cl.Angleε = angleε
 }
 
+// SetSmoothOscil set to only update the RAAN and AoP values when the true anomaly is nil
+func (cl *OptimalΔOrbit) SetSmoothOscil(smooth bool) {
+	cl.smoothOscil = smooth
+}
+
 func (cl *OptimalΔOrbit) String() string {
 	return "OptimalΔOrbit"
 }
@@ -333,7 +340,24 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	}
 
 	cl.cleared = true // Will be set to false if not yet converged.
-	a, e, i, Ω, ω, _, _, _, _ := o.Elements()
+	a, e, i, Ω, ω, ν, _, _, _ := o.Elements()
+	if cl.smoothOscil {
+		if math.Abs(Rad2deg(ν)) <= 0.05 || math.Abs(Rad2deg(ν)-180) <= 0.05 {
+			// Update the cached values
+			cl.oCcΩ = Ω
+			cl.oCcω = ω
+			cl.oCca = a
+			cl.oCce = e
+			cl.oCci = i
+		} else {
+			// Use cached values instead of the osculating ones for all angles.
+			Ω = cl.oCcΩ
+			ω = cl.oCcω
+			a = cl.oCca
+			e = cl.oCce
+			i = cl.oCci
+		}
+	}
 	switch cl.method {
 	case Ruggiero:
 		factor := func(oscul, init, target, tol float64) float64 {

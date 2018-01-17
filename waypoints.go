@@ -170,6 +170,11 @@ func (wp *OrbitTarget) SetEpsilons(distanceε, eccentricityε, angleε float64) 
 	wp.ctrl.SetEpsilons(distanceε, eccentricityε, angleε)
 }
 
+// SetSmoothOscil is a short cut again
+func (wp *OrbitTarget) SetSmoothOscil(smooth bool) {
+	wp.ctrl.SetSmoothOscil(smooth)
+}
+
 // ThrustDirection implements the optimal orbit target.
 func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bool) {
 	if ok, err := wp.target.EqualsWithin(o, wp.ctrl.Distanceε, wp.ctrl.Eccentricityε, wp.ctrl.Angleε); ok {
