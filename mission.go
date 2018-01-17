@@ -188,7 +188,7 @@ func (a *Mission) GetState() (s []float64) {
 		rSTM, cSTM := a.perts.STMSize()
 		stateSize += rSTM * cSTM
 		if a.perts.Drag {
-			stateSize += 1
+			stateSize++
 		}
 	}
 	s = make([]float64, stateSize)
@@ -294,7 +294,7 @@ func (a *Mission) Func(t float64, f []float64) (fDot []float64) {
 		rSTM, cSTM := a.perts.STMSize()
 		stateSize += rSTM * cSTM
 		if a.perts.Drag {
-			stateSize += 1
+			stateSize++
 		}
 	}
 	fDot = make([]float64, stateSize) // init return vector

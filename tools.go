@@ -66,6 +66,7 @@ func (t TransferType) String() string {
 	}
 }
 
+// TransferTypeFromInt returns the transfer type by the number of revs.
 func TransferTypeFromInt(ttype int) TransferType {
 	switch ttype {
 	case 4:

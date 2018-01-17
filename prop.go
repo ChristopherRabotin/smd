@@ -539,6 +539,7 @@ func (m Maneuver) String() string {
 	return fmt.Sprintf("burn [%f %f %f] km/s -- executed: %v", m.R, m.N, m.C, m.done)
 }
 
+// NewManeuver returns a struct to a Maneuver which can be applied as desired.
 func NewManeuver(R, N, C float64) Maneuver {
 	return Maneuver{R, N, C, false}
 }

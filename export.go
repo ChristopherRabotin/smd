@@ -427,6 +427,7 @@ func (t *ThurstAngleExport) Store(dt time.Time, alpha, beta float64) {
 	t.latestDT = dt
 }
 
+// NewThurstAngleExport returns a pointer to a ThurstAngleExport used to export the thrusting angles used in optimal controls.
 func NewThurstAngleExport(filename string, timestamped bool) *ThurstAngleExport {
 	txp := ThurstAngleExport{true, timestamped, time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC), nil}
 	txp.createFile(filename)

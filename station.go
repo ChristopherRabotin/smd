@@ -17,10 +17,13 @@ const (
 )
 
 var (
-	σρ             = math.Pow(5e-3, 2) // m , but all measurements in km.
-	σρDot          = math.Pow(5e-6, 2) // m/s , but all measurements in km/s.
-	DSS34Canberra  = NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 6)
-	DSS65Madrid    = NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 4.250556, σρ, σρDot, 6)
+	σρ    = math.Pow(5e-3, 2) // m , but all measurements in km.
+	σρDot = math.Pow(5e-6, 2) // m/s , but all measurements in km/s.
+	// DSS34Canberra defines the Canberra station of the DSN
+	DSS34Canberra = NewSpecialStation("DSS34Canberra", 0.691750, 0, -35.398333, 148.981944, σρ, σρDot, 6)
+	// DSS65Madrid defines the Madrid station of the DSN
+	DSS65Madrid = NewSpecialStation("DSS65Madrid", 0.834939, 0, 40.427222, 4.250556, σρ, σρDot, 6)
+	// DSS13Goldstone defines the Goldstone station of the DSN
 	DSS13Goldstone = NewSpecialStation("DSS13Goldstone", 1.07114904, 0, 35.247164, 243.205, σρ, σρDot, 6)
 )
 
@@ -158,6 +161,7 @@ func (m Measurement) String() string {
 	return fmt.Sprintf("%s@%s", m.Station.Name, m.State.DT)
 }
 
+// BuiltinStationFromName returns the built in station via its shortcut name
 func BuiltinStationFromName(name string) Station {
 	switch strings.ToLower(name) {
 	case "dss13":

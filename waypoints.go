@@ -185,7 +185,7 @@ func (wp *OrbitTarget) ThrustDirection(o Orbit, dt time.Time) (ThrustControl, bo
 	return wp.ctrl, wp.cleared
 }
 
-// ThrustDirection implements the optimal orbit target.
+// SetExport allows to associate a thrust angle export to an OrbitTarget way point.
 func (wp *OrbitTarget) SetExport(t *ThurstAngleExport) {
 	wp.xprt = t
 }

@@ -125,6 +125,7 @@ type OrbitNoise struct {
 	velocity    *distmv.Normal
 }
 
+// Generate returns an array of float64 with potiion and velocity randomized as configured.
 func (n OrbitNoise) Generate() (rtn []float64) {
 	rtn = make([]float64, 6)
 	if randFloat := rand.Float64(); n.probability < randFloat {
@@ -139,6 +140,7 @@ func (n OrbitNoise) Generate() (rtn []float64) {
 	return
 }
 
+// NewOrbitNoise returns a struct of OrbitNoise used to randomized orbit vectors.
 func NewOrbitNoise(probability, sigmaPosition, sigmaVelocity float64) OrbitNoise {
 	posMatrix := mat64.NewSymDense(3, []float64{sigmaPosition, 0, 0, 0, sigmaPosition, 0, 0, 0, sigmaPosition})
 	velMatrix := mat64.NewSymDense(3, []float64{sigmaVelocity, 0, 0, 0, sigmaVelocity, 0, 0, 0, sigmaVelocity})
