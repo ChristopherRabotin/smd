@@ -342,7 +342,7 @@ func (cl *OptimalΔOrbit) Control(o Orbit) []float64 {
 	cl.cleared = true // Will be set to false if not yet converged.
 	a, e, i, Ω, ω, ν, _, _, _ := o.Elements()
 	if cl.smoothOscil {
-		if math.Abs(Rad2deg(ν)) <= 0.05 || math.Abs(Rad2deg(ν)-180) <= 0.05 {
+		if math.Abs(Rad2deg(ν)-90.0) <= 0.05 || math.Abs(Rad2deg(ν)-270) <= 0.05 {
 			// Update the cached values
 			cl.oCcΩ = Ω
 			cl.oCcω = ω
